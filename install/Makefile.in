@@ -4,6 +4,8 @@
 ARCH = $(shell uname -m)
 DOCPATH = $(INSTALLPATH)/docs
 LIBPATH = $(INSTALLPATH)/lib/$(ARCH)
+PROGSRCPATH = $(INSTALLPATH)/progs
+PROGPATH = $(PROGSRCPATH)/$(ARCH)
 
 LIBRARYNAME = shapelets
 LIBSRCDIR = $(SRCPATH)/shapelets
@@ -26,20 +28,23 @@ FRAMELIBOBSDIR = $(LIBPATH)
 FRAMESRC = $(wildcard $(FRAMESRCDIR)/*.cc)
 FRAMEOBJECTS = $(FRAMESRC:$(FRAMESRCDIR)/%.cc=$(FRAMELIBOBSDIR)/%.o)
 
+PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
+PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
+
 HEADERS = $(wildcard $(LIBINCLDIR)/*.h) $(wildcard $(LENSINGINCLDIR)/*.h) $(wildcard $(FRAMEINCLDIR)/*.h) $(wildcard $(NUMLAINCLPATH)/*.h)
 
 CC = g++
-CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -I$(NUMLAINCLDIR) -I$(ATLASINCLDIR) -I$(LIBINCLDIR) -I$(LENSINGINCLDIR) -I$(FRAMEINCLDIR) -I$(HOME)/include -march=???MARCH???
+CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLDIR) -I$(LIBINCLDIR) -I$(LENSINGINCLDIR) -I$(FRAMEINCLDIR) ???OTHERINCL??? -L$(LIBPATH) ???OTHERLIB???
+LIBS = -llensing -lshapelets -lframe -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lCCfits -lcfitsio -lfftw3
 
 AR = ar
 ARFLAGS = -sr
-
 
 .DEFAULT: all
 
 .PHONY: clean
 
-all: shapelets lensing frame docs
+all: shapelets lensing frame progs docs
 
 clean:
 	rm -f $(LIBOBSDIR)/lib$(LIBRARYNAME).a
@@ -48,6 +53,7 @@ clean:
 	rm -f $(OBJECTS)
 	rm -f $(LENSINGOBJECTS)
 	rm -f $(FRAMEOBJECTS)
+	rm -f $(PROGSOBJECTS)
 
 cleanshapelets:
 	rm -f $(LIBOBSDIR)/lib$(LIBRARYNAME).a
@@ -58,6 +64,8 @@ cleanlensing:
 cleanframe:
 	rm -f $(FRAMELIBOBSDIR)/lib$(FRAMENAME).a
 	rm -f $(FRAMEOBJECTS)
+cleanprogs:
+	rm -f $(PROGSOBJECTS)
 
 dep:
 	$(CC) -MM $(SRC) > $(DEPENDFILE)
@@ -69,6 +77,11 @@ frame: $(FRAMELIBOBSDIR)/lib$(FRAMENAME).a
 
 shapelets: $(LIBOBSDIR)/lib$(LIBRARYNAME).a 
 
+progs: $(PROGSOBJECTS)
+
+docs: $(HEADERS)
+	doxygen Doxyfile
+
 $(LIBOBSDIR)/%.o: $(LIBSRCDIR)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -77,6 +90,9 @@ $(LENSINGLIBOBSDIR)/%.o: $(LENSINGSRCDIR)/%.cc
 
 $(FRAMELIBOBSDIR)/%.o: $(FRAMESRCDIR)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
+
+$(PROGPATH)/%: $(PROGSRCPATH)/%.cc
+	$(CC) $(CFLAGS) $< -o $@ $(LIBS)
 
 $(LIBOBSDIR)/lib$(LIBRARYNAME).a: $(OBJECTS)
 	$(AR) $(ARFLAGS) $@ $?
@@ -87,5 +103,3 @@ $(LENSINGLIBOBSDIR)/lib$(LENSINGNAME).a: $(LENSINGOBJECTS)
 $(FRAMELIBOBSDIR)/lib$(FRAMENAME).a: $(FRAMEOBJECTS) 
 	$(AR) $(ARFLAGS) $@ $?
 
-docs: $(HEADERS)
-	doxygen Doxyfile

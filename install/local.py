@@ -1,11 +1,12 @@
 #!/usr/bin/python
-import os
 
 # change this according to you machine and paths
 INSTALLPATH = "."
-SRCPATH = "../shapelens++"
+SRCPATH = "../shapelens"
 NUMLAINCLDIR = "../numla"
-ATLASINCLDIR = "../ATLAS/include"
+OTHERINCL = ["$(HOME)/include","../ATLAS/include"]
+OTHERLIB = ["$(HOME)/lib","../ATLAS/lib/Linux_P4SSE3_2"]
+
 MARCH="pentium4"
 OPTIMIZE="3"
 
@@ -14,11 +15,20 @@ OPTIMIZE="3"
 infile = open('Makefile.in','r') 
 makefile = infile.read()
 infile.close()
-paths = "INSTALLPATH = "+INSTALLPATH+"\nSRCPATH = "+SRCPATH+"\nNUMLAINCLDIR = "+NUMLAINCLDIR+"\nATLASINCLDIR = "+ATLASINCLDIR
+paths = "INSTALLPATH = "+INSTALLPATH+"\nSRCPATH = "+SRCPATH+"\nNUMLAINCLDIR = "+NUMLAINCLDIR
+
+otherincl = ""
+for i in range(len(OTHERINCL)):
+	otherincl = otherincl + " -I"+OTHERINCL[i]
+otherlib = ""
+for i in range(len(OTHERLIB)):
+        otherlib = otherlib + " -L"+OTHERLIB[i]
 
 makefile = makefile.replace("???PATHS???",paths)
 makefile = makefile.replace("???OPTIMIZE???",OPTIMIZE)
 makefile = makefile.replace("???MARCH???",MARCH)
+makefile = makefile.replace("???OTHERINCL???",otherincl)
+makefile = makefile.replace("???OTHERLIB???",otherlib)
 
 outfile = open('Makefile','w')
 outfile.write(makefile)
@@ -37,7 +47,3 @@ outfile = open('Doxyfile','w')
 outfile.write(doxyfile)
 outfile.close()
 
-# create lib and progs directories
-arch = os.popen("uname -m").readline()
-os.system("mkdir -p lib/"+str(arch))
-os.system("mkdir -p progs/"+str(arch))
