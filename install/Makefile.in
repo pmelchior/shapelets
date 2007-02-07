@@ -1,0 +1,91 @@
+# PATHs are filled by local.py
+???PATHS???
+
+ARCH = $(shell uname -m)
+DOCPATH = $(INSTALLPATH)/docs
+LIBPATH = $(INSTALLPATH)/lib/$(ARCH)
+
+LIBRARYNAME = shapelets
+LIBSRCDIR = $(SRCPATH)/shapelets
+LIBINCLDIR = $(LIBSRCDIR)/include
+LIBOBSDIR = $(LIBPATH)
+SRC = $(wildcard $(LIBSRCDIR)/*.cc)
+OBJECTS = $(SRC:$(LIBSRCDIR)/%.cc=$(LIBOBSDIR)/%.o)
+
+LENSINGNAME = lensing
+LENSINGSRCDIR = $(SRCPATH)/lensing
+LENSINGINCLDIR = $(LENSINGSRCDIR)/include
+LENSINGLIBOBSDIR = $(LIBPATH)
+LENSINGSRC = $(wildcard $(LENSINGSRCDIR)/*.cc)
+LENSINGOBJECTS = $(LENSINGSRC:$(LENSINGSRCDIR)/%.cc=$(LENSINGLIBOBSDIR)/%.o)
+
+FRAMENAME = frame
+FRAMESRCDIR = $(SRCPATH)/frame
+FRAMEINCLDIR = $(FRAMESRCDIR)/include
+FRAMELIBOBSDIR = $(LIBPATH)
+FRAMESRC = $(wildcard $(FRAMESRCDIR)/*.cc)
+FRAMEOBJECTS = $(FRAMESRC:$(FRAMESRCDIR)/%.cc=$(FRAMELIBOBSDIR)/%.o)
+
+HEADERS = $(wildcard $(LIBINCLDIR)/*.h) $(wildcard $(LENSINGINCLDIR)/*.h) $(wildcard $(FRAMEINCLDIR)/*.h) $(wildcard $(NUMLAINCLPATH)/*.h)
+
+CC = g++
+CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -I$(NUMLAINCLDIR) -I$(ATLASINCLDIR) -I$(LIBINCLDIR) -I$(LENSINGINCLDIR) -I$(FRAMEINCLDIR) -I$(HOME)/include -march=???MARCH???
+
+AR = ar
+ARFLAGS = -sr
+
+
+.DEFAULT: all
+
+.PHONY: clean
+
+all: shapelets lensing frame docs
+
+clean:
+	rm -f $(LIBOBSDIR)/lib$(LIBRARYNAME).a
+	rm -f $(LENSINGLIBOBSDIR)/lib$(LENSINGNAME).a
+	rm -f $(FRAMELIBOBSDIR)/lib$(FRAMENAME).a	
+	rm -f $(OBJECTS)
+	rm -f $(LENSINGOBJECTS)
+	rm -f $(FRAMEOBJECTS)
+
+cleanshapelets:
+	rm -f $(LIBOBSDIR)/lib$(LIBRARYNAME).a
+	rm -f $(OBJECTS)
+cleanlensing:
+	rm -f $(LENSINGLIBOBSDIR)/lib$(LENSINGNAME).a
+	rm -f $(LENSINGOBJECTS)
+cleanframe:
+	rm -f $(FRAMELIBOBSDIR)/lib$(FRAMENAME).a
+	rm -f $(FRAMEOBJECTS)
+
+dep:
+	$(CC) -MM $(SRC) > $(DEPENDFILE)
+	-include $(DEPENDFILE) 
+
+lensing: $(LENSINGLIBOBSDIR)/lib$(LENSINGNAME).a
+
+frame: $(FRAMELIBOBSDIR)/lib$(FRAMENAME).a
+
+shapelets: $(LIBOBSDIR)/lib$(LIBRARYNAME).a 
+
+$(LIBOBSDIR)/%.o: $(LIBSRCDIR)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LENSINGLIBOBSDIR)/%.o: $(LENSINGSRCDIR)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(FRAMELIBOBSDIR)/%.o: $(FRAMESRCDIR)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIBOBSDIR)/lib$(LIBRARYNAME).a: $(OBJECTS)
+	$(AR) $(ARFLAGS) $@ $?
+
+$(LENSINGLIBOBSDIR)/lib$(LENSINGNAME).a: $(LENSINGOBJECTS) 
+	$(AR) $(ARFLAGS) $@ $?
+
+$(FRAMELIBOBSDIR)/lib$(FRAMENAME).a: $(FRAMEOBJECTS) 
+	$(AR) $(ARFLAGS) $@ $?
+
+docs: $(HEADERS)
+	doxygen Doxyfile
