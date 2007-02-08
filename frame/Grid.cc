@@ -59,7 +59,11 @@ double& Grid::operator() (const unsigned int i, const unsigned int j) {
   return grid(i,j);
 }
 
-Point2D& Grid::operator() (const unsigned int i) {
+const double& Grid::operator() (const unsigned int i, const unsigned int j) const {
+  return grid(i,j);
+}
+
+const Point2D& Grid::operator() (const unsigned int i) {
     ublas::matrix_row<ublas::matrix<double> > row (grid, i);
     point = row; 
     return point;

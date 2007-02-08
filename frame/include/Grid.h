@@ -25,10 +25,11 @@ class Grid {
   Grid& operator= (const Grid& h);
   /// Assignment operator.
   double& operator() (const unsigned int i, const unsigned int j);
+  /// Index operator for const Grid.
+  const double& operator() (const unsigned int i, const unsigned int j) const;
   /// Overloaded assignment operator.
-  /// Return the ith point as a Point2D. This is a copy of the matrix entry, not a reference!
-  /// So use it only for reading purposes.
-  Point2D& operator() (const unsigned int i);
+  /// Return the ith point as a Point2D.
+  const Point2D& operator() (const unsigned int i);
   /// Return stepsize between grid points in given direction.
   double getStepsize(bool direction) const;
   /// Return starting position in given direction.
