@@ -44,7 +44,7 @@ ARFLAGS = -sr
 
 .PHONY: clean
 
-all: shapelets lensing frame progs docs
+???TARGETS???
 
 clean:
 	rm -f $(LIBOBSDIR)/lib$(LIBRARYNAME).a
@@ -79,8 +79,7 @@ shapelets: $(LIBOBSDIR)/lib$(LIBRARYNAME).a
 
 progs: $(PROGSOBJECTS)
 
-docs: $(HEADERS)
-	doxygen Doxyfile
+???DOCTARGET???
 
 $(LIBOBSDIR)/%.o: $(LIBSRCDIR)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
