@@ -1,6 +1,6 @@
 #include "Poisson2D.cc"
 #include "FFT.cc"
-
+#include <gsl/gsl_math.h>
 
 // compute potential for a given convergence map
 // by solving poissons eq. d^2 psi = kappa with kappa = 0 on boundary

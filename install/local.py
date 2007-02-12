@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import os
 
-# change this according to you machine and paths
+# change this according to your machine and paths
 INSTALLPATH = "."
 SRCPATH = "../shapelens"
 NUMLAINCLDIR = "../numla"
@@ -11,7 +11,7 @@ OTHERLIB = ["$(HOME)/lib","../ATLAS/lib/Linux_P4SSE3_2"]
 MARCH="pentium4"
 OPTIMIZE="3"
 
-# set this to False if you don't want a automatically generated documentation
+# set this to False if you don't want an automatically generated documentation
 # if set to True, doxygen should be installed on your machine.
 DOCUMENTATION = True
 
@@ -66,4 +66,4 @@ arch = os.popen("uname -m").read().strip()
 os.system("mkdir -p progs/"+arch)
 os.system("mkdir -p lib/"+arch)
 if (DOCUMENTATION == True):
-	os.system("mkdir docs")
+	os.system("mkdir -p docs")

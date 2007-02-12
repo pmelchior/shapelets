@@ -8,7 +8,7 @@
 typedef complex<double> Complex;
 
 /// Computes the average coeffs and beta from sif files listed in listfile
-void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string listfile, bool normalize) {
+void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string listfile) {
   average = NumMatrix<double>(); //create new average
   beta = 0;
   NumMatrix<int> entries;
@@ -20,14 +20,21 @@ void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string
      if (!files.good()) break;
     
     ShapeletObject* s = new ShapeletObject(filename);
-    if (normalize)
-      s->brighten(1./s->integrate());
     const NumMatrix<double>& coeffs = s->getCartesianCoeffs();
     // if new coeff matrix is bigger than current average matrix
     // expand average
     if (average.getRows() < coeffs.getRows() || average.getColumns() < coeffs.getColumns()) {
+      int oldRows = average.getRows();
+      int oldColumns = average.getColumns();
       average.resize(coeffs.getRows(),coeffs.getColumns());
       entries.resize(coeffs.getRows(),coeffs.getColumns());
+      // set to new entries to zero
+      for (int i=oldRows; i<coeffs.getRows(); i++) {
+	for (int j=oldColumns; j<coeffs.getColumns(); j++) {
+	  average.erase_element(i,j);
+	  entries.erase_element(i,j);
+	}
+      }
     }
     // add beta
     beta += s->getBeta();
@@ -41,6 +48,7 @@ void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string
     delete s;
   }
   files.close();
+
   // compute average beta
   beta /= entries(0,0); // that's the number of considered images
 
@@ -125,8 +133,9 @@ void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& s
   double averageBeta;
   std::ostringstream filename;
   filename << path << "shapelets.ls";
-  averageShapeletCoeffs(average,averageBeta,filename.str(),1);
+  averageShapeletCoeffs(average,averageBeta,filename.str());
   ShapeletObject *a = new ShapeletObject(average,averageBeta,xcentroid);
+  
   filename.str("");
   filename << path << "average.sif";
   a->save(filename.str());

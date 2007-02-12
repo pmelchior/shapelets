@@ -38,7 +38,7 @@ void createMapsFromKappa(NumMatrix<double>& kappa, double dx, NumMatrix<complex<
 /// the images created here are all flux-normalized.
 void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& sigmaCoeffs, double betamin, double betamax, std::string path);
 void createShapeletImagesPCA( double betamin, double betamax, std::string path, int N);
-void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string listfile, bool normalize);
+void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string listfile);
 void createLensedShapeletImages(double dx, NumMatrix<double>& kappa, NumMatrix<complex<double> >& gamma, NumMatrix<complex<double> >& F, NumMatrix<complex<double> >& G, std::string listfilename, std::string writeDirectory, int NOBJ);
 
 
@@ -50,7 +50,7 @@ void createLensedShapeletImages(double dx, NumMatrix<double>& kappa, NumMatrix<c
 ///   second brightness moments
 void estimateInstrinsicLensing(std::string path, std::string averageFile, int NOBJ,complex<double>& gamma, complex<double>& F, complex<double>& G, complex<double>& sigma_gamma, complex<double>& sigma_F, complex<double>& sigma_G);
 void estimateLensingInsidePixel(std::string path, int pixelX, int pixelY, int NOBJ, NumMatrix<double>& LS, NumMatrix<double>& X, NumVector<double>& averageVector,NumMatrix<int>& nVector, int nmax, complex<double>& gamma, complex<double>& F, complex<double>& G, complex<double>& sigma_gamma, complex<double>& sigma_F, complex<double>& sigma_G);
-void estimateShearFlexion(NumMatrix<double>& LS, NumMatrix<double>& X, NumVector<double>& averageVector,NumMatrix<int>& nVector, int nmax, NumMatrix<double>& coeffs, complex<double>& shear, complex<double>& F, complex<double>& G, double& chi2);
+void estimateShearFlexion(NumMatrix<double>& LS, NumMatrix<double>& X, const NumVector<double>& averageVector, const NumMatrix<int>& nVector, int nmax, NumMatrix<double>& coeffs, complex<double>& shear, complex<double>& F, complex<double>& G, double& chi2);
 void estimateLensingMaps(std::string path, std::string averageFile, int NOBJ, NumMatrix<complex<double> >& gamma, NumMatrix<complex<double> >& F, NumMatrix<complex<double> >& G, NumMatrix<complex<double> >& sigma_gamma, NumMatrix<complex<double> >& sigma_F, NumMatrix<complex<double> >& sigma_G);
 void computeAverageLSMatrixNVector(std::string averageFile, NumVector<double>& averageVector, NumMatrix<double>& LS, NumMatrix<double>& X, NumMatrix<int>& nVector, int& nmax);
 
