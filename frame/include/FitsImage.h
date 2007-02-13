@@ -1,7 +1,7 @@
 #ifndef FITSIMAGE_H
 #define FITSIMAGE_H
 
-#include <CCfits/CCfits>
+#include <fitsio.h>
 #include <string>
 #include <NumVector.h>
 #include <Grid.h>
@@ -12,15 +12,10 @@
 
 class FitsImage {
  public:
-  /// Default constructor.
-  FitsImage();
   /// Argumented constructor.
-  FitsImage(string filename);
-  /// Read Fits image filename, using given extension.
-  /// Extension = 0 uses pHDU, Extension > 0 uses extHDU.
-  void read(int ext);
-  /// Print image header to stdout.
-  void printHeader();
+  /// The extension has to given in the standard cfitsio way as
+  /// filename[extension].
+  FitsImage(std::string filename);
   /// Get axis size of the whole image in given direction.
   unsigned int getSize(bool direction);
   /// Get contents of image as NumVector.
@@ -39,18 +34,18 @@ class FitsImage {
   /// Get the pixel number from the x and y corrdinates.
   unsigned int getPixel(int x, int y);
   /// Set the filename.
-  /// For use with the default constructor only.
+  /// When this method is called with a different filename, 
+  /// the specified file will be opened and read.
   void setFilename(std::string filename);
-  /// The filename of the Fits file.
-  std::string filename;
+  /// Get the filename of the Fits file.
+  std::string getFilename();
 
  private:
-  std::auto_ptr<CCfits::FITS> pInfile;
   unsigned int axsize0, axsize1;
   NumVector<double> data;
   Grid grid;
-  template <class C> void getContent (C& image);
-  bool isRead;
+  std::string filename;
+  void read();
 };
 
 #endif

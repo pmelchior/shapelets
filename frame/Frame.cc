@@ -8,9 +8,8 @@
 
 using namespace std;
 
-Frame::Frame(string filename, int extension) : FitsImage(filename) {
-  FitsImage::read(extension);
-  text << "# Reading FITS file " << filename << ", extension "<< extension << endl;
+Frame::Frame(string filename) : FitsImage(filename) {
+  text << "# Reading FITS file " << filename << endl;
   text << "# Image properties: size = "<< FitsImage::getSize(0) << "/" << FitsImage::getSize(1) << endl; 
   history.append(text);
   subtractedBG = estimatedBG = foundObjects= 0;
@@ -344,7 +343,7 @@ void Frame::fillObject(Object& O) {
     // Fill other quantities into Object
     O.setNoiseMeanRMS(noise_mean,noise_rms);
     O.setNoiseModel("POISSONIAN");
-    O.setBaseFilename(FitsImage::filename);
+    O.setBaseFilename(FitsImage::getFilename());
     // this calculates flux and centroid;
     O.getFlux();
   }

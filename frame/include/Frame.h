@@ -9,7 +9,7 @@
 #include <History.h>
 
 /// Image preprocessing class.
-/// The purpose of this class is to read in a FitsImage and segement it into individual
+/// The purpose of this class is to read in a FitsImage and segment it into individual
 /// Object entities.\n
 /// The image processing includes (features in brackets are to come):
 /// - background noise estimation
@@ -22,7 +22,7 @@
 /// It thus allows the automatic processing of all significant objects in the image.
 /// Two typical scenarios are presented here:
 /// \code
-/// Frame* f = new Frame(fitsfile,extension);
+/// Frame* f = new Frame(fitsfile);
 /// f->subtractBackground();
 /// NumVector<double>& data = f->getData();
 /// Grid& grid = f->getGrid();
@@ -31,7 +31,7 @@
 /// globally and subtracts the global background noise level. The data of the whole frame
 /// and the adequate grid are returned.\n\n
 /// \code
-/// Frame* f = new Frame(fitsfile,extension);
+/// Frame* f = new Frame(fitsfile);
 /// f->subtractBackground();
 /// f->findObjects(50,1.5,5);
 /// for(int n = 1; n <= f->getNumberOfObjects(); n++) {
@@ -68,8 +68,9 @@
 class Frame : public FitsImage {
  public:
   /// Argumented constructor.
-  /// The filename of the Fits file and extension within that file have to given.
-  Frame(std::string filename, int extension);
+  /// The filename of the Fits file and extension have to given
+  /// in the standard cfitsio way: fitsfile[extension].
+  Frame(std::string filename);
   /// Estimate the statistical noise features.
   /// The method used is \f$\sigma\f$-clipping (as in SExtractor). This iteratively selects
   /// only those pixels with values in a 3\f$\sigma\f$ interval around the median, until

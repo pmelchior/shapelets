@@ -55,11 +55,11 @@
 /// neighbor pixel which is due to another object. With <tt>DEBLEND_MINCONT  0.010</tt> a
 /// reasonable value for discarding a object because of blending is \f$b \approx 0.5..0.6\f$.
 /// - When the background map and/or the background RMS map are provided, these maps are stored
-/// in the region of the image segement.
+/// in the region of the image segment.
 ///
 /// Example:
 /// \code
-/// SExFrame* f = new SExFrame(fitsfile,extension);
+/// SExFrame* f = new SExFrame(fitsfile);
 /// f->readCatalog(catfile, sformat);
 /// f->readSegmentationMap(segfile,0);
 /// f->subtractBackground();
@@ -76,8 +76,9 @@
 class SExFrame : public FitsImage {
  public:
   /// Argumented constructor.
-  /// The name of the Fits file and to appropriate extension have to be given.
-  SExFrame(std::string fitsfile, unsigned int extension);
+  /// The name of the Fits file and to appropriate extension have to be given 
+  /// in the standard cfitsio way: fitsfile[extension].
+  SExFrame(std::string fitsfile);
   /// Destructor.
   ~SExFrame();
   /// Read the SExtractor catalog file.
@@ -86,7 +87,7 @@ class SExFrame : public FitsImage {
   /// Read the segmentation map.
   /// This Fits file can be produced by SExtractor by setting 
   /// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>
-  void readSegmentationMap(std::string segmentfile, unsigned int extension);
+  void readSegmentationMap(std::string segmentfile);
   /// Set the characteristic size (FWHM) of features in the image (in pixels).
   /// It is used for estimating the correlation length of pixels in the noise and for
   /// boxsize of the local noise estimates.

@@ -1,6 +1,7 @@
 #include <SExFrame.h>
 #include <boost/tokenizer.hpp>
 #include <fstream>
+#include <gsl/gsl_math.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_histogram.h>
@@ -12,9 +13,8 @@ using namespace boost;
 
 typedef unsigned int uint;
 
-SExFrame::SExFrame (std::string fitsfile, unsigned int extension) : FitsImage(fitsfile) {
-  FitsImage::read(extension); 
-  text << "# Reading FITS file " << filename << ", extension "<< extension << endl;
+SExFrame::SExFrame (std::string fitsfile) : FitsImage(fitsfile) {
+  text << "# Reading FITS file " << fitsfile << endl;
   text << "# Image properties: size = "<< FitsImage::getSize(0) << "/" << FitsImage::getSize(1) << std::endl; 
   history.append(text);
   SExCatFormat empty = {0,0,0,0,0,0,0,0};
@@ -94,9 +94,8 @@ void SExFrame::readCatalog(std::string catfile) {
   catRead = 1;
 }
 
-void SExFrame::readSegmentationMap(std::string segmentfile, unsigned int extension) {
+void SExFrame::readSegmentationMap(std::string segmentfile) {
   FitsImage* seg = new FitsImage(segmentfile);
-  seg->read(extension);
   segMap = seg->getData();
   delete seg;
   segmapRead = 1;
@@ -222,7 +221,7 @@ void SExFrame::fillObject(Object& O) {
   O.setDetectionFlag(objectList[nr].FLAGS);
   O.setStarGalaxyProbability(objectList[nr].CLASS_STAR);
   O.setBlendingProbability(computeBlendingProbability(nr));
-  O.setBaseFilename(FitsImage::filename);
+  O.setBaseFilename(FitsImage::getFilename());
   // this calculates flux and centroid;
   O.getFlux();
 }

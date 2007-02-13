@@ -1,52 +1,41 @@
 #include <FitsImage.h>
-#include <cmath>
-#include <valarray>
 
 using namespace std;
-using namespace CCfits;
-
-FitsImage::FitsImage() {
-  isRead = 0;
-  axsize0 = axsize1 = 0;
-}
 
 FitsImage::FitsImage(string infilename) {
   filename = infilename;
-  isRead = 0;
-  axsize0 = axsize1 = 0;
+  read();
 }
 
 void FitsImage::setFilename(string infilename){
   filename = infilename;
+  read();
 }
-void FitsImage::read(int ext) {
-  pInfile = auto_ptr<FITS>(new FITS(filename,Read,true));
-  // read primary (ext=0) or extension
-  if (ext==0) {
-    PHDU& image = pInfile->pHDU();
-    getContent(image);
+
+std::string FitsImage::getFilename() {
+  return filename;
+}
+
+void FitsImage::read() {
+  fitsfile *fptr;
+  int status = 0;
+  fits_open_file(&fptr, filename.c_str(), READONLY, &status);
+  int naxis;
+  fits_get_img_dim(fptr, &naxis, &status);
+  if (naxis!=2) {
+    cout << "FitsImage: naxis != 2. This is not a FITS image!" << endl;
+    terminate();
   } else {
-    ExtHDU& image = pInfile->extension(ext);
-    getContent(image);
+    long naxes[2] = {1,1};
+    fits_get_img_size(fptr, naxis, naxes, &status);
+    axsize0 = naxes[0];
+    axsize1 = naxes[1];
+    long npixels = axsize0*axsize1;
+    data.resize(npixels);
+    long firstpix[2] = {1,1};
+    fits_read_pix(fptr, TDOUBLE, firstpix, npixels, NULL, boost::numeric::bindings::traits::vector_storage(data), NULL, &status);
+    fits_close_file(fptr, &status);
   }
-  isRead = 1;
-  grid = Grid(0,axsize0-1,1,0,axsize1-1,1);
-
-}
-
-template <class C>
-void FitsImage::getContent (C& image) {
-  image.readAllKeys();
-  int bitpix;
-  image.readKey("BITPIX",bitpix);
-  // FIXME
-  axsize0 = (unsigned int)image.axis(0);  // columns
-  axsize1 = (unsigned int)image.axis(1);  // lines
-  // no explicit typecast, just assign elements to a valarray<double>
-  valarray<double> contents;
-  image.read(contents);
-  // copy to NumVector<double>
-  data = contents;
 }
 
 const NumVector<double>& FitsImage::getData() {
@@ -68,11 +57,6 @@ unsigned int FitsImage::getNumberOfPixels() {
 unsigned int FitsImage::getSize(bool direction) {
   if (direction == 0) return axsize0;
   else return axsize1;
-}
-
-void FitsImage::printHeader() {
-  if (isRead)
-  std::cout << pInfile->pHDU() << std::endl;
 }
 
 void FitsImage::getCoords(uint pixel, int& x, int& y) {

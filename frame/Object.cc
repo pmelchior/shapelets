@@ -1,5 +1,6 @@
 #include <Object.h>
 #include <sstream>
+#include <gsl/gsl_math.h>
 
 Object::Object(unsigned int inid) {
   id = inid;
