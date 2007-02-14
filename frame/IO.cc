@@ -128,7 +128,7 @@ void convolveGaussian(const NumVector<double>& image, NumVector<double>& result,
   }
 }
 
-int makeColorMatrix(NumMatrix<unsigned int>& m, string colorscheme) {
+int makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
   // convert colorscheme into appropriate parameters
   // default parameters are "SPECTRUM"
   char scheme = 0;

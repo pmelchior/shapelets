@@ -1,7 +1,7 @@
 #ifndef IO_H
 #define IO_H
 
-#include <CCfits/CCfits>
+#include <fitsio.h>
 #include <iostream>
 #include <string>
 #include <Grid.h>
@@ -9,41 +9,55 @@
 #include <NumMatrix.h>
 #include <map>
 
-/// Function for reading and writing into several formats
+/// Functions for reading and writing into several formats
+
+/// set imageformat and datatype according to the cfitsio definitions
+template <class T> 
+void setFITSTypes(T entry, int& imageformat, int& datatype) {
+  imageformat = DOUBLE_IMG;
+  datatype = TDOUBLE;
+  float tf;
+  int ti;
+  if (typeid(entry) == typeid(tf)) {
+    imageformat = FLOAT_IMG;
+    datatype = TFLOAT;
+  }
+  if (typeid(entry) == typeid(ti)) {
+    imageformat = SHORT_IMG;
+    datatype = TINT;
+  }
+}
 
 /// creates a single HDU FITS file from the data defined on given grid
+/// \todo add support for fits header keywords of variable type
 template <class T>
 void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string>& keywords) {
   int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
   int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
   long naxis = 2;      
   long naxes[2] = { dim0, dim1 };
-  std::auto_ptr<CCfits::FITS> pFits(0);
-  // since the call to new FITS(filename...) doesn't overwrite the file
-  // we have to remove it before
-  std::ostringstream filename_remove;
-  filename_remove << "!" << filename;
-  // define image format
-  int imageformat = DOUBLE_IMG;
-  float tf;
-  int ti;
-  if (typeid(data(0)) == typeid(tf))
-    imageformat = FLOAT_IMG;
-  if (typeid(data(0)) == typeid(ti))
-    imageformat = SHORT_IMG;
-  pFits.reset(new CCfits::FITS(filename_remove.str(),imageformat,naxis,naxes));
-  // insert kewords
+  long npixels = dim0*dim1;
+
+  int status = 0;
+  fitsfile *outfptr;
+  filename = "!"+filename; // overwrite existing file if necessary
+  // open fits file
+  fits_create_file(&outfptr,filename.c_str(), &status);
+  
+  // define image format and dataformat according to cfitsio definitions
+  int imageformat, datatype;
+  setFITSTypes(data(0),imageformat,datatype);
+  // create pHDU
+  fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+  // write pixel data
+  long firstpix[2] = {1,1};
+  fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<double *>(boost::numeric::bindings::traits::vector_storage(data)), &status);
+  // insert keywords
   keywords["CREATOR"]= "Shapelets++";
   for( std::map<std::string,std::string>::iterator iter = keywords.begin(); 
        iter != keywords.end(); iter++ )
-    pFits->pHDU().addKey((*iter).first,(*iter).second,"");
-
-  // copy to valarray
-  valarray<T> array(data.size());
-  for (int i=0; i < data.size(); i++)
-    array[i] = data(i);
-  // writing into fits file
-  pFits->pHDU().write(1,data.size(),array);
+    fits_update_key (outfptr, TSTRING,  const_cast<char *>((*iter).first.c_str()), const_cast<char *>((*iter).second.c_str()), "", &status);
+  fits_close_file(outfptr, &status);
 }
 
 /// adds extensions to an existing FITS file from the data on the given grid
@@ -51,32 +65,28 @@ template <class T>
 void addFITSExtension(std::string filename, std::string extname, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string>& keywords) {
     int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
   int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
-  std::vector<long> naxes(2);
-  naxes[0] = dim0;
-  naxes[1] = dim1;
-  // define image format
-  int imageformat = DOUBLE_IMG;
-  float tf;
-  int ti;
-  if (typeid(data(0)) == typeid(tf))
-    imageformat = FLOAT_IMG;
-  if (typeid(data(0)) == typeid(ti))
-    imageformat = SHORT_IMG;
-  // open the existing FITS file
-  CCfits::FITS infile(filename, CCfits::Write);
-  // select next extension
-  CCfits::ExtHDU* imageExt = infile.addImage(extname,imageformat,naxes);
-  // copy to valarray
-  valarray<T> array(data.size());
-  for (int i=0; i < data.size(); i++)
-    array[i] = data(i);
-  // writing into fits file
-  imageExt->write(1,data.size(),array);
-  // insert kewords
+  long naxis = 2;      
+  long naxes[2] = { dim0, dim1 };
+  long npixels = dim0*dim1;
+
+  int status = 0;
+  fitsfile *outfptr;
+  fits_open_file(&outfptr, filename.c_str(), READWRITE, &status);
+  // define image format and dataformat according to cfitsio definitions
+  int imageformat, datatype;
+  setFITSTypes(data(0),imageformat,datatype);
+  // create extHDU
+  fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+  // write pixel data 
+  long firstpix[2] = {1,1};
+  fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<double *>(boost::numeric::bindings::traits::vector_storage(data)), &status);
+  // insert keywords
+  keywords["EXTNAME"]= extname;
   keywords["CREATOR"]= "Shapelets++";
-  for( std::map<std::string,std::string>::iterator iter = keywords.begin();
+  for( std::map<std::string,std::string>::iterator iter = keywords.begin(); 
        iter != keywords.end(); iter++ )
-    imageExt->addKey((*iter).first,(*iter).second,"");
+    fits_update_key (outfptr, TSTRING,  const_cast<char *>((*iter).first.c_str()), const_cast<char *>((*iter).second.c_str()), "", &status);
+  fits_close_file(outfptr, &status);
 }
 
 /// Write PPM file from data on the given grid.

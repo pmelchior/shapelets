@@ -77,7 +77,7 @@ class ShapeletObject : public Composite2D {
   /// Default constructor.
   ShapeletObject();
   /// Constructor for reading a SIF file.
-  ShapeletObject(string sifFile);
+  ShapeletObject(std::string sifFile);
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
@@ -158,9 +158,9 @@ class ShapeletObject : public Composite2D {
   // methods for reading/writing sif files that contain 
   // all necessary information of a shapelet image
   /// Save active set of image parameters to given file.
-  void save(string filename);
+  void save(std::string filename);
   /// Load active set of image parameters from file.
-  void load(string filename);
+  void load(std::string filename);
 
   /// Return history string of image.
   /// This contains all procedure parameters of decomposition, transformations etc.

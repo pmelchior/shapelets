@@ -35,7 +35,7 @@ HEADERS = $(wildcard $(LIBINCLDIR)/*.h) $(wildcard $(LENSINGINCLDIR)/*.h) $(wild
 
 CC = g++
 CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLDIR) -I$(LIBINCLDIR) -I$(LENSINGINCLDIR) -I$(FRAMEINCLDIR) ???OTHERINCL??? -L$(LIBPATH) ???OTHERLIB???
-LIBS = -llensing -lshapelets -lframe -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lCCfits -lcfitsio -lfftw3
+LIBS = -llensing -lshapelets -lframe -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio -lfftw3
 
 AR = ar
 ARFLAGS = -sr

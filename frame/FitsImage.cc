@@ -30,6 +30,7 @@ void FitsImage::read() {
     fits_get_img_size(fptr, naxis, naxes, &status);
     axsize0 = naxes[0];
     axsize1 = naxes[1];
+    grid = Grid(0,axsize0-1,1,0,axsize1-1,1);
     long npixels = axsize0*axsize1;
     data.resize(npixels);
     long firstpix[2] = {1,1};
