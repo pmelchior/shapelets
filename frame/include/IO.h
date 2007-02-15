@@ -31,7 +31,7 @@ void setFITSTypes(T entry, int& imageformat, int& datatype) {
 /// creates a single HDU FITS file from the data defined on given grid
 /// \todo add support for fits header keywords of variable type
 template <class T>
-void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string>& keywords) {
+void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string> keywords = std::map<std::string, std::string>()) {
   int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
   int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
   long naxis = 2;      
@@ -53,7 +53,7 @@ void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& d
   long firstpix[2] = {1,1};
   fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(data.c_array()), &status);
   // insert keywords
-  keywords["CREATOR"]= "Shapelets++";
+  keywords["CREATOR"]= "ShapeLens++";
   for( std::map<std::string,std::string>::iterator iter = keywords.begin(); 
        iter != keywords.end(); iter++ )
     fits_update_key (outfptr, TSTRING,  const_cast<char *>((*iter).first.c_str()), const_cast<char *>((*iter).second.c_str()), "", &status);
@@ -62,7 +62,7 @@ void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& d
 
 /// adds extensions to an existing FITS file from the data on the given grid
 template <class T>
-void addFITSExtension(std::string filename, std::string extname, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string>& keywords) {
+void addFITSExtension(std::string filename, std::string extname, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string> keywords = std::map<std::string, std::string>()) {
     int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
   int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
   long naxis = 2;      
@@ -82,7 +82,7 @@ void addFITSExtension(std::string filename, std::string extname, const Grid& gri
   fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T* >(data.c_array()), &status);
   // insert keywords
   keywords["EXTNAME"]= extname;
-  keywords["CREATOR"]= "Shapelets++";
+  keywords["CREATOR"]= "ShapeLens++";
   for( std::map<std::string,std::string>::iterator iter = keywords.begin(); 
        iter != keywords.end(); iter++ )
     fits_update_key (outfptr, TSTRING,  const_cast<char *>((*iter).first.c_str()), const_cast<char *>((*iter).second.c_str()), "", &status);
