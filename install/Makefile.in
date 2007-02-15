@@ -31,7 +31,7 @@ FRAMEOBJECTS = $(FRAMESRC:$(FRAMESRCDIR)/%.cc=$(FRAMELIBOBSDIR)/%.o)
 PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
 PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
-HEADERS = $(wildcard $(LIBINCLDIR)/*.h) $(wildcard $(LENSINGINCLDIR)/*.h) $(wildcard $(FRAMEINCLDIR)/*.h) $(wildcard $(NUMLAINCLPATH)/*.h)
+HEADERS = $(wildcard $(LIBINCLDIR)/*.h) $(wildcard $(LENSINGINCLDIR)/*.h) $(wildcard $(FRAMEINCLDIR)/*.h) $(wildcard $(NUMLAINCLDIR)/*.h)
 
 CC = g++
 CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLDIR) -I$(LIBINCLDIR) -I$(LENSINGINCLDIR) -I$(FRAMEINCLDIR) ???OTHERINCL??? -L$(LIBPATH) ???OTHERLIB???

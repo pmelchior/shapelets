@@ -51,7 +51,7 @@ void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& d
   fits_create_img(outfptr, imageformat, naxis, naxes, &status);
   // write pixel data
   long firstpix[2] = {1,1};
-  fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<double *>(boost::numeric::bindings::traits::vector_storage(data)), &status);
+  fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(data.c_array()), &status);
   // insert keywords
   keywords["CREATOR"]= "Shapelets++";
   for( std::map<std::string,std::string>::iterator iter = keywords.begin(); 
@@ -79,7 +79,7 @@ void addFITSExtension(std::string filename, std::string extname, const Grid& gri
   fits_create_img(outfptr, imageformat, naxis, naxes, &status);
   // write pixel data 
   long firstpix[2] = {1,1};
-  fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<double *>(boost::numeric::bindings::traits::vector_storage(data)), &status);
+  fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T* >(data.c_array()), &status);
   // insert keywords
   keywords["EXTNAME"]= extname;
   keywords["CREATOR"]= "Shapelets++";

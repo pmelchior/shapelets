@@ -34,7 +34,7 @@ void FitsImage::read() {
     long npixels = axsize0*axsize1;
     data.resize(npixels);
     long firstpix[2] = {1,1};
-    fits_read_pix(fptr, TDOUBLE, firstpix, npixels, NULL, boost::numeric::bindings::traits::vector_storage(data), NULL, &status);
+    fits_read_pix(fptr, TDOUBLE, firstpix, npixels, NULL,data.c_array(), NULL, &status);
     fits_close_file(fptr, &status);
   }
 }

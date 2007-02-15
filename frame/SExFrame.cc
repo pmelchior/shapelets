@@ -798,9 +798,9 @@ const NumVector<double>& SExFrame::getObjectMap() {
 
 // estimate noise by iterative sigma clipping
 void SExFrame::estimateNoise() {
-  // for GSL functions we have to copy valarray to double*
+  // for GSL sorting functions we have to copy NumVector to double*
   int npixels = FitsImage::getNumberOfPixels();
-  double D[npixels];
+  double* D = (double *) malloc(npixels*sizeof(double));
   for (int i=0; i < npixels; i++)
     D[i] = (FitsImage::getData())(i);
 
@@ -877,6 +877,7 @@ void SExFrame::estimateNoise() {
       bg_mean = median;
     }
   }
+  free(D);
   text << "# Background estimation: mean = " << bg_mean;
   text << ", sigma = " << bg_rms << std::endl;
   history.append(text);

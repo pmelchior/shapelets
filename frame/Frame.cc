@@ -21,9 +21,9 @@ Frame::Frame(string filename) : FitsImage(filename) {
 // estimate noise by iterative sigma clipping
 void Frame::estimateNoise() {
   flag=0;
-  // for GSL functions we have to copy valarray to double*
+  // for GSL sorting functions we have to copy NumVector to double*
   int npixels = FitsImage::getNumberOfPixels();
-  double D[npixels];
+  double* D = (double*) malloc(npixels*sizeof(double));
   for (int i=0; i < npixels; i++)
     D[i] = (FitsImage::getData())(i);
 
@@ -105,6 +105,7 @@ void Frame::estimateNoise() {
       }
     }
   }
+  free(D);
   text << "# Background estimation: mean = " << noise_mean;
   text << ", sigma = " << noise_rms << std::endl;
   history.append(text);
