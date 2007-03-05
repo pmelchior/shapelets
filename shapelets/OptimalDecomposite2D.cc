@@ -806,10 +806,10 @@ double OptimalDecomposite2D::regularize(double wantedR) {
       t1 = time(NULL);
     }
     if (!trouble) {
-    	text << "# Regularization converged: chi^2 = " << optimalChiSquare << ", R = "<< R << std::endl;
 	optimalNMax = nmax;
 	optimalBeta = beta;
 	optimalChiSquare = chi2;
+    	text << "# Regularization converged: chi^2 = " << optimalChiSquare << ", R = "<< R << std::endl;
     }
     // we have to revert to those reg. parameters nmax and lambda, where 
     // chi2 <=1 and R minimal

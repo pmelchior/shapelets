@@ -8,9 +8,9 @@
 
 using namespace std;
 
-Frame::Frame(string filename) : FitsImage(filename) {
+Frame::Frame(string filename) : FitsImage<double>(filename) {
   text << "# Reading FITS file " << filename << endl;
-  text << "# Image properties: size = "<< FitsImage::getSize(0) << "/" << FitsImage::getSize(1) << endl; 
+  text << "# Image properties: size = "<< FitsImage<double>::getSize(0) << "/" << FitsImage<double>::getSize(1) << endl; 
   history.append(text);
   subtractedBG = estimatedBG = foundObjects= 0;
   noise_rms = noise_mean = 0;
@@ -22,16 +22,16 @@ Frame::Frame(string filename) : FitsImage(filename) {
 void Frame::estimateNoise() {
   flag=0;
   // for GSL sorting functions we have to copy NumVector to double*
-  int npixels = FitsImage::getNumberOfPixels();
+  int npixels = FitsImage<double>::getNumberOfPixels();
   double* D = (double*) malloc(npixels*sizeof(double));
   for (int i=0; i < npixels; i++)
-    D[i] = (FitsImage::getData())(i);
+    D[i] = (FitsImage<double>::getData())(i);
 
   // first check left border of the image for pixel value variations
   // if its 0, its a (simulated) image with 0 noise
   // FIXME: background_variance is set to the minmal value above 0
   // Is this corect? 
-  if (gsl_stats_variance(D,1,FitsImage::getSize(0)) == 0) {
+  if (gsl_stats_variance(D,1,FitsImage<double>::getSize(0)) == 0) {
     noise_mean = 0;
     double min = gsl_stats_max(D,1,npixels);
     for (int i=0; i < npixels; i++)
@@ -136,8 +136,8 @@ void Frame::setNoiseMeanRMS(double mean, double rms) {
 void Frame::subtractBackground() {
   if (!estimatedBG) estimateNoise();
   if (!subtractedBG) {
-    for (int i=0; i < FitsImage::getNumberOfPixels(); i++) {
-      (FitsImage::accessData())(i) -= noise_mean;
+    for (int i=0; i < FitsImage<double>::getNumberOfPixels(); i++) {
+      (FitsImage<double>::accessData())(i) -= noise_mean;
     }
     subtractedBG = 1;
     text << "# Background subtraction: noise level = " << noise_mean << std::endl;
@@ -148,9 +148,9 @@ void Frame::subtractBackground() {
 
 void Frame::findObjects(unsigned int minPixels, double significanceThresholdSigma, double detectionThresholdSigma) {
   if (!foundObjects && flag != 3) {
-    const NumVector<double>& data = FitsImage::getData();
+    const NumVector<double>& data = FitsImage<double>::getData();
     int counter = 1;
-    unsigned int npixels = FitsImage::getNumberOfPixels();
+    unsigned int npixels = FitsImage<double>::getNumberOfPixels();
     pixelmap = NumVector<int>(npixels);
     list<int>::iterator iter;
 
@@ -182,7 +182,7 @@ void Frame::findObjects(unsigned int minPixels, double significanceThresholdSigm
       definePixelMap(maxindex,counter,lowThreshold);
       // if maximum has enough pixels define it as object 1
       if (pixellist.size() >= minPixels) {
-	text << "# Maximum Object 1 detected with " << pixellist.size() << " significant pixels at (" << maxindex%(FitsImage::getSize(0)) << "/" << maxindex/(FitsImage::getSize(0)) << ")" << std::endl;
+	text << "# Maximum Object 1 detected with " << pixellist.size() << " significant pixels at (" << maxindex%(FitsImage<double>::getSize(0)) << "/" << maxindex/(FitsImage<double>::getSize(0)) << ")" << std::endl;
 	history.append(text);
       // if not, mark the pixels int the active list with -1 (seen, but not big enough)
       } else {
@@ -197,7 +197,7 @@ void Frame::findObjects(unsigned int minPixels, double significanceThresholdSigm
 	  counter++;
 	  definePixelMap(i,counter,lowThreshold);
 	  if (pixellist.size() >= minPixels) {
-	    text << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(FitsImage::getSize(0)) << "/" << i/(FitsImage::getSize(0)) << ")"  << std::endl;
+	    text << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(FitsImage<double>::getSize(0)) << "/" << i/(FitsImage<double>::getSize(0)) << ")"  << std::endl;
 	    history.append(text);
 	  }
 	  else {
@@ -236,9 +236,9 @@ void Frame::fillObject(Object& O) {
     // define the points (xmin/ymin) and (xmax/ymax) 
     // that enclose the object
     int axsize0, axsize1,xmin, xmax, ymin, ymax;
-    xmin = axsize0 = FitsImage::getSize(0);
+    xmin = axsize0 = FitsImage<double>::getSize(0);
     xmax = 0;
-    ymin = axsize1 = FitsImage::getSize(1);
+    ymin = axsize1 = FitsImage<double>::getSize(1);
     ymax = 0;
     // this could be faster if we had a list of pixellists from findObjects() and
     // definePixelMap()
@@ -290,7 +290,7 @@ void Frame::fillObject(Object& O) {
     NumVector<double>& objdata = O.accessData();
 
     objdata = NumVector<double>((xmax-xmin+1)*(ymax-ymin+1));
-    const NumVector<double>& data = FitsImage::getData();
+    const NumVector<double>& data = FitsImage<double>::getData();
     list<int>::iterator iter;
     for (int i =0; i < objdata.size(); i++) {
       // old coordinates derived from new pixel index i
@@ -344,7 +344,7 @@ void Frame::fillObject(Object& O) {
     // Fill other quantities into Object
     O.setNoiseMeanRMS(noise_mean,noise_rms);
     O.setNoiseModel("POISSONIAN");
-    O.setBaseFilename(FitsImage::getFilename());
+    O.setBaseFilename(FitsImage<double>::getFilename());
     // this calculates flux and centroid;
     O.getFlux();
   }
@@ -355,7 +355,7 @@ NumVector<int>& Frame::getObjectMap() {
 }
 
 void Frame::definePixelMap(int startpixel, int counter, double threshold) {
-  const NumVector<double>& data = FitsImage::getData();
+  const NumVector<double>& data = FitsImage<double>::getData();
   // get iteratively all connected pixels that are above threshold
   // starting from maxindex and put it in list
   
@@ -389,8 +389,8 @@ void Frame::definePixelMap(int startpixel, int counter, double threshold) {
 // this refines the pixelmap within the bounds of the smaller object frame
 // it searches for noise oscillations above the 1 sigma level
 void Frame::refinePixelMap(int startpixel, bool positive, int xmin, int xmax, int ymin, int ymax) {
-  int axsize0 = FitsImage::getSize(0);
-  const NumVector<double>& data = FitsImage::getData();
+  int axsize0 = FitsImage<double>::getSize(0);
+  const NumVector<double>& data = FitsImage<double>::getData();
   pixellist.clear();
   pixellist.push_back(startpixel);
   list<int>::iterator theIterator;
@@ -426,8 +426,8 @@ void Frame::refinePixelMap(int startpixel, bool positive, int xmin, int xmax, in
 
 
 int Frame::neighborpixel(int pixel,unsigned int direction) {
-  int axsize0 = FitsImage::getSize(0);
-  int axsize1 = FitsImage::getSize(1);
+  int axsize0 = FitsImage<double>::getSize(0);
+  int axsize1 = FitsImage<double>::getSize(1);
   int x = pixel%axsize0;
   int y = pixel/axsize0;
   int index;
@@ -501,8 +501,8 @@ void Frame::addFrameBorder(int& xmin, int& xmax, int& ymin, int& ymax) {
 }
 
 void Frame::paintSegmentBorder(int xmin, int xmax, int ymin, int ymax) {
-  int axsize0 = FitsImage::getSize(0);
-  int axsize1 = FitsImage::getSize(1);
+  int axsize0 = FitsImage<double>::getSize(0);
+  int axsize1 = FitsImage<double>::getSize(1);
   // check if corners are within frame
   if (xmin<0) xmin=0;
   if (xmax>=axsize0) xmax=axsize0-1;

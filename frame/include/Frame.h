@@ -65,7 +65,7 @@
 /// \todo - blending, galaxy/star discrimination
 
 
-class Frame : public FitsImage {
+class Frame : public FitsImage<double> {
  public:
   /// Argumented constructor.
   /// The filename of the Fits file and extension have to given
