@@ -187,8 +187,6 @@ void SExFrame::fillObject(Object& O) {
   O.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
   
   // Fill other quantities into Object
-  // take defaults for the noise values
-  // if maps are given, the will be used instead anyway
   O.setNoiseMeanRMS(bg_mean,bg_rms);
   O.setNoiseModel("GAUSSIAN");
 
@@ -308,16 +306,25 @@ const NumVector<int>& SExFrame::getObjectMap() {
 
 // estimate noise by iterative sigma clipping
 void SExFrame::estimateNoise() {
+  if (!segmapRead) {
+    std::cout << "SExFrame: provide segmentation map before calling subtractNoise()!" << std::endl;
+    std::terminate();
+  }
+   
   // for GSL sorting functions we have to copy NumVector to double*
-  int npixels = FitsImage<double>::getNumberOfPixels();
+  // only copy the pixel values where not object is found in the segmentation map
+  int npixels = FitsImage<double>::getNumberOfPixels(), jmax = 0;
   double* D = (double *) malloc(npixels*sizeof(double));
-  for (int i=0; i < npixels; i++)
-    D[i] = (FitsImage<double>::getData())(i);
+  for (int i=0; i < npixels; i++) {
+    if (segMap(i) == 0) {
+      D[jmax] = (FitsImage<double>::getData())(i);
+      jmax++;
+    }
+  }
 
   // first check left border of the image for pixel value variations
   // if its 0, its a (simulated) image with 0 noise
-  // FIXME: background_variance is set to the minmal value above 0
-  // Is this corect? 
+  // background_variance is set to the minmal value above 0
   if (gsl_stats_variance(D,1,axsize0-1) == 0) {
     bg_mean = 0;
     double min = gsl_stats_max(D,1,npixels);
@@ -326,12 +333,12 @@ void SExFrame::estimateNoise() {
     bg_rms = sqrt(min*min);
   } 
   else {
-    gsl_sort(D, 1, npixels);
-    double sigma = gsl_stats_sd(D,1,npixels);
-    double median = gsl_stats_median_from_sorted_data (D,1,npixels);
+    gsl_sort(D, 1, jmax-1);
+    double sigma = gsl_stats_sd(D,1,jmax-1);
+    double median = gsl_stats_median_from_sorted_data (D,1,jmax-1);
 
-    // sigma clipping here
-    int j, jmax = npixels;
+    // sigma clipping here: only using pixel not considered as object here
+    int j;
     while (1) {
       j=0;
        for (int i = 0; i < jmax; i++ ) {
