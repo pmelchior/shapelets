@@ -119,6 +119,9 @@ class SExFrame : public FitsImage<double> {
     unsigned short XMAX_IMAGE;
     unsigned short YMIN_IMAGE;
     unsigned short YMAX_IMAGE;
+    unsigned short XWIN_IMAGE;
+    unsigned short YWIN_IMAGE;
+    unsigned short FLUX_AUTO;
     unsigned short FLAGS;
     unsigned short CLASS_STAR;
   };
@@ -129,6 +132,9 @@ class SExFrame : public FitsImage<double> {
     int XMAX_IMAGE;
     int YMIN_IMAGE;
     int YMAX_IMAGE;
+    double XWIN_IMAGE;
+    double YWIN_IMAGE;
+    double FLUX_AUTO;
     unsigned char FLAGS;
     double CLASS_STAR;
   };

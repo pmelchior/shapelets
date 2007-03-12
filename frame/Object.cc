@@ -5,8 +5,8 @@
 Object::Object(unsigned int inid) {
   id = inid;
   flag = 0;
-  updateFXC = 1;
   blend = s_g = -1;
+  flux = centroid(0) = centroid(1) = -1;
 }
 
 unsigned int Object::getID() const {
@@ -18,7 +18,6 @@ const Grid& Object::getGrid() const {
 }
 
 Grid& Object::accessGrid() {
-  updateFXC = 1;
   return grid;
 }
 
@@ -27,7 +26,6 @@ const NumVector<double>& Object::getData() const {
 }
 
 NumVector<double>& Object::accessData() {
-  updateFXC = 1;
   return data;
 }
 
@@ -51,26 +49,29 @@ int Object::getSize(bool direction) const {
   return grid.getSize(direction);
 }
 
-const Point2D& Object::getCentroid() {
-  if (updateFXC) computeFluxCentroid();
-  return centroid;
-}
-
 const Point2D& Object::getCentroid() const {
   return centroid;
 }
 
-double Object::getFlux() {
-  if (updateFXC) computeFluxCentroid();
-  return flux;
+void Object::setCentroid(const Point2D& xc) {
+  centroid = xc;
+  std::ostringstream text;
+  text << "# Centroid set to ("<< centroid(0) << "/" << centroid(1) <<  ") by user." << std::endl;
+  history.append(text);
 }
 
 double Object::getFlux() const {
   return flux;
 }
 
+void Object::setFlux(double F) {
+  flux = F;
+  std::ostringstream text;
+  text << "# Flux set to " << flux << " by user." <<std::endl;
+  history.append(text);
+}
+
 NumMatrix<double> Object::get2ndBrightnessMoments() {
-  if (updateFXC) computeFluxCentroid();
   NumMatrix<double> Q(2,2);
   for (int i=0; i< grid.size(); i++) {
     Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i);
@@ -86,7 +87,6 @@ NumMatrix<double> Object::get2ndBrightnessMoments() {
 
 // ellipticity as defined in Bartelmann & Schneider (2001)
 complex<double> Object::getEllipticity() {
-  if (updateFXC) computeFluxCentroid();
   NumMatrix<double> Q = get2ndBrightnessMoments();
   complex<double> I(0,1);
   complex<double> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
@@ -108,10 +108,9 @@ void Object::computeFluxCentroid() {
   centroid(0) /= flux;
   centroid(1) /= flux;
   
-  updateFXC = 0;
   std::ostringstream text;
   text << "# Flux = " << flux << ", Centroid = ("<< centroid(0) << "/" << centroid(1);
-  text <<  ")" <<std::endl;
+  text <<  ")." <<std::endl;
   history.append(text);
 }
 

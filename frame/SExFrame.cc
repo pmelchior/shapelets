@@ -14,7 +14,7 @@ using namespace boost;
 typedef unsigned int uint;
 
 SExFrame::SExFrame (std::string fitsfile) : FitsImage<double>(fitsfile) {
-  SExCatFormat empty = {0,0,0,0,0,0,0};
+  SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
   sf = empty;
   catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
@@ -41,7 +41,7 @@ SExFrame::~SExFrame() {
 void SExFrame::readCatalog(std::string catfile) {
   // first inser empty object 0, since SExtractor starts with NUMBER 1
   objectList.clear();
-  SExCatObject s0 = {0,0,0,0,0,0,0};
+  SExCatObject s0 = {0,0,0,0,0,0,0,0,0,0};
   objectList.push_back(s0);
   // open cat file
   ifstream catalog (catfile.c_str());
@@ -81,6 +81,9 @@ void SExFrame::readCatalog(std::string catfile) {
       so.XMAX_IMAGE = atoi(column[sf.XMAX_IMAGE-1].c_str())-1;
       so.YMIN_IMAGE = atoi(column[sf.YMIN_IMAGE-1].c_str())-1;
       so.YMAX_IMAGE = atoi(column[sf.YMAX_IMAGE-1].c_str())-1;
+      so.XWIN_IMAGE = atof(column[sf.XWIN_IMAGE-1].c_str())-1;
+      so.YWIN_IMAGE = atof(column[sf.YWIN_IMAGE-1].c_str())-1;
+      so.FLUX_AUTO = atof(column[sf.FLUX_AUTO-1].c_str())-1;
       so.FLAGS = (unsigned char) atoi(column[sf.FLAGS-1].c_str());
       so.CLASS_STAR = (double) atof(column[sf.CLASS_STAR-1].c_str());
      // then push it on objectList
@@ -116,7 +119,7 @@ void SExFrame::fillObject(Object& O) {
   ymax = objectList[nr].YMAX_IMAGE;
 
   O.history = history;
-  text << "# Extracting Object " << O.getID() << ", ";
+  text << "# Extracting Object " << O.getID() << " (NUMBER = " <<  objectList[nr].NUMBER << "), ";
   text << "found in the area (" << xmin << "/" << ymin << ") to (";
   text << xmax << "/" << ymax << ")" << std::endl;
   O.history.append(text);
@@ -168,9 +171,8 @@ void SExFrame::fillObject(Object& O) {
     } 
     //now inside image region
     else {
-      // mask other objects in the frame and negative fluctuation in the inner region of 
-      // the object (outside they are downweighted by their high variance)
-      if (segMap(j) != nr && segMap(j) > 0) {
+      // mask other detected objects in the frame
+      if (segMap(j) != objectList[nr].NUMBER && segMap(j) > 0) {
  	objdata(i) = gsl_ran_gaussian (r, bg_rms);
  	if (!subtractBG)
   	  objdata(i) += bg_mean;
@@ -189,13 +191,15 @@ void SExFrame::fillObject(Object& O) {
   // Fill other quantities into Object
   O.setNoiseMeanRMS(bg_mean,bg_rms);
   O.setNoiseModel("GAUSSIAN");
+  O.computeFluxCentroid();
+  O.setFlux(objectList[nr].FLUX_AUTO);
+  Point2D centroid(objectList[nr].XWIN_IMAGE,objectList[nr].YWIN_IMAGE);
+  O.setCentroid(centroid);
 
   O.setDetectionFlag(objectList[nr].FLAGS);
   O.setStarGalaxyProbability(objectList[nr].CLASS_STAR);
   O.setBlendingProbability(computeBlendingProbability(nr));
-  O.setBaseFilename(FitsImage<double>::getFilename());
-  // this calculates flux and centroid;
-  O.getFlux();
+O.setBaseFilename(FitsImage<double>::getFilename());
 }
 
 void SExFrame::subtractBackground() {
@@ -207,17 +211,23 @@ void SExFrame::insertFormatField(std::string type, std::string columnnr) {
   unsigned int colnr = atoi(columnnr.c_str());
   if (type.compare("NUMBER")==0)
     sf.NUMBER = colnr;
-  if (type.compare("XMIN_IMAGE")==0)
+  else if (type.compare("XMIN_IMAGE")==0)
     sf.XMIN_IMAGE = colnr;
-  if (type.compare("XMAX_IMAGE")==0)
+  else if (type.compare("XMAX_IMAGE")==0)
     sf.XMAX_IMAGE = colnr;
-  if (type.compare("YMIN_IMAGE")==0)
+  else if (type.compare("YMIN_IMAGE")==0)
     sf.YMIN_IMAGE = colnr;
-  if (type.compare("YMAX_IMAGE")==0)
+  else if (type.compare("YMAX_IMAGE")==0)
     sf.YMAX_IMAGE = colnr;
-  if (type.compare("FLAGS")==0)
+  else if (type.compare("XWIN_IMAGE")==0)
+    sf.XWIN_IMAGE = colnr;
+  else if (type.compare("YWIN_IMAGE")==0)
+    sf.YWIN_IMAGE = colnr;
+  else if (type.compare("FLUX_AUTO")==0)
+    sf.FLUX_AUTO = colnr;
+  else if (type.compare("FLAGS")==0)
     sf.FLAGS = colnr;
-  if (type.compare("CLASS_STAR")==0)
+  else if (type.compare("CLASS_STAR")==0)
     sf.CLASS_STAR = colnr;
 }
 
@@ -242,6 +252,18 @@ void SExFrame::checkFormat() {
   }
   if (sf.YMAX_IMAGE == 0) {
     text << "SExFrame: YMAX_IMAGE keyword not provided!" << std::endl;
+    trouble = 1;
+  }
+  if (sf.XWIN_IMAGE == 0) {
+    text << "SExFrame: XWIN_IMAGE keyword not provided!" << std::endl;
+    trouble = 1;
+  }
+  if (sf.YWIN_IMAGE == 0) {
+    text << "SExFrame: YWIN_IMAGE keyword not provided!" << std::endl;
+    trouble = 1;
+  }
+  if (sf.FLUX_AUTO == 0) {
+    text << "SExFrame: FLUX_AUTO keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.FLAGS == 0) {

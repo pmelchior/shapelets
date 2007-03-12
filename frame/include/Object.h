@@ -49,11 +49,15 @@ class Object {
   /// Return size in units of the grid stepsize.
   int getSize(bool direction) const;
   /// Return flux of object.
+  /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
   double getFlux() const;
-  double getFlux();
-  /// Return the position of the objects centroid
+  /// Set flux of object.
+  void setFlux(double F);
+  /// Return the position of the object's centroid.
+  /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
   const Point2D& getCentroid() const;
-  const Point2D& getCentroid();
+  /// Set the position of the object's centroid.
+  void setCentroid(const Point2D& xc);
   /// Return 2nd brightness moments.
   /// The 2nd brightness moments are defined relative to the centroid computed
   /// with getCentroid().
@@ -111,6 +115,9 @@ class Object {
   void save(std::string fitsfile);
   /// History of the object
   History history;
+  /// Computes the flux and the position of the centroid of the object from pixel data.
+  void computeFluxCentroid();
+
   
  private:
   unsigned int id;
@@ -118,8 +125,6 @@ class Object {
   Grid grid;
   Point2D centroid;
   double scaleSize, flux, noise_mean, noise_rms, s_g, blend;
-  void computeFluxCentroid();
-  bool updateFXC;
   unsigned short flag, blended;
   std::string noisemodel, basefilename;
 };
