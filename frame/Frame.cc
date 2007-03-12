@@ -224,7 +224,7 @@ unsigned int Frame::getNumberOfObjects() {
 // cut the image to a small region around the object
 // and set all pixels to zero than are not related to the image
 void Frame::fillObject(Object& O) {
-  if (O.getID() != 0) {
+  if (O.getID() > 0 && O.getID() <= numberofObjects) {
 
     // for artificial noise for area contaminated by different object
     const gsl_rng_type * T;
@@ -347,6 +347,10 @@ void Frame::fillObject(Object& O) {
     O.setBaseFilename(FitsImage<double>::getFilename());
     // this calculates flux and centroid;
     O.getFlux();
+  } else {
+    text.str("# Frame: This Object does not exist!\n");
+    O.history.append(text);
+    terminate();
   }
 }
 
