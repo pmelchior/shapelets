@@ -288,8 +288,7 @@ void Frame::fillObject(Object& O) {
     // int the end only object data into new vector of smaller size, the rest will
     // filled up with artificial noise
     NumVector<double>& objdata = O.accessData();
-
-    objdata = NumVector<double>((xmax-xmin+1)*(ymax-ymin+1));
+    objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     const NumVector<double>& data = FitsImage<double>::getData();
     list<int>::iterator iter;
     for (int i =0; i < objdata.size(); i++) {

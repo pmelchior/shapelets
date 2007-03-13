@@ -4,7 +4,7 @@
 /// 2D Composition class.
 /// Provides values of a 2D composite shapelet function 
 /// \f$f(x0,x1) = \sum f_{n0,n1} \cdot B_{n0,n1}(x0,x1)\f$.\n
-/// A default Grid will be defined on construction, that will be appropriatly sized
+/// A default Grid will be defined on construction, that will be appropriately sized
 /// to plot the whole image and all included details.
 
 #include <Shapelets2D.h>
@@ -16,7 +16,7 @@
 class Composite2D : private Shapelets2D {
  public:
   /// Default constructor.
-  /// Dont't use it for explicit composition.
+  /// Don't use it for explicit composition.
   Composite2D();
   /// Argumented constructor.
   /// Different shapelet orders are allowed by giving matrix of appropriate dimensions.
@@ -47,10 +47,10 @@ class Composite2D : private Shapelets2D {
   /// Set centroid position \f$x_c\f$
   void setCentroid(const Point2D& inxcentroid);
   /// Get active Grid.
-  /// This is especially usefull for retrieving the default grid.
+  /// This is especially useful for retrieving the default grid.
   const Grid& getGrid();
   /// Set new Grid.
-  /// This changes the default Grid and therefore also the behaviour of evalGrid(),
+  /// This changes the default Grid and therefore also the behavior of evalGrid(),
   /// which depends on the stepsize between the grid points.
   void setGrid(const Grid& ingrid);
   /// Evaluate \f$f(x)\f$.
