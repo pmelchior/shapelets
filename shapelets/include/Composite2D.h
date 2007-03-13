@@ -23,8 +23,11 @@ class Composite2D : private Shapelets2D {
   Composite2D(double beta, Point2D& xcentroid, const NumMatrix<double>& startCoeffs);
   /// Copy operator
   Composite2D & operator = (const Composite2D &source);
-  /// Set maximal order for composition in direction (0/1).
+  /// Get maximal order for composition in direction (0/1).
   int getOrder(bool direction) const;
+  /// Get \f$n_{max}\f$, the maximum order of the shapelet model.
+  /// This assumes that the orders in direction 0 and 1 are identical.
+  int getNMax() const;
   /// Set the maximum composition order without affecting the shapelet coefficients.
   /// This lowers the composition order to see effect of truncation. */
   void setOrderLimit(bool direction, int orderlimit);

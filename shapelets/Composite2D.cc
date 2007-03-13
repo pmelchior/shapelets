@@ -47,6 +47,11 @@ int Composite2D::getOrder(bool direction) const{
   else return GSL_MIN_INT(order1,orderlimit1);
 }
 
+int Composite2D::getNMax() const {
+  if (order0==order1 && orderlimit0 == orderlimit1) 
+    return GSL_MIN_INT(order0,orderlimit0);
+}
+
 void Composite2D::setOrderLimit(bool direction, int orderlimit) {
   // only set orderlimit, if it's really lower then max order
   if (Shapelets2D::getOrder(direction) >= orderlimit) {
