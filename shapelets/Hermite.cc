@@ -6,14 +6,10 @@ using namespace boost::numeric::ublas;
 Hermite::Hermite () {
 }
 
-// for some unknown reason the entries of the uBLAS matrices have to be set to 0
-// or they will be unequal 0 at any occasion of their choice. 
 Hermite::Hermite (unsigned int order) {
   computed = 0;
   HermiteCoeffs = boost::numeric::ublas::triangular_matrix<double,lower>(order+1,order+1);
-  for(int i =0; i <= order; i++)
-    for(int j =0; j <=i; j++)
-      HermiteCoeffs(i,j)=0;
+  HermiteCoeffs.clear();
   computeHermiteCoeffs(order);
 }
 

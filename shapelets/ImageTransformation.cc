@@ -83,7 +83,7 @@ void ImageTransformation::shear(NumMatrix<Complex>& polarCoeffs, double gamma0, 
     }
     //}
 }
-void ImageTransformation::flex(NumMatrix<double>& cartesianCoeffs, NumMatrix<double>& dGamma, ostringstream& history) {
+void ImageTransformation::flex(NumMatrix<double>& cartesianCoeffs, const NumMatrix<double>& dGamma, ostringstream& history) {
  history << "# Applying flexion to the image by " << dGamma << endl;
  NumMatrix<double> flexed(cartesianCoeffs.getRows(),cartesianCoeffs.getColumns());
  for (int n1=0; n1 < cartesianCoeffs.getRows(); n1++) {
@@ -193,7 +193,7 @@ void ImageTransformation::brighten(NumMatrix<double>& cartesianCoeffs, NumMatrix
   }
 }
 
-void ImageTransformation::convolve(NumMatrix<double>& cartesianCoeffs, double& beta, NumMatrix<double>& KernelCoeffs, double beta_kernel, ostringstream& history) {
+void ImageTransformation::convolve(NumMatrix<double>& cartesianCoeffs, double& beta, const NumMatrix<double>& KernelCoeffs, double beta_kernel, ostringstream& history) {
   history << "# Convolving image with kernel of order " << KernelCoeffs.getRows() - 1;
   history << ", beta = " << beta_kernel << endl;
   int nmax_orig = cartesianCoeffs.getRows() -1;
@@ -216,7 +216,7 @@ void ImageTransformation::convolve(NumMatrix<double>& cartesianCoeffs, double& b
   beta = beta_convolved;
 }
 
-void ImageTransformation::deconvolve(NumMatrix<double>& cartesianCoeffs, double& beta, NumMatrix<double>& KernelCoeffs, double beta_kernel, ostringstream& history) {
+void ImageTransformation::deconvolve(NumMatrix<double>& cartesianCoeffs, double& beta, const NumMatrix<double>& KernelCoeffs, double beta_kernel, ostringstream& history) {
   history << "# Deconvolving image with kernel of order " << KernelCoeffs.getRows() - 1;
   history << ", beta = " << beta_kernel << endl;
   int nmax_convolved = cartesianCoeffs.getRows() -1;
@@ -260,7 +260,7 @@ void ImageTransformation::rescale(NumMatrix<double>& cartesianCoeffs, double bet
   
 }
  
-void ImageTransformation::makeConvolutionMatrix(NumMatrix<double>& P, NumMatrix<double>& KernelCoeffs, double beta_orig, double beta_kernel, double beta_convolved, int nmax_orig, int nmax_convolved) {
+void ImageTransformation::makeConvolutionMatrix(NumMatrix<double>& P, const NumMatrix<double>& KernelCoeffs, double beta_orig, double beta_kernel, double beta_convolved, int nmax_orig, int nmax_convolved) {
   int nmax = GSL_MAX_INT(nmax_orig,nmax_convolved);
   int nmax_kernel = KernelCoeffs.getRows() - 1;
   nmax = GSL_MAX_INT(nmax_kernel,nmax);

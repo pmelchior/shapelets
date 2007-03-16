@@ -123,7 +123,7 @@ class ShapeletObject : public Composite2D {
   void shear(complex<double> gamma);
   /// Apply flexion to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
-  void flex(NumMatrix<double>& Dgamma);
+  void flex(const NumMatrix<double>& Dgamma);
   /// Apply lensing operations converge, shear and flex to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
   void lens(double kappa, complex<double> gamma, complex<double> F, complex<double> G);
@@ -137,10 +137,10 @@ class ShapeletObject : public Composite2D {
   void brighten(double factor);
   /// Convolve the image with another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void convolve(NumMatrix<double>& KernelCoeffs, double beta_kernel);
+  void convolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel);
   /// Deconvolve the image from another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void deconvolve(NumMatrix<double>& KernelCoeffs, double beta_kernel);
+  void deconvolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel);
   /// Rescale the image.
   /// This changes the coefficients such, that they show the same object with
   /// the new scale size.\n

@@ -31,7 +31,7 @@ class ImageTransformation {
   /// see Bacon et al. (2005), arxiv: astro-ph/0504478 and 
   /// Goldberg/Bacon, ApJ 619, 741, 2005.\n
   /// WARNING: The operators in the paper are wrong, implementation uses correct form.
-  void flex(NumMatrix<double>& cartesianCoeffs, NumMatrix<double>& dGamma, std::ostringstream& history);
+  void flex(NumMatrix<double>& cartesianCoeffs, const NumMatrix<double>& dGamma, std::ostringstream& history);
   /// Translate the image by \f$dx0, dx1\f$.
   /// This is not done by transformation of the coefficients, 
   /// but by shifting the centroid poisition.
@@ -43,15 +43,15 @@ class ImageTransformation {
   void flipX(NumMatrix<Complex>& polarCoeffs, std::ostringstream& history);
   /// Brighten the image by the given factor.
   void brighten(NumMatrix<double>& cartesianCoeffs, NumMatrix<Complex>& polarCoeffs, double factor, std::ostringstream& history);
-  void convolve(NumMatrix<double>& cartesianCoeffs, double& beta, NumMatrix<double>& KernelCoeffs, double beta_kernel, std::ostringstream& history);  
-  void deconvolve(NumMatrix<double>& cartesianCoeffs, double& beta, NumMatrix<double>& KernelCoeffs, double beta_kernel, std::ostringstream& history);
+  void convolve(NumMatrix<double>& cartesianCoeffs, double& beta, const NumMatrix<double>& KernelCoeffs, double beta_kernel, std::ostringstream& history);  
+  void deconvolve(NumMatrix<double>& cartesianCoeffs, double& beta, const NumMatrix<double>& KernelCoeffs, double beta_kernel, std::ostringstream& history);
   /// Change the scale size of the image by using rescaling relation.
   /// see Paper I, appendix A.
   void rescale(NumMatrix<double>& cartesianCoeffs, double beta, double newbeta, std::ostringstream& history);
   void makeRescalingMatrix(NumMatrix<double>& betaTrafo, double beta1, double beta2, int nCoeffs, NumMatrix<int>& nVector);
 
  private:
-  void makeConvolutionMatrix(NumMatrix<double>& P, NumMatrix<double>& KernelCoeffs, double beta_orig, double beta_kernel, double beta_convolved, int nmax_orig, int nmax_convolved);
+  void makeConvolutionMatrix(NumMatrix<double>& P, const NumMatrix<double>& KernelCoeffs, double beta_orig, double beta_kernel, double beta_convolved, int nmax_orig, int nmax_convolved);
   void makeBTensor(boost::multi_array<double,3>& bt, double alpha_1, double beta_1, double gamma_1, int nmax);
 };
 

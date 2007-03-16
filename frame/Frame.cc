@@ -345,7 +345,7 @@ void Frame::fillObject(Object& O) {
     O.setNoiseModel("POISSONIAN");
     O.setBaseFilename(FitsImage<double>::getFilename());
     // this calculates flux and centroid;
-    O.getFlux();
+    O.computeFluxCentroid();
   } else {
     text.str("# Frame: This Object does not exist!\n");
     O.history.append(text);

@@ -159,7 +159,7 @@ void ShapeletObject::shear(Complex gamma) {
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-void ShapeletObject::flex(NumMatrix<double>& Dgamma) {
+void ShapeletObject::flex(const NumMatrix<double>& Dgamma) {
   // since flexing mixes term with n+-3 we have to extend matrix dimension by 3
   //history << "# Increasing order nmax by 3 for flexing." << endl;
   polarCoeffs.resize(polarCoeffs.getRows()+3,polarCoeffs.getColumns()+3);
@@ -237,7 +237,7 @@ void ShapeletObject::brighten(double factor) {
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-void ShapeletObject::convolve(NumMatrix<double>& KernelCoeffs, double beta_kernel) {
+void ShapeletObject::convolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel) {
   // first triangularize coeffs
   NumMatrix<double> triKernelCoeffs;
   triangularizeCoeffs(KernelCoeffs,triKernelCoeffs,0);
@@ -248,7 +248,7 @@ void ShapeletObject::convolve(NumMatrix<double>& KernelCoeffs, double beta_kerne
   //  Composite2D::setBeta(beta);
 }
 
-void ShapeletObject::deconvolve(NumMatrix<double>& KernelCoeffs, double beta_kernel) {
+void ShapeletObject::deconvolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel) {
   // first triangularize coeffs
   NumMatrix<double> triKernelCoeffs;
   triangularizeCoeffs(KernelCoeffs,triKernelCoeffs,0);

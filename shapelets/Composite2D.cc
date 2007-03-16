@@ -154,10 +154,12 @@ double Composite2D::evalGridPoint(const Point2D& x) {
 
 void Composite2D::evalGrid() {
   if (changeGrid) defineGrid();
-  if ((orderlimit0 != orderlimit1) || (shapeletCoeffs(orderlimit0-1,orderlimit1-1)!=0))
+  if ((orderlimit0 != orderlimit1) || (shapeletCoeffs(orderlimit0-1,orderlimit1-1)!=0)) {
+    if (model.size() != grid.size())
+      model.resize(grid.size());
     for (int j = 0; j < grid.size(); j +=1)
       model(j) = evalGridPoint(grid(j));
-  else {
+  } else {
     // this approach only works for square, upper triangular coeff matrices
     // thus, nnmax = orderlimit0 = orderlimit1
     int nCoeffs = getNCoeffs(orderlimit0);

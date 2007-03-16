@@ -13,7 +13,7 @@ Profile::Profile(const Point2D& instart, const Point2D& instop) {
   stop = instop;
   center = Point2D((stop(0)-start(0))/2 + start(0)-1,(stop(1)-start(1))/2 + start(1)-1); 
   pixels = GSL_MAX_INT((int)(floor(stop(0)) - floor(start(0))), (int) (floor(stop(1)) - floor(start(1))));
-  distance_value = boost::numeric::ublas::matrix<double>(pixels,2);
+  distance_value.resize(pixels,2);
 }
 
 double Profile::getDistance(unsigned int i) {
