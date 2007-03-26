@@ -17,9 +17,16 @@
 /// (in <tt>ASCII_HEAD</tt> format) and a segmentation map (which is by SExtractor 
 /// generated if <tt>CHECKIMAGE_TYPE SEGMENTATION</tt> is specified).\n
 /// The required catalog
-/// parameters are <tt>NUMBER, XMIN_IMAGE, XMAX_IMAGE, YMIN_IMAGE, YMAX_IMAGE, FLAGS,
-/// CLASS_STAR</tt>; the ordering is not important.\n
-/// The segmentation map is expected to have TINT FITS datatype (which is not provided by
+/// parameters are 
+/// - <tt>NUMBER,</tt>
+/// - <tt>XMIN_IMAGE, XMAX_IMAGE, YMIN_IMAGE, YMAX_IMAGE,</tt>
+/// - <tt>XWIN_IMAGE,YWIN_IMAGE,</tt>
+/// - <tt>FLUX_AUTO,</tt>
+/// - <tt>FLAGS</tt> and
+/// - <tt>CLASS_STAR</tt>;
+///
+/// the ordering is not important.\n
+/// The segmentation map is expected to have <tt>TINT</tt> FITS datatype (which is not provided by
 /// SExtractor). To convert (and compress) it one can use the <tt>fitscopy</tt> tool from 
 /// the FITS toolbox:
 /// \code
@@ -31,8 +38,7 @@
 ///
 /// The Object entities will have these features:
 /// - The frames is quadratic such that the area within the object was located 
-/// by SExtractor (<tt>XMIN..XMAX,YMIN..YMAX</tt>), extended by the halo, is completely 
-/// included and additional border area is included.
+/// by SExtractor (<tt>XMIN..XMAX,YMIN..YMAX</tt>) plus additional border area is included.
 /// - Overlapping objects are masked with noise.
 /// - If subtractBackground() has been called before, the global background mean is
 /// subtracted from the pixel data.
