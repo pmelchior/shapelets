@@ -213,8 +213,10 @@ void ShapeletObject::lens(double kappa, Complex gamma, Complex F, Complex G) {
 } 
   
 void ShapeletObject::translate(double dx0, double dx1) {
-  trafo.translate(Composite2D::accessCentroid(),dx0,dx1,text);
+  trafo.translate(cartesianCoeffs,Composite2D::getBeta(),dx0,dx1,text);
   history.append(text);
+  c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);
+  Composite2D::setCoeffs(cartesianCoeffs);
 }
 
 void ShapeletObject::circularize() {

@@ -128,6 +128,9 @@ class ShapeletObject : public Composite2D {
   /// The dimension of the coefficient matrix will be increased by 3.
   void lens(double kappa, complex<double> gamma, complex<double> F, complex<double> G);
   /// Translate the image by \f$dx0, dx1\f$.
+  /// This is only valid for small translations (less than 1 pixel). 
+  /// For larger translations, adjust the centroid by calling setCentroid().\n
+  /// \f$dx0, dx1\f$ are assumed to be in pixel scale.
   void translate(double dx0, double dx1);
   /// Circularize the image.
   void circularize();
@@ -144,7 +147,8 @@ class ShapeletObject : public Composite2D {
   /// Rescale the image.
   /// This changes the coefficients such, that they show the same object with
   /// the new scale size.\n
-  /// Normally this can be achieved by setBeta() more easily.
+  /// This is only correct for small changes of \f$\beta\f$.
+  /// Larger changes of \f$\beta\f$ can be achieved by setBeta().
   void rescale(double newBeta);
 
   // method for making a profile plot

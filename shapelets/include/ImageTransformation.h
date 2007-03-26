@@ -9,8 +9,8 @@
 #include <boost/multi_array.hpp>
 
 /// Class for image transformation in shapelet space.
-/// see Paper III, chapter 5 for details
-/// All transformations are logged in history.
+/// See Paper I, sect. 3.3 and Paper III, sect. 5 for details.\n
+/// All transformations are logged in History.
 
 class ImageTransformation {
   typedef complex<double> Complex;
@@ -33,9 +33,8 @@ class ImageTransformation {
   /// WARNING: The operators in the paper are wrong, implementation uses correct form.
   void flex(NumMatrix<double>& cartesianCoeffs, const NumMatrix<double>& dGamma, std::ostringstream& history);
   /// Translate the image by \f$dx0, dx1\f$.
-  /// This is not done by transformation of the coefficients, 
-  /// but by shifting the centroid poisition.
-  void translate(Point2D& xcentroid, double dx0, double dx1, std::ostringstream& history);
+  /// This is only valid for small translations (below 1 pixel).
+  void translate(NumMatrix<double>& cartesianCoeffs, double beta, double dx0, double dx1, std::ostringstream& history);
   /// Circularize the image.
   /// The image will be averaged over the polar angle and then have a radial dependency only.
   void circularize(NumMatrix<Complex>& polarCoeffs, std::ostringstream& history);

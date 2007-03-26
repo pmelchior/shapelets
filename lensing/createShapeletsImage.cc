@@ -93,7 +93,7 @@ void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& s
     for (int i=0; i<coeffs.getRows();i++)
       for (int j=0; j<coeffs.getColumns();j++)
 	coeffs(i,j) = averageCoeffs(i,j) + gsl_ran_gaussian (r, sigmaCoeffs(i,j));
-    
+
     s->setCartesianCoeffs(coeffs);
 
     // beta: uniform between betamin and betamax
@@ -108,12 +108,11 @@ void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& s
     // since images are aligned along x axis
     // rotate them by any angle between 0 and 2 pi
     s->rotate(2*M_PI*gsl_rng_uniform(r));
-    
+
     // normalize flux for comparability later
     s->brighten(1./s->integrate());
     s->brighten(beta*beta);
-    //s->brighten(beta-1);
-    
+
     // save as sif file
     std::ostringstream sif_filename;
     sif_filename << path << "shapelets_" << n << ".sif";
@@ -170,29 +169,26 @@ void createShapeletImagesPCA(double betamin, double betamax,std::string path, in
   sigma(0,1) = 0.015;
   sigma(1,0) = 0.012;
   // now adding additional scatter in minor coeffs
-  sigma(0,3) = 0.005;
-  sigma(0,5) = 0.005;
-  sigma(0,7) = 0.005;
-  sigma(3,0) = 0.005;
-  sigma(5,0) = 0.005;
-  sigma(7,0) = 0.005;
+  sigma(0,8) = 0.009; // copy from sigma(8,0)
+  sigma(0,6) = 0.010; // copy from sigma(6,0)
   sigma(1,1) = 0.003;
-  sigma(1,2) = 0.003;
-  sigma(1,3) = 0.003;
-  sigma(1,4) = 0.003;
-  sigma(1,5) = 0.003;
-  sigma(1,6) = 0.003;
-  sigma(2,1) = 0.003;
-  sigma(3,1) = 0.003;
-  sigma(4,1) = 0.003;
-  sigma(5,1) = 0.003;
-  sigma(6,1) = 0.003;
-  sigma(2,3) = 0.004;
-  sigma(2,4) = 0.004;
-  sigma(2,5) = 0.004;
-  sigma(3,2) = 0.004;
-  sigma(4,2) = 0.004;
-  sigma(5,2) = 0.004;
+  sigma(3,3) = 0.005;
+  sigma(4,4) = 0.006;
+  sigma(0,3) = sigma(3,0) = 0.005;
+  sigma(0,5) = sigma(5,0) = 0.005;
+  sigma(0,7) = sigma(7,0) = 0.005;
+  sigma(1,2) = sigma(2,1) = 0.003;
+  sigma(1,3) = sigma(3,1) = 0.003;
+  sigma(1,4) = sigma(4,1) = 0.003;
+  sigma(1,5) = sigma(5,1) = 0.003;
+  sigma(1,6) = sigma(6,1) = 0.003;
+  sigma(1,7) = sigma(7,1) = 0.003;
+  sigma(2,6) = sigma(6,2) = 0.002;
+  sigma(2,3) = sigma(3,2) = 0.002;
+  sigma(2,4) = sigma(4,2) = 0.002;
+  sigma(2,5) = sigma(5,2) = 0.002;
+  sigma(3,4) = sigma(4,3) = 0.001;
+  sigma(3,5) = sigma(5,3) = 0.001;
   createShapeletImages(coeffs,sigma,betamin,betamax,path,N);
 }
 

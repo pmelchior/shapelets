@@ -153,10 +153,26 @@ void ImageTransformation::flex(NumMatrix<double>& cartesianCoeffs, const NumMatr
      cartesianCoeffs(n1,n2) += flexed(n1,n2);
 }
 
-void ImageTransformation::translate(Point2D& xcentroid, double dx0, double dx1, ostringstream& history) {
-  history << "# Translating image by " << dx0 << "/" << dx1 << endl;
-  xcentroid(0) += dx0;
-  xcentroid(1) += dx1;
+void ImageTransformation::translate(NumMatrix<double>& cartesianCoeffs, double beta, double dx1, double dx2, ostringstream& history) {
+  history << "# Translating image by " << dx1 << "/" << dx2 << endl;
+  // rescale dx1 and dx2 to be in units of beta, 
+  // change sign because eq. in paper gives invers transformation
+  dx1 *= -1./beta;
+  dx2 *= -1./beta;
+  // copy coeffs and calculate new coeffs according to eq. (32) in shapelets I.
+  NumMatrix<double> tmp = cartesianCoeffs;
+  for (int n1=0; n1 < cartesianCoeffs.getRows(); n1++) {
+    for (int n2=0; n2 < cartesianCoeffs.getColumns(); n2++) {
+      if (n1>0)
+	cartesianCoeffs(n1,n2) -= dx1*M_SQRT1_2*tmp(n1-1,n2);
+      if (n2>0)
+	cartesianCoeffs(n1,n2) -= dx2*M_SQRT1_2*tmp(n1,n2-1);
+      if (n1< cartesianCoeffs.getRows()-1)
+	cartesianCoeffs(n1,n2) += dx1*M_SQRT1_2*tmp(n1+1,n2);
+      if (n2< cartesianCoeffs.getColumns()-1)
+	cartesianCoeffs(n1,n2) += dx2*M_SQRT1_2*tmp(n1,n2+1);
+    }
+  }
 }
 
 void ImageTransformation::circularize(NumMatrix<Complex>& polarCoeffs, ostringstream& history) {
