@@ -279,7 +279,7 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<double>& Q) const {
 }
 
 // see Paper I, eq. (28)
-double Composite2D::getShapeletsRMSRadius() const {
+double Composite2D::getShapeletRMSRadius() const {
   double rms = 0;
   for (int l0 = 0; l0 <= orderlimit0; l0++) {
     for (int l1 = 0; l1 <= orderlimit1; l1++) {

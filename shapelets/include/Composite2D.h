@@ -74,7 +74,7 @@ class Composite2D : private Shapelets2D {
   void getShapelet2ndMoments(NumMatrix<double>& Q) const;
   /// Calculate the object RMS radius from the coefficients.
   /// see Paper I, eq. 28
-  double getShapeletsRMSRadius() const;
+  double getShapeletRMSRadius() const;
  private:
   Grid grid;
   NumMatrix<double> shapeletCoeffs, M;
