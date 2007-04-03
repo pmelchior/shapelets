@@ -149,8 +149,8 @@ void ShapeletObject::converge(double kappa) {
 void ShapeletObject::shear(Complex gamma) {
   // shearing mixes terms with n+-2, so we have extend matrix
   //history << "# Increasing order nmax by 2 for shearing." << endl;
-  polarCoeffs.resize(polarCoeffs.getRows()+2,polarCoeffs.getColumns()+2);
-  cartesianCoeffs.resize(cartesianCoeffs.getRows()+2,cartesianCoeffs.getColumns()+2);
+  polarCoeffs.resize_clear(polarCoeffs.getRows()+2,polarCoeffs.getColumns()+2);
+  cartesianCoeffs.resize_clear(cartesianCoeffs.getRows()+2,cartesianCoeffs.getColumns()+2);
   c2p.setOrder(polarCoeffs.getRows()-1);
   
   trafo.shear(polarCoeffs,real(gamma),imag(gamma),text);
@@ -162,8 +162,8 @@ void ShapeletObject::shear(Complex gamma) {
 void ShapeletObject::flex(const NumMatrix<double>& Dgamma) {
   // since flexing mixes term with n+-3 we have to extend matrix dimension by 3
   //history << "# Increasing order nmax by 3 for flexing." << endl;
-  polarCoeffs.resize(polarCoeffs.getRows()+3,polarCoeffs.getColumns()+3);
-  cartesianCoeffs.resize(cartesianCoeffs.getRows()+3,cartesianCoeffs.getColumns()+3);
+  polarCoeffs.resize_clear(polarCoeffs.getRows()+3,polarCoeffs.getColumns()+3);
+  cartesianCoeffs.resize_clear(cartesianCoeffs.getRows()+3,cartesianCoeffs.getColumns()+3);
   c2p.setOrder(cartesianCoeffs.getRows()-1);
   
   trafo.flex(cartesianCoeffs,Dgamma,text);
@@ -199,9 +199,9 @@ void ShapeletObject::lens(double kappa, Complex gamma, Complex F, Complex G) {
 
   // we have to extend the coeffs to fit biggest matrix
   // which is the flexed one
-  oldCoeffs.resize(oldCoeffs.getRows()+3,oldCoeffs.getColumns()+3);
-  converged.resize(converged.getRows()+3,converged.getColumns()+3);
-  sheared.resize(sheared.getRows()+1,sheared.getColumns()+1);
+  oldCoeffs.resize_clear(oldCoeffs.getRows()+3,oldCoeffs.getColumns()+3);
+  converged.resize_clear(converged.getRows()+3,converged.getColumns()+3);
+  sheared.resize_clear(sheared.getRows()+1,sheared.getColumns()+1);
 
   if (kappa !=0) {
     flexed += converged;
@@ -262,11 +262,13 @@ void ShapeletObject::deconvolve(const NumMatrix<double>& KernelCoeffs, double be
 }
 
 void ShapeletObject::rescale(double newBeta) {
+  // since the rescaling transformation is only valid for infinite expansions
+  // raising the order here helps to obtain proper results
+  // But: The selected nmax is arbitrary; therefore we keep nmax fixed.
   trafo.rescale(cartesianCoeffs,Composite2D::getBeta(),newBeta,text);
   history.append(text);
   c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);
   Composite2D::setCoeffs(cartesianCoeffs);
-  Composite2D::setBeta(newBeta);
 }
 
 void ShapeletObject::getProfile(const Point2D& start, NumVector<double>& values, int axsize) {

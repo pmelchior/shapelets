@@ -260,22 +260,6 @@ void ImageTransformation::deconvolve(NumMatrix<double>& cartesianCoeffs, double&
   beta = beta_orig;
 }
 
-void ImageTransformation::rescale(NumMatrix<double>& cartesianCoeffs, double beta, double newbeta, ostringstream& history) {
-  history << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
-  int nmax = cartesianCoeffs.getRows() -1;
-  int nCoeffs = getNCoeffs(nmax);
-  NumMatrix<int> nVector;
-  makeNVector(nVector,nCoeffs,nmax);
-  NumVector<double> coeffVector(nCoeffs);
-  matrixMapping(cartesianCoeffs,coeffVector,0,nVector,nCoeffs);
-  NumMatrix<double> R(nCoeffs,nCoeffs);
-  makeRescalingMatrix(R,beta,newbeta,nCoeffs,nVector);
-  NumVector<double> coeffVector_;
-  coeffVector_ = R * coeffVector;
-  vectorMapping(coeffVector_,cartesianCoeffs,nVector,nCoeffs);
-  
-}
- 
 void ImageTransformation::makeConvolutionMatrix(NumMatrix<double>& P, const NumMatrix<double>& KernelCoeffs, double beta_orig, double beta_kernel, double beta_convolved, int nmax_orig, int nmax_convolved) {
   int nmax = GSL_MAX_INT(nmax_orig,nmax_convolved);
   int nmax_kernel = KernelCoeffs.getRows() - 1;
@@ -377,35 +361,67 @@ void ImageTransformation::makeBTensor(boost::multi_array<double,3>& bt, double a
 	bt[l][m][n] *= prefactor[l][m][n];
 }
 
-// see Paper I, appendix A
-// modified for 2D shapelets with equal number of coefficients
-// beta1 is new beta, beta2 is beta for which coeffs were derived
-void ImageTransformation::makeRescalingMatrix(NumMatrix<double>& betaTrafo, double beta1, double beta2, int nCoeffs, NumMatrix<int>& nVector) {
-  int n1,n2,n1_,n2_;
+void ImageTransformation::rescale(NumMatrix<double>& cartesianCoeffs, double beta, double newbeta, ostringstream& history) {
+  history << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
+  int nmax = cartesianCoeffs.getRows() -1;
+  int nCoeffs = getNCoeffs(nmax);
+  NumMatrix<int> nVector;
+  makeNVector(nVector,nCoeffs,nmax);
+  NumVector<double> coeffVector(nCoeffs);
+  matrixMapping(cartesianCoeffs,coeffVector,0,nVector,nCoeffs);
+  NumMatrix<double> R(nCoeffs,nCoeffs);
+  makeRescalingMatrix(R,newbeta,beta,nCoeffs,nVector);
+
+  //NumVector<double> coeffVector_;
+  NumVector<double> coeffVector_ = R * coeffVector;
+  vectorMapping(coeffVector_,cartesianCoeffs,nVector,nCoeffs);
+  
+}
+ 
+// the 2D rescaling matrix is obtained by a tensor multiplications of
+// the 1D rescaling matrix with itself.
+void ImageTransformation::makeRescalingMatrix(NumMatrix<double>& M2D, double beta2, double beta1, int nCoeffs, NumMatrix<int>& nVector) {
+  int nmax = getNMax(nCoeffs);
+  // compute 1D rescaling matrix according to my own calculations
+  NumMatrix<double>M1D(nmax+1,nmax+1);
+  make1DRescalingMatrix(M1D,beta2,beta1,nmax);
+  // now build tensor product of 1D matrix to give 2D rescaling matrix
+  int i1,i2,j1,j2;
+  for (int l = 0; l < nCoeffs; l++) {
+    i1 = getN1(nVector,l);
+    i2 = getN2(nVector,l);
+    // here we assume that both sets of coefficients have same length
+    for (int i=0; i< nCoeffs; i++) {
+       j1 = getN1(nVector,i);
+       j2 = getN2(nVector,i);
+       M2D(l,i) = M1D(i1,j1)*M1D(i2,j2);
+    }
+  }
+}
+
+// this does not look alike, but is effectively identical to eq. (A3) in Paper I,
+// but obtained by myself. This formulation contains less factorials and powers
+// and is therefore somewhat faster for large matrices than the original formulation.
+void ImageTransformation::make1DRescalingMatrix(NumMatrix<double>& M1D, double beta2, double beta1, int nmax) {
   double b1 = (beta1*beta1 - beta2*beta2)/(beta1*beta1 + beta2*beta2);
   double b2 = 2*beta1*beta2/(beta1*beta1 + beta2*beta2);
-  for (int coeff=0; coeff < nCoeffs; coeff++) {
-    n1 = getN1(nVector,coeff);
-    n2 = getN2(nVector,coeff);
-    for (int coeff_=0; coeff_ < nCoeffs; coeff_++) {
-      n1_ = getN1(nVector,coeff_);
-      n2_ = getN2(nVector,coeff_);
-      // now we know position in coeff matrix
-      // we can then get trafo of the coeff 
-      double entry = 0;
-      for(int l=0; l <= GSL_MIN_INT(n1,n1_); l++) {
-	for (int m=0; m <= GSL_MIN_INT(n2,n2_); m++) {
-	  // the Pi function
-	  if (((n1%2 == 0 && n1_%2 ==0 && l%2 ==0) || (n1%2 == 1 && n1_%2 == 1 && l%2 == 1)) && (((n2%2 == 0 && n2_%2 ==0 && m%2 ==0) || (n2%2 == 1 && n2_%2 == 1 && m%2 == 1)))) 
-	    entry += gsl_pow_int(-1,(n1_-l)/2) * gsl_pow_int(-1,(n2_-m)/2) *
-	      sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n1_)*gsl_sf_fact(n2)*gsl_sf_fact(n2_)) /
-	      (gsl_sf_fact((n1-l)/2)*gsl_sf_fact((n1_-l)/2)*gsl_sf_fact(l) *
-	       gsl_sf_fact((n2-m)/2)*gsl_sf_fact((n2_-m)/2)*gsl_sf_fact(m)) *
-	      gsl_pow_int(0.5*b1,(n1+n1_)/2 - l + (n2+n2_)/2 - m) *
-	      gsl_pow_int(b2,l+m+1);
+  // loop over all entries i,j
+  for (int i=0; i<= nmax; i++) {
+    for (int j=0; j<= nmax; j++) {
+      M1D(i,j) = 0;
+      // the three sums over n,m,l
+      for (int n=0; n <= (i+j)/2; n++) {
+	for (int m=0; m <= n; m++) {
+	  for (int l=0; l<= m; l++) {
+	    // the selection function S(i,j,n,m,l)
+	    if (i==(n-m+2*l) && j==(n+m-2*l)) {
+	      M1D(i,j) += gsl_pow_int(-1,l) / (gsl_sf_fact(n-m)*gsl_sf_fact(m-l)*gsl_sf_fact(l)) *
+		gsl_pow_int(2*b2,n-m) * gsl_pow_int(b1,m);
+	    }
+	  }
 	}
       }
-      betaTrafo(coeff,coeff_) = entry;
+      M1D(i,j) *= sqrt(b2*gsl_sf_fact(i)*gsl_sf_fact(j)/(gsl_pow_int(2.,i)*gsl_pow_int(2.,j)));
     }
   }
 }

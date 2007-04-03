@@ -52,6 +52,7 @@ class ImageTransformation {
  private:
   void makeConvolutionMatrix(NumMatrix<double>& P, const NumMatrix<double>& KernelCoeffs, double beta_orig, double beta_kernel, double beta_convolved, int nmax_orig, int nmax_convolved);
   void makeBTensor(boost::multi_array<double,3>& bt, double alpha_1, double beta_1, double gamma_1, int nmax);
+  void make1DRescalingMatrix(NumMatrix<double>& M1D, double beta1, double beta2, int nmax);
 };
 
 #endif
