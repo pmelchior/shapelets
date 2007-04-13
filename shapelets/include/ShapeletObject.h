@@ -196,6 +196,8 @@ class ShapeletObject : public Composite2D {
     static bool REGULARIZE;
     /// The upper limit for \f$R\f$ during regularizaton, default = 1e-5.
     static double REG_LIMIT;
+    /// The SIF filename for the unregularized model (empty string if not employed), default = "".
+    static std::string UNREG_SIFFILE;
   };
 
  private:

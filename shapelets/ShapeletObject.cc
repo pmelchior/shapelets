@@ -59,13 +59,34 @@ double ShapeletObject::DEFAULTS::BETA_LOW = 0;
 double ShapeletObject::DEFAULTS::BETA_HIGH = INFINITY;
 bool ShapeletObject::DEFAULTS::REGULARIZE = 0;
 double ShapeletObject::DEFAULTS::REG_LIMIT = 1e-5;
+std::string ShapeletObject::DEFAULTS::UNREG_SIFFILE = "";
 
-ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {//,int nmaxLow, int nmaxHigh, double betaLow, double betaHigh, bool regularize) : Composite2D(){
+ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   fits = 1;
   const Grid& FitsGrid = obj.getGrid();
+  const Point2D& xcentroid = obj.getCentroid();
   fitsFlag = obj.getDetectionFlag();
+  double beta;
   // decomposing with given constraits on shapelet decomposition parameters
   OptimalDecomposite2D *optimalDecomp =  new OptimalDecomposite2D(obj, DEFAULTS::NMAX_LOW,DEFAULTS::NMAX_HIGH,DEFAULTS::BETA_LOW,DEFAULTS::BETA_HIGH);
+
+  // if UNREG_SIFFILE is set, save the unregularized model to sif file with given name
+  if (DEFAULTS::UNREG_SIFFILE.compare("") != 0) {
+    // first get all necessary data for model
+    optimalDecomp->getShapeletCoeffs(cartesianCoeffs);
+    optimalDecomp->getShapeletErrors(errors);
+    beta = optimalDecomp->getOptimalBeta();
+    chisquare = optimalDecomp->getOptimalChiSquare();
+    text.str("");
+    text << obj.history.getContent();
+    text << optimalDecomp->getHistory().getContent();
+    history = History(text.str());
+    decompFlag = optimalDecomp->getDecompositionFlag();
+    regularized = R = 0;
+    SIFFile sfile(DEFAULTS::UNREG_SIFFILE);
+    sfile.save(history.getContent(),cartesianCoeffs,errors,FitsGrid,beta,xcentroid,chisquare,fitsFlag,decompFlag,regularized,R);
+  }
+
   // use regularization if specified
   if (DEFAULTS::REGULARIZE) {
     regularized = 1;
@@ -75,9 +96,9 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {//,int nmaxLo
 
   optimalDecomp->getShapeletCoeffs(cartesianCoeffs);
   optimalDecomp->getShapeletErrors(errors);
-  double beta = optimalDecomp->getOptimalBeta();
-  const Point2D& xcentroid = obj.getCentroid();
+  beta = optimalDecomp->getOptimalBeta();
   chisquare = optimalDecomp->getOptimalChiSquare();
+  text.str("");
   text << obj.history.getContent();
   text << optimalDecomp->getHistory().getContent();
   history = History(text.str());
