@@ -1,4 +1,5 @@
 #include <SExFrame.h>
+#include <NumVectorMasked.h>
 #include <boost/tokenizer.hpp>
 #include <fstream>
 #include <gsl/gsl_math.h>
@@ -13,14 +14,14 @@ using namespace boost;
 
 typedef unsigned int uint;
 
-SExFrame::SExFrame (std::string fitsfile) : FitsImage<double>(fitsfile) {
+SExFrame::SExFrame (std::string fitsfile) : Image<double>(fitsfile) {
   SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
   sf = empty;
   catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
-  // axsizes of unserlying FitsImage copied since often used
-  axsize0 = FitsImage<double>::getSize(0);
-  axsize1 = FitsImage<double>::getSize(1);
+  // axsizes of underlying Image copied since often used
+  axsize0 = Image<double>::getSize(0);
+  axsize1 = Image<double>::getSize(1);
 
   text << "# Reading FITS file " << fitsfile << endl;
   text << "# Image properties: size = "<< axsize0 << "/" << axsize1 << std::endl; 
@@ -28,7 +29,6 @@ SExFrame::SExFrame (std::string fitsfile) : FitsImage<double>(fitsfile) {
 
   // for artificial noise
   const gsl_rng_type * T;
-  //gsl_rng * r;
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
@@ -95,7 +95,7 @@ void SExFrame::readCatalog(std::string catfile) {
 }
 
 void SExFrame::readSegmentationMap(std::string segmentfile) {
-  FitsImage<int>* seg = new FitsImage<int>(segmentfile);
+  Image<int>* seg = new Image<int>(segmentfile);
   segMap = seg->getData();
   delete seg;
   segmapRead = 1;
@@ -150,22 +150,25 @@ void SExFrame::fillObject(Object& O) {
   // than 4 pixels and set their pixelmap flag to -2
   // in the end only object data into new vector of smaller size, the rest will
   // filled up with artificial noise
+  const NumVector<double>& data = Image<double>::getData();
   NumVector<double>& objdata = O.accessData();
   objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
-  const NumVector<double>& data = FitsImage<double>::getData();
+  SegmentationMap& objSegMap = O.accessSegmentationMap();
+  objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
 
   for (int i =0; i < objdata.size(); i++) {
     // old coordinates derived from new pixel index i
     int axis0 = xmax-xmin+1;
     int x = i%axis0 + xmin;
     int y = i/axis0 + ymin;
-    uint j = FitsImage<double>::getPixel(x,y);
+    uint j = Image<double>::getPixel(x,y);
 
     // if pixel is out of image region, fill noise from default values
     // since we fill same noise into data and into bgrms
     // the overall chi^2 (normalized by bg_rms) is unaffected by this region
     if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
       objdata(i) = gsl_ran_gaussian (r, bg_rms);
+      objSegMap(i) = 0;
       if (!subtractBG)
 	objdata(i) += bg_mean;
     } 
@@ -182,12 +185,13 @@ void SExFrame::fillObject(Object& O) {
 	if (subtractBG) 
 	  objdata(i) -= bg_mean;
       }
+      objSegMap(i) = segMap(j);
     }
   }
     
   // Grid will be changed but not shifted (all pixels stay at their position)
-  O.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
-  
+  O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
+
   // Fill other quantities into Object
   O.setNoiseMeanRMS(bg_mean,bg_rms);
   O.setNoiseModel("GAUSSIAN");
@@ -199,7 +203,7 @@ void SExFrame::fillObject(Object& O) {
   O.setDetectionFlag(objectList[nr].FLAGS);
   O.setStarGalaxyProbability(objectList[nr].CLASS_STAR);
   O.setBlendingProbability(computeBlendingProbability(nr));
-O.setBaseFilename(FitsImage<double>::getFilename());
+  O.setBaseFilename(Image<double>::getFilename());
 }
 
 void SExFrame::subtractBackground() {
@@ -332,93 +336,21 @@ void SExFrame::estimateNoise() {
     std::cout << "SExFrame: provide segmentation map before calling subtractNoise()!" << std::endl;
     std::terminate();
   }
-   
-  // for GSL sorting functions we have to copy NumVector to double*
-  // only copy the pixel values where not object is found in the segmentation map
-  int npixels = FitsImage<double>::getNumberOfPixels(), jmax = 0;
-  double* D = (double *) malloc(npixels*sizeof(double));
-  for (int i=0; i < npixels; i++) {
-    if (segMap(i) == 0) {
-      D[jmax] = (FitsImage<double>::getData())(i);
-      jmax++;
-    }
-  }
-
-  // first check left border of the image for pixel value variations
-  // if its 0, its a (simulated) image with 0 noise
-  // background_variance is set to the minmal value above 0
-  if (gsl_stats_variance(D,1,axsize0-1) == 0) {
-    bg_mean = 0;
-    double min = gsl_stats_max(D,1,npixels);
-    for (int i=0; i < npixels; i++)
-      if (D[i] < min && D[i] > 0) min = D[i];
-    bg_rms = sqrt(min*min);
-  } 
-  else {
-    gsl_sort(D, 1, jmax-1);
-    double sigma = gsl_stats_sd(D,1,jmax-1);
-    double median = gsl_stats_median_from_sorted_data (D,1,jmax-1);
-
-    // sigma clipping here: only using pixel not considered as object here
-    int j;
-    while (1) {
-      j=0;
-       for (int i = 0; i < jmax; i++ ) {
-	 // if data is 3 sigma arround iterative median, keep it
-	 // maybe additional constrain: D[i] > 0?
-	 if (D[i] > median-3*sigma && D[i] < median+3*sigma)  {
-	   D[j] = D[i];
-	   j++;
-	 }
-       }
-      // next time only work on the first jmax = j, all others are not sorted
-      if (j >= 1) {
-	gsl_sort(D, 1, j-1);
- 	median = gsl_stats_median_from_sorted_data (D,1,j-1);
- 	sigma = gsl_stats_sd(D,1,j-1);
-	// no change in the selected pixels: converged
-	// this is not as fast as 
-	// if (fabs(newmedian-median) < median/npixels)
-	if (jmax == j)
-	  break;
-	else {
-	  jmax = j;
-	}
-      }
-      else {
-	history.append("# Sky background estimation did not converge!\n");
-      }
-    }
-    // if distribution becomes definitely skewed to the brighter values
-    // create histogram of pixel values between median+-3*sigma
-    // if the pixels to the right become too bright (+1 error = sqrt(count))
-    // set it to the values of the appropriate left bin
-    // to symmetrize the histogram around the mean.
-    if(gsl_stats_skew(D,1,j-1) > 0.1) {
-      int nbins = j/100;
-      if (nbins%2 ==1) nbins++;
-      gsl_histogram * h = gsl_histogram_alloc (nbins);
-      gsl_histogram_set_ranges_uniform (h,median-3*sigma,median+3*sigma);
-      for(int i =0; i<j; i++)
-	gsl_histogram_increment (h, D[i]);
-      for(int binnr=nbins/2 +1; binnr<nbins; binnr++) {
-	if (gsl_histogram_get(h,binnr) > gsl_histogram_get(h,nbins-binnr)+sqrt(gsl_histogram_get(h,nbins-binnr)))
-	  h->bin[binnr] = gsl_histogram_get(h,nbins-binnr);
-      }
-      bg_mean = gsl_histogram_mean(h);
-      bg_rms = gsl_histogram_sigma(h);
-      gsl_histogram_free (h);
-    }
-    // no skewness, image contains enough noise for a solid noise estimation
-    // using sigma-clipping only
-    else {
-      bg_rms = sigma;
-      bg_mean = median;
-    }
-  }
-  free(D);
-  text << "# Background estimation: mean = " << bg_mean;
-  text << ", sigma = " << bg_rms << std::endl;
+  // set noise estimates
+  // since the position of the object is known from segMap, we can compute the
+  // noise now on all pixels not in pixellist
+  // 1) set mask(i)=1, when segMap(i) != 0
+  // 2) create NumVectorMasked from objdata and mask
+  // 3) compute std from that
+  const NumVector<double>& data = Image<double>::getData();
+  NumVector<bool> mask(data.size());
+  for(int i =0; i < data.size(); i++)
+    if (segMap(i) != 0) 
+      mask(i) = 1;
+  NumVectorMasked<double> masked(data,mask);
+  masked.kappa_sigma_clip(bg_mean,bg_rms);
+  text << "# Background estimation (object masked):";
+  text << " mean = " << bg_mean << ", sigma = " << bg_rms << endl;
   history.append(text);
   estimatedBG = 1;
 }

@@ -3,7 +3,7 @@
 
 #include <Grid.h>
 #include <NumMatrix.h>
-#include <FitsImage.h>
+#include <Image.h>
 #include <Object.h>
 #include <History.h>
 #include <vector>
@@ -62,8 +62,10 @@
 ///   ...
 /// }
 ///\endcode
+///
+/// \todo employ new methods of SegmentationMap.
 
-class SExFrame : public FitsImage<double> {
+class SExFrame : public Image<double> {
  public:
   /// Argumented constructor.
   /// The name of the Fits file and to appropriate extension have to be given 

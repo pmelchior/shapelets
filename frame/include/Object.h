@@ -2,9 +2,9 @@
 #define OBJECT_H
 
 #include <History.h>
-#include <Grid.h>
-#include <NumVector.h>
-#include <NumMatrix.h>
+#include <Image.h>
+#include <SegmentationMap.h>
+#include <PixelCovarianceMatrix.h>
 #include <IO.h>
 
 /// Central object representing class.
@@ -14,40 +14,32 @@
 /// A respresentant of this class describes an object in real (pixel) space.
 /// It consists of the pixel values, the Grid and additional properties (flux, 
 /// centroid, ellipticity).
-/// In addition, it provides information from the preceding image processing steps:
+/// In addition, it can store information from the preceding image processing steps:
 /// - noise characteristics (including the noise model)
+/// - pixel covariance matrix
 /// - detection flags
 /// - processing history
 /// - blending information
 /// - galaxy/star discrimination index
+/// - segmentation map
 
-class Object {
+class Object : public Image<double> {
  public:
   /// Constructor.
   /// The ID is the object ID determined during the segmentation process
   Object(unsigned int id);
   /// Return the ID.
   unsigned int getID() const;
-  /// Return the pixel data of this object.
-  const NumVector<double>& getData() const;
-  /// Access the pixel data of this object.
-  NumVector<double>& accessData();
   /// Return the background mean values in the region of this object.
-  const NumVector<double>& getBackground() const;
+  const NumVector<double>& getBackgroundMap() const;
   /// Access the background mean values in the region of this object.
   /// This information is optional.
-  NumVector<double>& accessBackground();
+  NumVector<double>& accessBackgroundMap();
   /// Return the background rms values in the region of this object.
-  const NumVector<double>& getBackgroundRMS() const;
+  const NumVector<double>& getBackgroundRMSMap() const;
   /// Access the background rms values in the region of this object.
   /// This information is optional.
-  NumVector<double>& accessBackgroundRMS();
-  /// Return the grid, on which the object is defined.
-  const Grid& getGrid() const;
-  /// Access the grid, on which the object is defined.
-  Grid& accessGrid();
-  /// Return size in units of the grid stepsize.
-  int getSize(bool direction) const;
+  NumVector<double>& accessBackgroundRMSMap();
   /// Return flux of object.
   /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
   double getFlux() const;
@@ -87,9 +79,6 @@ class Object {
   /// Set noise features from external measurements (e.g. in Frame).
   void setNoiseMeanRMS(double mean, double rms);
   /// Set the noise model.
-  /// The noise model has to be either
-  /// - "GAUSSIAN" or
-  /// - "POISSONIAN"
   void setNoiseModel(std::string noisemodel);
   /// Get the noise model.
   std::string getNoiseModel() const;
@@ -104,6 +93,14 @@ class Object {
   double getStarGalaxyProbability() const;
   /// Set the star/galaxy discrimination index.
   void setStarGalaxyProbability(double s_g);
+  /// Get the segmentation map.
+  const SegmentationMap& getSegmentationMap() const;
+  /// Access the segmentation map.
+  SegmentationMap& accessSegmentationMap();
+  /// Get the pixel covariance matrix.
+  const PixelCovarianceMatrix& getPixelCovarianceMatrix() const;
+  /// Access the pixel covariance matrix.
+  PixelCovarianceMatrix& accessPixelCovarianceMatrix();
   /// Set the filename from which this object is derived.
   /// This will be stored in the FITS header when using save().
   /// The string should not exceed 80 characters, otherwise it becomes truncated 
@@ -121,8 +118,9 @@ class Object {
   
  private:
   unsigned int id;
-  NumVector<double> data, bg_mean, bg_rms;
-  Grid grid;
+  NumVector<double> bg_mean, bg_rms;
+  SegmentationMap segMap;
+  PixelCovarianceMatrix cov;
   Point2D centroid;
   double scaleSize, flux, noise_mean, noise_rms, s_g, blend;
   unsigned short flag, blended;

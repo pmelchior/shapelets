@@ -6,7 +6,7 @@
 namespace ublas = boost::numeric::ublas;
 
 Decomposite2D::Decomposite2D(int innmax, double inbeta, const Object& obj) : 
-data(obj.getData()), bg_rms(obj.getBackgroundRMS()) {
+data(obj.getData()) {
   npixels = data.size();
   // centroid and beta are zero order estimators coming from object extraction
   xcentroid = obj.getCentroid();
@@ -15,13 +15,33 @@ data(obj.getData()), bg_rms(obj.getBackgroundRMS()) {
   setBeta(inbeta);
   nCoeffs = getNCoeffs(nmax);
   makeNVector(nVector,nCoeffs,nmax);
-  Mt = NumMatrix<double>(nCoeffs,npixels);
-  background_variance = gsl_pow_2(obj.getNoiseRMS());
-  if (obj.getNoiseModel().compare("GAUSSIAN")==0)
-    gaussian = 1;
-  else {
-    gaussian = 0;
-    makeV_Matrix();
+  Mt.resize(nCoeffs,npixels);
+
+  // ways to give pixel errors (depending on noiseModel):
+  // GAUSSIAN:   sigma_n -> background_variance
+  // WEIGHT :    background rms map -> weight
+  // COVARIANCE: pixel cov. matrix -> full cov. matrix
+  // POISSONIAN: sigma_n + data -> weight
+  if (obj.getNoiseModel().compare("GAUSSIAN")==0) {
+    noise = 0;
+    background_variance = gsl_pow_2(obj.getNoiseRMS());
+  }
+  else if (obj.getNoiseModel().compare("WEIGHT")==0) {
+    noise = 1;
+    Weight = obj.getBackgroundRMSMap();
+  } else if (obj.getNoiseModel().compare("COVARIANCE")==0) {
+    noise = 2;
+    V_ = obj.getPixelCovarianceMatrix().invert(); 
+  }
+  else if (obj.getNoiseModel().compare("POISSONIAN")==0) {
+    noise = 3;
+    NumVector<double> tmp = data;
+    Weight.resize(npixels);
+    for (int i=0; i < npixels; i++)
+      tmp(i) += background_variance;
+    convolveGaussian(tmp,Weight,grid.getSize(0),grid.getSize(1));
+    for (int i=0; i< npixels; i++)
+      Weight(i) = 1./Weight(i);
   }
   change = updateC = updateModel = updateResiduals = 1;
 }
@@ -53,7 +73,6 @@ void Decomposite2D::makeLSMatrix () {
     }
   }
   // now build tensor product of M0 and M1
-  Mt = NumMatrix<double> (nCoeffs,npixels);
   int n0, n1;
   for (int l = 0; l < nCoeffs; l++) {
     n0 = getN1(nVector,l);
@@ -61,12 +80,15 @@ void Decomposite2D::makeLSMatrix () {
     for (int i=0; i<npixels; i++) 
       Mt(l,i) = M0(n0,i)*M1(n1,i);
   }
-  // as long as the noise in each pixel is constant, the covariance matrix is proportional
-  // to the identity matrix, so we don't have to consider it here, but when computing chi2.
-  // solution for minimizing chi^2:
   M = Mt.transpose();
-  if (!gaussian) 
+
+  if (noise == 0)
+    Mt /= background_variance;
+  else if (noise == 1 || noise == 3)
+    Mt = Mt*Weight;
+  else if (noise == 2)
     Mt = Mt*V_;
+    
   LS = (Mt*M);
   LS = LS.invert();
   LS = LS*Mt;
@@ -75,16 +97,6 @@ void Decomposite2D::makeLSMatrix () {
   //LS = M.svd_invert(); 
   // overlapping integrals
   //LS = M.transpose();
-}
-
-void Decomposite2D::makeV_Matrix() {
-  NumVector<double> tmp = data;
-  V_.resize(npixels);
-  for (int i=0; i < npixels; i++)
-    tmp(i) += background_variance;
-  convolveGaussian(tmp,V_,grid.getSize(0),grid.getSize(1));
-  for (int i=0; i< npixels; i++)
-    V_(i) = 1./V_(i);
 }
 
 void Decomposite2D::computeCoeffs() {
@@ -134,9 +146,9 @@ const NumVector<double>& Decomposite2D::getErrors() {
   if (change) computeCoeffs();
   if (errorVector.size() != nCoeffs) errorVector = NumVector<double>(nCoeffs);
   NumMatrix<double> MtNoise_1;
-  MtNoise_1 = Mt*M;
-  MtNoise_1 /= background_variance;
-  MtNoise_1 = MtNoise_1.invert();
+  // since Mt here is in fact Mt*V_, we can compute the covariance matrix
+  // of the coefficients simply by Mt*M
+  MtNoise_1 = (Mt*M).invert();
   
   //NumVector<double> errorVector(nCoeffs);
   // the errors here should be very close to background_rms
@@ -170,33 +182,21 @@ NumVector<double>& Decomposite2D::accessResiduals() {
 }
 
 // chi^2 for reconstruction
-// see Paper III, eq. 35
+// see Paper III, eq. 18
 double Decomposite2D::getChiSquare() {
   computeResiduals();
   double result = 0;
-  // GAUSSIAN noise: no model of the objects brightness employed
-  if (gaussian) {
-    // rms map provided: use actual rms value in each pixel
-    if (bg_rms.size() == data.size()) {
-      for (int i=0; i < model.size(); i++)
-	result+= gsl_pow_2(residual(i))/gsl_pow_2(bg_rms(i));
-      result /= npixels - nCoeffs;
-    }
-    // default: rms map not provided, global variance from Object's getBackgroundRMS()
-    else {
-      result = residual*residual;
-      result /= (background_variance*(npixels - nCoeffs));
-    }
-  }
-  // POISSONIAN noise: pixel error already included in V_
-  else {
+  if (noise == 0)
+    result = (residual*residual)/background_variance;
+  else if (noise == 1 || noise == 3)
+    result = residual*(Weight*residual);
+  else if (noise == 2)
     result = residual*(V_*residual);
-    result /= npixels - nCoeffs;
-  }
+  result /= npixels - nCoeffs;
   return result;
 }
 
-// see Paper III, eq. 36
+// see Paper III, eq. 19
 double Decomposite2D::getChiSquareVariance() {
   return M_SQRT2 /sqrt(npixels - nCoeffs);
 }      

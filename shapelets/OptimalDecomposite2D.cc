@@ -13,21 +13,21 @@
 using namespace std;
 
 OptimalDecomposite2D::OptimalDecomposite2D(const Object& obj, int innmaxLow, int innmaxHigh, double inbetaLow, double inbetaHigh) : 
-Decomposite2D(2,(obj.getGrid().getSize(0) + obj.getGrid().getSize(1))/(2*8),obj) {
+Decomposite2D(2,(obj.getSize(0) + obj.getSize(1))/(2*8),obj) {
   // set limits for nmax and beta 
-  nmaxLow = innmaxLow;
-  nmaxHigh = innmaxHigh;
-  betaLow = inbetaLow;
-  betaHigh = inbetaHigh;
+  nmaxLow = GSL_MIN_INT(innmaxLow,innmaxHigh);
+  nmaxHigh = GSL_MAX_INT(innmaxLow,innmaxHigh);
+  betaLow = GSL_MIN_DBL(inbetaLow, inbetaHigh);
+  betaHigh = GSL_MAX_DBL(inbetaLow,inbetaHigh);
 
   // estimators for beta from FitsImage
-  beta = (obj.getGrid().getSize(0) + obj.getGrid().getSize(1))/(2*8);
+  beta = (obj.getSize(0) + obj.getSize(1))/(2*8);
 
   // take the minimum of the axis sizes to get a limit for theta_max
   // and garantee orthogonality during minimization
   image_dimension = GSL_MIN(obj.getSize(0),obj.getSize(1));
 
-  npixels = obj.getSize(0)*obj.getSize(1);
+  npixels = obj.size();
   optimized = nmaxTrouble = 0;
   flag = 0;
 }
@@ -37,8 +37,15 @@ void OptimalDecomposite2D::optimize() {
   time_t t0,t1;
   t0 = time(NULL);
   
-  optimalNMax = 2;//nmaxLow;
+  // set nmax at start to 2
+  // unless nmaxHigh is smaller than 2 or nmaxLow is larger than 2
+  optimalNMax = 2;
+  if (nmaxHigh < 2) 
+    optimalNMax = nmaxHigh;
+  else if (nmaxLow > 2)
+    optimalNMax = nmaxLow;
   Decomposite2D::setNMax(optimalNMax);
+
   bestChiSquare = 0;
   // step 1) find optimal beta for the (2/2) shapelet basis
   status = findOptimalBeta(1);

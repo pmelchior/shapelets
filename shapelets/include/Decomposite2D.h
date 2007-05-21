@@ -4,7 +4,7 @@
 #include <string>
 #include <Point2D.h>
 #include <Grid.h>
-#include <FitsImage.h>
+#include <Image.h>
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <NumMatrixDiagonal.h>
@@ -18,19 +18,31 @@
 /// \f$coeffs\f$ is a vector representation of the coefficient matrix,
 /// \f$M\f$ is the matrix of the value of the shapelet basis function of every order
 /// in every pixel of the image (e.g. \f$M_{2,0}\f$ is the value of the basis function 
-/// \f$B_{0,0}\f$ at pixel 2 of the image), V is the covariance matrix of the pixels
-/// (by now it's made up from pixel noise only) and \f$data\f$ is a vector representation
-/// of the image values (see Paper III, eq. 83).\n
+/// \f$B_{0,0}\f$ at pixel 2 of the image), \f$V\f$ is the covariance matrix of the pixels
+/// and \f$data\f$ is a vector representation
+/// of the image values (cf. Paper III, eq. 23).\n
 /// The errors of the coefficients are given by \f$(M^T V^{-1} M)^{-1}\f$.\n
 ///
 /// Also the goodness of the fit in term of 
 /// \f$\chi^2 = \frac{(data - reco)^T \cdot V^{-1} 
 /// \cdot (data - reco)}{n_{pixels} - n_{coeffs}}\f$ is calculated, 
-/// where \f$reco = M \cdot coeffs\f$ is the reconstructed image. (PaperIII, eq. 35).
+/// where \f$reco = M \cdot coeffs\f$ is the reconstructed image. (Paper III, eq. 18).
+///
+/// The error measure (which enters \f$V\f$) can be given in different ways, depending on the
+/// value of Object::getNoiseModel():
+/// - <tt>GAUSSIAN</tt>: \f$V = diag(\sigma_n^2)\f$
+/// - <tt>POISSONIAN</tt>: \f$V = diag(\sigma_n^2) + diag(data')\f$, where \f$data'\f$ 
+///   is a vector representation of a smoothed version of \f$data\f$
+/// - <tt>COVARIANCE</tt>: \f$V\f$ is the actual PixelCovarianceMatrix, measured 
+///   directly from \f$data\f$
+/// - <tt>WEIGHT</tt>: \f$V = diag(weight)\f$, where \f$weight\f$ is a vector representation
+///   of the error in each pixel obtained from Object::getBackgroundRMSMap()
 ///
 /// \todo
 /// - construct 2D LS matrix from 2 1D shapelet matrices (if Grid is square: only 1 matrix!)
 /// - shift the grid (and centroid) to start at (0/0) -> matrices are similar at most pixel
+/// - POISSONIAN: construct V from shapelet model instead of data
+
 class Decomposite2D {
  public:
   /// Contructor for decomposing a Object into shapelets of maximum order \f$n_{max}\f$.
@@ -76,19 +88,20 @@ class Decomposite2D {
   void updateModelResiduals();
 
  private:
-  NumMatrix<double> M, Mt, LS;
-  Grid grid;
-  Point2D xcentroid;
   void computeCoeffs();
   void computeModel();
   void computeResiduals();
   void makeLSMatrix ();
-  void makeV_Matrix();
+  NumMatrix<double> M, Mt, LS;
+  Grid grid;
+  Point2D xcentroid;
   double beta, background_variance;
   int nmax,nCoeffs,npixels;
+  char noise;
   NumVector<double> coeffVector, errorVector, model, residual;
-  const NumVector<double>& data, bg_rms;
-  NumMatrixDiagonal<double> V_;
+  const NumVector<double>& data;
+  NumMatrixDiagonal<double> Weight;
+  PixelCovarianceMatrix V_;
   NumMatrix<int> nVector;
   bool change, updateC, updateModel, updateResiduals, gaussian;
 };

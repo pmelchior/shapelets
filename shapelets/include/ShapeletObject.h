@@ -5,7 +5,7 @@
 #include <string>
 #include <Point2D.h>
 #include <Grid.h>
-#include <FitsImage.h>
+#include <Image.h>
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Composite2D.h>

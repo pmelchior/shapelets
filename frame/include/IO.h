@@ -18,6 +18,8 @@ void setFITSTypes(T entry, int& imageformat, int& datatype) {
   datatype = TDOUBLE;
   float tf;
   int ti;
+  bool tb;
+  unsigned char tc;
   if (typeid(entry) == typeid(tf)) {
     imageformat = FLOAT_IMG;
     datatype = TFLOAT;
@@ -25,6 +27,10 @@ void setFITSTypes(T entry, int& imageformat, int& datatype) {
   if (typeid(entry) == typeid(ti)) {
     imageformat = SHORT_IMG;
     datatype = TINT;
+  }
+  if (typeid(entry) == typeid(tb) || typeid(entry) == typeid(tc)) {
+    imageformat = BYTE_IMG;
+    datatype = TBYTE;
   }
 }
 
@@ -60,6 +66,12 @@ void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& d
   fits_close_file(outfptr, &status);
 }
 
+template <class T>
+void writeFITSFile(std::string filename, const NumMatrix<T>& M, std::map<std::string,std::string> keywords = std::map<std::string, std::string>()) {
+  Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
+  writeFITSFile(filename,grid,M.vectorize(0),keywords);
+}
+
 /// adds extensions to an existing FITS file from the data on the given grid
 template <class T>
 void addFITSExtension(std::string filename, std::string extname, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string> keywords = std::map<std::string, std::string>()) {
@@ -87,6 +99,12 @@ void addFITSExtension(std::string filename, std::string extname, const Grid& gri
        iter != keywords.end(); iter++ )
     fits_update_key (outfptr, TSTRING,  const_cast<char *>((*iter).first.c_str()), const_cast<char *>((*iter).second.c_str()), "", &status);
   fits_close_file(outfptr, &status);
+}
+
+template <class T>
+void addFITSExtension(std::string filename, std::string extname, const NumMatrix<T>& M, std::map<std::string,std::string> keywords = std::map<std::string, std::string>()) {
+  Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
+  addFITSExtension(filename,extname,grid,M.vectorize(0),keywords);
 }
 
 /// Write PPM file from data on the given grid.

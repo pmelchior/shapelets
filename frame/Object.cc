@@ -2,7 +2,7 @@
 #include <sstream>
 #include <gsl/gsl_math.h>
 
-Object::Object(unsigned int inid) {
+Object::Object(unsigned int inid) : Image<double>(), segMap(*this) {
   id = inid;
   flag = 0;
   blend = s_g = -1;
@@ -13,40 +13,20 @@ unsigned int Object::getID() const {
   return id;
 }
 
-const Grid& Object::getGrid() const {
-  return grid;
-}
-
-Grid& Object::accessGrid() {
-  return grid;
-}
-
-const NumVector<double>& Object::getData() const {
-  return data;
-}
-
-NumVector<double>& Object::accessData() {
-  return data;
-}
-
-const NumVector<double>& Object::getBackground() const {
+const NumVector<double>& Object::getBackgroundMap() const {
   return bg_mean;
 }
 
-NumVector<double>& Object::accessBackground() {
+NumVector<double>& Object::accessBackgroundMap() {
   return bg_mean;
 }
 
-const NumVector<double>& Object::getBackgroundRMS() const {
+const NumVector<double>& Object::getBackgroundRMSMap() const {
   return bg_rms;
 }
 
-NumVector<double>& Object::accessBackgroundRMS() {
+NumVector<double>& Object::accessBackgroundRMSMap() {
   return bg_rms;
-}
-
-int Object::getSize(bool direction) const {
-  return grid.getSize(direction);
 }
 
 const Point2D& Object::getCentroid() const {
@@ -72,6 +52,8 @@ void Object::setFlux(double F) {
 }
 
 NumMatrix<double> Object::get2ndBrightnessMoments() {
+  const NumVector<double>& data = Image<double>::getData();
+  const Grid& grid = Image<double>::getGrid();
   NumMatrix<double> Q(2,2);
   for (int i=0; i< grid.size(); i++) {
     Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i);
@@ -98,6 +80,8 @@ complex<double> Object::getEllipticity() {
 }
 
 void Object::computeFluxCentroid() {
+  const NumVector<double>& data = Image<double>::getData();
+  const Grid& grid = Image<double>::getGrid();
   flux = 0;
   centroid(0) = centroid(1) = 0;
   for (int i=0; i< grid.size(); i++) {
@@ -137,6 +121,7 @@ void Object::setNoiseMeanRMS(double mean, double rms) {
 
 void Object::setNoiseModel(std::string innoisemodel) {
   noisemodel = innoisemodel;
+  history.append("# Setting noise model to "+noisemodel+"\n");
 }
 
 std::string Object::getNoiseModel() const {
@@ -163,7 +148,25 @@ void Object::setBaseFilename(std::string filename) {
   basefilename = filename;
 }
 
+const SegmentationMap& Object::getSegmentationMap() const {
+  return segMap;
+}
+
+SegmentationMap& Object::accessSegmentationMap() {
+  return segMap;
+}
+
+const PixelCovarianceMatrix& Object::getPixelCovarianceMatrix() const {
+  return cov;
+}
+
+PixelCovarianceMatrix& Object::accessPixelCovarianceMatrix() {
+  return cov;
+}
+
 void Object::save(std::string fitsfile) {
+  const NumVector<double>& data = Image<double>::getData();
+  const Grid& grid = Image<double>::getGrid();
   std::map<std::string, std::string> keywords;
   keywords["BASEFILE"] = basefilename;
   std::ostringstream value;
@@ -199,8 +202,10 @@ void Object::save(std::string fitsfile) {
   keywords["S_G"] = value.str();
   writeFITSFile(fitsfile,grid,data,keywords);
 
-  //if background maps are provided, save them too
+  // save segMap 
   keywords.clear();
+  addFITSExtension(fitsfile,"SEGMAP",grid,segMap.getData(),keywords);
+  //if background maps are provided, save them too
   if (bg_mean.size() != 0)
     addFITSExtension(fitsfile,"BG_MEAN",grid,bg_mean,keywords);
   if (bg_rms.size() != 0)

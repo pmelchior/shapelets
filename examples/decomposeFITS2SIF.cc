@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     // the selection criteria are:
     // at least 50 pixels beyond 1.5 sigma above noise
     // and at least one pixel beyond 5 sigma (detection).
-    f->findObjects(50,1.5,5);
+    f->findObjects();
     // return number of objects found
     unsigned int nobjects = f->getNumberOfObjects();
 
@@ -57,8 +57,7 @@ int main(int argc, char *argv[]) {
     // create set of keywords written to the FITS header (not mandatory).
     std::map<std::string, std::string> keys;
     keys["INFO"] = "segmentation map of " + filename;
-    writeFITSFile(newname.str(),f->getGrid(),f->getObjectMap(),keys);
-    
+    f->getSegmentationMap().save(newname.str(),keys);    
     
     // run through all objects
     // every file generated will have the appendix "_n", with n being the
@@ -71,10 +70,13 @@ int main(int argc, char *argv[]) {
       Object* obj = new Object(n);
       // "cut out" the object from whole frame and put it into Object obj
       f->fillObject(*obj);
-      // employ gaussian statistics
-      // this is faster and OK for faint objects which are background dominated
-      // for bright ones, use "POISSONIAN".
-      obj->setNoiseModel("GAUSSIAN");
+
+      // in case of drizzled images:
+      // compute pixel covariance matrix from data
+      // and set noise model to COVARIANCE
+      PixelCovarianceMatrix& V = obj->accessPixelCovarianceMatrix();
+      V.setCovarianceMatrix(obj->getData(),obj->getSegmentationMap(),obj->history);
+      obj->setNoiseModel("COVARIANCE");
 
       // dismiss objects with flag > 3 because of serious trouble
       // during the detection/segmentation process
@@ -88,8 +90,19 @@ int main(int argc, char *argv[]) {
 	  if (argc == 4){
 	    ShapeletObject::DEFAULTS::REGULARIZE = 1;
 	    ShapeletObject::DEFAULTS::REG_LIMIT = atof(argv[3]);
+	    // store the data of the unregularized model...
+	    ShapeletObject::DEFAULTS::UNREG_SIFFILE = siffile.str();
+	    // ...and modify the name of the regularized one
+	    siffile.str("");
+	    siffile << sifprefix << "_" << n << "_reg.sif";
 	  }
+	  // here comes the actual decomposition process.
+	  // when this method is completed you can work entirely in
+	  // shapelet space
 	  sobj =  new ShapeletObject(*obj);
+	  // save all necessary information (shapelet parameters,
+	  // coefficients, position of the object etc.) to a binary
+	  // SIF file.
 	  sobj->save(siffile.str());
 	}
 	// use specific bounds for beta and nmax
@@ -98,20 +111,14 @@ int main(int argc, char *argv[]) {
 	  ShapeletObject::DEFAULTS::NMAX_HIGH = atoi(argv[4]);
 	  ShapeletObject::DEFAULTS::BETA_LOW = atof(argv[5]);
 	  ShapeletObject::DEFAULTS::BETA_HIGH = atof(argv[6]);
-	  // when regularization should be done:
-	  // specify the wanted limit on R
 	  if (argc == 8){
 	    ShapeletObject::DEFAULTS::REGULARIZE = 1;
 	    ShapeletObject::DEFAULTS::REG_LIMIT = atof(argv[7]);
+	    ShapeletObject::DEFAULTS::UNREG_SIFFILE = siffile.str();
+	    siffile.str("");
+	    siffile << sifprefix << "_" << n << "_reg.sif";
 	  }
-	  
-	  // here comes the actual decomposition process.
-	  // when this method is completed you can work entirely in
-	  // shapelet space
 	  sobj = new ShapeletObject(*obj);
-	  // save all necessary information (shapelet parameters,
-	  // coefficients, position of the object etc.) to a binary
-	  // SIF file.
 	  sobj->save(siffile.str());
 	}
 
@@ -137,5 +144,3 @@ int main(int argc, char *argv[]) {
     delete f;
   }
 }
-  
-							

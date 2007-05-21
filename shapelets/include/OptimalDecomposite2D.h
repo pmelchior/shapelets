@@ -5,7 +5,6 @@
 #include <Decomposite2D.h>
 #include <Point2D.h>
 #include <Grid.h>
-#include <FitsImage.h>
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Object.h>
