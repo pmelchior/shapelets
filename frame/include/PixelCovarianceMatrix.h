@@ -71,7 +71,7 @@ class PixelCovarianceMatrix {
   /// It uses the SegmentationMap of the Object to decide which pixels belong to 
   /// the noise. Thus, this method provides the pixel correlation function of 
   /// all noise pixels in the image.
-  void getCorrelationFunction(const NumVector<double>& data, const SegmentationMap& segMap, NumVector<double>& corr, NumVector<uint>& distance) const;
+  void getCorrelationFunction(const NumVector<double>& data, const SegmentationMap& segMap, NumVector<double>& corr, NumVector<double>& distance) const;
  private:
   unsigned int bandwidth;
   NumVector<int> offset;

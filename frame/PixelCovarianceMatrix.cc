@@ -31,22 +31,16 @@ void PixelCovarianceMatrix::setBand(unsigned int band, int os, double val) {
 }
 
 double PixelCovarianceMatrix::operator()(unsigned int i, unsigned int j) const {
-  bool found = 0;
   int k;
   for (uint b=0; b <bandwidth; b++) {
-    k = i + offset(b);
-    if (k==j) {
-      found = 1;
-      break;
-    }
+    k = (int)i + offset(b);
+    if (k==j)
+      return entry(b);
   }
-  if (found)
-    return entry(j);
-  else
-    return 0;
+  return 0;
 }
 
-void PixelCovarianceMatrix::getCorrelationFunction(const NumVector<double>& data, const SegmentationMap& segMap, NumVector<double>& corr, NumVector<uint>& distance) const {
+void PixelCovarianceMatrix::getCorrelationFunction(const NumVector<double>& data, const SegmentationMap& segMap, NumVector<double>& corr, NumVector<double>& distance) const {
   uint x,y,x1,y1;
   uint size = 5; // the pixel 'radius' to consider
   uint length = 15; // the pyramid number of size
@@ -64,8 +58,6 @@ void PixelCovarianceMatrix::getCorrelationFunction(const NumVector<double>& data
     }
   }
 
-  //const SegmentationMap& segMap = obj.getSegmentationMap();
-  //const NumVector<double>& data = obj.getData();
   int axsize0 = segMap.getSize(0), axsize1 = segMap.getSize(1);
   for (int i =0; i < data.size(); i++) {
     // choose only noise pixels
@@ -99,22 +91,25 @@ void PixelCovarianceMatrix::getCorrelationFunction(const NumVector<double>& data
   distance.resize(length);
   i=0;
   for( std::map<uint,uint>::iterator iter = index.begin(); iter != index.end(); iter++ ) {
-    distance(i) = (*iter).first;
+    distance(i) = sqrt((*iter).first);
     corr(i) = corr_mean((*iter).second);
+    if (distance(i)==1)
+      corr(i)/=1;
+    if (distance(i)==2)
+      corr(i) /= 1;
     i++;
   }
 }
 
 void PixelCovarianceMatrix::setCovarianceMatrix(const NumVector<double>& data, const SegmentationMap& segMap, History& hist) {
-  NumVector<double> corr;
-  NumVector<uint> distance;
+  NumVector<double> corr, distance;
   hist.append("# Computing correlation function:\n");
   getCorrelationFunction(data,segMap,corr,distance);
   hist.append("# dist\tcorr\n");
   char diststr[100];
   char corrstr[100];
   for (uint i=0; i < corr.size(); i++) {
-    sprintf(diststr,"%1.2f",sqrt(distance(i))); 
+    sprintf(diststr,"%1.2f",distance(i)); 
     sprintf(corrstr,"%.2f",corr(i));
     hist.append("# "+std::string(diststr)+"\t"+std::string(corrstr)+"\n");
   }
@@ -190,8 +185,6 @@ PixelCovarianceMatrix PixelCovarianceMatrix::invert() const {
     uint N = GSL_MAX_INT(10,offset.max())*bandwidth;
     if (N%2==1) N++; // ensure that divides by 2
     NumMatrix<double> M = getMatrix(N).invert();
-    writeFITSFile("V.fits",getMatrix(N));
-    addFITSExtension("V.fits","INV",M);
 
     int center = N/2;
     double max = fabs(M(center,center));
