@@ -161,7 +161,7 @@ void SExFrame::fillObject(Object& O) {
     int axis0 = xmax-xmin+1;
     int x = i%axis0 + xmin;
     int y = i/axis0 + ymin;
-    uint j = Image<double>::getPixel(x,y);
+    uint j = Image<double>::getGrid().getPixel(x,y);
 
     // if pixel is out of image region, fill noise from default values
     // since we fill same noise into data and into bgrms

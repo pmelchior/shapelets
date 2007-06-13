@@ -71,8 +71,6 @@ class Decomposite2D {
   /// The residuals will not be updated automatically. If you want to use best-fit values,
   /// call getChiSquare() before.
   NumVector<double>& accessResiduals();
-  /// Set centroid position for the decomposition
-  void setCentroid(const Point2D& xcentroid);
   /// Set scale size \f$\beta\f$ for decomposition.
   void setBeta(double beta);
   /// Set maximal shapelet orders for decomposition.
@@ -93,13 +91,14 @@ class Decomposite2D {
   void computeResiduals();
   void makeLSMatrix ();
   NumMatrix<double> M, Mt, LS;
-  Grid grid;
-  Point2D xcentroid;
+  //Grid grid;
+  //Point2D xcentroid;
   double beta, background_variance;
   int nmax,nCoeffs,npixels;
   char noise;
   NumVector<double> coeffVector, errorVector, model, residual;
-  const NumVector<double>& data;
+  //const NumVector<double>& data;
+  const Object& obj;
   NumMatrixDiagonal<double> Weight;
   PixelCovarianceMatrix V_;
   NumMatrix<int> nVector;

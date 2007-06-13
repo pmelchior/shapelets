@@ -5,6 +5,7 @@
 #include <Image.h>
 #include <SegmentationMap.h>
 #include <PixelCovarianceMatrix.h>
+#include <CorrelationFunction.h>
 #include <IO.h>
 
 /// Central object representing class.
@@ -101,6 +102,10 @@ class Object : public Image<double> {
   const PixelCovarianceMatrix& getPixelCovarianceMatrix() const;
   /// Access the pixel covariance matrix.
   PixelCovarianceMatrix& accessPixelCovarianceMatrix();
+  /// Get the correlation function.
+  const CorrelationFunction& getCorrelationFunction() const;
+  /// Access the correlation function.
+  CorrelationFunction& accessCorrelationFunction();
   /// Set the filename from which this object is derived.
   /// This will be stored in the FITS header when using save().
   /// The string should not exceed 80 characters, otherwise it becomes truncated 
@@ -121,6 +126,7 @@ class Object : public Image<double> {
   NumVector<double> bg_mean, bg_rms;
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;
+  CorrelationFunction xi;
   Point2D centroid;
   double scaleSize, flux, noise_mean, noise_rms, s_g, blend;
   unsigned short flag, blended;

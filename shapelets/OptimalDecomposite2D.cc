@@ -12,8 +12,8 @@
 
 using namespace std;
 
-OptimalDecomposite2D::OptimalDecomposite2D(const Object& obj, int innmaxLow, int innmaxHigh, double inbetaLow, double inbetaHigh) : 
-Decomposite2D(2,(obj.getSize(0) + obj.getSize(1))/(2*8),obj) {
+OptimalDecomposite2D::OptimalDecomposite2D(const Object& O, int innmaxLow, int innmaxHigh, double inbetaLow, double inbetaHigh) : 
+Decomposite2D(2,(O.getSize(0) + O.getSize(1))/(2*8),O), obj(O) {
   // set limits for nmax and beta 
   nmaxLow = GSL_MIN_INT(innmaxLow,innmaxHigh);
   nmaxHigh = GSL_MAX_INT(innmaxLow,innmaxHigh);
@@ -30,6 +30,12 @@ Decomposite2D(2,(obj.getSize(0) + obj.getSize(1))/(2*8),obj) {
   npixels = obj.size();
   optimized = nmaxTrouble = 0;
   flag = 0;
+
+  // whether correlation function has to be considered as termination criterium
+  if (obj.getNoiseModel().compare("COVARIANCE")==0)
+    noise_correlated = 1;
+  else
+    noise_correlated = 0; 
 }
   
 void OptimalDecomposite2D::optimize() {
@@ -62,50 +68,65 @@ void OptimalDecomposite2D::optimize() {
    // step 2) increase nmax until chi^2 = 1 or is flat
    // and store optimalNMax for comparison in step 4
    findOptimalNMax(2);
-//    step 3) intermediate search for beta
-   if (Decomposite2D::getNMax() <= 6 && Decomposite2D::getNMax() > 2) {
-     if (nmaxTrouble) {
-       Decomposite2D::setNMax(optimalNMax);
-     }
+   //Decomposite2D::setNMax(optimalNMax);
+   // step 3) find optimal beta for new shapelet basis
+   // if the order is no multiple of 6 (already tested during step 2).
+   if (Decomposite2D::getNMax()%6 != 0) 
      status = findOptimalBeta(3);
-   }
-   // step 4) continue search for optimal nmax if nmax is not yet optimal
-   //if (optimalNMax == nmaxLow || nmaxTrouble) findOptimalNMax(4);
-   if (optimalNMax == 2 || nmaxTrouble) findOptimalNMax(4);
-   Decomposite2D::setNMax(optimalNMax);
-   // step 5) find optimal beta for new shapelet basis
-   // if the order is bigger than 6
-   if (Decomposite2D::getNMax() > 6) 
-     status = findOptimalBeta(5);
-   // step 6)
-   // we could have run into problems during step 2 or 4, therefore chi^2
+   // step 4)
+   // we could have run into problems during step 2, therefore chi^2
    // might be larger than 1
-   if (optimalChiSquare >  1 + Decomposite2D::getChiSquareVariance()) {
+   if (!noise_correlated && optimalChiSquare >  1 + Decomposite2D::getChiSquareVariance()) {
      history.append("#\n# Decomposition stopped before chi^2 = 1!\n");
      if (flag==0) flag = 4;
    }
-   // step 7) opposite: if chisquare is too good, reduce nmax
+   // step 5) opposite: if chisquare is too good, reduce nmax
    // and increase in steps of 1 to find fit with chisquare close to 1
-   while (optimalChiSquare < 1) {
-     int oldoptimalNMax = Decomposite2D::getNMax();
-     int newNMAX = (int) floor(0.75*oldoptimalNMax)-1;
-     if (newNMAX < nmaxLow) newNMAX = nmaxLow;
-     Decomposite2D::setNMax(newNMAX);
-     text << "#" << endl << "# Searching for lower n_max since chi^2 < 1 - sigma(chi^2)" << endl;
-     text << "# Restarting with n_max = " << newNMAX << "."<< endl;
-     history.append(text);
-     findOptimalNMax(7);
-     Decomposite2D::setNMax(optimalNMax);
-      // step 8) if optimal nmax has decreased now look again for beta and xc
-     if (Decomposite2D::getNMax() < oldoptimalNMax) {
-       history.append("# Found lower n_max.\n");
-       status = findOptimalBeta(8);
+   if (!noise_correlated) {
+     while (optimalChiSquare < 1) {
+       int oldoptimalNMax = Decomposite2D::getNMax();
+       int newNMAX = (int) floor(0.75*oldoptimalNMax)-1;
+       if (newNMAX < nmaxLow) newNMAX = nmaxLow;
+       Decomposite2D::setNMax(newNMAX);
+       text << "#" << endl << "# Searching for lower n_max since chi^2 < 1 - sigma(chi^2)" << endl;
+       text << "# Restarting with n_max = " << newNMAX << "."<< endl;
+       history.append(text);
+       findOptimalNMax(5);
+       Decomposite2D::setNMax(optimalNMax);
+       // step 6) if optimal nmax has decreased now look again for beta and xc
+       if (Decomposite2D::getNMax() < oldoptimalNMax) {
+	 history.append("# Found lower n_max.\n");
+	 status = findOptimalBeta(6);
+       }
+       else if (Decomposite2D::getNMax() == oldoptimalNMax) {
+	 break;
+       }
+       else 
+	 optimalNMax = oldoptimalNMax;
      }
-     else if (Decomposite2D::getNMax() == oldoptimalNMax) {
-       break;
+   }
+   // step 7) when we use the correlation function of the residuals as termination criterium
+   // during 2) or 3) we have found chi^2>1 but corr_res < corr.
+   // search for nmax and beta such that corr_res >= corr
+   else {
+     if (comp_corr < 0) {
+       history.append("#\n# Lowering n_max for residuals compatible with expectation\n");
+       int iter = 1;
+       while (comp_corr < 0) {
+	 int newNMAX = Decomposite2D::getNMax() - 1;
+	 Decomposite2D::setNMax(newNMAX);
+	 std::string comp_corr_string;
+	 double chisquare = Decomposite2D::getChiSquare();
+	 double variance = Decomposite2D::getChiSquareVariance();
+	 checkCorrelationFunctionFromResiduals(comp_corr, comp_corr_string);
+	 text << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
+	 text << chisquare << "\t" << variance << "\t" + comp_corr_string << endl;
+	 history.append(text);
+	 if (comp_corr >= 0)
+	   status = findOptimalBeta(7);
+       }
+       optimalNMax = Decomposite2D::getNMax();
      }
-     else 
-       optimalNMax = oldoptimalNMax;
    }
  }
   // setting up vector -> matrix trafo stuff (for getting coeffs and errors)
@@ -124,22 +145,31 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
   int iter = 1;
   text << "#" << endl << "# Finding optimal decomposition order n_max";
   text << ", beta = " << beta << std::endl;
-  text << "# iter.\tnmax\tchi^2\tsigma(chi^2)" << endl;
+  text << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
+  if (noise_correlated)
+    text<<"\txi_res - xi";
+  text<< endl;
   history.append(text);
 
   double chisquare,newChisquare,derivative_chi2,variance;
+  std::string comp_corr_string;
   chisquare = Decomposite2D::getChiSquare();
   variance = Decomposite2D::getChiSquareVariance();
 
   text << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
-  text << chisquare << "\t" << variance << endl;
+  text << chisquare << "\t" << variance;
+  if (noise_correlated) {
+    checkCorrelationFunctionFromResiduals(comp_corr, comp_corr_string);
+    text<<"\t" + comp_corr_string;
+  }
+  text << endl;
   history.append(text);
 
 // during the first steps of the search only use even orders for a fast decomposition
   // only when decomposition is too good ( chisquare < 1 - sigma), go back and
   // use also odd nmax.
   int increment;
-  if (step == 7) increment = 1;
+  if (step == 5) increment = 1;
   else increment = 2;
   
   if (chisquare <= 1) {
@@ -153,12 +183,24 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     // for a relatively fast findOptimalBeta() here
     if (step == 2 && Decomposite2D::getNMax() == 6) {
       history.append("# Interrupting here for better estimation of beta\n");
-      break;
+      findOptimalBeta(2);
+      history.append("#\n# Continuing search for optimal n_max\n");
+      text << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
+      if (noise_correlated)
+	text<<"\txi_res - xi";
+      text<< endl;
+      history.append(text);
     }
     
-    if (step == 4 && Decomposite2D::getNMax()%12 == 0) {
+    else if (step == 2 && Decomposite2D::getNMax()%6 == 0) {
       history.append("# Interrupting here for better estimation of beta\n");
-      findOptimalBeta(5);
+      findOptimalBeta(3);
+      history.append("#\n# Continuing search for optimal n_max\n");
+      text << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
+      if (noise_correlated)
+	text<<"\txi_res - xi";
+      text<< endl;
+      history.append(text);
     }
     
     // reached the limit of nmax
@@ -178,7 +220,12 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     variance = Decomposite2D::getChiSquareVariance();
 
     text << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
-    text << newChisquare << "\t" << variance << endl;
+    text << newChisquare << "\t" << variance;
+    if (noise_correlated) {
+      checkCorrelationFunctionFromResiduals(comp_corr, comp_corr_string);
+      text<<"\t" + comp_corr_string;
+    }
+    text << endl;
     history.append(text);
 
     // depending on result of chi^2:
@@ -189,6 +236,14 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
       history.append(text);
       break;
     }
+
+    // correlation function of residuals goes below correlation function of noise
+    if (noise_correlated && comp_corr < 0) {
+      history.append("# Stopping here: pixel correlation in residuals becomes less than expected\n");
+      optimalNMax = Decomposite2D::getNMax();
+      break;
+    }
+
     // don't do this during the refinement procedure when chi^2 was already low
     if (step != 7) {
 
@@ -294,10 +349,10 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
   // in step 5) since beta should not change much, set small stepsize here.
   switch (step) {
   case 1: beta *=1.1; stepsize = 0.3*beta; accuracy = 0.02*beta; break;
-  case 3: beta *=0.75; stepsize = 0.2*beta; accuracy = 0.02*beta; break;
-  case 5: beta *=0.90; stepsize = 0.1*beta; accuracy = 0.02*beta; break;
-  case 6: stepsize = 0.1*beta; accuracy = 0.01*beta; break;  
-  case 8: stepsize = 0.1*beta; accuracy = 0.01*beta; break;  
+  case 2: beta *=0.75; stepsize = 0.2*beta; accuracy = 0.02*beta; break;
+  case 3: beta *=0.90; stepsize = 0.1*beta; accuracy = 0.02*beta; break;
+  case 6: stepsize = 0.1*beta; accuracy = 0.01*beta; break;
+  case 7: stepsize = 0.1*beta; accuracy = 0.01*beta; break;
   }
 
   // this ensures beta is within reasonable bounds
@@ -360,7 +415,13 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 	Decomposite2D::setBeta(beta);
 	optimalChiSquare = Decomposite2D::getChiSquare();
 	text<< "# Converged to minimum: chi^2 = " << optimalChiSquare << " at beta = ";
-	text << gsl_vector_get (s->x,0) << endl;
+	text << gsl_vector_get (s->x,0);
+	std::string comp_corr_string;
+	if (noise_correlated) {
+	  checkCorrelationFunctionFromResiduals(comp_corr, comp_corr_string);
+	  text<<", xi_res - xi = (" + comp_corr_string +")";
+	}
+	text << endl; 
 	history.append(text);
       }
   } while (status == GSL_CONTINUE && iter < 50);
@@ -381,6 +442,41 @@ const NumVector<double>& OptimalDecomposite2D::getModel() {
   return Decomposite2D::getModel();
 }
 
+// computes correlation function from residuals and compares it point by point
+// with the one stored in obj
+void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals(char& comp, std::string& comp_string) {
+  const CorrelationFunction& xi = obj.getCorrelationFunction();
+  // look for the bandwidth of V to decide on the size of the box within
+  // which to compute the correlation function
+  unsigned int bandwidth = obj.getPixelCovarianceMatrix().getBandwidth();
+  unsigned int size;
+  switch(bandwidth) {
+  case 1: size=0; break;
+  case 5: size=1; break;
+  case 9: size=1; break;
+  default: size=2; break;
+  }
+  
+  CorrelationFunction xi_res(Decomposite2D::getResiduals(),obj.getGrid(),size);
+  NumVector<double> corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(),
+    corr_res = xi_res.getCorrelationFunction(), sigma_res = xi_res.getCorrelationError();
+
+  comp = 0;
+  comp_string = "";
+  for (uint i=0; i<corr_res.size(); i++) {
+    if (corr(i) + sigma(i) < corr_res(i) - sigma_res(i)) {
+      comp++;
+      comp_string += "+";
+    }
+    else if (corr(i) - sigma(i) > corr_res(i) + sigma_res(i)) {
+      comp--;
+      comp_string += "-";
+    }
+    else 
+      comp_string += "=";
+  }
+}
+ 
 void OptimalDecomposite2D::getShapeletCoeffs(NumMatrix<double>& coeffs) {
   if (!optimized) optimize();
   if (coeffs.getRows() != optimalNMax+1 || coeffs.getColumns() != optimalNMax+1)

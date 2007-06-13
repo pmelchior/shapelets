@@ -50,7 +50,7 @@ void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsig
     uint pixel = *theIterator;
     // loop over all direct neighbors and check if they are above/below threshold
     for (uint dir = 1; dir <= 8 ; dir++) {
-      uint neighbor = Image<int>::getNeighborPixel(pixel,dir);
+      uint neighbor = Image<int>::getGrid().getNeighborPixel(pixel,dir);
       if (neighbor != -1) {
 	if ((data(neighbor) > threshold && positive) || 
 	    (data(neighbor) < threshold && !positive)) {
@@ -89,7 +89,7 @@ void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xm
   list<uint>::iterator iter;
   for (int y = GSL_MAX_INT(ymin,0); y <= GSL_MIN_INT(ymax,axsize1-1); y++) {
     for (int x = GSL_MAX_INT(xmin,0); x <= GSL_MIN_INT(xmax,axsize0-1); x++) {
-      uint j = Image<int>::getPixel(x,y);
+      uint j = Image<int>::getGrid().getPixel(x,y);
       // if pixel is noise: check if its starting point of a noise oscillation 
       // if this is true, segMap(pixel) =  -1 (positive), -2 (negative)
       if (segMap(j) == 0) {
@@ -162,7 +162,7 @@ void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xm
     for(iter = groups[i].begin(); iter != groups[i].end(); iter++) {
       uint pixel = *iter;
       uint x, y;
-      Image<int>::getCoords(pixel,x,y);
+      Image<int>::getGrid().getCoords(pixel,x,y);
       // now set all found pixels (whose distance was stored in the segmap)
       // to nr if their distance is smaller than lower
       // also add them to coreList
@@ -218,11 +218,11 @@ void SegmentationMap::addFrameBorder(double factor, int& xmin, int& xmax, int& y
 // find list of pixels due to given object from segmentation map 
 void SegmentationMap::findObjectPixels(std::list<uint>& pixellist, uint objectnr, int xmin, int xmax, int ymin, int ymax) {
   const NumVector<int>& segMap = Image<int>::getData();
-  uint axsize0 = Image<int>::getSize(0), axsize1 = Image<int>::getSize(1);
+  uint axsize0 = Image<int>::getGrid().getSize(0), axsize1 = Image<int>::getGrid().getSize(1);
   pixellist.clear();
   for (int y = GSL_MAX_INT(ymin,0); y <= GSL_MIN_INT(ymax,axsize1-1); y++) {
     for (int x = GSL_MAX_INT(xmin,0); x <= GSL_MIN_INT(xmax,axsize0-1); x++) {
-      uint j = Image<int>::getPixel(x,y);
+      uint j = Image<int>::getGrid().getPixel(x,y);
       if (segMap(j) == objectnr)
 	pixellist.push_back(j);
     }
@@ -237,7 +237,7 @@ void SegmentationMap::removeObjectInnerPixels(std::list<uint>&  pixellist, uint 
   for(std::list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++) {
     int pixel = *iter;
     for (uint dir=0; dir<9; dir++) {
-      int neighbor = Image<int>::getNeighborPixel(pixel,dir);
+      int neighbor = Image<int>::getGrid().getNeighborPixel(pixel,dir);
       if (neighbor != -1) {
 	if (segMap(neighbor) != nr) {
 	  borderpixels.push_back(neighbor);
@@ -252,7 +252,7 @@ void SegmentationMap::removeObjectInnerPixels(std::list<uint>&  pixellist, uint 
 // draws a rectangular frame with the given limits in the segmenation map
 void SegmentationMap::setSegmentBorder(int tag, int xmin, int xmax, int ymin, int ymax) {
   NumVector<int>& segMap = Image<int>::accessData();
-  uint axsize0 = Image<int>::getSize(0), axsize1 = Image<int>::getSize(1);
+  uint axsize0 = Image<int>::getGrid().getSize(0), axsize1 = Image<int>::getGrid().getSize(1);
   // check if corners are within frame
   if (xmin<0) xmin=0;
   if (xmax>=axsize0) xmax=axsize0-1;
@@ -286,7 +286,7 @@ void SegmentationMap::cleanSegMapArea(int xmin, int xmax, int ymin, int ymax) {
   uint axsize0 = Image<int>::getSize(0), axsize1 = Image<int>::getSize(1);
   for (int y = GSL_MAX_INT(ymin,0); y <= GSL_MIN_INT(ymax,axsize1-1); y++) {
     for (int x = GSL_MAX_INT(xmin,0); x <= GSL_MIN_INT(xmax,axsize0-1); x++) {
-      uint j = Image<int>::getPixel(x,y);
+      uint j = Image<int>::getGrid().getPixel(x,y);
       // positive fluctuations: have to be cleaned to be refound again
       if (segMap(j) == -1)
 	segMap(j) = 0;
@@ -297,12 +297,12 @@ void SegmentationMap::cleanSegMapArea(int xmin, int xmax, int ymin, int ymax) {
 // computes for all pixels in objectlist the euclidean distance to given pixel
 double SegmentationMap::distanceFromRim(std::list<uint>& objectlist, uint pixel) {
   uint x0, y0;
-  Image<int>::getCoords(pixel,x0,y0);
+  Image<int>::getGrid().getCoords(pixel,x0,y0);
   uint x,y;
   double mindist=INFINITY;
   double distance;
   for(std::list<uint>::iterator iter = objectlist.begin(); iter != objectlist.end(); iter++) {
-    Image<int>::getCoords(*iter,x,y);
+    Image<int>::getGrid().getCoords(*iter,x,y);
     distance = sqrt(gsl_pow_2(x0-x) + gsl_pow_2(y0-y));
     if (distance < mindist)
       mindist = distance;

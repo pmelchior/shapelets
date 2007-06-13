@@ -4,6 +4,7 @@
 #include <NumVector.h>
 #include <NumMatrix.h>
 #include <SegmentationMap.h>
+#include <CorrelationFunction.h>
 #include <History.h>
 
 /// Class for the pixel covariance matrix.
@@ -28,7 +29,7 @@ class PixelCovarianceMatrix {
   /// It's assumed that \f$\xi(r\geq2)\approx 0\f$, which is true for most images, 
   /// such that the maximum bandwidth is limited to 9 (the pixel itself and his 
   /// 8 neighbors).
-  void setCovarianceMatrix(const NumVector<double>& data, const SegmentationMap& segMap, History& history);
+  void setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid, History& history);
   /// Get the bandwidth of the covariance matrix.
   /// <tt>bandwidth</tt> is the number of bands in the matrix with values different from 0.
   unsigned int getBandwidth() const ;
@@ -39,6 +40,10 @@ class PixelCovarianceMatrix {
   /// This set the values of the band with a given horizontal <tt>offset</tt> to
   /// <tt>val</tt>.
   void setBand(unsigned int band, int offset, double val);
+  /// Get the offset of the given <tt>band</tt>.
+  int getOffset(unsigned int band) const;
+  /// Get the value of the given <tt>band</tt>.
+  double getValue(unsigned int band) const;
   /// Index operator.
   /// Since the matrix is not stored as a whole but rather only the values and offsets 
   /// of all bands, this method returns <tt>val</tt> if <tt>i-j=offset</tt>.
@@ -66,12 +71,18 @@ class PixelCovarianceMatrix {
   PixelCovarianceMatrix invert() const;
   /// Transpose covariance matrix.
   PixelCovarianceMatrix transpose() const;
-  /// Measures the correlation function <tt>corr</tt> in dependence of the 
-  /// <tt>distance</tt> in the pixel data of the Object.
-  /// It uses the SegmentationMap of the Object to decide which pixels belong to 
-  /// the noise. Thus, this method provides the pixel correlation function of 
-  /// all noise pixels in the image.
-  void getCorrelationFunction(const NumVector<double>& data, const SegmentationMap& segMap, NumVector<double>& corr, NumVector<double>& distance) const;
+  /// Save covariance matrix to text file.
+  /// The format is as follows:
+  /// \code
+  /// # int band int offset double entry
+  /// 0 -1 0.256
+  /// 1  0 1.001
+  /// 2  1 0.310
+  /// \endcode.
+  void save(std::string filename) const;
+  /// Load covariance matrix from a file created by save().
+  void load(std::string filename);
+    
  private:
   unsigned int bandwidth;
   NumVector<int> offset;

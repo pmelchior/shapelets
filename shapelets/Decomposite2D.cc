@@ -5,14 +5,11 @@
 
 namespace ublas = boost::numeric::ublas;
 
-Decomposite2D::Decomposite2D(int innmax, double inbeta, const Object& obj) : 
-data(obj.getData()) {
-  npixels = data.size();
-  // centroid and beta are zero order estimators coming from object extraction
-  xcentroid = obj.getCentroid();
-  grid = obj.getGrid();
+Decomposite2D::Decomposite2D(int innmax, double inbeta, const Object& O) : 
+obj(O) {
   nmax = innmax;
   setBeta(inbeta);
+  npixels = obj.size();
   nCoeffs = getNCoeffs(nmax);
   makeNVector(nVector,nCoeffs,nmax);
   Mt.resize(nCoeffs,npixels);
@@ -35,11 +32,11 @@ data(obj.getData()) {
   }
   else if (obj.getNoiseModel().compare("POISSONIAN")==0) {
     noise = 3;
-    NumVector<double> tmp = data;
+    NumVector<double> tmp = obj;
     Weight.resize(npixels);
     for (int i=0; i < npixels; i++)
       tmp(i) += background_variance;
-    convolveGaussian(tmp,Weight,grid.getSize(0),grid.getSize(1));
+    convolveGaussian(tmp,Weight,obj.getSize(0),obj.getSize(1));
     for (int i=0; i< npixels; i++)
       Weight(i) = 1./Weight(i);
   }
@@ -48,6 +45,8 @@ data(obj.getData()) {
 
 // see Paper III, eq. 83 and following explanation
 void Decomposite2D::makeLSMatrix () {
+  const Point2D& xcentroid = obj.getCentroid();
+  const Grid& grid = obj.getGrid();
   NumMatrix<double> M0(nmax+1,npixels), M1(nmax+1,npixels);
   // start with 0th and 1st order shapelets
   double x0_scaled, x1_scaled;
@@ -103,7 +102,7 @@ void Decomposite2D::computeCoeffs() {
   makeLSMatrix();
   // this is useful only for the regularization in OptimalDecomposite2D
   if (updateC)
-    coeffVector = LS * data;
+    coeffVector = LS * (const NumVector<double>)obj;
   change = 0;
 }
 
@@ -119,12 +118,11 @@ void Decomposite2D::computeModel() {
     updateModel = 0;
   }
 }
-
 void Decomposite2D::computeResiduals() {
   if(updateResiduals || updateModel) {
     if (updateModel)
       computeModel();
-    residual = data;
+    residual = obj;
     residual -= model;
     updateResiduals = 0;
   }
@@ -150,15 +148,12 @@ const NumVector<double>& Decomposite2D::getErrors() {
   // of the coefficients simply by Mt*M
   MtNoise_1 = (Mt*M).invert();
   
-  //NumVector<double> errorVector(nCoeffs);
   // the errors here should be very close to background_rms
   // otherwise orthogonality is spoiled
   for (int i=0; i<errorVector.size(); i++) {
     errorVector(i) = sqrt(MtNoise_1(i,i));
   }
   return errorVector;
-  //errors = NumMatrix<double>(nmax+1,nmax+1);
-  //vectorMapping(errorVector,errors,nVector,nCoeffs);
 }
 
 const NumVector<double>& Decomposite2D::getModel() {
@@ -205,13 +200,6 @@ int Decomposite2D::getNMax() {
   return nmax;
 }
   
-void Decomposite2D::setCentroid(const Point2D& inxcentroid) {
-  if (inxcentroid(0) != xcentroid(0) || inxcentroid(1) != xcentroid(1)) {
-      xcentroid = inxcentroid;
-      change = updateModel = updateResiduals = 1;
-  }
-}
-
 void Decomposite2D::setBeta(double inbeta) {
   if (beta!=inbeta) {
     beta = inbeta;

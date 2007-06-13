@@ -215,7 +215,7 @@ void Frame::fillObject(Object& O) {
       int axis0 = xmax-xmin+1;
       int x = i%axis0 + xmin;
       int y = i/axis0 + ymin;
-      int j = x+y*axsize0;
+      uint j = Image<double>::getGrid().getPixel(x,y);
 
       // if pixel is out of image region, fill noise
       if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {

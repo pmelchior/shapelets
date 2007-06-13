@@ -75,15 +75,12 @@ class OptimalDecomposite2D : private Decomposite2D {
   const History& getHistory();
 
 private:
-  int findOptimalBeta(unsigned char step);
-  void findOptimalNMax(unsigned char step), optimize(), checkBeta();
-  void getCoeffErrorFromBeta(const NumVector<double>& coeffVector, NumVector<double>& errorVector);
-  void getBetaTrafoMatrix(NumMatrix<double>& betaTrafo, double beta1, double beta2);
+  const Object& obj;
   int npixels, optimalNMax, nmaxLow, nmaxHigh, nCoeffs;
   double beta,optimalBeta,optimalChiSquare,bestChiSquare,image_dimension, betaHigh, betaLow;
-  bool optimized, nmaxTrouble;
+  bool optimized, nmaxTrouble, noise_correlated;
   NumMatrix<int> nVector;
-  char flag;
+  char flag, comp_corr;
   History history;
   std::ostringstream text;
   struct regResults {
@@ -95,9 +92,14 @@ private:
     double R;
     NumVector<double> coeffs;
   };
+  int findOptimalBeta(unsigned char step);
+  void findOptimalNMax(unsigned char step), optimize(), checkBeta();
+  void getCoeffErrorFromBeta(const NumVector<double>& coeffVector, NumVector<double>& errorVector);
+  void getBetaTrafoMatrix(NumMatrix<double>& betaTrafo, double beta1, double beta2);
   void appendRegResults(std::vector<regResults>& results, int nmax, double f, double lambda, double beta, double chi2, double R, const NumVector<double>& coeffs);
   int findNMaxofBestF(std::vector<regResults>& results);
   int findSuboptimalResultIndex(std::vector<regResults>& result);
+  void checkCorrelationFunctionFromResiduals(char& comp, std::string& comp_string);
 };
 
 #endif

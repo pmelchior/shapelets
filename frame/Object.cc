@@ -164,6 +164,14 @@ PixelCovarianceMatrix& Object::accessPixelCovarianceMatrix() {
   return cov;
 }
 
+const CorrelationFunction& Object::getCorrelationFunction() const {
+  return xi;
+}
+
+CorrelationFunction& Object::accessCorrelationFunction() {
+  return xi;
+}
+
 void Object::save(std::string fitsfile) {
   const NumVector<double>& data = Image<double>::getData();
   const Grid& grid = Image<double>::getGrid();
