@@ -13,20 +13,12 @@ unsigned int Object::getID() const {
   return id;
 }
 
-const NumVector<double>& Object::getBackgroundMap() const {
-  return bg_mean;
+const NumVector<double>& Object::getWeightMap() const {
+  return weight;
 }
 
-NumVector<double>& Object::accessBackgroundMap() {
-  return bg_mean;
-}
-
-const NumVector<double>& Object::getBackgroundRMSMap() const {
-  return bg_rms;
-}
-
-NumVector<double>& Object::accessBackgroundRMSMap() {
-  return bg_rms;
+NumVector<double>& Object::accessWeightMap() {
+  return weight;
 }
 
 const Point2D& Object::getCentroid() const {
@@ -213,9 +205,7 @@ void Object::save(std::string fitsfile) {
   // save segMap 
   keywords.clear();
   addFITSExtension(fitsfile,"SEGMAP",grid,segMap.getData(),keywords);
-  //if background maps are provided, save them too
-  if (bg_mean.size() != 0)
-    addFITSExtension(fitsfile,"BG_MEAN",grid,bg_mean,keywords);
-  if (bg_rms.size() != 0)
-    addFITSExtension(fitsfile,"BG_RMS",grid,bg_rms,keywords);
+  //if weight map provided, save it too
+  if (weight.size() != 0)
+    addFITSExtension(fitsfile,"WEIGHT",grid,weight,keywords);
 }

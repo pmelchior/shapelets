@@ -16,7 +16,7 @@ obj(O) {
 
   // ways to give pixel errors (depending on noiseModel):
   // GAUSSIAN:   sigma_n -> background_variance
-  // WEIGHT :    background rms map -> weight
+  // WEIGHT :    weight (inverse variance) map -> weight
   // COVARIANCE: pixel cov. matrix -> full cov. matrix
   // POISSONIAN: sigma_n + data -> weight
   if (obj.getNoiseModel().compare("GAUSSIAN")==0) {
@@ -25,7 +25,7 @@ obj(O) {
   }
   else if (obj.getNoiseModel().compare("WEIGHT")==0) {
     noise = 1;
-    Weight = obj.getBackgroundRMSMap();
+    Weight = obj.getWeightMap();
   } else if (obj.getNoiseModel().compare("COVARIANCE")==0) {
     noise = 2;
     V_ = obj.getPixelCovarianceMatrix().invert(); 
@@ -80,18 +80,19 @@ void Decomposite2D::makeLSMatrix () {
       Mt(l,i) = M0(n0,i)*M1(n1,i);
   }
   M = Mt.transpose();
-
+  
   if (noise == 0)
     Mt /= background_variance;
   else if (noise == 1 || noise == 3)
     Mt = Mt*Weight;
   else if (noise == 2)
     Mt = Mt*V_;
-    
-  LS = (Mt*M);
+   
+  LS = Mt*M;
   LS = LS.invert();
   LS = LS*Mt;
   
+
   // SVD method 
   //LS = M.svd_invert(); 
   // overlapping integrals
@@ -101,8 +102,9 @@ void Decomposite2D::makeLSMatrix () {
 void Decomposite2D::computeCoeffs() {
   makeLSMatrix();
   // this is useful only for the regularization in OptimalDecomposite2D
-  if (updateC)
+  if (updateC) {
     coeffVector = LS * (const NumVector<double>)obj;
+  }
   change = 0;
 }
 

@@ -31,16 +31,12 @@ class Object : public Image<double> {
   Object(unsigned int id);
   /// Return the ID.
   unsigned int getID() const;
-  /// Return the background mean values in the region of this object.
-  const NumVector<double>& getBackgroundMap() const;
-  /// Access the background mean values in the region of this object.
-  /// This information is optional.
-  NumVector<double>& accessBackgroundMap();
-  /// Return the background rms values in the region of this object.
-  const NumVector<double>& getBackgroundRMSMap() const;
-  /// Access the background rms values in the region of this object.
-  /// This information is optional.
-  NumVector<double>& accessBackgroundRMSMap();
+  /// Return the weight (inverse variance) map in the region of this object.
+  /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
+  const NumVector<double>& getWeightMap() const;
+  /// Access the weight (inverse variance) map in the region of this object.
+  /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
+  NumVector<double>& accessWeightMap();
   /// Return flux of object.
   /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
   double getFlux() const;
@@ -123,7 +119,7 @@ class Object : public Image<double> {
   
  private:
   unsigned int id;
-  NumVector<double> bg_mean, bg_rms;
+  NumVector<double> weight;
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;
   CorrelationFunction xi;

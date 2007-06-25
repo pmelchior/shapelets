@@ -71,9 +71,15 @@
 class Frame : public Image<double> {
  public:
   /// Argumented constructor.
-  /// The filename of the Fits file and extension have to given
-  /// in the standard cfitsio way: fitsfile[extension].
+  /// <tt>filename</tt> is the name of the Fits file.\n Extensions or other selections can be 
+  // passed in the standard cfitsio way: <tt>filename[extension]</tt>.
   Frame(std::string filename);
+  /// Argemented constructor for including a weight map image.
+  /// <tt>data_file</tt> is the name of the Fits file containing the data, 
+  /// <tt>weight_file</tt> the one of the corresponding weight map.\m
+  /// Extensions or other selections can be 
+  /// passed in the standard cfitsio way: <tt>data_file[extension]</tt>.
+  Frame(std::string data_file, std::string weight_file);
   /// Return noise mean \f$\mu_n\f$.
   /// The mean is obtained by \f$\kappa-\sigma\f$-clipping of the noisy pixel data.
   /// see NumVector::kappa_sigma_clip() for details.
@@ -125,12 +131,14 @@ class Frame : public Image<double> {
 
  private:
   double noise_mean, noise_rms;
+  Image<double> weight;
   void estimateNoise();
   void reset();
-  void addFrameBorder(int& xmin, int& xmax, int& ymin, int& ymax);
+  void addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax);
+  double getThreshold(unsigned int pixel, double factor);
   SegmentationMap segMap;
   std::vector< std::list<unsigned int> > objectsPixels;
-  bool subtractedBG, estimatedBG, foundObjects;
+  bool subtractedBG, estimatedBG;
   unsigned int numberofObjects;
   History history;
   std::ostringstream text;

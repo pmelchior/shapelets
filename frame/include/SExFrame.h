@@ -68,9 +68,15 @@
 class SExFrame : public Image<double> {
  public:
   /// Argumented constructor.
-  /// The name of the Fits file and to appropriate extension have to be given 
-  /// in the standard cfitsio way: fitsfile[extension].
-  SExFrame(std::string fitsfile);
+  /// <tt>filename</tt> is the name of the Fits file.\n Extensions or other selections can be 
+  // passed in the standard cfitsio way: <tt>filename[extension]</tt>.
+  SExFrame(std::string filename);
+  /// Argemented constructor for including a weight map image.
+  /// <tt>data_file</tt> is the name of the Fits file containing the data, 
+  /// <tt>weight_file</tt> the one of the corresponding weight map.\m
+  /// Extensions or other selections can be 
+  /// passed in the standard cfitsio way: <tt>data_file[extension]</tt>.
+  SExFrame(std::string data_file, std::string weight_file);
   /// Destructor.
   ~SExFrame();
   /// Read the SExtractor catalog file.
@@ -152,6 +158,7 @@ class SExFrame : public Image<double> {
   NumVector<int> segMap;
   double bg_mean, bg_rms;
   unsigned int axsize0, axsize1;
+  Image<double> weight;
   gsl_rng* r;
   History history;
   std::ostringstream text;

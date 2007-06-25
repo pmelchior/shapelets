@@ -9,21 +9,27 @@ using namespace std;
 
 typedef unsigned int uint;
 
-SegmentationMap::SegmentationMap(const Image<double>& image) : Image<int>(), data(const_cast<NumVector<double>& >(image.getData())) {
+SegmentationMap::SegmentationMap(const Image<double>& image) : Image<int>(), data(const_cast<NumVector<double>& >(image.getData())), weight() {
   Image<int>::accessData().resize_clear(image.size());
   Image<int>::accessGrid() = image.getGrid();
 }
 
-SegmentationMap::SegmentationMap(string segMapFile, const Image<double>& image) : Image<int>(segMapFile), data(const_cast<NumVector<double>& >(image.getData())) {
+SegmentationMap::SegmentationMap(const Image<double>& image, const Image<double>& weightmap) : Image<int>(), data(const_cast<NumVector<double>& >(image.getData())), weight(const_cast<NumVector<double>& >(weightmap.getData())) {
+  Image<int>::accessData().resize_clear(image.size());
+  Image<int>::accessGrid() = image.getGrid();
 }
 
-SegmentationMap::SegmentationMap(const SegmentationMap& segIn) : Image<int>(), data(segIn.data) {
+SegmentationMap::SegmentationMap(string segMapFile, const Image<double>& image) : Image<int>(segMapFile), data(const_cast<NumVector<double>& >(image.getData())), weight() {
+}
+
+SegmentationMap::SegmentationMap(const SegmentationMap& segIn) : Image<int>(), data(segIn.data), weight(segIn.weight) {
   Image<int>::operator=(segIn);
 }
 
-void SegmentationMap::operator=(const SegmentationMap& segMap) {
-  Image<int>::operator=(segMap);
-  data = segMap.data;
+void SegmentationMap::operator=(const SegmentationMap& segIn) {
+  Image<int>::operator=(segIn);
+  data = segIn.data;
+  weight = segIn.weight;
 }
 
 unsigned int SegmentationMap::getNumberOfObjects() {
@@ -37,7 +43,22 @@ unsigned int SegmentationMap::getNumberOfObjects() {
   return objects.size();
 }
 
-void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, double threshold, bool positive) {
+double SegmentationMap::getThreshold(unsigned int pixel, double factor, double noise_mean, double noise_rms, bool positive) {
+  if (weight.size()==0) {
+    if (positive)
+      return noise_mean + factor*noise_rms;
+    else
+      return noise_mean - factor*noise_rms;
+  }
+  else {
+    if (positive)
+      return noise_mean + factor*sqrt(1./weight(pixel));
+    else
+      return noise_mean - factor*sqrt(1./weight(pixel));
+  }
+}
+
+void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, double threshold, double noise_mean, double noise_rms, bool positive) {
   NumVector<int>& segMap = Image<int>::accessData();
   pixellist.clear();
   pixellist.push_back(startpixel);
@@ -52,8 +73,9 @@ void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsig
     for (uint dir = 1; dir <= 8 ; dir++) {
       uint neighbor = Image<int>::getGrid().getNeighborPixel(pixel,dir);
       if (neighbor != -1) {
-	if ((data(neighbor) > threshold && positive) || 
-	    (data(neighbor) < threshold && !positive)) {
+	double threshold_neighbor = getThreshold(neighbor,threshold,noise_mean,noise_rms,positive);
+	if ((data(neighbor) > threshold_neighbor && positive) || 
+	    (data(neighbor) < threshold_neighbor && !positive)) {
 	  if (segMap(neighbor) == 0) {
 	    pixellist.push_back(neighbor);
 	    segMap(neighbor) = tag;
@@ -81,8 +103,6 @@ void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xm
 
   // minimum nummber of pixels to be regarded as "group"
   uint minPixels = (uint) ceil(0.5*gsl_pow_2(correlationLength));
-  // positive and negative thresholds
-  double thresh_pos = bg_mean + bg_rms, thresh_neg = bg_mean - bg_rms;
 
   std::list<uint> pixellist;
   std::vector<std::list<uint> > groups;
@@ -94,14 +114,17 @@ void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xm
       // if this is true, segMap(pixel) =  -1 (positive), -2 (negative)
       if (segMap(j) == 0) {
 	bool positive = 0;
-	// positive
+	// define thresholds for 1-sigma fluctuations
+	double thresh_pos = getThreshold(j,1.0,bg_mean,bg_rms,1);
+	double thresh_neg = getThreshold(j,1.0,bg_mean,bg_rms,0);
+	// positive pixels
 	if (data(j) > thresh_pos) {
 	  positive = 1;
-	  linkPixelsSetMap(pixellist,j, -1, thresh_pos, positive);
+	  linkPixelsSetMap(pixellist,j, -1, 1.0, bg_mean, bg_rms, positive);
 	}
-	// negative
+	// negative pixel
 	else if (data(j) < thresh_neg)
-	  linkPixelsSetMap(pixellist,j, -2, thresh_neg, positive);
+	  linkPixelsSetMap(pixellist,j, -2, 1.0, bg_mean, bg_rms, positive);
 
 	// found no larger oscillation: restore pixelmap
 	if (pixellist.size() <= minPixels)

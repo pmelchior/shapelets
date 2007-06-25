@@ -2,6 +2,7 @@
 #define OPTIMAL_DECOMPOSITE2D_H
 
 #include <gsl/gsl_vector.h>
+#include <map>
 #include <Decomposite2D.h>
 #include <Point2D.h>
 #include <Grid.h>
@@ -83,6 +84,8 @@ private:
   char flag, comp_corr;
   History history;
   std::ostringstream text;
+  std::string comp_corr_string;
+  std::map<int, double> bestBeta, bestChi2;
   struct regResults {
     int nmax;
     double f;
@@ -99,7 +102,7 @@ private:
   void appendRegResults(std::vector<regResults>& results, int nmax, double f, double lambda, double beta, double chi2, double R, const NumVector<double>& coeffs);
   int findNMaxofBestF(std::vector<regResults>& results);
   int findSuboptimalResultIndex(std::vector<regResults>& result);
-  void checkCorrelationFunctionFromResiduals(char& comp, std::string& comp_string);
+  void checkCorrelationFunctionFromResiduals();
 };
 
 #endif

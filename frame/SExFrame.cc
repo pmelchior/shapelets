@@ -34,6 +34,27 @@ SExFrame::SExFrame (std::string fitsfile) : Image<double>(fitsfile) {
   r = gsl_rng_alloc (T);
 }
 
+SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<double>(fitsfile) {
+  weight = Image<double>(weightfile);
+  SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
+  sf = empty;
+  catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
+  bg_mean = bg_rms = 0;
+  // axsizes of underlying Image copied since often used
+  axsize0 = Image<double>::getSize(0);
+  axsize1 = Image<double>::getSize(1);
+
+  text << "# Reading FITS file " << fitsfile << endl;
+  text << "# Image properties: size = "<< axsize0 << "/" << axsize1 << std::endl; 
+  history.append(text);
+
+  // for artificial noise
+  const gsl_rng_type * T;
+  gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+}
+
 SExFrame::~SExFrame() {
   gsl_rng_free (r);
 }
@@ -155,6 +176,9 @@ void SExFrame::fillObject(Object& O) {
   objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
   SegmentationMap& objSegMap = O.accessSegmentationMap();
   objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
+  NumVector<double>& objWeightMap = O.accessWeightMap();
+  if (weight.size()!=0) 
+    objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
 
   for (int i =0; i < objdata.size(); i++) {
     // old coordinates derived from new pixel index i
@@ -169,6 +193,8 @@ void SExFrame::fillObject(Object& O) {
     if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
       objdata(i) = gsl_ran_gaussian (r, bg_rms);
       objSegMap(i) = 0;
+      if (weight.size()!=0) 
+	objWeightMap(i) = 1./gsl_pow_2(bg_rms);
       if (!subtractBG)
 	objdata(i) += bg_mean;
     } 
@@ -186,6 +212,8 @@ void SExFrame::fillObject(Object& O) {
 	  objdata(i) -= bg_mean;
       }
       objSegMap(i) = segMap(j);
+      if (weight.size()!=0) 
+	objWeightMap(i) = weight(j);
     }
   }
     

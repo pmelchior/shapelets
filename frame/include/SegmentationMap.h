@@ -17,6 +17,9 @@ class SegmentationMap : public Image<int> {
  public:
   /// Constructor for generating a new segmentation map from a FitsImage.
   SegmentationMap(const Image<double>& image);
+  /// Constructor for generating a new segmentation map from a FitsImage and an appropriate
+  /// weight (inverse variance) map.
+  SegmentationMap(const Image<double>& image, const Image<double>& weight);
   /// Constructor from the existing segmentation FITS file <tt>segMapFile</tt>.
   /// The <tt>image</tt> has to be defined on the same Grid as the given  
   /// segmentation map.
@@ -35,7 +38,7 @@ class SegmentationMap : public Image<int> {
   /// <tt>segMap(startpixel) = tag</tt> if <tt>imageData(startpixel) > (<) threshold</tt>.
   /// Then it performs these two steps for all neighbors of pixels in the list until no
   /// new pixels are found.
-  void linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, double threshold, bool positive);
+  void linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, double threshold, double noise_mean, double noise_rms, bool positive);
   /// Find the positive halo around the object which is typically unrecognized by a 
   /// threshold detection.
   /// Starting from <tt>corelist</tt> (already found pixels of object),
@@ -73,10 +76,11 @@ class SegmentationMap : public Image<int> {
   /// The extension has to given in the standard cfitsio way as <tt>filename[extension]</tt>.
   void save(std::string filename, std::map<std::string,std::string> keywords);
  private:
-  NumVector<double>& data;
+  NumVector<double>& data, weight;
   void addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax);
   double distanceFromRim(std::list<unsigned int>& objectlist, unsigned int pixel);
   void cleanSegMapArea(int xmin, int xmax, int ymin, int ymax);
+  double getThreshold(unsigned int pixel, double factor, double noise_mean, double noise_rms, bool positive);
 };
 
 #endif
