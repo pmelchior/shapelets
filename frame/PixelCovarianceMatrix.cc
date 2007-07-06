@@ -270,8 +270,6 @@ PixelCovarianceMatrix PixelCovarianceMatrix::invert() const {
     uint N = GSL_MAX_INT(10,offset.max())*5;
     if (N%2==1) N++; // ensure that divides by 2
     NumMatrix<double> M = getMatrix(N).svd_invert();
-    writeFITSFile("V.fits",getMatrix(N));
-    addFITSExtension("V.fits","SVD_INV",M);
 
     int center = N/2;
     double max = fabs(M(center,center));
