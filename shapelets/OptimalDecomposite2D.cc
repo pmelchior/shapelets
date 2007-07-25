@@ -8,6 +8,7 @@
 // for chi^2 minimization
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
+#include <gsl/gsl_min.h>
 #include <gsl/gsl_multimin.h>
 #include <gsl/gsl_sf.h>
 
@@ -87,7 +88,7 @@ void OptimalDecomposite2D::optimize() {
    if (!noise_correlated) {
      while (optimalChiSquare < 1) {
        int oldoptimalNMax = Decomposite2D::getNMax();
-       int newNMAX = (int) floor(0.75*oldoptimalNMax)-1;
+       int newNMAX = (int) floor(0.75*oldoptimalNMax) - 1;
        if (newNMAX < nmaxLow) newNMAX = nmaxLow;
        Decomposite2D::setNMax(newNMAX);
        text << "#" << endl << "# Checking for lower n_max: chi^2 < 1" << endl;
@@ -245,7 +246,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     history.append(text);
 
     // depending on result of chi^2:
-    // chisquare is smaller than 1 + sigma: we've reached the goal
+    // chisquare is smaller than 1: we've reached the goal
     if (newChisquare <= 1) {
       optimalNMax = Decomposite2D::getNMax();
       text << "# Optimal decomposition order n_max = " << optimalNMax << endl;
@@ -261,7 +262,16 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     }
 
     // don't do this during the refinement procedure when chi^2 was already low
+
     if (step != 5) {
+//       // flattening: chi^2 does improves less than sigma(chi^2)
+//       if (!nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
+// 	  bestChiSquare = chisquare = newChisquare;
+// 	  optimalNMax = Decomposite2D::getNMax();
+// 	  text << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
+// 	  history.append(text);
+// 	  break;
+//       }
 
       // now decomposition get worse, not a good sign
       // save best nmax and chi2
@@ -326,31 +336,46 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 // this essentially links back to *this
 struct parameters {
   Decomposite2D& d;
-  double betaLow;
-  double betaHigh;
 };
 
 // Since the minimizer is GSL function written in C, it is not able
 // to call a member function by reference.
 // So this one is global.
-double getChiSquare_Beta (const gsl_vector *v, void *p) {
-  double beta, result;
+double getChiSquare_Beta (double beta, void *p) {
   parameters * decomp = (parameters *)p;
-  beta = gsl_vector_get(v, 0);
-  // constraints on beta: betaLow <= beta <= betaHigh
-  if (beta >= decomp->betaLow && beta <= decomp->betaHigh) {
-    decomp->d.setBeta(beta);
-    result =  decomp->d.getChiSquare();
+  decomp->d.setBeta(beta);
+  return decomp->d.getChiSquare();
+}
+
+bool OptimalDecomposite2D::testBetaLowerLimit(double& beta) {
+  // undersampling is minimum beta to avoid 2*theta_min < 1
+  // see Paper IV, eq. (13)
+  double undersampling = 0.5*sqrt(Decomposite2D::getNMax()+1.);
+  if (beta < GSL_MAX(undersampling,betaLow)) {
+    beta = GSL_MAX(undersampling,betaLow);
+    return 0;
   } else
-    result = INFINITY ; // make chi^2 worse if beta is out of bounds
-   return result;
+    return 1;
+}
+
+bool OptimalDecomposite2D::testBetaUpperLimit(double& beta) {
+  // geometric is maximum beta to avoid theta_max > image_dimension
+  double geometric = image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
+  if (beta > GSL_MIN(geometric, betaHigh)) {
+    beta = GSL_MIN(geometric, betaHigh);
+    return 0;
+  } else
+    return 1;
 }
 
 // searches for beta which minimizes chi^2
 // beta is contrained by image_dimension/2
 // return 0 if minimum has been found, -2 if not, and other numbers for error codes
 int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
-  
+  text << "#" << endl << "# Finding optimal beta";
+  text << ", n_max = " << Decomposite2D::getNMax() << endl;
+  history.append(text);
+
   // first check if we already did a minimization at this nmax
   map<int,double>::iterator iter = bestBeta.find(Decomposite2D::getNMax());
   if (iter != bestBeta.end()) {
@@ -358,8 +383,6 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     Decomposite2D::setBeta(optimalBeta);
     iter = bestChi2.find(Decomposite2D::getNMax());
     optimalChiSquare = iter->second;
-    text << "#" << endl << "# Finding optimal beta";
-    text << ", n_max = " << Decomposite2D::getNMax() << endl;
     text<< "# Using already found minimum: chi^2 = " << optimalChiSquare << " at beta = ";
     text << beta;
     if (noise_correlated) {
@@ -370,82 +393,167 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     history.append(text);
     return 0;
   }
-
+  
   // not minimized yet
   else {
-    size_t np = 1;
     size_t iter = 0;
     int status;
-    double stepsize, size, accuracy;
-    double geometric_constraint = image_dimension/(2*sqrt(Decomposite2D::getNMax() +1.0));
+    double a,b, accuracy;
 
     // in step 1) correct beta is completely unknown, therefore define very loose bounds a,b
     // since this probably not be the last call of the function, coarse accuracy is enough
     // in step 2) beta is expected to decrease since nmax is larger than before, but things
     // are still quite uncertain
     // in steps 3-7) accuracy is improving as is the a priori knowledge of beta
+    // in steps 6,7) we try to find lower nmax, which raises beta, thus b higher
     switch (step) {
-    case 1: stepsize = 0.3*beta; accuracy = 0.05*beta; break;
-    case 2: beta *=0.75; stepsize = 0.2*beta; accuracy = 0.01*beta; break;
-    case 3: stepsize = 0.1*beta; accuracy = 0.01*beta; break;
-    case 6: stepsize = 0.05*beta; accuracy = 0.01*beta; break;
-    case 7: stepsize = 0.05*beta; accuracy = 0.01*beta; break;
+    case 1: a = 0.5*beta; b = 2*beta; accuracy = 0.03*beta; break;
+    case 2: beta *=0.75; a = 0.66*beta; b = 1.5*beta; accuracy = 0.02*beta; break;
+    case 3: a = 0.8*beta; b = 1.1*beta; accuracy = 0.01*beta; break;
+    case 6: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
+    case 7: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
     }
+    
+    text << "# initial setup: a = " << a << ", beta = " << beta << ", b = " << b << endl;
+    history.append(text);
 
     // this ensures beta is within reasonable bounds
-    // according to undersampling and orthogonality
-    if (betaLow < 0.2) betaLow = 0.2;
-    if (betaHigh > geometric_constraint) betaHigh = geometric_constraint;
-    if (beta < betaLow) beta = betaLow;
-    if (beta > betaHigh) beta = betaHigh;
+    // according to undersampling, orthogonality and evtl. specified bounds on beta
+    // in addition, we have to ensure that a < beta < b for the minimizer below
+    bool testa = testBetaLowerLimit(a), testb = testBetaUpperLimit(b);
+    bool limitTrouble = 0;
+    double mina=0, maxb=image_dimension;
+    testBetaLowerLimit(mina); // mina = minimal allowed scale size
+    testBetaUpperLimit(maxb); // maxb = maximal allowed scale size
 
-    text << "#" << endl << "# Finding optimal beta";
-    text << ", n_max = " << Decomposite2D::getNMax() << endl;
-    text << "# Setting limits: " << betaLow << " <= beta <= " << betaHigh << endl;;
+    if (a < beta && beta < b); // as it should be
+    else { // testa == 1 or testb == 1
+      if (a==b) {
+	// if upper and lower bound on beta are identical, we don't have to do anything
+	optimalBeta = beta = a;
+	Decomposite2D::setBeta(optimalBeta);
+	optimalChiSquare = Decomposite2D::getChiSquare();
+	bestBeta[Decomposite2D::getNMax()] = optimalBeta;
+	bestChi2[Decomposite2D::getNMax()] = optimalChiSquare;
+	text << "# Beta = " << beta << " by external constraints: chi^2 = " << optimalChiSquare << endl;
+	history.append(text);
+	return 0;
+      }
+      else if (b < a) { // one of the constraints (on a or b) is severe
+	if (testa) { // a can still be lowered
+	  if (mina < b)
+	    a = 0.5*(mina+b); // a < b 
+	  else
+	    limitTrouble = 1;
+	}
+	else if (testb) { // b can be lowered
+	  if (maxb > a)
+	    b = 0.5*(maxb+a); // a < b
+	  else
+	    limitTrouble = 1;
+	}
+	else
+	  limitTrouble = 1;
+	if (limitTrouble) {
+	  history.append("# Constraints on beta to severe. Minimization impossible!\n");
+	  return -2;
+	}
+      }
+      if (beta < a || beta > b)
+	beta = 0.5*(a+b); // a < beta < b
+    }
+    text << "# after checking limits: a = " << a << ", beta = " << beta << ", b = " << b << endl;
+    history.append(text);
+
+    // for the bracketing used in the minimizer we have to also ensure that
+    // f(a) > f(beta) and f(b) > f(beta);
+    Decomposite2D::setBeta(beta);
+    double f = Decomposite2D::getChiSquare();
+    Decomposite2D::setBeta(a);
+    double fa = Decomposite2D::getChiSquare();
+    Decomposite2D::setBeta(b);
+    double fb = Decomposite2D::getChiSquare();
+    text << "# starting values: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
+    history.append(text);
+    
+    if (fa < fb) {
+      while (fa <= f) {
+	// shift everything towards a
+	if (fa != f)
+	  b = beta; fb = f;
+	beta = a; f = fa;
+	// check if a gets out of bounds
+	a /=1.5;
+	if (testBetaLowerLimit(a)) {
+	  Decomposite2D::setBeta(a);
+	  fa = Decomposite2D::getChiSquare();
+	}
+	// if yes: shift it just a little further apart, but make
+	// its result so worse that will not be considered later
+	else {
+	  a = mina;
+	  a -= accuracy/2;
+	  fa = fb; // since fb > fa and f = fa, this terminates the loop
+	}
+      }
+    } else {
+      while (fb <= f) {
+	// or shift everything towards b
+	if (fb != f)
+	  a = beta; fa = f;
+	beta = b; f = fb;
+	// check if b gets out of bounds
+	b *= 1.5;
+	if (testBetaLowerLimit(b)) {
+	  Decomposite2D::setBeta(b);
+	  fb = Decomposite2D::getChiSquare();
+	}
+	// as above: shift it slightly and make it worse enough
+	else {
+	  b = maxb;
+	  b += accuracy/2;
+	  fb = fa;
+	}
+      }
+    }
+    text << "# after bracketing: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
+    history.append(text);
+    
+    text << "# Setting limits: " << a << " <= beta <= " << b << endl;
     text << "# Starting with beta = " << beta << endl;
     text << "# iter.\tchi^2\tbeta\tdelta(beta)" << endl;
     history.append(text);
 
     size_t max_iter = 100;
-    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
-    gsl_multimin_fminimizer *s = NULL;
-    gsl_vector *ss, *x;
-    parameters params = { *this, betaLow, betaHigh };
-    gsl_multimin_function F;
-
-    // define initial vertex vector
-    ss = gsl_vector_alloc (np);
-    // define primary stepsize
-    gsl_vector_set_all (ss,stepsize);
-
-    // Starting point
-    x = gsl_vector_alloc (np);
-    gsl_vector_set (x, 0, beta);
+    const gsl_min_fminimizer_type *T = gsl_min_fminimizer_brent;
+    gsl_min_fminimizer *s = gsl_min_fminimizer_alloc (T);
 
     // define the function which should be minimized and its parameters
-    F.f = &getChiSquare_Beta;
-    F.n = np;
+    gsl_function F;
+    F.function = &getChiSquare_Beta;
+    parameters params = { *this };
     F.params = &params;
-    s = gsl_multimin_fminimizer_alloc (T, np);
-    gsl_multimin_fminimizer_set (s, &F, x, ss);
+
+    // initialize the minizer with already found values from above
+    gsl_min_fminimizer_set_with_values (s, &F, beta, f, a, fa, b, fb);
 
     do {
       iter++;
-      status = gsl_multimin_fminimizer_iterate(s);
+      status = gsl_min_fminimizer_iterate (s);
      
-      if (status)
-	break;
-
+      beta = gsl_min_fminimizer_x_minimum (s);
+      a = gsl_min_fminimizer_x_lower (s);
+      b = gsl_min_fminimizer_x_upper (s);
+     
       // the accuracy comes in here:
       // when size is smaller than accuracy we have convergence
-      size = gsl_multimin_fminimizer_size (s);
-      status = gsl_multimin_test_size (size,accuracy);
-
-      text << "# " << iter << "\t" << s->fval << "\t" << gsl_vector_get (s->x,0) << endl;
+      status = gsl_min_test_interval (a, b, accuracy, 0.0);
+     
+      text << "# " << iter << "\t" << gsl_min_fminimizer_f_minimum(s) << "\t" << beta << "\t" << b-a << endl;
       history.append(text);
 
       if (status == GSL_SUCCESS) {
-	optimalBeta = gsl_vector_get (s->x, 0);
+	optimalBeta = beta;
 	Decomposite2D::setBeta(beta);
 	optimalChiSquare = Decomposite2D::getChiSquare();
 	text<< "# Converged to minimum: chi^2 = " << optimalChiSquare << " at beta = ";
@@ -463,9 +571,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     bestBeta[Decomposite2D::getNMax()] = optimalBeta;
     bestChi2[Decomposite2D::getNMax()] = optimalChiSquare;
 
-    gsl_vector_free(x);
-    gsl_vector_free(ss);
-    gsl_multimin_fminimizer_free (s);
+    gsl_min_fminimizer_free (s);
     return status;
   }
 }

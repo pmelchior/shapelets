@@ -103,6 +103,8 @@ private:
   int findNMaxofBestF(std::vector<regResults>& results);
   int findSuboptimalResultIndex(std::vector<regResults>& result);
   void checkCorrelationFunctionFromResiduals();
+  bool testBetaLowerLimit(double& beta);
+  bool testBetaUpperLimit(double& beta);
 };
 
 #endif
