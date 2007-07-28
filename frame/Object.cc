@@ -65,7 +65,7 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
     std::cout << npixels << " " << grid_min_0 << " " << grid_max_0 << " " << grid_min_1 << " " << grid_max_1 << " "<< Image<double>::getGrid().size();
     std::terminate();
   }
-  data::resize(npixels);
+  Image<double>::resize(npixels);
   long firstpix[2] = {1,1};
   double vald;
   int imageformat, datatype;
