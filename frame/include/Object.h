@@ -26,9 +26,12 @@
 
 class Object : public Image<double> {
  public:
-  /// Constructor.
+  /// Argumented constructor.
   /// The ID is the object ID determined during the segmentation process
   Object(unsigned int id);
+  /// Argumented constructor for loading an object from a Fits file.
+  /// The Fits file shold have been created by Object::save().
+  Object (std::string fitsfile);
   /// Return the ID.
   unsigned int getID() const;
   /// Return the weight (inverse variance) map in the region of this object.
@@ -108,8 +111,9 @@ class Object : public Image<double> {
   /// in the FITS header.
   void setBaseFilename(std::string filename);
   /// Save the object information in a Fits file.
-  /// Data and Grid will go into the data unit, all other information into the header.
-  /// If background maps are provided, these will be stored in FITS extensions.
+  /// Data and SegmentationMap will go to pHDU and 1st extHDU, respectively. 
+  /// All other information goes to the pHDU header.
+  /// If a weight map is provided, these will be stored in the 2nd extHDU.
   void save(std::string fitsfile);
   /// History of the object
   History history;

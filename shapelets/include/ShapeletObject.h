@@ -39,25 +39,20 @@ to associate physical quantities of the galaxies to functions of their shapelet 
 one can do the physical analysis in the much smaller shapelet space instead of the real 
 space, thus saving memory and computation time.
 \section References
-- Refregier A., 2003, MNRAS, 338, 35 (later called: Paper I)
-- Refregier A., Bacon D., 2003, MNRAS, 338, 48 (Paper II)
-- Massey R., Refregier A., 2005, MNRAS, 363, 197 (Paper III)
-- Melchior, P. et al., 2006 [astro-ph/0608369] (Paper IV)
+- Refregier A., MNRAS, 2003, 338, 35 (later called: Paper I)
+- Refregier A. & Bacon D., MNRAS, 2003, 338, 48 (Paper II)
+- Massey R. & Refregier A.,MNRAS, 2005, 363, 197 (Paper III)
+- Melchior, P. et al., A&A, 2007, 463, 1215 (Paper IV)
 
 \section Additional Libraries
-- CCFits: Wrapper for cfitsio library to work with FITS files, in C++ (http://heasarc.gsfc.nasa.gov/docs/software/fitsio/ccfits/).
+- cfitsio: library to work with FITS files, in C (http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html).
 - GNU Scientific Library (GSL): Free and well tested implementation of common 
 (and also not so common) mathematical functions and procedures in C 
 (http://www.gnu.org/software/gsl/).
-- uBLAS: Numeric vector and matrix implementation in C++ with bindings to Linear Algebra 
- libraries (http://www.boost.org/libs/numeric/ublas/doc/).
-- ATLAS: Optimized combination of Linear Algebra routines from BLAS and LAPACK, in C 
- (http://math-atlas.sourceforge.net/).
-- LAPACK: Linear Algebra solver routines, in Fortran (http://www.netlib.org/lapack/).\n\n
+- boost: various extensions to standard C++ (http://www.boost.org/)
+- FFTW3: fast code for Fourier transforms, in C (http://www.fftw.org/)
+- numla: library for doing vector and matrix operations conveniently and fast (https://www.ita.uni-heidelberg.de/internal/projects/numla)
 
-\section Note
-In order to use both ATLAS and LAPACK (since ATLAS unfortunately doesn't support 
-all LAPACK routines) one has to rename ATLAS' liblapack.a to liblapack-atlas.a.
 
 \author Peter Melchior (pmelchior at ita dot uni-heidelberg dot de)
 */

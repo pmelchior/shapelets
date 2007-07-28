@@ -11,13 +11,13 @@
 #include <SegmentationMap.h>
 
 /// Image preprocessing class.
-/// The purpose of this class is to read in a FitsImage and segment it into individual
+/// The purpose of this class is to read in a Image and segment it into individual
 /// Object entities.\n
 /// The image processing includes:
 /// - background noise estimation
 /// - detection of objects in the frame
 /// - segmentation of the frame into segments with one object each
-/// - cleaning of the segments from disturbing noise or overlapping objects.
+/// - cleaning of the segments from overlapping objects.
 ///
 /// It thus allows the automatic processing of all significant objects in the image.
 /// Two typical scenarios are presented here:
@@ -60,10 +60,13 @@
 ///  - 1: another object nearby, but not overlapping
 ///  - 2: object close to the image boundary, frame extended with noise, possible cut-off
 ///  - 4: object cut-off at the image boundary
-/// - \p noiseModel is "GAUSSIAN".
+/// - If a weight map is not given, <tt>noiseModel="GAUSSIAN"</tt>, otherwise 
+///   <tt>noisemodel="WEIGHT"</tt>
 /// - \p StarGalaxyProbability and \p BlendingProbability are not set.
-/// 
-/// In addition, the SegmentationMap of the FitsImage can be obtained from 
+/// - Its segmentation map is an appropriate cutout of the full segmentation map.
+/// - If provided, its weight map is an appropriate cutout of the full weight map.
+///
+/// The full SegmentationMap of the Image can be obtained from 
 /// getSegmentationMap() after calling findObjects().\n\n
 /// If detection of blended objects or stars is neccessary, use SExFrame instead.
 /// 

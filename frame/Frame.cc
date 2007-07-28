@@ -6,6 +6,8 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_histogram.h>
+#include <algorithm>
+
 using namespace std;
 
 typedef unsigned int uint;
@@ -76,9 +78,10 @@ void Frame::subtractBackground() {
 // return threshold for findObject
 // if weight map is provided, uses rms from this
 double Frame::getThreshold(unsigned int pixel, double factor) {
-  if (!estimatedBG) estimateNoise();
-  if (weight.size()==0)
+  if (weight.size()==0) {
+    if (!estimatedBG) estimateNoise();
     return noise_mean + factor*noise_rms;
+  }
   else
     return noise_mean + factor*sqrt(1./weight(pixel));
 }
@@ -100,59 +103,47 @@ void Frame::findObjects(unsigned int minPixels, double significanceThreshold, do
   list<uint>::iterator iter;
   objectsPixels.push_back(pixellist); // since object numbers start with 1, add a empty list
 
-  // find the maximum pixel in the field
-  double maxvalue=0;
-  uint maxindex = 0;
-  for (uint i=0; i< npixels; i++) {
-    if (data(i) > maxvalue) {
-      maxvalue = data(i);
-      maxindex = i;
-    }
-  }
-
-  // define detection threshold with global (or local: with weight map) 
-  // noise values and supplied threshold levels
-  // signficance threshols is passed to linkPixelsSetMap
-  double highThreshold = getThreshold(maxindex,detectionThreshold);
-    
-  // there is a detected maximum (not a flat (noisy) image)
-  if (data(maxindex) > highThreshold) {
-    // search for all pixels connected to the maximum one
-    segMap.linkPixelsSetMap (pixellist,maxindex,counter,significanceThreshold,noise_mean,noise_rms,1);
-    // if maximum has enough pixels define it as object 1
-    if (pixellist.size() >= minPixels) {
-      text << "# Maximum Object 1 detected with " << pixellist.size() << " significant pixels at (" << maxindex%(Image<double>::getSize(0)) << "/" << maxindex/(Image<double>::getSize(0)) << ")" << std::endl;
-      history.append(text);
-      objectsPixels.push_back(pixellist);
-      // if not, mark the pixels int the active list with -1 (seen, but not big enough)
-    } else {
-      for(iter = pixellist.begin(); iter != pixellist.end(); iter++ )
-	segMap(*iter) = 0;
-      counter--;
-    }
-
-    // now look for all other objects apart from the brightest one
-    for (int i =0; i < npixels; i++) {
-      highThreshold = getThreshold(maxindex,detectionThreshold);
-      if (data(i) > highThreshold && segMap(i) == 0) {
-	counter++;
-	segMap.linkPixelsSetMap (pixellist,i,counter,significanceThreshold,noise_mean,noise_rms,1);
-	if (pixellist.size() >= minPixels) {
-	  text << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<double>::getSize(0)) << "/" << i/(Image<double>::getSize(0)) << ")"  << std::endl;
-	  history.append(text);
-	  objectsPixels.push_back(pixellist);
-	}
-	else {
-	  for(iter = pixellist.begin(); iter != pixellist.end(); iter++ )
-	    segMap(*iter) = 0;
-	  counter--;
-	}
+  // look for all positive fluctuations with at least 1 pixel above
+  // highThreshold and minPixels above significanceThreshold
+  double highThreshold;
+  for (int i =0; i < npixels; i++) {
+    highThreshold = getThreshold(i,detectionThreshold);
+    if (data(i) > highThreshold && segMap(i) == 0) {
+      counter++;
+      segMap.linkPixelsSetMap (pixellist,i,counter,significanceThreshold,noise_mean,noise_rms,1);
+      if (pixellist.size() >= minPixels) {
+	text << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<double>::getSize(0)) << "/" << i/(Image<double>::getSize(0)) << ")"  << std::endl;
+	history.append(text);
+	objectsPixels.push_back(pixellist);
+      }
+      else {
+	for(iter = pixellist.begin(); iter != pixellist.end(); iter++ )
+	  segMap(*iter) = 0;
+	counter--;
       }
     }
-  } else {
-    counter = 0;
   }
   numberofObjects = counter;
+
+  // improve noise estimates (when weight map is not given)
+  // since the position of all object is known now, we can compute the
+  // noise now on all pixels not associated to an object
+  // 1) set mask(i)=1, when i is in one of the pixellists
+  // 2) create NumVectorMasked from data and mask
+  // 3) compute std from that
+  if (weight.size()==0) {
+    NumVector<bool> mask(data.size());
+    for (int i=0; i<numberofObjects; i++) {
+      list<uint>& pixellist = objectsPixels[i];
+      for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ )
+	mask(*iter) = 1;
+    }
+    NumVectorMasked<double> masked(data,mask);
+    masked.kappa_sigma_clip(noise_mean,noise_rms);
+    text << "# Improved background estimation (objects masked):";
+    text << " mean = " << noise_mean << ", sigma = " << noise_rms << endl;
+    history.append(text);
+  }
 }
 
 unsigned int Frame::getNumberOfObjects() {
@@ -214,25 +205,8 @@ void Frame::fillObject(Object& O) {
       O.history.append("# Object close to image boundary: Possible cut-off. Extending frame with noise.\n");
     }
 
-    // set noise estimates
-    // since the position of the object is known now, we can compute the
-    // noise now on all pixels not in pixellist
-    // 1) set mask(i)=1, when i is pixellist
-    // 2) create NumVectorMasked from objdata and mask
-    // 3) compute std from that
-    const NumVector<double>& data = Image<double>::getData();
-    NumVector<bool> mask(data.size());
-    for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ )
-      mask(*iter) = 1;
-    NumVectorMasked<double> masked(data,mask);
-    double masked_mean, masked_rms;
-    masked.kappa_sigma_clip(masked_mean,masked_rms);
-    text << "# Background estimation (object masked):";
-    text << " mean = " << masked_mean << ", sigma = " << masked_rms << endl;
-    history.append(text);
-    O.setNoiseMeanRMS(masked_mean,masked_rms);
-
     // fill the object pixel data
+    const NumVector<double>& data = Image<double>::getData();
     NumVector<double>& objdata = O.accessData();
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     SegmentationMap& objSegMap = O.accessSegmentationMap();
@@ -240,7 +214,9 @@ void Frame::fillObject(Object& O) {
     NumVector<double>& objWeightMap = O.accessWeightMap();
     if (weight.size()!=0) 
       objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
+    vector<uint> nearby_objects;
 
+    // lop over all object pixels
     for (int i =0; i < objdata.size(); i++) {
       // old coordinates derived from new pixel index i
       int axis0 = xmax-xmin+1;
@@ -258,9 +234,18 @@ void Frame::fillObject(Object& O) {
       else {
 	// filter other objects in the frame
 	if (segMap(j) > 0 && segMap(j) != O.getID()) {
-	  objdata(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
+	  // if we have a weight map 
+	  if (weight.size()!=0)
+	    objdata(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
+	  else
+	    objdata(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
 	  O.setDetectionFlag(GSL_MAX_INT(O.getDetectionFlag(),1));
-	  O.history.append("# Another object nearby, but not overlapping.\n");
+	  // this objects has to yet been found to be nearby
+	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
+	    text << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
+	    O.history.append(text);
+	    nearby_objects.push_back(segMap(j));
+	  }
 	} 
 	// copy all other pixels into objdata
 	else {
@@ -278,10 +263,14 @@ void Frame::fillObject(Object& O) {
     O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
 
     // Fill other quantities into Object
-    if (weight.size()!=0)
+    if (weight.size()!=0) {
       O.setNoiseModel("WEIGHT");
-    else
+      O.setNoiseMeanRMS(-1,-1);
+    }
+    else {
       O.setNoiseModel("GAUSSIAN");
+      O.setNoiseMeanRMS(noise_mean,noise_rms);
+    }
     O.setBaseFilename(Image<double>::getFilename());
     // this calculates flux and centroid;
     O.history.append("# Segment:\n");

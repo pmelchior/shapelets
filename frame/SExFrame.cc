@@ -179,6 +179,7 @@ void SExFrame::fillObject(Object& O) {
   NumVector<double>& objWeightMap = O.accessWeightMap();
   if (weight.size()!=0) 
     objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
+  vector<uint> nearby_objects;
 
   for (int i =0; i < objdata.size(); i++) {
     // old coordinates derived from new pixel index i
@@ -202,7 +203,17 @@ void SExFrame::fillObject(Object& O) {
     else {
       // mask other detected objects in the frame
       if (segMap(j) != objectList[nr].NUMBER && segMap(j) > 0) {
- 	objdata(i) = gsl_ran_gaussian (r, bg_rms);
+ 	// if we have a weight map 
+	if (weight.size()!=0)
+	  objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
+	else
+	  objdata(i) = gsl_ran_gaussian (r, bg_rms);
+	// this objects has to yet been found to be nearby
+	if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
+	  text << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
+	  O.history.append(text);
+	  nearby_objects.push_back(segMap(j));
+	}
  	if (!subtractBG)
   	  objdata(i) += bg_mean;
       }
@@ -221,8 +232,15 @@ void SExFrame::fillObject(Object& O) {
   O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
 
   // Fill other quantities into Object
-  O.setNoiseMeanRMS(bg_mean,bg_rms);
-  O.setNoiseModel("GAUSSIAN");
+  if (weight.size()==0) {
+    O.setNoiseMeanRMS(bg_mean,bg_rms);
+    O.setNoiseModel("GAUSSIAN");
+  }
+  else {
+    O.setNoiseMeanRMS(-1,-1);
+    O.setNoiseModel("WEIGHT");
+  }
+  O.history.append("# Segment:\n");
   O.computeFluxCentroid();
   O.setFlux(objectList[nr].FLUX_AUTO);
   Point2D centroid(objectList[nr].XWIN_IMAGE,objectList[nr].YWIN_IMAGE);

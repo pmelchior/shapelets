@@ -42,7 +42,8 @@
 /// - Overlapping objects are masked with noise.
 /// - If subtractBackground() has been called before, the global background mean is
 /// subtracted from the pixel data.
-/// - \p noiseModel is "GAUSSIAN".
+/// - If a weight map is not given, <tt>noiseModel="GAUSSIAN"</tt>, otherwise 
+///   <tt>noisemodel="WEIGHT"</tt>
 /// - \p detectionFlag and \p StarGalaxyProbability of Object are filled with SExtractor's
 /// \p FLAGS and \p CLASS_STAR, respectively.
 /// - \p BlendingProbability \f$b\f$ is set to 1 if SExtractor's flag contains 2,
@@ -62,8 +63,6 @@
 ///   ...
 /// }
 ///\endcode
-///
-/// \todo employ new methods of SegmentationMap.
 
 class SExFrame : public Image<double> {
  public:

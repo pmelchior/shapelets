@@ -1,12 +1,92 @@
 #include <Object.h>
 #include <sstream>
 #include <gsl/gsl_math.h>
+#include <fitsio.h>
 
 Object::Object(unsigned int inid) : Image<double>(), segMap(*this) {
   id = inid;
   flag = 0;
   blend = s_g = -1;
   flux = centroid(0) = centroid(1) = -1;
+}
+
+Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
+
+  fitsfile *fptr;
+  int status, nkeys, keypos, hdutype;
+  char card[FLEN_CARD];
+  char comment[FLEN_CARD];
+  status = 0; 
+
+  fits_open_file(&fptr, objfile.c_str(), READONLY, &status);
+
+  // open pHDU and read header
+  fits_movabs_hdu(fptr, 1, &hdutype, &status);
+  // recover object information from header keywords
+  fits_read_key (fptr,TSTRING,"BASEFILE",card,comment, &status);
+  basefilename = std::string(card);
+  fits_read_key (fptr,TINT,"ID",&id,comment, &status);
+  double grid_min_0, grid_max_0, grid_min_1, grid_max_1;
+  fits_read_key (fptr,TDOUBLE,"XMIN",&grid_min_0,comment, &status);
+  fits_read_key (fptr,TDOUBLE,"XMAX",&grid_max_0,comment, &status);
+  fits_read_key (fptr,TDOUBLE,"YMIN",&grid_min_1,comment, &status);
+  fits_read_key (fptr,TDOUBLE,"YMAX",&grid_max_1,comment, &status);
+  Image<double>::accessGrid() = Grid(grid_min_0,grid_max_0,1,grid_min_1,grid_max_1,1);
+  fits_read_key (fptr,TDOUBLE,"BG_MEAN",&noise_mean,comment, &status);
+  fits_read_key (fptr,TDOUBLE,"BG_RMS",&noise_rms,comment, &status);
+  fits_read_key (fptr,TSTRING,"NOISE",card,comment, &status);
+  noisemodel = std::string(card);
+  fits_read_key (fptr,TUSHORT,"FLAG",&flag,comment, &status);
+  fits_read_key (fptr,TDOUBLE,"BLEND",&blend,comment, &status);
+  fits_read_key (fptr,TDOUBLE,"S_G",&s_g,comment, &status);
+
+  // if status is not 0 we have faced an error
+  if (status != 0) {
+    std::cout << "Object: header keywords erroneous!" << std::endl;
+    std::terminate();
+  }
+  int naxis;
+  fits_get_img_dim(fptr, &naxis, &status);
+  if (naxis!=2) {
+    std::cout << "Object: naxis != 2. This is not a FITS image!" << std::endl;
+    std::terminate();
+  } 
+  // first obtain the size of the image array
+  long naxes[2] = {1,1};
+  fits_get_img_size(fptr, naxis, naxes, &status);
+  unsigned int axsize0, axsize1;
+  axsize0 = naxes[0];
+  axsize1 = naxes[1];
+  long npixels = axsize0*axsize1;
+  // grid is defined by XMIN..YMAX; this should have the same
+  // number of pixels as the actual image
+  if (npixels != Image<double>::getGrid().size()) {
+    std::cout << "Object: Grid size from header keywords wrong" << std::endl;
+    std::cout << npixels << " " << grid_min_0 << " " << grid_max_0 << " " << grid_min_1 << " " << grid_max_1 << " "<< Image<double>::getGrid().size();
+    std::terminate();
+  }
+  data::resize(npixels);
+  long firstpix[2] = {1,1};
+  double vald;
+  int imageformat, datatype;
+  setFITSTypes(vald,imageformat,datatype);
+  fits_read_pix(fptr, datatype, firstpix, npixels, NULL,Image<double>::c_array(), NULL, &status);
+  
+  // move to 1st extHDU for the segmentation map
+  fits_movabs_hdu(fptr, 2, &hdutype, &status);
+  segMap.resize(npixels);
+  int vali;
+  setFITSTypes(vali,imageformat,datatype);
+  fits_read_pix(fptr, datatype, firstpix, npixels, NULL,segMap.c_array(), NULL, &status);
+  segMap.accessGrid() = Image<double>::getGrid();
+
+  // check if there is 2nd extHDU: the weight map
+  if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
+    weight.resize(npixels);
+    setFITSTypes(vald,imageformat,datatype);
+    fits_read_pix(fptr, datatype, firstpix, npixels, NULL,weight.c_array(), NULL, &status);
+  }
+  fits_close_file(fptr, &status);
 }
 
 unsigned int Object::getID() const {
@@ -164,48 +244,40 @@ CorrelationFunction& Object::accessCorrelationFunction() {
   return xi;
 }
 
-void Object::save(std::string fitsfile) {
+void Object::save(std::string filename) {
+  // write pixel data
   const NumVector<double>& data = Image<double>::getData();
   const Grid& grid = Image<double>::getGrid();
-  std::map<std::string, std::string> keywords;
-  keywords["BASEFILE"] = basefilename;
-  std::ostringstream value;
-  value << grid.getStartPosition(0);
-  keywords["XMIN"] = value.str();
-  value.str("");
-  value << grid.getStopPosition(0);
-  keywords["XMAX"] = value.str();
-  value.str("");
-  value << grid.getStartPosition(1);
-  keywords["YMIN"] = value.str();
-  value.str("");
-  value << grid.getStopPosition(1);
-  keywords["YMAX"] = value.str();
-  value.str("");
-  value << id;
-  keywords["ID"] = value.str();
-  value.str("");
-  value << noise_mean;
-  keywords["BG_MEAN"] = value.str();
-  value.str("");
-  value << noise_rms;
-  keywords["BG_RMS"] = value.str();
-  keywords["NOISE"] = noisemodel;
-  value.str("");
-  value << flag;
-  keywords["FLAG"] = value.str();
-  value.str("");
-  value << blend;
-  keywords["BLEND"] = value.str();
-  value.str("");
-  value << s_g;
-  keywords["S_G"] = value.str();
-  writeFITSFile(fitsfile,grid,data,keywords);
+  writeFITSFile(filename,grid,data);
+
+  // add object information to header
+  int status = 0;
+  fitsfile *outfptr;
+  // open pHUD of fits file
+  fits_open_data(&outfptr,filename.c_str(),READWRITE,&status);
+  fits_write_key (outfptr,TSTRING,"BASEFILE",const_cast<char*>(basefilename.c_str()),"name of source file", &status);
+  fits_write_key (outfptr,TINT,"ID",&id,"object id", &status);
+  double buffer;
+  buffer = grid.getStartPosition(0);
+  fits_write_key (outfptr,TDOUBLE,"XMIN",&buffer,"min(X) in image pixels", &status);
+  buffer = grid.getStopPosition(0);
+  fits_write_key (outfptr,TDOUBLE,"XMAX",&buffer,"max(X) in image pixels", &status);
+  buffer = grid.getStartPosition(1);
+  fits_write_key (outfptr,TDOUBLE,"YMIN",&buffer,"min(Y) in image pixels", &status);
+  buffer = grid.getStopPosition(1);
+  fits_write_key (outfptr,TDOUBLE,"YMAX",&buffer,"max(Y) in image pixels", &status);
+  fits_write_key (outfptr,TDOUBLE,"BG_MEAN",&noise_mean,"mean of background noise", &status);
+  fits_write_key (outfptr,TDOUBLE,"BG_RMS",&noise_rms,"rms of background noise", &status);
+  fits_write_key (outfptr,TSTRING,"NOISE",const_cast<char*>(noisemodel.c_str()),"noise model", &status);
+  fits_write_key (outfptr,TUSHORT,"FLAG",&flag,"extraction flag", &status);
+  fits_write_key (outfptr,TDOUBLE,"BLEND",&blend,"blending probability", &status);
+  fits_write_key (outfptr,TDOUBLE,"S_G",&s_g,"stellarity", &status);
+  fits_close_file(outfptr, &status);
 
   // save segMap 
-  keywords.clear();
-  addFITSExtension(fitsfile,"SEGMAP",grid,segMap.getData(),keywords);
+  //keywords.clear();
+  addFITSExtension(filename,"SEGMAP",grid,segMap.getData());
   //if weight map provided, save it too
   if (weight.size() != 0)
-    addFITSExtension(fitsfile,"WEIGHT",grid,weight,keywords);
+    addFITSExtension(filename,"WEIGHT",grid,weight);
 }

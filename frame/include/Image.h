@@ -70,7 +70,7 @@ class Image : public NumVector<T> {
     int naxis;
     fits_get_img_dim(fptr, &naxis, &status);
     if (naxis!=2) {
-      std::cout << "FitsImage: naxis != 2. This is not a FITS image!" << std::endl;
+      std::cout << "Image: naxis != 2. This is not a FITS image!" << std::endl;
       std::terminate();
     } else {
       long naxes[2] = {1,1};
