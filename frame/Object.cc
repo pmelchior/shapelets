@@ -11,13 +11,14 @@ Object::Object(unsigned int inid) : Image<double>(), segMap(*this) {
 }
 
 Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
-
   fitsfile *fptr;
   int status, nkeys, keypos, hdutype;
   char card[FLEN_CARD];
   char comment[FLEN_CARD];
   status = 0; 
 
+  std::ostringstream text;
+  history.append("# Loading object from Fits file "+objfile+":\n");
   fits_open_file(&fptr, objfile.c_str(), READONLY, &status);
 
   // open pHDU and read header
@@ -45,6 +46,17 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
     std::cout << "Object: header keywords erroneous!" << std::endl;
     std::terminate();
   }
+
+  // write header information to history
+  text << "# Object " << id << " from " + basefilename + "\n";
+  text << "# Segment area =  (" << grid_min_0 << "/" << grid_min_1 << ") .. (";
+  text << grid_max_0 << "/" << grid_max_1 << ")" << std::endl;
+  text << "# Noise model = " + noisemodel << std::endl;
+  text << "# Background noise = (" << noise_mean << ") +- (" << noise_rms << ")" << std::endl;
+  text << "# Segmentation flag = "<< flag << ", Blending probability = ";
+  text << blend << ", Stellarity = " << s_g << std::endl;
+  history.append(text);
+
   int naxis;
   fits_get_img_dim(fptr, &naxis, &status);
   if (naxis!=2) {
@@ -62,9 +74,10 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
   // number of pixels as the actual image
   if (npixels != Image<double>::getGrid().size()) {
     std::cout << "Object: Grid size from header keywords wrong" << std::endl;
-    std::cout << npixels << " " << grid_min_0 << " " << grid_max_0 << " " << grid_min_1 << " " << grid_max_1 << " "<< Image<double>::getGrid().size();
     std::terminate();
   }
+  
+  history.append("# Reading object's pixel data");
   Image<double>::resize(npixels);
   long firstpix[2] = {1,1};
   double vald;
@@ -72,6 +85,7 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
   setFITSTypes(vald,imageformat,datatype);
   fits_read_pix(fptr, datatype, firstpix, npixels, NULL,Image<double>::c_array(), NULL, &status);
   
+  history.append(", segmentation map");
   // move to 1st extHDU for the segmentation map
   fits_movabs_hdu(fptr, 2, &hdutype, &status);
   segMap.resize(npixels);
@@ -82,11 +96,16 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
 
   // check if there is 2nd extHDU: the weight map
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
+    history.append(" and weight map");
     weight.resize(npixels);
     setFITSTypes(vald,imageformat,datatype);
     fits_read_pix(fptr, datatype, firstpix, npixels, NULL,weight.c_array(), NULL, &status);
   }
+  history.append("\n");
   fits_close_file(fptr, &status);
+
+  // since the grid is change, the centroid has to be recomputed
+  computeFluxCentroid();
 }
 
 unsigned int Object::getID() const {
@@ -189,6 +208,9 @@ double Object::getNoiseRMS() const {
 void Object::setNoiseMeanRMS(double mean, double rms) {
   noise_mean = mean;
   noise_rms = rms;
+  std::ostringstream text;
+  text << "# Setting noise to (" << mean << ") +- (" << rms << ")" << std::endl;
+  history.append(text);
 }
 
 void Object::setNoiseModel(std::string innoisemodel) {

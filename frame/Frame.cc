@@ -88,7 +88,7 @@ double Frame::getThreshold(unsigned int pixel, double factor) {
 
 void Frame::findObjects(unsigned int minPixels, double significanceThreshold, double detectionThreshold) {
   const NumVector<double>& data = Image<double>::getData();
-  int counter = 1;
+  int counter = 0;
   unsigned int npixels = Image<double>::size();
 
   // clean stuff from previous runs of this function
@@ -194,7 +194,7 @@ void Frame::fillObject(Object& O) {
     }
 
     // add border around object for including the edges
-    addFrameBorder(0.25,xmin,xmax,ymin,ymax);
+    addFrameBorder(0.5,xmin,xmax,ymin,ymax);
     text << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
     text << xmax << "/" << ymax << ")" << endl;
     O.history.append(text);

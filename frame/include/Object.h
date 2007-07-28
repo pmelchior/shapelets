@@ -23,6 +23,8 @@
 /// - blending information
 /// - galaxy/star discrimination index
 /// - segmentation map
+/// 
+///\todo Save PixelCovarianceMatrix and CorrelationFunction to Fits file during save()
 
 class Object : public Image<double> {
  public:
@@ -128,8 +130,8 @@ class Object : public Image<double> {
   PixelCovarianceMatrix cov;
   CorrelationFunction xi;
   Point2D centroid;
-  double scaleSize, flux, noise_mean, noise_rms, s_g, blend;
-  unsigned short flag, blended;
+  double flux, noise_mean, noise_rms, s_g, blend;
+  unsigned short flag;
   std::string noisemodel, basefilename;
 };
 
