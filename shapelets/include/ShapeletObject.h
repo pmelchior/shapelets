@@ -93,6 +93,8 @@ class ShapeletObject : public Composite2D {
   
   /// Set new cartesian coefficients.
   void setCartesianCoeffs(const NumMatrix<double>& cartesianCoeffs);
+  /// Set cartesian coefficient errors.
+  void setCartesianCoeffErrors(const NumMatrix<double>& errors);
   /// Set new polar coeficients.
   void setPolarCoeffs(const NumMatrix<Complex>& polarCoeffs);
   /// Return active cartesian coefficients.

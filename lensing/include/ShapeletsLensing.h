@@ -38,7 +38,7 @@ void createMapsFromKappa(NumMatrix<double>& kappa, double dx, NumMatrix<complex<
 /// the images created here are all flux-normalized.
 void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& sigmaCoeffs, double betamin, double betamax, std::string path);
 void createShapeletImagesPCA( double betamin, double betamax, std::string path, int N);
-void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string listfile);
+void averageShapeletCoeffs(NumMatrix<double>& average, NumMatrix<double>& std_mean, double& beta, std::string listfile);
 void createLensedShapeletImages(double dx, NumMatrix<double>& kappa, NumMatrix<complex<double> >& gamma, NumMatrix<complex<double> >& F, NumMatrix<complex<double> >& G, std::string listfilename, std::string writeDirectory, int NOBJ);
 
 

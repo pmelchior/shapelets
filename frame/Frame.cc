@@ -125,25 +125,25 @@ void Frame::findObjects(unsigned int minPixels, double significanceThreshold, do
   }
   numberofObjects = counter;
 
-  // improve noise estimates (when weight map is not given)
-  // since the position of all object is known now, we can compute the
-  // noise now on all pixels not associated to an object
-  // 1) set mask(i)=1, when i is in one of the pixellists
-  // 2) create NumVectorMasked from data and mask
-  // 3) compute std from that
-  if (weight.size()==0) {
-    NumVector<bool> mask(data.size());
-    for (int i=0; i<numberofObjects; i++) {
-      list<uint>& pixellist = objectsPixels[i];
-      for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ )
-	mask(*iter) = 1;
-    }
-    NumVectorMasked<double> masked(data,mask);
-    masked.kappa_sigma_clip(noise_mean,noise_rms);
-    text << "# Improved background estimation (objects masked):";
-    text << " mean = " << noise_mean << ", sigma = " << noise_rms << endl;
-    history.append(text);
-  }
+//   // improve noise estimates (when weight map is not given)
+//   // since the position of all object is known now, we can compute the
+//   // noise now on all pixels not associated to an object
+//   // 1) set mask(i)=1, when i is in one of the pixellists
+//   // 2) create NumVectorMasked from data and mask
+//   // 3) compute std from that
+//   if (weight.size()==0) {
+//     NumVector<bool> mask(data.size());
+//     for (int i=0; i<numberofObjects; i++) {
+//       list<uint>& pixellist = objectsPixels[i];
+//       for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ )
+// 	mask(*iter) = 1;
+//     }
+//     NumVectorMasked<double> masked(data,mask);
+//     masked.kappa_sigma_clip(noise_mean,noise_rms);
+//     text << "# Improved background estimation (objects masked):";
+//     text << " mean = " << noise_mean << ", sigma = " << noise_rms << endl;
+//     history.append(text);
+//   }
 }
 
 unsigned int Frame::getNumberOfObjects() {

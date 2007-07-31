@@ -4,14 +4,21 @@
 #include <iostream>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
+#include <list>
 
 typedef complex<double> Complex;
 
-/// Computes the average coeffs and beta from sif files listed in listfile
-void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string listfile) {
-  average = NumMatrix<double>(); //create new average
+/// Computes the average coeffs and the standard deviation of the average
+// and beta from sif files listed in listfile
+void averageShapeletCoeffs(NumMatrix<double>& average, NumMatrix<double>& std_mean, double& beta, std::string listfile) {
+  //create new average and std_mean
+  average.clear();
+  std_mean.clear();
+
+  // set up list of coeff matrices
+  std::list<NumMatrix<double> > matrixList;
   beta = 0;
-  NumMatrix<int> entries;
+  int count = 0;
   std::ifstream files;
   std::string filename;
   files.open(listfile.c_str());
@@ -21,41 +28,38 @@ void averageShapeletCoeffs(NumMatrix<double>& average, double& beta, std::string
     
     ShapeletObject* s = new ShapeletObject(filename);
     const NumMatrix<double>& coeffs = s->getCartesianCoeffs();
+    matrixList.push_back(coeffs);
     // if new coeff matrix is bigger than current average matrix
     // expand average
     if (average.getRows() < coeffs.getRows() || average.getColumns() < coeffs.getColumns()) {
-      int oldRows = average.getRows();
-      int oldColumns = average.getColumns();
-      average.resize(coeffs.getRows(),coeffs.getColumns());
-      entries.resize(coeffs.getRows(),coeffs.getColumns());
-      // set to new entries to zero
-      for (int i=oldRows; i<coeffs.getRows(); i++) {
-	for (int j=oldColumns; j<coeffs.getColumns(); j++) {
-	  average.erase_element(i,j);
-	  entries.erase_element(i,j);
-	}
-      }
+      average.resize_clear(coeffs.getRows(),coeffs.getColumns());
+      std_mean.resize_clear(coeffs.getRows(),coeffs.getColumns());
     }
-    // add beta
     beta += s->getBeta();
-    // add coeffs to average
-    for (int k=0; k < coeffs.getRows(); k++) {
-      for (int l=0; l<coeffs.getColumns(); l++) {
-	average(k,l) += coeffs(k,l);
-	entries(k,l) += 1;
-      }
-    }
+    count++;
     delete s;
   }
   files.close();
-
+  
   // compute average beta
-  beta /= entries(0,0); // that's the number of considered images
-
-  // compute average coeffs
-  for (int i=0; i < average.getRows(); i++)
-    for (int j=0; j<average.getColumns(); j++)
-      average(i,j) /= entries(i,j);
+  beta /= count; // that's the number of considered images
+  
+  // now average over all coeffs and all matrices
+  NumVector<double> entries(count);
+  std::list<NumMatrix<double> >::iterator iter;
+  for (int i=0; i<average.getRows(); i++) {
+    for (int j=0; j<average.getColumns(); j++) {
+      entries.clear();
+      int n=0;
+      for(iter = matrixList.begin(); iter != matrixList.end(); iter++ ) {
+	if ((*iter).getRows() > i && (*iter).getColumns() > j) 
+	  entries(n) = (*iter)(i,j);
+	n++;
+      }
+      average(i,j) = entries.mean();
+      std_mean(i,j) = entries.std()/sqrt(1.*count);
+    }
+  }
 }
 
 /// Creates \f$N\f$ galaxy images in shapelet space.
@@ -128,12 +132,13 @@ void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& s
   std::system(job.str().c_str());
 
   // create average sif file
-  NumMatrix<double> average;
+  NumMatrix<double> average, std_mean;
   double averageBeta;
   std::ostringstream filename;
   filename << path << "shapelets.ls";
-  averageShapeletCoeffs(average,averageBeta,filename.str());
+  averageShapeletCoeffs(average,std_mean,averageBeta,filename.str());
   ShapeletObject *a = new ShapeletObject(average,averageBeta,xcentroid);
+  a->setCartesianCoeffErrors(std_mean);
   
   filename.str("");
   filename << path << "average.sif";

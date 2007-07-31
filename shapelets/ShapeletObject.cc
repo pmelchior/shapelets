@@ -127,6 +127,14 @@ void ShapeletObject::setCartesianCoeffs(const NumMatrix<double>& incartesianCoef
   c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);
 }
 
+void ShapeletObject::setCartesianCoeffErrors(const NumMatrix<double>& newerrors) {
+  if (cartesianCoeffs.getRows() == newerrors.getRows() && cartesianCoeffs.getColumns() == newerrors.getColumns())
+    errors = newerrors;
+  else {
+    std::cout << "ShapeletObject: errors given do not have correct dimensions!" << std::endl;
+    std::terminate();
+  }
+}
 void ShapeletObject::setPolarCoeffs(const NumMatrix<Complex>& inpolarCoeffs) {
   triangularizeCoeffs(inpolarCoeffs,polarCoeffs,0);
   c2p = PolarTransformation(polarCoeffs.getRows()-1);

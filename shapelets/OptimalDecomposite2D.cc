@@ -264,14 +264,14 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     // don't do this during the refinement procedure when chi^2 was already low
 
     if (step != 5) {
-//       // flattening: chi^2 does improves less than sigma(chi^2)
-//       if (!nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
-// 	  bestChiSquare = chisquare = newChisquare;
-// 	  optimalNMax = Decomposite2D::getNMax();
-// 	  text << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
-// 	  history.append(text);
-// 	  break;
-//       }
+      // flattening: chi^2 does improves less than sigma(chi^2)
+      if (!nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
+	  bestChiSquare = chisquare = newChisquare;
+	  optimalNMax = Decomposite2D::getNMax();
+	  text << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
+	  history.append(text);
+	  break;
+      }
 
       // now decomposition get worse, not a good sign
       // save best nmax and chi2
@@ -360,7 +360,7 @@ bool OptimalDecomposite2D::testBetaLowerLimit(double& beta) {
 
 bool OptimalDecomposite2D::testBetaUpperLimit(double& beta) {
   // geometric is maximum beta to avoid theta_max > image_dimension
-  double geometric = image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
+  double geometric = 0.5*image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
   if (beta > GSL_MIN(geometric, betaHigh)) {
     beta = GSL_MIN(geometric, betaHigh);
     return 0;
@@ -407,8 +407,8 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     // in steps 3-7) accuracy is improving as is the a priori knowledge of beta
     // in steps 6,7) we try to find lower nmax, which raises beta, thus b higher
     switch (step) {
-    case 1: a = 0.5*beta; b = 2*beta; accuracy = 0.03*beta; break;
-    case 2: beta *=0.75; a = 0.66*beta; b = 1.5*beta; accuracy = 0.02*beta; break;
+    case 1: a = 0.5*beta; b = 2*beta; accuracy = 0.01*beta; break;
+    case 2: beta *=0.75; a = 0.66*beta; b = 1.5*beta; accuracy = 0.01*beta; break;
     case 3: a = 0.8*beta; b = 1.1*beta; accuracy = 0.01*beta; break;
     case 6: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
     case 7: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
@@ -496,7 +496,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 	  fa = fb; // since fb > fa and f = fa, this terminates the loop
 	}
       }
-    } else {
+    } else if (fb < fa) {
       while (fb <= f) {
 	// or shift everything towards b
 	if (fb != f)
@@ -504,7 +504,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 	beta = b; f = fb;
 	// check if b gets out of bounds
 	b *= 1.5;
-	if (testBetaLowerLimit(b)) {
+	if (testBetaUpperLimit(b)) {
 	  Decomposite2D::setBeta(b);
 	  fb = Decomposite2D::getChiSquare();
 	}
@@ -515,7 +515,12 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 	  fb = fa;
 	}
       }
+    } else {
+      // fa == fb here: this object has a flat chi2 function
+      history.append("# chi^2 is flat; detection of minimum failed!\n");
+      std::terminate();
     }
+
     text << "# after bracketing: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
     history.append(text);
     
