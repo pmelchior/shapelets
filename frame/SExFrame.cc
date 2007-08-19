@@ -132,15 +132,15 @@ unsigned int SExFrame::getNumberOfObjects() {
 
 void SExFrame::fillObject(Object& O) {
   if (!estimatedBG) estimateNoise();
-  unsigned int nr = O.getID();
+  unsigned int id = O.getID();
   int xmin, xmax, ymin, ymax;
-  xmin = objectList[nr].XMIN_IMAGE;
-  xmax = objectList[nr].XMAX_IMAGE;
-  ymin = objectList[nr].YMIN_IMAGE;
-  ymax = objectList[nr].YMAX_IMAGE;
+  xmin = objectList[id].XMIN_IMAGE;
+  xmax = objectList[id].XMAX_IMAGE;
+  ymin = objectList[id].YMIN_IMAGE;
+  ymax = objectList[id].YMAX_IMAGE;
 
   O.history = history;
-  text << "# Extracting Object " << O.getID() << " (NUMBER = " <<  objectList[nr].NUMBER << "), ";
+  text << "# Extracting Object " << O.getID() << " (NUMBER = " <<  objectList[id].NUMBER << "), ";
   text << "found in the area (" << xmin << "/" << ymin << ") to (";
   text << xmax << "/" << ymax << ")" << std::endl;
   O.history.append(text);
@@ -202,7 +202,7 @@ void SExFrame::fillObject(Object& O) {
     //now inside image region
     else {
       // mask other detected objects in the frame
-      if (segMap(j) != objectList[nr].NUMBER && segMap(j) > 0) {
+      if (segMap(j) != objectList[id].NUMBER && (segMap(j) > 0 || segMap(j) == -1)) {
  	// if we have a weight map 
 	if (weight.size()!=0)
 	  objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
@@ -242,14 +242,15 @@ void SExFrame::fillObject(Object& O) {
   }
   O.history.append("# Segment:\n");
   O.computeFluxCentroid();
-  O.setFlux(objectList[nr].FLUX_AUTO);
-  Point2D centroid(objectList[nr].XWIN_IMAGE,objectList[nr].YWIN_IMAGE);
+  O.setFlux(objectList[id].FLUX_AUTO);
+  Point2D centroid(objectList[id].XWIN_IMAGE,objectList[id].YWIN_IMAGE);
   O.setCentroid(centroid);
 
-  O.setDetectionFlag(objectList[nr].FLAGS);
-  O.setStarGalaxyProbability(objectList[nr].CLASS_STAR);
-  O.setBlendingProbability(computeBlendingProbability(nr));
+  O.setDetectionFlag(objectList[id].FLAGS);
+  O.setStarGalaxyProbability(objectList[id].CLASS_STAR);
+  O.setBlendingProbability(computeBlendingProbability(id));
   O.setBaseFilename(Image<double>::getFilename());
+  O.setNumber(objectList[id].NUMBER);
 }
 
 void SExFrame::subtractBackground() {

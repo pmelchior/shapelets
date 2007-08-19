@@ -12,6 +12,7 @@
 #include <OptimalDecomposite2D.h>
 #include <PolarTransformation.h>
 #include <ImageTransformation.h>
+#include <ShapeletConfig.h>
 #include <IO.h>
 #include <MatrixManipulations.h>
 #include <Profile.h>
@@ -169,33 +170,6 @@ class ShapeletObject : public Composite2D {
   /// Set the history string of the image to an arbitrary string.
   /// This can be used for erasing the history by using a empty string.
   void setHistory(std::string comment);
-  /// The default values for the shapelet decomposition.
-  /// The values control the behaviour of the constructor ShapeletObject. As these
-  /// values affect the behaviour of the constructor only, they have to be modified
-  /// before calling the constructor.\n
-  /// Example:
-  /// \code
-  /// Object obj;
-  /// ShapeletObject::DEFAULTS::NMAX_HIGH = 24;
-  /// ShapeletObject(obj);
-  /// \endcode
-  struct DEFAULTS {
-    /// Lower bound for \f$n_{max}\f$, default = 0.
-    static unsigned int NMAX_LOW;
-    /// Upper bound for \f$n_{max}\f$, default = 100.
-    static unsigned int NMAX_HIGH;
-    /// Lower bound for \f$\beta\f$, default = 0.
-    static double BETA_LOW;
-    /// Upper bound for \f$\beta\f$, default = INFINITY.
-    static double BETA_HIGH;
-    /// Whether a regularization (see OptimalDecomposite2D::regularize()) should 
-    /// be employed, default = 0.
-    static bool REGULARIZE;
-    /// The upper limit for \f$R\f$ during regularizaton, default = 1e-5.
-    static double REG_LIMIT;
-    /// The SIF filename for the unregularized model (empty string if not employed), default = "".
-    static std::string UNREG_SIFFILE;
-  };
 
  private:
   NumMatrix<double> cartesianCoeffs, errors;

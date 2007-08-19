@@ -72,7 +72,7 @@ class SExFrame : public Image<double> {
   SExFrame(std::string filename);
   /// Argemented constructor for including a weight map image.
   /// <tt>data_file</tt> is the name of the Fits file containing the data, 
-  /// <tt>weight_file</tt> the one of the corresponding weight map.\m
+  /// <tt>weight_file</tt> the one of the corresponding weight map.\n
   /// Extensions or other selections can be 
   /// passed in the standard cfitsio way: <tt>data_file[extension]</tt>.
   SExFrame(std::string data_file, std::string weight_file);

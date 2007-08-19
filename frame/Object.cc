@@ -8,6 +8,7 @@ Object::Object(unsigned int inid) : Image<double>(), segMap(*this) {
   flag = 0;
   blend = s_g = -1;
   flux = centroid(0) = centroid(1) = -1;
+  number = 0;
 }
 
 Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
@@ -110,6 +111,14 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
 
 unsigned int Object::getID() const {
   return id;
+}
+
+void Object::setNumber(unsigned int num) {
+  number = num;
+}
+
+unsigned int Object::getNumber() const {
+  return number;
 }
 
 const NumVector<double>& Object::getWeightMap() const {
@@ -279,6 +288,7 @@ void Object::save(std::string filename) {
   fits_open_data(&outfptr,filename.c_str(),READWRITE,&status);
   fits_write_key (outfptr,TSTRING,"BASEFILE",const_cast<char*>(basefilename.c_str()),"name of source file", &status);
   fits_write_key (outfptr,TINT,"ID",&id,"object id", &status);
+  fits_write_key (outfptr,TINT,"NUMBER",&number,"object number", &status);
   double buffer;
   buffer = grid.getStartPosition(0);
   fits_write_key (outfptr,TDOUBLE,"XMIN",&buffer,"min(X) in image pixels", &status);

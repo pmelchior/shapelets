@@ -293,6 +293,7 @@ void Frame::fillObject(Object& O) {
     O.setNoiseMeanRMS(noise_mean,noise_rms);
     O.setBaseFilename(Image<double>::getFilename());
     O.computeFluxCentroid();
+    O.setNumber(O.getID());
   } else {
     text.str("# Frame: This Object does not exist!\n");
     O.history.append(text);

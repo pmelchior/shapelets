@@ -36,6 +36,12 @@ class Object : public Image<double> {
   Object (std::string fitsfile);
   /// Return the ID.
   unsigned int getID() const;
+  /// Set the object number.
+  /// This can but does not have to be identical to the <tt>ID</tt> of this object,
+  /// this number can thus carry an additional identifier.
+  void setNumber(unsigned int num);
+  /// Get object number.
+  unsigned int getNumber() const;
   /// Return the weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
   const NumVector<double>& getWeightMap() const;
@@ -124,7 +130,7 @@ class Object : public Image<double> {
 
   
  private:
-  unsigned int id;
+  unsigned int id, number;
   NumVector<double> weight;
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;

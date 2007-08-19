@@ -33,7 +33,6 @@ int main(int argc, char *argv[]) {
     // if you want to see what the is actually going on, set this to 1.
     // if you want to have it quiet, set it to 0 (default).
     History::setVerbosity(1);
-
     // open a FITS file and read given extension.
     // according to the cfitsio conventions, for th pHDU you can just
     // use 'filename', for extension you have to give 'filename[extension]'
@@ -71,13 +70,6 @@ int main(int argc, char *argv[]) {
       // "cut out" the object from whole frame and put it into Object obj
       f->fillObject(*obj);
 
-      // in case of drizzled images:
-      // compute pixel covariance matrix from data
-      // and set noise model to COVARIANCE
-      PixelCovarianceMatrix& V = obj->accessPixelCovarianceMatrix();
-      V.setCovarianceMatrix(obj->getData(),obj->getSegmentationMap(),obj->history);
-      obj->setNoiseModel("COVARIANCE");
-
       // dismiss objects with flag > 3 because of serious trouble
       // during the detection/segmentation process
       if (obj->getDetectionFlag() <= 3) {
@@ -88,10 +80,10 @@ int main(int argc, char *argv[]) {
 	  // when regularization should be done:
 	  // specify the wanted limit on R
 	  if (argc == 4){
-	    ShapeletObject::DEFAULTS::REGULARIZE = 1;
-	    ShapeletObject::DEFAULTS::REG_LIMIT = atof(argv[3]);
+	    ShapeletConfig::REGULARIZE = 1;
+	    ShapeletConfig::REG_LIMIT = atof(argv[3]);
 	    // store the data of the unregularized model...
-	    ShapeletObject::DEFAULTS::UNREG_SIFFILE = siffile.str();
+	    ShapeletConfig::UNREG_SIFFILE = siffile.str();
 	    // ...and modify the name of the regularized one
 	    siffile.str("");
 	    siffile << sifprefix << "_" << n << "_reg.sif";
@@ -107,14 +99,14 @@ int main(int argc, char *argv[]) {
 	}
 	// use specific bounds for beta and nmax
 	else if (argc == 7 || argc == 8) {
-	  ShapeletObject::DEFAULTS::NMAX_LOW = atoi(argv[3]);
-	  ShapeletObject::DEFAULTS::NMAX_HIGH = atoi(argv[4]);
-	  ShapeletObject::DEFAULTS::BETA_LOW = atof(argv[5]);
-	  ShapeletObject::DEFAULTS::BETA_HIGH = atof(argv[6]);
+	  ShapeletConfig::NMAX_LOW = atoi(argv[3]);
+	  ShapeletConfig::NMAX_HIGH = atoi(argv[4]);
+	  ShapeletConfig::BETA_LOW = atof(argv[5]);
+	  ShapeletConfig::BETA_HIGH = atof(argv[6]);
 	  if (argc == 8){
-	    ShapeletObject::DEFAULTS::REGULARIZE = 1;
-	    ShapeletObject::DEFAULTS::REG_LIMIT = atof(argv[7]);
-	    ShapeletObject::DEFAULTS::UNREG_SIFFILE = siffile.str();
+	    ShapeletConfig::REGULARIZE = 1;
+	    ShapeletConfig::REG_LIMIT = atof(argv[7]);
+	    ShapeletConfig::UNREG_SIFFILE = siffile.str();
 	    siffile.str("");
 	    siffile << sifprefix << "_" << n << "_reg.sif";
 	  }

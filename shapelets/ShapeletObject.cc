@@ -52,15 +52,6 @@ Composite2D() {
   text.str("");
 }
 
-// Default values for the shapelet decomposition
-unsigned int ShapeletObject::DEFAULTS::NMAX_LOW = 0;
-unsigned int ShapeletObject::DEFAULTS::NMAX_HIGH = 100;
-double ShapeletObject::DEFAULTS::BETA_LOW = 0;
-double ShapeletObject::DEFAULTS::BETA_HIGH = INFINITY;
-bool ShapeletObject::DEFAULTS::REGULARIZE = 0;
-double ShapeletObject::DEFAULTS::REG_LIMIT = 1e-5;
-std::string ShapeletObject::DEFAULTS::UNREG_SIFFILE = "";
-
 ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   fits = 1;
   const Grid& FitsGrid = obj.getGrid();
@@ -68,10 +59,10 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   fitsFlag = obj.getDetectionFlag();
   double beta;
   // decomposing with given constraits on shapelet decomposition parameters
-  OptimalDecomposite2D *optimalDecomp =  new OptimalDecomposite2D(obj, DEFAULTS::NMAX_LOW,DEFAULTS::NMAX_HIGH,DEFAULTS::BETA_LOW,DEFAULTS::BETA_HIGH);
+  OptimalDecomposite2D *optimalDecomp =  new OptimalDecomposite2D(obj, ShapeletConfig::NMAX_LOW,ShapeletConfig::NMAX_HIGH,ShapeletConfig::BETA_LOW,ShapeletConfig::BETA_HIGH);
 
   // if UNREG_SIFFILE is set, save the unregularized model to sif file with given name
-  if (DEFAULTS::UNREG_SIFFILE.compare("") != 0) {
+  if (ShapeletConfig::UNREG_SIFFILE.compare("") != 0) {
     // first get all necessary data for model
     optimalDecomp->getShapeletCoeffs(cartesianCoeffs);
     optimalDecomp->getShapeletErrors(errors);
@@ -83,14 +74,14 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
     history = History(text.str());
     decompFlag = optimalDecomp->getDecompositionFlag();
     regularized = R = 0;
-    SIFFile sfile(DEFAULTS::UNREG_SIFFILE);
+    SIFFile sfile(ShapeletConfig::UNREG_SIFFILE);
     sfile.save(history.getContent(),cartesianCoeffs,errors,FitsGrid,beta,xcentroid,chisquare,fitsFlag,decompFlag,regularized,R);
   }
 
   // use regularization if specified
-  if (DEFAULTS::REGULARIZE) {
+  if (ShapeletConfig::REGULARIZE) {
     regularized = 1;
-    R = optimalDecomp->regularize(DEFAULTS::REG_LIMIT);
+    R = optimalDecomp->regularize(ShapeletConfig::REG_LIMIT);
   } else
     R = regularized = 0;
 
