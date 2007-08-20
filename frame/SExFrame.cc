@@ -153,7 +153,7 @@ void SExFrame::fillObject(Object& O) {
     cutflag = 1;
   }
   
-  addFrameBorder(0.5, xmin,xmax,ymin,ymax);
+  addFrameBorder(FrameConfig::ADD_BORDER, xmin,xmax,ymin,ymax);
   text << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
   text << xmax << "/" << ymax << ")" << std::endl;
   O.history.append(text);
@@ -202,7 +202,7 @@ void SExFrame::fillObject(Object& O) {
     //now inside image region
     else {
       // mask other detected objects in the frame
-      if (segMap(j) != objectList[id].NUMBER && (segMap(j) > 0 || segMap(j) == -1)) {
+      if ((segMap(j) > 0 && segMap(j) != objectList[id].NUMBER) || (segMap(j) < 0 && FrameConfig::FILTER_SPURIOUS)) {
  	// if we have a weight map 
 	if (weight.size()!=0)
 	  objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));

@@ -22,8 +22,8 @@ class ShapeletConfig {
   ShapeletConfig();
   /// Argumented constructor.
   /// <tt>filename</tt> is expected to contain configureation parameters
-  /// in ASCII format, one keyword/value pair per line, separated by a 
-  /// tab character:
+  /// in ASCII format, one keyword/value pair per line, separated by a single or multiple
+  /// tab character(s):
   /// \code
   /// NMAX_LOW    4
   /// NMAX_HIGH   24

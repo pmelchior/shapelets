@@ -13,7 +13,6 @@ bool ShapeletConfig::REGULARIZE = 0;
 double ShapeletConfig::REG_LIMIT = 1e-5;
 std::string ShapeletConfig::UNREG_SIFFILE = "";
 bool ShapeletConfig::ALLOW_FLATTENING = 0;
-bool ShapeletConfig::COMPUTE_COEFF_COVARIANCE = 0;
 
 ShapeletConfig::ShapeletConfig() {
 }
@@ -38,8 +37,8 @@ ShapeletConfig::ShapeletConfig(string filename) {
     std::vector<std::string> column;
     for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter)
       column.push_back(*tok_iter);
-    // exclude comment lines
-    if (column[0].compare("#") != 0) {
+    // exclude empty and comment lines
+    if (column.size() >= 2 && column[0].compare("#") != 0) {
       if (column[0].compare("NMAX_LOW") == 0)
 	NMAX_LOW = (unsigned int) atoi (column[1].c_str());
       if (column[0].compare("NMAX_HIGH") == 0)
@@ -56,8 +55,6 @@ ShapeletConfig::ShapeletConfig(string filename) {
 	UNREG_SIFFILE = column[1];
       if (column[0].compare("ALLOW_FLATTENING") == 0)
 	ALLOW_FLATTENING = (bool) atoi (column[1].c_str());
-      if (column[0].compare("COMPUTE_COEFF_COVARIANCE") == 0)
-	COMPUTE_COEFF_COVARIANCE = (bool) atoi (column[1].c_str());
     }
   }
 }

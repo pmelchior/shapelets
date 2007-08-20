@@ -6,6 +6,7 @@
 #include <Image.h>
 #include <Object.h>
 #include <History.h>
+#include <FrameConfig.h>
 #include <vector>
 #include <list>
 #include <gsl/gsl_rng.h>

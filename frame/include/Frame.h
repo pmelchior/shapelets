@@ -9,6 +9,7 @@
 #include <Object.h>
 #include <History.h>
 #include <SegmentationMap.h>
+#include <FrameConfig.h>
 
 /// Image preprocessing class.
 /// The purpose of this class is to read in a Image and segment it into individual

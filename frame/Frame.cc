@@ -194,7 +194,7 @@ void Frame::fillObject(Object& O) {
     }
 
     // add border around object for including the edges
-    addFrameBorder(0.5,xmin,xmax,ymin,ymax);
+    addFrameBorder(FrameConfig::ADD_BORDER,xmin,xmax,ymin,ymax);
     text << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
     text << xmax << "/" << ymax << ")" << endl;
     O.history.append(text);
@@ -233,7 +233,7 @@ void Frame::fillObject(Object& O) {
       } 
       else {
 	// filter other objects in the frame
-	if (segMap(j) > 0 && segMap(j) != O.getID()) {
+	if ((segMap(j) > 0 && segMap(j) != O.getID()) || (segMap(j) < 0 && FrameConfig::FILTER_SPURIOUS)) {
 	  // if we have a weight map 
 	  if (weight.size()!=0)
 	    objdata(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
@@ -332,36 +332,6 @@ void Frame::addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& 
   ymin -= yborder;
   ymax += yborder-1;
 }
-
-// addFrameBorder(int& xmin, int& xmax, int& ymin, int& ymax) { 
-//   int xrange, yrange, xborder, yborder;
-//   xrange = xmax - xmin;
-//   yrange = ymax - ymin;
-//   switch(xrange%4) {
-//   case 1: xmax--; break;
-//   case 2: xmin++; xmax++; break;
-//   case 3: xmax++; break;
-//   }
-//   switch(yrange%4) {
-//   case 1: ymax--; break;
-//   case 2: ymin++; ymax++; break;
-//   case 3: ymax++; break;
-//   }
-//   xrange = xmax - xmin;
-//   yrange = ymax - ymin;
-//   // make the object frame square, because of const beta in both directions
-//   if (xrange < yrange) {
-//     yborder = GSL_MAX_INT(yrange/4, 10);
-//     xborder = yborder + (yrange - xrange)/2;
-//   } else {
-//     xborder = GSL_MAX_INT(xrange/4, 10);
-//     yborder = xborder + (xrange - yrange)/2;
-//   }
-//   xmin -= xborder;
-//   xmax += xborder-1;
-//   ymin -= yborder;
-//   ymax += yborder-1;
-// }
 
 const History& Frame::getHistory () {
   return history;
