@@ -1,4 +1,4 @@
-#include <ShapeletsLensing.h>
+#include <ShapeletObject.h>
 #include <fstream.h>
 #include <string>
 #include <iostream>
@@ -267,3 +267,14 @@ void createLensedShapeletImages(double dx, NumMatrix<double>& kappa, NumMatrix<C
   selectionFile.close();
 } 
 
+
+int main(int argc, char *argv[]) {
+  if (argc != 5) {
+    std::cout << "usage: createShapeletGalaxies <path> <beta_min> <beta_max> <NOBJ>" << std::endl;
+    std::terminate();
+  } 
+
+  int NGLX = atoi(argv[4]);
+  double betamin = atof(argv[2]), betamax = atof(argv[3]);
+  createShapeletImagesPCA(betamin,betamax,argv[1],NGLX);
+}

@@ -6,6 +6,22 @@ typedef complex<double> Complex;
 ShapeletObject::ShapeletObject() : Composite2D() {
 }
 
+ShapeletObject::ShapeletObject(ShapeletObject& sobj) : Composite2D() {
+  cartesianCoeffs = sobj.cartesianCoeffs;
+  errors = sobj.errors;
+  polarCoeffs = sobj.polarCoeffs;
+  c2p = sobj.c2p;
+  trafo = sobj.trafo;
+  chisquare = sobj.chisquare;
+  R = sobj.R;
+  fits = sobj.fits;
+  regularized = sobj.regularized;
+  history = sobj.history;
+  text.str(sobj.text.str());
+  fitsFlag = sobj.fitsFlag;
+  decompFlag = sobj.decompFlag;
+}
+
 ShapeletObject::ShapeletObject(string sifFile) : Composite2D() {
   // get infos from file
   load(sifFile);

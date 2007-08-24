@@ -68,12 +68,13 @@ space, thus saving memory and computation time.
 /// in a SIF file and later be loaded from that file again.
 
 class ShapeletObject : public Composite2D {
-  typedef complex<double> Complex;
  public:
   /// Default constructor.
   ShapeletObject();
   /// Constructor for reading a SIF file.
   ShapeletObject(std::string sifFile);
+  /// Copy constructor.
+  ShapeletObject(ShapeletObject& sobj);
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
@@ -81,7 +82,7 @@ class ShapeletObject : public Composite2D {
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const NumMatrix<Complex>& polarCoeffs, double beta, const Point2D& xcentroid);
+  ShapeletObject(const NumMatrix<complex<double> >& polarCoeffs, double beta, const Point2D& xcentroid);
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically.\n
@@ -97,11 +98,11 @@ class ShapeletObject : public Composite2D {
   /// Set cartesian coefficient errors.
   void setCartesianCoeffErrors(const NumMatrix<double>& errors);
   /// Set new polar coeficients.
-  void setPolarCoeffs(const NumMatrix<Complex>& polarCoeffs);
+  void setPolarCoeffs(const NumMatrix<complex<double> >& polarCoeffs);
   /// Return active cartesian coefficients.
   const NumMatrix<double>& getCartesianCoeffs();
   /// Return active polar coeficients.
-  const NumMatrix<Complex>& getPolarCoeffs();
+  const NumMatrix<complex<double> >& getPolarCoeffs();
 
   // methods depending on the decomposition
   /// Return best fit \f$\chi^2\f$ from decomposition.
@@ -173,7 +174,7 @@ class ShapeletObject : public Composite2D {
 
  private:
   NumMatrix<double> cartesianCoeffs, errors;
-  NumMatrix<Complex> polarCoeffs;
+  NumMatrix<complex<double> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
   double chisquare, R;

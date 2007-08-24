@@ -7,20 +7,14 @@ bool alwaysTrue(ShapeletObject& so) {
   return 1;
 }
 
-ShapeletObjectList::ShapeletObjectList(string filename) : list<ShapeletObject*>() {
+ShapeletObjectList::ShapeletObjectList(string filename) : vector<boost::shared_ptr<ShapeletObject> >() {
   readListFile(filename,&alwaysTrue);
 }
 
-ShapeletObjectList::ShapeletObjectList(string filename, bool (* selectionFunction) (ShapeletObject&)) : list<ShapeletObject*>() {
+ShapeletObjectList::ShapeletObjectList(string filename, bool (* selectionFunction) (ShapeletObject&)) : vector<boost::shared_ptr<ShapeletObject> >() {
   readListFile(filename,selectionFunction);
 }
 
-ShapeletObjectList::~ShapeletObjectList() {
-  // we have to destroy the ShapeletObject via its pointer
-  list<ShapeletObject*>::iterator iter;
-  for (iter = list<ShapeletObject*>::begin(); iter != list<ShapeletObject*>::end(); iter++) 
-    delete *iter;
-}
 void ShapeletObjectList::readListFile(string filename, bool (* selectionFunction) (ShapeletObject&)) {
   // open file with list of ShapeletObjects
   ifstream listfile (filename.c_str());
@@ -31,12 +25,10 @@ void ShapeletObjectList::readListFile(string filename, bool (* selectionFunction
   // read in list file
   string sifname;
   while(getline(listfile, sifname)) {
-    ShapeletObject* sobj = new ShapeletObject(sifname);
+    boost::shared_ptr<ShapeletObject> safePointer (new ShapeletObject(sifname));
     // if selectionFunction return 1 for this sobj,
     // append it to list
-    if ((*selectionFunction)(*sobj))
-      list<ShapeletObject*>::push_back(sobj);
-    else
-      delete sobj;
+    if ((*selectionFunction)(*safePointer))
+      vector<boost::shared_ptr<ShapeletObject> >::push_back(safePointer);
   }
 }
