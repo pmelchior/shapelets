@@ -220,15 +220,14 @@ void ImageTransformation::convolve(NumMatrix<double>& cartesianCoeffs, double& b
   NumMatrix<double> P;
   makeConvolutionMatrix(P,KernelCoeffs,beta,beta_kernel,beta_convolved,nmax_orig,nmax_convolved);
   // transform cartesianCoeffs into vector
-  int nCoeffs_orig = getNCoeffs(nmax_orig);
-  NumMatrix<int> nVector_orig;
-  makeNVector(nVector_orig,nCoeffs_orig,nmax_orig);
+  IndexVector nVector_orig(nmax_orig);
+  int nCoeffs_orig = nVector_orig.getNCoeffs();
   // this does only work because nmax_convolved = nmax_orig
   // otherwise generate nVector and nCoeffs for _convolved too;
   NumVector<double> f(nCoeffs_orig), h(nCoeffs_orig);
-  matrixMapping(cartesianCoeffs,f,0,nVector_orig,nCoeffs_orig);
+  matrixMapping(cartesianCoeffs,f,0,nVector_orig);
   h = P*f;
-  vectorMapping(h,cartesianCoeffs,nVector_orig,nCoeffs_orig);
+  vectorMapping(h,cartesianCoeffs,nVector_orig);
   beta = beta_convolved;
 }
 
@@ -247,15 +246,14 @@ void ImageTransformation::deconvolve(NumMatrix<double>& cartesianCoeffs, double&
   //P.printWithIndices(1);
 
   // transform cartesianCoeffs into vector
-  int nCoeffs_convolved = getNCoeffs(nmax_convolved);
-  NumMatrix<int> nVector_convolved;
-  makeNVector(nVector_convolved,nCoeffs_convolved,nmax_convolved);
+  IndexVector nVector_convolved(nmax_convolved);
+  int nCoeffs_convolved = nVector_convolved.getNCoeffs();
   // this does only work because nmax_convolved = nmax_orig
   // otherwise generate nVector and nCoeffs for _orig too;
   NumVector<double> f(nCoeffs_convolved), h(nCoeffs_convolved);
-  matrixMapping(cartesianCoeffs,f,0,nVector_convolved,nCoeffs_convolved);
+  matrixMapping(cartesianCoeffs,f,0,nVector_convolved);
   h = P_1*f;
-  vectorMapping(h,cartesianCoeffs,nVector_convolved,nCoeffs_convolved);
+  vectorMapping(h,cartesianCoeffs,nVector_convolved);
   // in contrast to the original implementation: let's go back the the smaller beta here
   beta = beta_orig;
 }
@@ -280,27 +278,24 @@ void ImageTransformation::makeConvolutionMatrix(NumMatrix<double>& P, const NumM
   
   // the 2D convolution tensor C_nml
   // the matrix->vector projection
-  int nCoeffs_orig = getNCoeffs(nmax_orig);
-  int nCoeffs_kernel = getNCoeffs(nmax_kernel);
-  int nCoeffs_convolved = getNCoeffs(nmax_convolved);
-  NumMatrix<int> nVector_orig, nVector_kernel, nVector_convolved;
-  makeNVector(nVector_orig,nCoeffs_orig,nmax_orig);
-  makeNVector(nVector_kernel,nCoeffs_kernel,nmax_kernel);
-  makeNVector(nVector_convolved,nCoeffs_convolved,nmax_convolved);
+  IndexVector  nVector_orig(nmax_orig), nVector_kernel(nmax_kernel), nVector_convolved(nmax_convolved);
+  int nCoeffs_orig = nVector_orig.getNCoeffs();
+  int nCoeffs_kernel = nVector_kernel.getNCoeffs();
+  int nCoeffs_convolved = nVector_convolved.getNCoeffs();
   boost::multi_array<double,3> c2(boost::extents[nCoeffs_convolved][nCoeffs_orig][nCoeffs_kernel]);
   for (int n=0; n < nCoeffs_convolved; n++)
     for (int m=0; m < nCoeffs_orig; m++) 
       for (int l=0; l < nCoeffs_kernel; l++)
 	c2[n][m][l] = 
-	  c1[getN1(nVector_convolved,n)][getN1(nVector_orig,m)][getN1(nVector_kernel,l)] * 
-	  c1[getN2(nVector_convolved,n)][getN2(nVector_orig,m)][getN2(nVector_kernel,l)];
+	  c1[nVector_convolved.getN1(n)][nVector_orig.getN1(m)][nVector_kernel.getN1(l)] * 
+	  c1[nVector_convolved.getN2(n)][nVector_orig.getN2(m)][nVector_kernel.getN2(l)];
   
   // now the 2D convolution matrix P_nm
   // since (n1,n2) are stored as vector, this can be regarded as matrix
   P = NumMatrix<double>(nCoeffs_convolved,nCoeffs_orig);
   // vectorize PSFCoeffs for multiplication
   NumVector<double> g(nCoeffs_kernel); 
-  matrixMapping(KernelCoeffs,g,0,nVector_kernel,nCoeffs_kernel);
+  matrixMapping(KernelCoeffs,g,0,nVector_kernel);
   for (int n=0; n < nCoeffs_convolved; n++)
     for (int m=0; m < nCoeffs_orig; m++)
       for (int l=0; l < nCoeffs_kernel; l++)
@@ -364,36 +359,36 @@ void ImageTransformation::makeBTensor(boost::multi_array<double,3>& bt, double a
 void ImageTransformation::rescale(NumMatrix<double>& cartesianCoeffs, double beta, double newbeta, ostringstream& history) {
   history << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
   int nmax = cartesianCoeffs.getRows() -1;
-  int nCoeffs = getNCoeffs(nmax);
-  NumMatrix<int> nVector;
-  makeNVector(nVector,nCoeffs,nmax);
+  IndexVector nVector (nmax);
+  int nCoeffs = nVector.getNCoeffs();
   NumVector<double> coeffVector(nCoeffs);
-  matrixMapping(cartesianCoeffs,coeffVector,0,nVector,nCoeffs);
+  matrixMapping(cartesianCoeffs,coeffVector,0,nVector);
   NumMatrix<double> R(nCoeffs,nCoeffs);
-  makeRescalingMatrix(R,newbeta,beta,nCoeffs,nVector);
+  makeRescalingMatrix(R,newbeta,beta,nVector);
 
   //NumVector<double> coeffVector_;
   NumVector<double> coeffVector_ = R * coeffVector;
-  vectorMapping(coeffVector_,cartesianCoeffs,nVector,nCoeffs);
+  vectorMapping(coeffVector_,cartesianCoeffs,nVector);
   
 }
  
 // the 2D rescaling matrix is obtained by a tensor multiplications of
 // the 1D rescaling matrix with itself.
-void ImageTransformation::makeRescalingMatrix(NumMatrix<double>& M2D, double beta2, double beta1, int nCoeffs, NumMatrix<int>& nVector) {
-  int nmax = getNMax(nCoeffs);
+void ImageTransformation::makeRescalingMatrix(NumMatrix<double>& M2D, double beta2, double beta1, const IndexVector& nVector) {
+  int nmax = nVector.getOrder();
+  int nCoeffs = nVector.getNCoeffs();
   // compute 1D rescaling matrix according to my own calculations
   NumMatrix<double>M1D(nmax+1,nmax+1);
   make1DRescalingMatrix(M1D,beta2,beta1,nmax);
   // now build tensor product of 1D matrix to give 2D rescaling matrix
   int i1,i2,j1,j2;
   for (int l = 0; l < nCoeffs; l++) {
-    i1 = getN1(nVector,l);
-    i2 = getN2(nVector,l);
+    i1 = nVector.getN1(l);
+    i2 = nVector.getN2(l);
     // here we assume that both sets of coefficients have same length
     for (int i=0; i< nCoeffs; i++) {
-       j1 = getN1(nVector,i);
-       j2 = getN2(nVector,i);
+       j1 = nVector.getN1(i);
+       j2 = nVector.getN2(i);
        M2D(l,i) = M1D(i1,j1)*M1D(i2,j2);
     }
   }

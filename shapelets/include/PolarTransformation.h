@@ -4,7 +4,7 @@
 
 #include <Grid.h>
 #include <NumMatrix.h>
-//#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
+#include <IndexVector.h>
 #include <complex.h>
 // for factorial function
 #include <gsl/gsl_sf.h>
@@ -36,9 +36,10 @@ class PolarTransformation {
   /// Return cartesian coeffs for external transformations.
   void getCartesianCoeffs(const NumMatrix<complex<double> >& polarCoeffs, NumMatrix<double>& cartesianCoeffs);
  private:
-  unsigned int nmax, nCoeffs;
+  unsigned int nmax;
   NumMatrix<complex<double> > c2p,p2c;
-  NumMatrix<int> nVector;
+  //NumMatrix<int> nVector;
+  IndexVector nVector;
   void buildTransformationMatrix();
 };
 

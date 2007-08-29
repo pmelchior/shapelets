@@ -8,10 +8,10 @@ namespace ublas = boost::numeric::ublas;
 Decomposite2D::Decomposite2D(int innmax, double inbeta, const Object& O) : 
 obj(O) {
   nmax = innmax;
+  nVector = IndexVector(nmax);
+  nCoeffs = nVector.getNCoeffs();
   setBeta(inbeta);
   npixels = obj.size();
-  nCoeffs = getNCoeffs(nmax);
-  makeNVector(nVector,nCoeffs,nmax);
   Mt.resize(nCoeffs,npixels);
 
   // ways to give pixel errors (depending on noiseModel):
@@ -74,8 +74,8 @@ void Decomposite2D::makeLSMatrix () {
   // now build tensor product of M0 and M1
   int n0, n1;
   for (int l = 0; l < nCoeffs; l++) {
-    n0 = getN1(nVector,l);
-    n1 = getN2(nVector,l);
+    n0 = nVector.getN1(l);
+    n1 = nVector.getN2(l);
     for (int i=0; i<npixels; i++) 
       Mt(l,i) = M0(n0,i)*M1(n1,i);
   }
@@ -213,8 +213,8 @@ void Decomposite2D::setNMax(int innmax) {
   if (innmax != nmax) {
     nmax = innmax;
     change = updateModel = updateResiduals = 1;
-    nCoeffs = getNCoeffs(nmax);
-    makeNVector(nVector,nCoeffs,nmax);
+    nVector = IndexVector(nmax);
+    nCoeffs = nVector.getNCoeffs();
     Mt.resize(nCoeffs,npixels);
   }
 }

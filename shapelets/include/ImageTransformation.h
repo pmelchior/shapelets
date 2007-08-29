@@ -2,9 +2,10 @@
 #define IMAGETRANSFORMATION_H
 
 #include <NumMatrix.h>
+#include <Point2D.h>
+#include <IndexVector.h>
 #include <complex.h>
 #include <iostream>
-#include <Point2D.h>
 // for 3D convolution tensor
 #include <boost/multi_array.hpp>
 
@@ -47,7 +48,7 @@ class ImageTransformation {
   /// Change the scale size of the image by using rescaling relation.
   /// see Paper I, appendix A.
   void rescale(NumMatrix<double>& cartesianCoeffs, double beta, double newbeta, std::ostringstream& history);
-  void makeRescalingMatrix(NumMatrix<double>& betaTrafo, double beta1, double beta2, int nCoeffs, NumMatrix<int>& nVector);
+  void makeRescalingMatrix(NumMatrix<double>& betaTrafo, double beta1, double beta2, const IndexVector& nVector);
 
  private:
   void makeConvolutionMatrix(NumMatrix<double>& P, const NumMatrix<double>& KernelCoeffs, double beta_orig, double beta_kernel, double beta_convolved, int nmax_orig, int nmax_convolved);

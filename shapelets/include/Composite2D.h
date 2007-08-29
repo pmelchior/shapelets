@@ -12,6 +12,7 @@
 #include <NumVector.h>
 #include <Point2D.h>
 #include <Grid.h>
+#include <IndexVector.h>
 
 class Composite2D : private Shapelets2D {
  public:
@@ -87,7 +88,7 @@ class Composite2D : private Shapelets2D {
   void defineGrid();
   double evalGridPoint(const Point2D& x);
   void evalGrid();
-  void makeShapeletMatrix(NumMatrix<double>& M, NumMatrix<int>& nVector);
+  void makeShapeletMatrix(NumMatrix<double>& M, const IndexVector& nVector);
 };
 
 #endif

@@ -3,8 +3,7 @@
 
 #include <NumMatrix.h>
 #include <NumVector.h>
-//#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
-//#include <boost/numeric/bindings/traits/ublas_vector.hpp>
+#include <IndexVector.h>
 #include <complex.h>
 #include <iostream>
 
@@ -12,61 +11,35 @@
 /// When working matrices of coefficients, it's often more convenient
 /// to transform the tensor into a matrix and the matrix into a vector
 /// of appropriate size.
-/// Unfortunately templated functions don't work here, so we have to set
-/// the type for the matrices explicitly.
-/// \todo nVector should be own class.
-
-/// Size of vector derived from triangular matrix.
-int getNCoeffs(int nmax);
-
-/// Maximum shapelets order from number of coefficients
-int getNMax(int nCoeffs);
 
 /// Maps the range m = -n, -n +2, .. , n to
 /// m = 0,1,..,n to efficiently store in matrix.
 unsigned int mIndex(int m, int n);
 
-/// Mapping of vector index to matrix indices.
-/// The line of a cartesian matrix.
-int getN1(const NumMatrix<int>& nVector,int i);
-
-/// Mapping of vector index to matrix indices.
-/// The column of the matrix.
-int getN2 (const NumMatrix<int>& nVector,int i);
-
-/// Mapping of vector index to matrix indices.
-/// The line of a polar matrix.
-int getN1Polar(const NumMatrix<int>& nVector,int i);
-
-/// Build polar coefficient mapping vector.
-/// It creates vectors which map the diagonal elements
-/// of a matrix in one row for accessing them successively in a vector
-void makeNVector(NumMatrix<int>& nVector,int nCoeffs, int nmax);
-
 /// Map a triangular matrix onto a vector of minimal size.
 /// Since the matrices have either lower left (polar) or upper left form,
 /// the counting is done in different fashion
-void matrixMapping(const NumMatrix<double>& matrix, NumVector<double>& vector,bool polar, const NumMatrix<int>& nVector,int nCoeffs);
+void matrixMapping(const NumMatrix<double>& matrix, NumVector<double>& vector,bool polar, const IndexVector& nVector);
 /// Map a triangular matrix onto a vector of minimal size.
 /// Counting in polar or cartesian fashion.
-void matrixMapping(const NumMatrix< complex<double> >& matrix, NumVector< complex<double> >& vector,bool polar, const NumMatrix<int>& nVector,int nCoeffs);
+void matrixMapping(const NumMatrix< complex<double> >& matrix, NumVector< complex<double> >& vector,bool polar, const IndexVector& nVector);
 /// Map a triangular matrix onto a vector of minimal size.
 /// Counting in polar or cartesian fashion.
-void matrixMapping(const NumMatrix<double>& matrix, NumVector< complex<double> >& vector,bool polar, const NumMatrix<int>& nVector,int nCoeffs);
+void matrixMapping(const NumMatrix<double>& matrix, NumVector< complex<double> >& vector,bool polar, const IndexVector& nVector);
 /// Map a triangular matrix onto a matrix_row of minimal size.
 /// Counting in polar or cartesian fashion.
-void matrixMapping(const NumMatrix<double>& matrix,boost::numeric::ublas::matrix_row< boost::numeric::ublas::matrix<double> >& mr,bool polar, const NumMatrix<int>& nVector,int nCoeffs);
+void matrixMapping(const NumMatrix<double>& matrix,boost::numeric::ublas::matrix_row< boost::numeric::ublas::matrix<double> >& mr,bool polar, const IndexVector& nVector);
 
 /// Reverse operation to matrixMapping().
 /// Here for the Complex values of the polar vector/matrix.
-void vectorMapping(const boost::numeric::ublas::vector< complex<double> >& vector,NumMatrix< complex<double> >& matrix, const NumMatrix<int>& nVector,int nCoeffs);
+void vectorMapping(const boost::numeric::ublas::vector< complex<double> >& vector,NumMatrix< complex<double> >& matrix, const IndexVector& nVector);
 /// Reverse operation to matrixMapping().
 /// Here for double vector -> double matrix.
-void vectorMapping(const boost::numeric::ublas::vector<double>& vector,NumMatrix<double>& matrix, const NumMatrix<int>& nVector,int nCoeffs);
+void vectorMapping(const boost::numeric::ublas::vector<double>& vector,NumMatrix<double>& matrix, const IndexVector& nVector);
 /// Reverse operation to matrixMapping().
 /// Here for the double values of the cartesian vector/matrix 
 /// (when coming from a polar transformation the matrix is Complex)
-void vectorMapping(const boost::numeric::ublas::vector< complex<double> >& vector,NumMatrix<double>& matrix, const NumMatrix<int>& nVector,int nCoeffs);
+void vectorMapping(const boost::numeric::ublas::vector< complex<double> >& vector,NumMatrix<double>& matrix, const IndexVector& nVector);
 
 
 /// Transform arbitrary matrix into triangular matrix of appropraite dimension.
@@ -125,41 +98,5 @@ int getNMax(const NumMatrix<T>& matrix, double cutoff) {
   return result;
 }
 
-/// Change the dimension of a square matrix by \f$\delta\f$ in every dimension.
-/// \f$\delta\f$ can be positive (adding zeros) or negative (slicing).
-template <class T>
-void changeDimension(NumMatrix<T>& matrix, int delta) {
-  int oldDim = matrix.getRows();
-  boost::numeric::ublas::matrix<T> tmpMatrix(oldDim + delta, oldDim + delta);
-  if (delta > 0) {
-    boost::numeric::ublas::matrix_range<boost::numeric::ublas::matrix<T> > (tmpMatrix, boost::numeric::ublas::range (0, oldDim), boost::numeric::ublas::range (0, oldDim)) = matrix.getMatrix();
-    matrix.getMatrix() = tmpMatrix;
-  } else if (delta < 0) {
-    tmpMatrix = boost::numeric::ublas::matrix_range<boost::numeric::ublas::matrix<T> > (matrix.getMatrix(), boost::numeric::ublas::range (0, oldDim + delta), boost::numeric::ublas::range (0, oldDim + delta));
-    matrix.getMatrix() = tmpMatrix;
-  }
-}
-
-/// Transform vector of \f$ n\cdot m\f$ entries into \f$ n\times m\f$ matrix.
-/// If columnwise == 1, the matrix will be a \f$ m\times n\f$ one.
-template <class T>
-void transformVector2Matrix(NumVector<T>& V, NumMatrix<T>& M, unsigned int n, bool columnwise) {
-  if (V.size()%n==0) {
-    int m = V.size()/n;
-    for (int i=0; i<m; i++){
-      if (columnwise) {
-	if (M.getRows() != m || M.getColumns() != n)
-	  M = NumMatrix<T>(m,n);
-	boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<T> > (M.getMatrix(),i) =
-	  boost::numeric::ublas::vector_range<boost::numeric::ublas::vector<T> > (V, boost::numeric::ublas::range(i*n,(i+1)*n));
-      } else {
-	if (M.getRows() != n || M.getColumns() != m)
-	  M = NumMatrix<T>(n,m);
-	boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<T> > (M.getMatrix(),i) =
-	  boost::numeric::ublas::vector_range<boost::numeric::ublas::vector<T> > (V, boost::numeric::ublas::range(i*n,(i+1)*n));
-      }
-    }
-  }
-}
 
 #endif

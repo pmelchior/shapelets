@@ -162,13 +162,12 @@ void Composite2D::evalGrid() {
   } else {
     // this approach only works for square, upper triangular coeff matrices
     // thus, nnmax = orderlimit0 = orderlimit1
-    int nCoeffs = getNCoeffs(orderlimit0);
+    IndexVector nVector(orderlimit0);
+    int nCoeffs = nVector.getNCoeffs();
     NumVector<double> coeffVector(nCoeffs);
-    NumMatrix<int> nVector;
-    makeNVector(nVector,nCoeffs,orderlimit0);
     NumMatrix<double> M(grid.size(),nCoeffs);
     makeShapeletMatrix(M,nVector);
-    matrixMapping(shapeletCoeffs,coeffVector,0,nVector,nCoeffs);
+    matrixMapping(shapeletCoeffs,coeffVector,0,nVector);
     model = M * coeffVector;
   }
   change = 0;
@@ -306,9 +305,9 @@ void Composite2D::defineGrid() {
   }
 }
 
-void Composite2D::makeShapeletMatrix(NumMatrix<double>& M, NumMatrix<int>& nVector) {
+void Composite2D::makeShapeletMatrix(NumMatrix<double>& M, const IndexVector& nVector) {
   int nmax = orderlimit0;
-  int nCoeffs = getNCoeffs(nmax);
+  int nCoeffs = nVector.getNCoeffs();
   int npixels = grid.size();
   NumMatrix<double> M0(nmax+1,npixels), M1(nmax+1,npixels);
   // start with 0th and 1st order shapelets
@@ -337,8 +336,8 @@ void Composite2D::makeShapeletMatrix(NumMatrix<double>& M, NumMatrix<int>& nVect
   // now build tensor product of M0 and M1
   int n0, n1;
   for (int l = 0; l < nCoeffs; l++) {
-    n0 = getN1(nVector,l);
-    n1 = getN2(nVector,l);
+    n0 = nVector.getN1(l);
+    n1 = nVector.getN2(l);
     for (int i=0; i<npixels; i++)
       // this access scheme is probably slow but we come around the matrix Mt
       M(i,l) = M0(n0,i)*M1(n1,i);

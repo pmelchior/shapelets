@@ -8,6 +8,7 @@
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <NumMatrixDiagonal.h>
+#include <IndexVector.h>
 #include <Object.h>
 
 /// 2D Decomposition class.
@@ -97,11 +98,10 @@ class Decomposite2D {
   int nmax,nCoeffs,npixels;
   char noise;
   NumVector<double> coeffVector, errorVector, model, residual;
-  //const NumVector<double>& data;
   const Object& obj;
   NumMatrixDiagonal<double> Weight;
   PixelCovarianceMatrix V_;
-  NumMatrix<int> nVector;
+  IndexVector nVector;
   bool change, updateC, updateModel, updateResiduals, gaussian;
 };
 
