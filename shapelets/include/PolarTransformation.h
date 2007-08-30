@@ -3,9 +3,9 @@
 
 
 #include <Grid.h>
+#include <NumVector.h>
 #include <NumMatrix.h>
 #include <IndexVector.h>
-#include <complex.h>
 // for factorial function
 #include <gsl/gsl_sf.h>
 
@@ -38,7 +38,6 @@ class PolarTransformation {
  private:
   unsigned int nmax;
   NumMatrix<complex<double> > c2p,p2c;
-  //NumMatrix<int> nVector;
   IndexVector nVector;
   void buildTransformationMatrix();
 };

@@ -1,4 +1,5 @@
 #include <ImageTransformation.h>
+#include <CoefficientVector.h>
 #include <MatrixManipulations.h>
 #include <NumVector.h>
 #include <math.h>
@@ -213,21 +214,20 @@ void ImageTransformation::convolve(NumMatrix<double>& cartesianCoeffs, double& b
   history << "# Convolving image with kernel of order " << KernelCoeffs.getRows() - 1;
   history << ", beta = " << beta_kernel << endl;
   int nmax_orig = cartesianCoeffs.getRows() -1;
+
   // default values for convolving
   double beta_convolved = sqrt(beta*beta + beta_kernel*beta_kernel);
   int nmax_convolved = nmax_orig;
 
+  // construct covolution matrix
   NumMatrix<double> P;
   makeConvolutionMatrix(P,KernelCoeffs,beta,beta_kernel,beta_convolved,nmax_orig,nmax_convolved);
-  // transform cartesianCoeffs into vector
-  IndexVector nVector_orig(nmax_orig);
-  int nCoeffs_orig = nVector_orig.getNCoeffs();
-  // this does only work because nmax_convolved = nmax_orig
-  // otherwise generate nVector and nCoeffs for _convolved too;
-  NumVector<double> f(nCoeffs_orig), h(nCoeffs_orig);
-  matrixMapping(cartesianCoeffs,f,0,nVector_orig);
-  h = P*f;
-  vectorMapping(h,cartesianCoeffs,nVector_orig);
+  // transform coeffs into vector form
+  CoefficientVector<double> f(cartesianCoeffs);
+  // perform the convolution
+  CoefficientVector<double> h = P*(NumVector<double>)f;
+  // transform vector back to coefficient matrix
+  h.fillCoeffMatrix(cartesianCoeffs);
   beta = beta_convolved;
 }
 
@@ -243,17 +243,14 @@ void ImageTransformation::deconvolve(NumMatrix<double>& cartesianCoeffs, double&
   makeConvolutionMatrix(P,KernelCoeffs,beta_orig,beta_kernel,beta_convolved,nmax_orig,nmax_convolved);
   // since matrix could be singular, use SVD for inversion
   NumMatrix<double> P_1 = P.svd_invert();
-  //P.printWithIndices(1);
 
   // transform cartesianCoeffs into vector
-  IndexVector nVector_convolved(nmax_convolved);
-  int nCoeffs_convolved = nVector_convolved.getNCoeffs();
-  // this does only work because nmax_convolved = nmax_orig
-  // otherwise generate nVector and nCoeffs for _orig too;
-  NumVector<double> f(nCoeffs_convolved), h(nCoeffs_convolved);
-  matrixMapping(cartesianCoeffs,f,0,nVector_convolved);
-  h = P_1*f;
-  vectorMapping(h,cartesianCoeffs,nVector_convolved);
+  CoefficientVector<double> f(cartesianCoeffs);
+  // deconvolve
+  CoefficientVector<double> h = P_1*(NumVector<double>)f;
+  // transform back to matrix form
+  h.fillCoeffMatrix(cartesianCoeffs);
+
   // in contrast to the original implementation: let's go back the the smaller beta here
   beta = beta_orig;
 }
@@ -294,8 +291,7 @@ void ImageTransformation::makeConvolutionMatrix(NumMatrix<double>& P, const NumM
   // since (n1,n2) are stored as vector, this can be regarded as matrix
   P = NumMatrix<double>(nCoeffs_convolved,nCoeffs_orig);
   // vectorize PSFCoeffs for multiplication
-  NumVector<double> g(nCoeffs_kernel); 
-  matrixMapping(KernelCoeffs,g,0,nVector_kernel);
+  CoefficientVector<double> g(KernelCoeffs);
   for (int n=0; n < nCoeffs_convolved; n++)
     for (int m=0; m < nCoeffs_orig; m++)
       for (int l=0; l < nCoeffs_kernel; l++)
@@ -358,18 +354,14 @@ void ImageTransformation::makeBTensor(boost::multi_array<double,3>& bt, double a
 
 void ImageTransformation::rescale(NumMatrix<double>& cartesianCoeffs, double beta, double newbeta, ostringstream& history) {
   history << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
-  int nmax = cartesianCoeffs.getRows() -1;
-  IndexVector nVector (nmax);
+  CoefficientVector<double> coeffVector(cartesianCoeffs);
+  const IndexVector& nVector = coeffVector.getIndexVector();
   int nCoeffs = nVector.getNCoeffs();
-  NumVector<double> coeffVector(nCoeffs);
-  matrixMapping(cartesianCoeffs,coeffVector,0,nVector);
   NumMatrix<double> R(nCoeffs,nCoeffs);
   makeRescalingMatrix(R,newbeta,beta,nVector);
+  CoefficientVector<double> coeffVector_ = R * (NumVector<double>)coeffVector;
+  coeffVector_.fillCoeffMatrix(cartesianCoeffs);
 
-  //NumVector<double> coeffVector_;
-  NumVector<double> coeffVector_ = R * coeffVector;
-  vectorMapping(coeffVector_,cartesianCoeffs,nVector);
-  
 }
  
 // the 2D rescaling matrix is obtained by a tensor multiplications of

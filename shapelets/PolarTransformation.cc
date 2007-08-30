@@ -1,6 +1,6 @@
 #include <PolarTransformation.h>
-#include <MatrixManipulations.h>
-#include <NumVector.h>
+#include <CoefficientVector.h>
+#include <ComplexDouble.h>
 
 typedef complex<double> Complex;
 const Complex I = Complex(0,1);
@@ -32,21 +32,23 @@ void PolarTransformation::setOrder (unsigned int innmax) {
 }
 
 void PolarTransformation::getPolarCoeffs(const NumMatrix<double>& cartesianCoeffs, NumMatrix<Complex>& polarCoeffs) {
-  NumVector<Complex> cartesianVector, polarVector;
-  // convert diagonalized form of matrix into vector, implicit typecast to Complex
-  matrixMapping(cartesianCoeffs,cartesianVector,0,nVector);
-  // the actual transformation in reduced coeff space
-  polarVector = c2p*cartesianVector;
+  // convert matrix into vector, typecast to Complex
+  CoefficientVector<Complex> cartesianVector(cartesianCoeffs);
+  // the actual transformation in coeff space
+  CoefficientVector<Complex> polarVector = c2p*(NumVector<Complex>)cartesianVector;
   // reconstruct the matrix from the vector, in polar matrix form
-  vectorMapping(polarVector,polarCoeffs,nVector);
+  polarVector.fillCoeffMatrix(polarCoeffs);
 }
+
 void PolarTransformation::getCartesianCoeffs(const NumMatrix<Complex>& polarCoeffs, NumMatrix<double>& cartesianCoeffs){
-  NumVector<Complex> polarVector, cartesianVector;
-  matrixMapping(polarCoeffs,polarVector,1,nVector);
-  cartesianVector = p2c*polarVector;
+  // convert matrix into vector
+  CoefficientVector<Complex> polarVector(polarCoeffs);
+  // the transformation in coeff space
+  // ComplexDouble is needed here for the type converion to double below
+  CoefficientVector<ComplexDouble> cartesianVector = p2c*(NumVector<Complex>)polarVector;
   // this time reconstruct into cartesian form, aka upper left triangular matrix form
-  // explicit typecast from Complex to double is performed
-  vectorMapping(cartesianVector,cartesianCoeffs,nVector);
+  // typecast from Complex to double
+  cartesianVector.fillCoeffMatrix(cartesianCoeffs);
 }
 
 
