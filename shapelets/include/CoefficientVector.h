@@ -51,6 +51,9 @@ class CoefficientVector : public NumVector<T> {
   /// Default constructor.
   CoefficientVector(): NumVector<T>() {
   }
+  CoefficientVector(unsigned int size): NumVector<T> (size) {
+    nVector = IndexVector(computeNMax(size));
+  }
   /// Argumented constructor from a NumMatrix.
   /// If the data types of <tt>coeffMatrix</tt> and <tt>*this</tt> differ, the input matrix decides
   /// on the mapping (<tt>double</tt> for cartesian, <tt>complex<double></tt> for polar coeffs), and
@@ -94,7 +97,7 @@ class CoefficientVector : public NumVector<T> {
   /// Copy constructor.
   template <class R>
     CoefficientVector(const NumVector<R>& v) {
-    NumVector<T>::operator=(static_cast<NumVector<T> >(v));
+    NumVector<T>::operator=(v);
     nVector = IndexVector(computeNMax(v.size()));
   } 
   /// Copy constructor.

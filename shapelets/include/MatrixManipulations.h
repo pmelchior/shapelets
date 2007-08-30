@@ -16,32 +16,6 @@
 /// m = 0,1,..,n to efficiently store in matrix.
 unsigned int mIndex(int m, int n);
 
-/// Map a triangular matrix onto a vector of minimal size.
-/// Since the matrices have either lower left (polar) or upper left form,
-/// the counting is done in different fashion
-void matrixMapping(const NumMatrix<double>& matrix, NumVector<double>& vector,bool polar, const IndexVector& nVector);
-/// Map a triangular matrix onto a vector of minimal size.
-/// Counting in polar or cartesian fashion.
-void matrixMapping(const NumMatrix< complex<double> >& matrix, NumVector< complex<double> >& vector,bool polar, const IndexVector& nVector);
-/// Map a triangular matrix onto a vector of minimal size.
-/// Counting in polar or cartesian fashion.
-void matrixMapping(const NumMatrix<double>& matrix, NumVector< complex<double> >& vector,bool polar, const IndexVector& nVector);
-/// Map a triangular matrix onto a matrix_row of minimal size.
-/// Counting in polar or cartesian fashion.
-void matrixMapping(const NumMatrix<double>& matrix,boost::numeric::ublas::matrix_row< boost::numeric::ublas::matrix<double> >& mr,bool polar, const IndexVector& nVector);
-
-/// Reverse operation to matrixMapping().
-/// Here for the Complex values of the polar vector/matrix.
-void vectorMapping(const boost::numeric::ublas::vector< complex<double> >& vector,NumMatrix< complex<double> >& matrix, const IndexVector& nVector);
-/// Reverse operation to matrixMapping().
-/// Here for double vector -> double matrix.
-void vectorMapping(const boost::numeric::ublas::vector<double>& vector,NumMatrix<double>& matrix, const IndexVector& nVector);
-/// Reverse operation to matrixMapping().
-/// Here for the double values of the cartesian vector/matrix 
-/// (when coming from a polar transformation the matrix is Complex)
-void vectorMapping(const boost::numeric::ublas::vector< complex<double> >& vector,NumMatrix<double>& matrix, const IndexVector& nVector);
-
-
 /// Transform arbitrary matrix into triangular matrix of appropraite dimension.
 /// Copies entries from input matrix into lower left corner of the triangular matrix
 /// as long as there are entries unequal to 0 on the diagonal. 

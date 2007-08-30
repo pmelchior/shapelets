@@ -1,5 +1,5 @@
 #include <OptimalDecomposite2D.h>
-#include <MatrixManipulations.h>
+#include <CoefficientVector.h>
 #include <ImageTransformation.h>
 #include <ShapeletConfig.h>
 #include <math.h>
@@ -132,9 +132,6 @@ void OptimalDecomposite2D::optimize() {
      }
    }
  }
-  // setting up vector -> matrix trafo stuff (for getting coeffs and errors)
-  nVector = IndexVector(optimalNMax);
-  nCoeffs = nVector.getNCoeffs();
 
   if (status == 0) optimized = 1;
   t1 = time(NULL);
@@ -633,9 +630,9 @@ void OptimalDecomposite2D::getShapeletCoeffs(NumMatrix<double>& coeffs) {
     coeffs = NumMatrix<double>(optimalNMax+1,optimalNMax+1);
 
   // getting the active coeff vector
-  const NumVector<double>& coeffVector = Decomposite2D::getCoeffs();
+  CoefficientVector<double> coeffVector = Decomposite2D::getCoeffs();
   // putting it into matrix form
-  vectorMapping(coeffVector,coeffs,nVector);
+  coeffVector.fillCoeffMatrix(coeffs);
 }
 
 void OptimalDecomposite2D::getShapeletErrors(NumMatrix<double>& errors) {
@@ -647,14 +644,14 @@ void OptimalDecomposite2D::getShapeletErrors(NumMatrix<double>& errors) {
   const NumVector<double>& noiseError = Decomposite2D::getErrors();
   // now get error from uncertainty in beta
   const NumVector<double>& coeffVector = Decomposite2D::getCoeffs();
-  NumVector<double> errorVector(nCoeffs);
+  CoefficientVector<double> errorVector(coeffVector.size());
   getCoeffErrorFromBeta(coeffVector,errorVector);
 
   // combining the two by Gauss error propagation
-  for (int i = 0; i < nCoeffs; i++)
+  for (int i = 0; i < coeffVector.size(); i++)
     errorVector(i) = sqrt(errorVector(i)*errorVector(i) + noiseError(i)*noiseError(i));
   // putting it into matrix form
-  vectorMapping(errorVector,errors,nVector);
+  errorVector.fillCoeffMatrix(errors);
 }
 
 double OptimalDecomposite2D::getOptimalBeta() {
@@ -671,20 +668,19 @@ double OptimalDecomposite2D::getOptimalChiSquare() {
 // to derive 3 sigma errors on coeffs
 // FIXME: find good assumptions on beta error?
 void OptimalDecomposite2D::getCoeffErrorFromBeta(const NumVector<double>& coeffVector, NumVector<double>& errorVector) {
-  ImageTransformation *trafo =  new ImageTransformation();
+  ImageTransformation trafo;
+  IndexVector nVector(optimalNMax);
+  int nCoeffs = nVector.getNCoeffs();
   NumMatrix<double> betaTrafo(nCoeffs,nCoeffs);
-  trafo->makeRescalingMatrix(betaTrafo,beta*1.1,beta,nVector);
-  //getBetaTrafoMatrix(betaTrafo,beta*1.1,beta);
+  trafo.makeRescalingMatrix(betaTrafo,beta*1.1,beta,nVector);
   errorVector = betaTrafo*coeffVector;
-  trafo->makeRescalingMatrix(betaTrafo,beta*0.9,beta,nVector);
-  //getBetaTrafoMatrix(betaTrafo,beta*0.90,beta);
+  trafo.makeRescalingMatrix(betaTrafo,beta*0.9,beta,nVector);
   NumVector<double> lowerCoeffs;
   lowerCoeffs = betaTrafo*coeffVector;
   // subtract them to get difference
   errorVector -= lowerCoeffs;
   for (int i=0; i < nCoeffs; i++)
     errorVector(i) = fabs(errorVector(i))/3; // assume the error to be 3 sigma
-  delete trafo;
 }
 
 char OptimalDecomposite2D::getDecompositionFlag() {

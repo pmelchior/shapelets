@@ -1,5 +1,5 @@
 #include <Composite2D.h>
-#include <MatrixManipulations.h>
+#include <CoefficientVector.h>
 // for factorial and other math functions
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
@@ -161,14 +161,13 @@ void Composite2D::evalGrid() {
       model(j) = evalGridPoint(grid(j));
   } else {
     // this approach only works for square, upper triangular coeff matrices
-    // thus, nnmax = orderlimit0 = orderlimit1
-    IndexVector nVector(orderlimit0);
-    int nCoeffs = nVector.getNCoeffs();
-    NumVector<double> coeffVector(nCoeffs);
-    NumMatrix<double> M(grid.size(),nCoeffs);
+    // which is assumed for this ansatz here.
+    CoefficientVector<double> coeffVector(shapeletCoeffs);
+    const IndexVector& nVector = coeffVector.getIndexVector();
+    NumMatrix<double> M(grid.size(),nVector.getNCoeffs());
     makeShapeletMatrix(M,nVector);
-    matrixMapping(shapeletCoeffs,coeffVector,0,nVector);
-    model = M * coeffVector;
+    model = M * (NumVector<double>) coeffVector;
+    
   }
   change = 0;
 }  

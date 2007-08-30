@@ -10,7 +10,6 @@
 #include <NumVector.h>
 #include <Object.h>
 #include <History.h>
-#include <IndexVector.h>
 
 /// Class for optimal 2D decomposition.
 /// Provides minimization of decomposition's \f$\chi^2\f$.\n
@@ -78,10 +77,9 @@ class OptimalDecomposite2D : private Decomposite2D {
 
 private:
   const Object& obj;
-  int npixels, optimalNMax, nmaxLow, nmaxHigh, nCoeffs;
+  int npixels, optimalNMax, nmaxLow, nmaxHigh;
   double beta,optimalBeta,optimalChiSquare,bestChiSquare,image_dimension, betaHigh, betaLow;
   bool optimized, nmaxTrouble, noise_correlated;
-  IndexVector nVector;
   char flag, comp_corr;
   History history;
   std::ostringstream text;
