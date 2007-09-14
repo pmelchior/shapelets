@@ -249,10 +249,10 @@ void Composite2D::getShapeletCentroid(Point2D& xc) const {
 }
 
 // compute 2nd brightness moments from shapelet coeffs
-// see IDL code: properties/shapelets_quadrupole.pro
 void Composite2D::getShapelet2ndMoments(NumMatrix<double>& Q) const {
-  if (Q.getRows() != 2 || Q.getColumns() != 2) 
-    Q = NumMatrix<double>(2,2);
+  if (Q.getRows() != 2 || Q.getColumns() != 2)
+    Q.resize(2,2);
+  Q.clear();
   for (int l0 = 0; l0 <= orderlimit0; l0++) {
     for (int l1 = 0; l1 <= orderlimit1; l1++) {
       if (l0%2 == 0 && l1%2 ==0) {
