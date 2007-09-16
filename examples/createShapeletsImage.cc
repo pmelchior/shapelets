@@ -1,4 +1,4 @@
-#include <ShapeletObject.h>
+#include <shapelets/ShapeletObject.h>
 #include <fstream.h>
 #include <string>
 #include <iostream>

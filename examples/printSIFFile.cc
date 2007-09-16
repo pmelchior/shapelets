@@ -1,4 +1,4 @@
-#include <SIFFile.h>
+#include <shapelets/SIFFile.h>
 
 // printSIFFile:
 // open SIF file and print header (+ decomposition history + 

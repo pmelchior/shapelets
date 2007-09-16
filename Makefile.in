@@ -1,0 +1,83 @@
+# PATHs are filled by local.py
+???PATHS???
+SRCPATH = $(SHAPELENSPATH)/src
+INCLPATH = $(SHAPELENSPATH)/include
+
+ARCH = $(shell uname -m)
+DOCPATH = $(INSTALLPATH)/docs
+LIBPATH = $(INSTALLPATH)/lib/$(ARCH)
+PROGSRCPATH = $(INSTALLPATH)/progs
+PROGPATH = $(PROGSRCPATH)/$(ARCH)
+
+LIBNAME = shapelens
+
+SHAPELETSSRCPATH = $(SRCPATH)/shapelets
+SHAPELETSINCLPATH = $(INCLPATH)/shapelets
+SHAPELETSSRC = $(wildcard $(SHAPELETSSRCPATH)/*.cc)
+SHAPELETSOBJECTS = $(SHAPELETSSRC:$(SHAPELETSSRCPATH)/%.cc=$(LIBPATH)/%.o)
+
+LENSINGSRCPATH = $(SRCPATH)/lensing
+LENSINGINCLPATH = $(INCLPATH)/lensing
+LENSINGSRC = $(wildcard $(LENSINGSRCPATH)/*.cc)
+LENSINGOBJECTS = $(LENSINGSRC:$(LENSINGSRCPATH)/%.cc=$(LIBPATH)/%.o)
+
+FRAMESRCPATH = $(SRCPATH)/frame
+FRAMEINCLPATH = $(INCLPATH)/frame
+FRAMESRC = $(wildcard $(FRAMESRCPATH)/*.cc)
+FRAMEOBJECTS = $(FRAMESRC:$(FRAMESRCPATH)/%.cc=$(LIBPATH)/%.o)
+
+PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
+PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
+
+HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(NUMLAINCLPATH)/*.h)
+
+CC = g++
+CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLPATH) -I$(INCLPATH) ???OTHERINCL??? -L$(LIBPATH) ???OTHERLIB???
+LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio
+
+AR = ar
+ARFLAGS = -sr
+
+.DEFAULT: all
+
+.PHONY: clean
+
+???TARGETS???
+
+clean:
+	rm -f $(LIBPATH)/*
+
+cleanshapelets:
+	rm -f $(SHAPELETSOBJECTS)
+cleanlensing:
+	rm -f $(LENSINGOBJECTS)
+cleanframe:
+	rm -f $(FRAMEOBJECTS)
+cleanprogs:
+	rm -f $(PROGSOBJECTS)
+
+dep:
+	$(CC) -MM $(SRC) > $(DEPENDFILE)
+	-include $(DEPENDFILE) 
+
+lib: $(LIBPATH)/lib$(LIBNAME).a
+
+progs: $(PROGSOBJECTS)
+
+???DOCTARGET???
+
+$(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS)
+	$(AR) $(ARFLAGS) $@ $?
+
+$(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIBPATH)/%.o: $(FRAMESRCPATH)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIBPATH)/%.o: $(LENSINGSRCPATH)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(PROGPATH)/%: $(PROGSRCPATH)/%.cc
+	$(CC) $(CFLAGS) $< -o $@ $(LIBS)
+

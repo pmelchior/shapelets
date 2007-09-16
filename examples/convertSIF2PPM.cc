@@ -1,4 +1,4 @@
-#include <ShapeletObject.h>
+#include <shapelets/ShapeletObject.h>
 
 // convertSIF2PPM:
 // create a PPM file from a shapelet model specified by SIF file.

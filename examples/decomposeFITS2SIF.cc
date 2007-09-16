@@ -1,10 +1,10 @@
 // the central header file for shapelet related work.
 // you will need this almost always when working with the 'shapelets' library.
-#include <ShapeletObject.h>
+#include <shapelets/ShapeletObject.h>
 // the header file for the 'frame' library.
 // since the 'frame' library is modular, this can be replaced by a file
 // more appropriate to your needs.
-#include <Frame.h>
+#include <frame/Frame.h>
 
 
 // decomposeFITS2SIF:
