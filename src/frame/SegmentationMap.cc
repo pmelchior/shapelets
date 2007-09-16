@@ -1,5 +1,5 @@
 #include <frame/SegmentationMap.h>
-#include <frame/IO.h>
+#include <IO.h>
 #include <set>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_histogram.h>

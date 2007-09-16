@@ -3,9 +3,9 @@
 
 #include <NumVector.h>
 #include <NumMatrix.h>
+#include <History.h>
 #include <frame/SegmentationMap.h>
 #include <frame/CorrelationFunction.h>
-#include <frame/History.h>
 
 /// Class for the pixel covariance matrix.
 /// 

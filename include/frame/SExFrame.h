@@ -5,11 +5,11 @@
 #include <list>
 #include <gsl/gsl_rng.h>
 #include <NumMatrix.h>
+#include <History.h>
+#include <ShapeLensConfig.h>
 #include <frame/Grid.h>
 #include <frame/Image.h>
 #include <frame/Object.h>
-#include <frame/History.h>
-#include <frame/FrameConfig.h>
 
 /// Wrapper class for SExtractor.
 /// Provides segmentation of a FitsFile into various Object entities employing 

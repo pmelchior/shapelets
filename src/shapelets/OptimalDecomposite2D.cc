@@ -1,7 +1,7 @@
+#include <ShapeLensConfig.h>
 #include <shapelets/OptimalDecomposite2D.h>
 #include <shapelets/CoefficientVector.h>
 #include <shapelets/ImageTransformation.h>
-#include <shapelets/ShapeletConfig.h>
 #include <math.h>
 #include <time.h>
 #include <iomanip>
@@ -263,7 +263,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 
     if (step != 5) {
       // flattening: chi^2 does improves less than sigma(chi^2)
-      if (ShapeletConfig::ALLOW_FLATTENING && !nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
+      if (ShapeLensConfig::ALLOW_FLATTENING && !nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
 	  bestChiSquare = chisquare = newChisquare;
 	  optimalNMax = Decomposite2D::getNMax();
 	  text << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;

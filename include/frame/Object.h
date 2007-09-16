@@ -1,12 +1,12 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <frame/History.h>
+#include <History.h>
+#include <IO.h>
 #include <frame/Image.h>
 #include <frame/SegmentationMap.h>
 #include <frame/PixelCovarianceMatrix.h>
 #include <frame/CorrelationFunction.h>
-#include <frame/IO.h>
 
 /// Central object representing class.
 /// The purpose of this class is to faciliate the exchange of object related information

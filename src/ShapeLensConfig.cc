@@ -1,27 +1,29 @@
-#include <shapelets/ShapeletConfig.h>
+#include <ShapeLensConfig.h>
 #include <boost/tokenizer.hpp>
 #include <fstream>
 #include <iostream>
 
 using namespace std;
 
-unsigned int ShapeletConfig::NMAX_LOW = 0;
-unsigned int ShapeletConfig::NMAX_HIGH = 100;
-double ShapeletConfig::BETA_LOW = 0;
-double ShapeletConfig::BETA_HIGH = INFINITY;
-bool ShapeletConfig::REGULARIZE = 0;
-double ShapeletConfig::REG_LIMIT = 1e-5;
-std::string ShapeletConfig::UNREG_SIFFILE = "";
-bool ShapeletConfig::ALLOW_FLATTENING = 0;
+unsigned int ShapeLensConfig::NMAX_LOW = 0;
+unsigned int ShapeLensConfig::NMAX_HIGH = 100;
+double ShapeLensConfig::BETA_LOW = 0;
+double ShapeLensConfig::BETA_HIGH = INFINITY;
+bool ShapeLensConfig::REGULARIZE = 0;
+double ShapeLensConfig::REG_LIMIT = 1e-5;
+std::string ShapeLensConfig::UNREG_SIFFILE = "";
+bool ShapeLensConfig::ALLOW_FLATTENING = 0;
+bool ShapeLensConfig::FILTER_SPURIOUS = 0;
+double ShapeLensConfig::ADD_BORDER = 0.5;
 
-ShapeletConfig::ShapeletConfig() {
+ShapeLensConfig::ShapeLensConfig() {
 }
 
-ShapeletConfig::ShapeletConfig(string filename) {
+ShapeLensConfig::ShapeLensConfig(string filename) {
   // open config file
   ifstream configfile (filename.c_str());
   if (configfile.fail()) {
-    cout << "ShapeletConfig: configuration file does not exists!" << endl;
+    cout << "ShapeLensConfig: configuration file does not exists!" << endl;
     terminate();
   }
   // read in config file
@@ -55,6 +57,10 @@ ShapeletConfig::ShapeletConfig(string filename) {
 	UNREG_SIFFILE = column[1];
       if (column[0].compare("ALLOW_FLATTENING") == 0)
 	ALLOW_FLATTENING = (bool) atoi (column[1].c_str());
+      if (column[0].compare("FILTER_SPURIOUS") == 0)
+        FILTER_SPURIOUS = (bool) atoi (column[1].c_str());
+      if (column[0].compare("ADD_BORDER") == 0)
+        ADD_BORDER = (double) atof (column[1].c_str());
     }
   }
 }

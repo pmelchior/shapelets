@@ -75,10 +75,10 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   fitsFlag = obj.getDetectionFlag();
   double beta;
   // decomposing with given constraits on shapelet decomposition parameters
-  OptimalDecomposite2D *optimalDecomp =  new OptimalDecomposite2D(obj, ShapeletConfig::NMAX_LOW,ShapeletConfig::NMAX_HIGH,ShapeletConfig::BETA_LOW,ShapeletConfig::BETA_HIGH);
+  OptimalDecomposite2D *optimalDecomp =  new OptimalDecomposite2D(obj, ShapeLensConfig::NMAX_LOW,ShapeLensConfig::NMAX_HIGH,ShapeLensConfig::BETA_LOW,ShapeLensConfig::BETA_HIGH);
 
   // if UNREG_SIFFILE is set, save the unregularized model to sif file with given name
-  if (ShapeletConfig::UNREG_SIFFILE.compare("") != 0) {
+  if (ShapeLensConfig::UNREG_SIFFILE.compare("") != 0) {
     // first get all necessary data for model
     optimalDecomp->getShapeletCoeffs(cartesianCoeffs);
     optimalDecomp->getShapeletErrors(errors);
@@ -90,14 +90,14 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
     history = History(text.str());
     decompFlag = optimalDecomp->getDecompositionFlag();
     regularized = R = 0;
-    SIFFile sfile(ShapeletConfig::UNREG_SIFFILE);
+    SIFFile sfile(ShapeLensConfig::UNREG_SIFFILE);
     sfile.save(history.getContent(),cartesianCoeffs,errors,FitsGrid,beta,xcentroid,chisquare,fitsFlag,decompFlag,regularized,R);
   }
 
   // use regularization if specified
-  if (ShapeletConfig::REGULARIZE) {
+  if (ShapeLensConfig::REGULARIZE) {
     regularized = 1;
-    R = optimalDecomp->regularize(ShapeletConfig::REG_LIMIT);
+    R = optimalDecomp->regularize(ShapeLensConfig::REG_LIMIT);
   } else
     R = regularized = 0;
 

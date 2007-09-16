@@ -5,10 +5,10 @@
 #include <map>
 #include <NumMatrix.h>
 #include <NumVector.h>
+#include <History.h>
 #include <frame/Point2D.h>
 #include <frame/Grid.h>
 #include <frame/Object.h>
-#include <frame/History.h>
 #include <shapelets/Decomposite2D.h>
 
 /// Class for optimal 2D decomposition.

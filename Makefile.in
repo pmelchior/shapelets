@@ -26,6 +26,9 @@ FRAMEINCLPATH = $(INCLPATH)/frame
 FRAMESRC = $(wildcard $(FRAMESRCPATH)/*.cc)
 FRAMEOBJECTS = $(FRAMESRC:$(FRAMESRCPATH)/%.cc=$(LIBPATH)/%.o)
 
+COMMONSRC = $(wildcard $(SRCPATH)/*.cc)
+COMMONOBJECTS = $(COMMONSRC:$(SRCPATH)/%.cc=$(LIBPATH)/%.o)
+
 PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
 PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
@@ -46,13 +49,27 @@ ARFLAGS = -sr
 
 clean:
 	rm -f $(LIBPATH)/*
+	rm -f $(PROGSOBJECTS)
+
+cleanlib:
+	rm -f $(LIBPATH)/*
 
 cleanshapelets:
 	rm -f $(SHAPELETSOBJECTS)
+	rm -f $(LIBPATH)/lib$(LIBNAME).a
+
 cleanlensing:
 	rm -f $(LENSINGOBJECTS)
+	rm -f $(LIBPATH)/lib$(LIBNAME).a
+
 cleanframe:
 	rm -f $(FRAMEOBJECTS)
+	rm -f $(LIBPATH)/lib$(LIBNAME).a
+
+cleancommon:
+	rm -f $(COMMONOBJECTS)
+	rm -f $(LIBPATH)/lib$(LIBNAME).a
+
 cleanprogs:
 	rm -f $(PROGSOBJECTS)
 
@@ -66,7 +83,7 @@ progs: $(PROGSOBJECTS)
 
 ???DOCTARGET???
 
-$(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS)
+$(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS)
 	$(AR) $(ARFLAGS) $@ $?
 
 $(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
@@ -76,6 +93,9 @@ $(LIBPATH)/%.o: $(FRAMESRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LIBPATH)/%.o: $(LENSINGSRCPATH)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(LIBPATH)/%.o: $(SRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(PROGPATH)/%: $(PROGSRCPATH)/%.cc

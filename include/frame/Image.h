@@ -4,8 +4,8 @@
 #include <fitsio.h>
 #include <string>
 #include <NumVector.h>
+#include <IO.h>
 #include <frame/Grid.h>
-#include <frame/IO.h>
 
 /// Class for image data.
 /// The class represents image data as a vector.\n

@@ -1,4 +1,4 @@
-#include <frame/History.h>
+#include <History.h>
 
 History::History() {
   clear();

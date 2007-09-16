@@ -4,12 +4,12 @@
 #include <vector>
 #include <list>
 #include <NumVector.h>
+#include <History.h>
+#include <ShapeLensConfig.h>
 #include <frame/Grid.h>
 #include <frame/Image.h>
 #include <frame/Object.h>
-#include <frame/History.h>
 #include <frame/SegmentationMap.h>
-#include <frame/FrameConfig.h>
 
 /// Image preprocessing class.
 /// The purpose of this class is to read in a Image and segment it into individual
