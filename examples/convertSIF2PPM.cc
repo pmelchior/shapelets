@@ -1,4 +1,4 @@
-#include <shapelets/ShapeletObject.h>
+#include <ShapeLens.h>
 
 // convertSIF2PPM:
 // create a PPM file from a shapelet model specified by SIF file.
@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     // colormodel in {"RED", "BLUE", "GREEN", "GRAY", "WARM"}
     // data scaling in {"LINEAR", "SQUARE_ROOT", "LOGARITHMIC"} 
     // for the data range between min() and max()
-    writePPMImage(ppmname,"WARM","LINEAR",data.min(),data.max(),grid,data);
+    writePPMImage(ppmname,"SPECTRUM","LINEAR",data.min(),data.max(),grid,data);
     delete sobj;
   }
 }

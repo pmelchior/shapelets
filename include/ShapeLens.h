@@ -31,7 +31,6 @@ space, thus saving memory and computation time.
 (and also not so common) mathematical functions and procedures in C
 (http://www.gnu.org/software/gsl/).
 - boost: various extensions to standard C++ (http://www.boost.org/)
-- FFTW3: fast code for Fourier transforms, in C (http://www.fftw.org/)
 - numla: library for doing vector and matrix operations conveniently and fast (https://www.ita.uni-heidelberg.de/internal/projects/numla)
 
 
@@ -44,5 +43,10 @@ space, thus saving memory and computation time.
 
 #include <frame/Frame.h>
 #include <frame/SExFrame.h>
+
+#include <shapelets/ShapeletObject.h>
+#include <shapelets/ShapeletObjectList.h>
+
+#include <lensing/LensingEstimator.h>
 
 #endif

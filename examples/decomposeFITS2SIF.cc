@@ -1,11 +1,6 @@
 // the central header file for shapelet related work.
-// you will need this almost always when working with the 'shapelets' library.
-#include <shapelets/ShapeletObject.h>
-// the header file for the 'frame' library.
-// since the 'frame' library is modular, this can be replaced by a file
-// more appropriate to your needs.
-#include <frame/Frame.h>
-
+// you will need this almost always when working with the 'shapelens' library.
+#include <ShapeLens.h>
 
 // decomposeFITS2SIF:
 // * open FITS file
@@ -73,6 +68,7 @@ int main(int argc, char *argv[]) {
       // dismiss objects with flag > 3 because of serious trouble
       // during the detection/segmentation process
       if (obj->getDetectionFlag() <= 3) {
+	ShapeLensConfig sc("test.conf");
 	ShapeletObject *sobj;
 
 	// automatic optimization: no bounds on beta and nmax
@@ -80,10 +76,10 @@ int main(int argc, char *argv[]) {
 	  // when regularization should be done:
 	  // specify the wanted limit on R
 	  if (argc == 4){
-	    ShapeletConfig::REGULARIZE = 1;
-	    ShapeletConfig::REG_LIMIT = atof(argv[3]);
+	    ShapeLensConfig::REGULARIZE = 1;
+	    ShapeLensConfig::REG_LIMIT = atof(argv[3]);
 	    // store the data of the unregularized model...
-	    ShapeletConfig::UNREG_SIFFILE = siffile.str();
+	    ShapeLensConfig::UNREG_SIFFILE = siffile.str();
 	    // ...and modify the name of the regularized one
 	    siffile.str("");
 	    siffile << sifprefix << "_" << n << "_reg.sif";
@@ -99,14 +95,14 @@ int main(int argc, char *argv[]) {
 	}
 	// use specific bounds for beta and nmax
 	else if (argc == 7 || argc == 8) {
-	  ShapeletConfig::NMAX_LOW = atoi(argv[3]);
-	  ShapeletConfig::NMAX_HIGH = atoi(argv[4]);
-	  ShapeletConfig::BETA_LOW = atof(argv[5]);
-	  ShapeletConfig::BETA_HIGH = atof(argv[6]);
+	  ShapeLensConfig::NMAX_LOW = atoi(argv[3]);
+	  ShapeLensConfig::NMAX_HIGH = atoi(argv[4]);
+	  ShapeLensConfig::BETA_LOW = atof(argv[5]);
+	  ShapeLensConfig::BETA_HIGH = atof(argv[6]);
 	  if (argc == 8){
-	    ShapeletConfig::REGULARIZE = 1;
-	    ShapeletConfig::REG_LIMIT = atof(argv[7]);
-	    ShapeletConfig::UNREG_SIFFILE = siffile.str();
+	    ShapeLensConfig::REGULARIZE = 1;
+	    ShapeLensConfig::REG_LIMIT = atof(argv[7]);
+	    ShapeLensConfig::UNREG_SIFFILE = siffile.str();
 	    siffile.str("");
 	    siffile << sifprefix << "_" << n << "_reg.sif";
 	  }
@@ -124,7 +120,7 @@ int main(int argc, char *argv[]) {
 	// ... add shapelet model ...
 	addFITSExtension(newname.str(),"MODEL",obj->getGrid(),sobj->getModel());
  	// ... and residuals (data - model).
- 	NumVector<double> residuals = obj->getData();
+ 	NumVector<float> residuals = obj->getData();
  	residuals -= sobj->getModel();
  	addFITSExtension(newname.str(),"RESIDUAL",obj->getGrid(),residuals);
 	
