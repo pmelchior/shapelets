@@ -2,13 +2,14 @@
 #include <boost/tokenizer.hpp>
 #include <fstream>
 #include <iostream>
+#include <limits>
 
 using namespace std;
 
 unsigned int ShapeLensConfig::NMAX_LOW = 0;
 unsigned int ShapeLensConfig::NMAX_HIGH = 100;
 data_t ShapeLensConfig::BETA_LOW = 0;
-data_t ShapeLensConfig::BETA_HIGH = INFINITY;
+data_t ShapeLensConfig::BETA_HIGH = numeric_limits<data_t>::infinity();
 bool ShapeLensConfig::REGULARIZE = 0;
 data_t ShapeLensConfig::REG_LIMIT = 1e-5;
 std::string ShapeLensConfig::UNREG_SIFFILE = "";
