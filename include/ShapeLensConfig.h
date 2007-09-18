@@ -2,6 +2,7 @@
 #define SHAPELETCONFIG_H
 
 #include <string>
+#include <Typedef.h>
 
 /// Class for ShapeLens++ configuration parameters.
 /// This class stores configuration parameters determining the behaviour of the shapelet
@@ -40,14 +41,14 @@ class ShapeLensConfig {
   /// Upper bound for \f$n_{max}\f$, default = 100.
   static unsigned int NMAX_HIGH;
   /// Lower bound for \f$\beta\f$, default = 0.
-  static double BETA_LOW;
+  static data_t BETA_LOW;
   /// Upper bound for \f$\beta\f$, default = INFINITY.
-  static double BETA_HIGH;
+  static data_t BETA_HIGH;
   /// Whether a regularization (see OptimalDecomposite2D::regularize()) should 
   /// be employed, default = 0.
   static bool REGULARIZE;
   /// The upper limit for \f$R\f$ during regularizaton, default = 1e-5.
-  static double REG_LIMIT;
+  static data_t REG_LIMIT;
   /// The SIF filename for the unregularized model (empty string if not employed),
   /// default = "".
   static std::string UNREG_SIFFILE;
@@ -60,6 +61,6 @@ class ShapeLensConfig {
   /// The amount by which the objects area is enlarged on each side w.r.t. the
   /// objects area in the segmentation map, default = 0.5
   /// (50% increase in size an all sides).
-  static double ADD_BORDER;
+  static data_t ADD_BORDER;
 };
 #endif

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <NumMatrix.h>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <shapelets/IndexVector.h>
 
 /// Functions for manipulating matrices.
@@ -20,7 +21,7 @@ unsigned int mIndex(int m, int n);
 /// Copies entries from input matrix into lower left corner of the triangular matrix
 /// as long as there are entries unequal to 0 on the diagonal. 
 template <class T>
-int triangularizeCoeffs(const NumMatrix<T>& input, NumMatrix<T>& triangular, double cutoff) {
+int triangularizeCoeffs(const NumMatrix<T>& input, NumMatrix<T>& triangular, data_t cutoff) {
   int nmax = getNMax(input,cutoff);
   triangular = NumMatrix<T>(nmax+1,nmax+1);
   for (int i = 0; i< nmax +1; i++) 
@@ -35,16 +36,16 @@ int triangularizeCoeffs(const NumMatrix<T>& input, NumMatrix<T>& triangular, dou
 /// Reads the matrix from top right to bottom left along the diagonals and returns
 /// the number of the diagonal where not all entries are 0.
 template <class T>
-int getNMax(const NumMatrix<T>& matrix, double cutoff) {
+int getNMax(const NumMatrix<T>& matrix, data_t cutoff) {
 //   // first determine the maximum entry
-//   double max = 0;
+//   data_t max = 0;
 //   for (int i = 0; i < coeffs.getRows(); i++)
 //     for (int j = 0; j < coeffs.getColumns(); j++)
 //       if (fabs(coeffs(i,j)) > max) max = fabs(coeffs(i,j));
   
 //   // FIXME: should be fine-tuned by decomposing a catalog of galaxies
 //   // should be also a globally defined value
-//   double cutoff = 1e-5*max;
+//   data_t cutoff = 1e-5*max;
 //   cout << "# Truncation: cutoff = " << cutoff << endl;
 
   int result;

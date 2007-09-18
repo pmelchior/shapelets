@@ -16,11 +16,11 @@ Profile::Profile(const Point2D& instart, const Point2D& instop) {
   distance_value.resize(pixels,2);
 }
 
-double Profile::getDistance(unsigned int i) {
+data_t Profile::getDistance(unsigned int i) {
   return distance_value(i,0);
 }
 
-double Profile::getValue(unsigned int i) {
+data_t Profile::getValue(unsigned int i) {
   return distance_value(i,1);
 }
 
@@ -40,7 +40,7 @@ int Profile::size() {
   return pixels;
 }
 
-void Profile::calculate(NumVector<double>& data, int axsize) {
+void Profile::calculate(NumVector<data_t>& data, int axsize) {
   int diffx = (int) (floor(stop(0)) - floor(start(0)));
   int diffy = (int) (floor(stop(1)) - floor(start(1)));
   if (diffx == diffy) {
@@ -49,7 +49,7 @@ void Profile::calculate(NumVector<double>& data, int axsize) {
       int y = (int)floor(start(1)) + i;
       ///std::cout << x  <<  " " << y << std::endl;
       unsigned int index = y*axsize + x;
-      double distance = sqrt((x - floor(center(0)))*(x - floor(center(0))) +(y - floor(center(1)))*(y - floor(center(1))));
+      data_t distance = sqrt((x - floor(center(0)))*(x - floor(center(0))) +(y - floor(center(1)))*(y - floor(center(1))));
       if (x < floor(center(0)) || y < floor(center(1))) distance *= -1;
       distance_value(i,0) = distance;
       distance_value(i,1) = data(index);
@@ -60,7 +60,7 @@ void Profile::calculate(NumVector<double>& data, int axsize) {
       int x = (int)floor(start(0)) + i;
       int y = (int)floor(start(1)) + i*diffy/diffx;
       unsigned int index = y*axsize + x;
-      double distance = sqrt((x - floor(center(0)))*(x - floor(center(0))) +(y - floor(center(1)))*(y - floor(center(1))));
+      data_t distance = sqrt((x - floor(center(0)))*(x - floor(center(0))) +(y - floor(center(1)))*(y - floor(center(1))));
       if (x < floor(center(0)) || y < floor(center(1))) distance *= -1;
       distance_value(i,0) = distance;
       distance_value(i,1) = data(index);
@@ -71,7 +71,7 @@ void Profile::calculate(NumVector<double>& data, int axsize) {
       int x = (int)floor(start(0)) + i*diffx/diffy;
       int y = (int)floor(start(1)) + i;
       unsigned int index = y*axsize + x;
-      double distance = sqrt((x - floor(center(0)))*(x - floor(center(0))) +(y - floor(center(1)))*(y - floor(center(1))));
+      data_t distance = sqrt((x - floor(center(0)))*(x - floor(center(0))) +(y - floor(center(1)))*(y - floor(center(1))));
       if (x < floor(center(0)) || y < floor(center(1))) distance *= -1;
       distance_value(i,0) = distance;
       distance_value(i,1) = data(index);

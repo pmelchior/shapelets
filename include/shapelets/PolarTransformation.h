@@ -4,6 +4,7 @@
 #include <gsl/gsl_sf.h>
 #include <NumVector.h>
 #include <NumMatrix.h>
+#include <Typedef.h>
 #include <frame/Grid.h>
 #include <shapelets/IndexVector.h>
 
@@ -30,12 +31,12 @@ class PolarTransformation {
   /// set the highest transformed order \f$n_{max}\f$.
   void setOrder (unsigned int nmax);
   /// Return polar coeffs for external transformations.
-  void getPolarCoeffs(const NumMatrix<double>& cartesianCoeffs, NumMatrix<complex<double> >& polarCoeffs);
+  void getPolarCoeffs(const NumMatrix<data_t>& cartesianCoeffs, NumMatrix<complex<data_t> >& polarCoeffs);
   /// Return cartesian coeffs for external transformations.
-  void getCartesianCoeffs(const NumMatrix<complex<double> >& polarCoeffs, NumMatrix<double>& cartesianCoeffs);
+  void getCartesianCoeffs(const NumMatrix<complex<data_t> >& polarCoeffs, NumMatrix<data_t>& cartesianCoeffs);
  private:
   unsigned int nmax;
-  NumMatrix<complex<double> > c2p,p2c;
+  NumMatrix<complex<data_t> > c2p,p2c;
   IndexVector nVector;
   void buildTransformationMatrix();
 };

@@ -9,6 +9,7 @@
 
 #include <NumMatrix.h>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <frame/Point2D.h>
 #include <frame/Grid.h>
 #include <shapelets/Shapelets2D.h>
@@ -21,7 +22,7 @@ class Composite2D : private Shapelets2D {
   Composite2D();
   /// Argumented constructor.
   /// Different shapelet orders are allowed by giving matrix of appropriate dimensions.
-  Composite2D(double beta, Point2D& xcentroid, const NumMatrix<double>& startCoeffs);
+  Composite2D(data_t beta, Point2D& xcentroid, const NumMatrix<data_t>& startCoeffs);
   /// Copy operator
   Composite2D & operator = (const Composite2D &source);
   /// Get maximal order for composition in direction (0/1).
@@ -34,13 +35,13 @@ class Composite2D : private Shapelets2D {
   void setOrderLimit(bool direction, int orderlimit);
   /// Set the shapelet coefficients to new values.
   /// Enlarge basis set when needed
-  void setCoeffs(const NumMatrix<double>& newCoeffs);
+  void setCoeffs(const NumMatrix<data_t>& newCoeffs);
   /// Get \f$\beta\f$ from basis function.
-  double getBeta() const;
+  data_t getBeta() const;
   /// Access \f$\beta\f$ from basis function.
-  double& accessBeta();
+  data_t& accessBeta();
   /// Set new \f$\beta\f$ for basis functions.
-  void setBeta(double beta);
+  void setBeta(data_t beta);
   /// Get centroid position \f$x_c\f$
   const Point2D& getCentroid() const;
   /// Access centroid position \f$x_c\f$
@@ -55,40 +56,40 @@ class Composite2D : private Shapelets2D {
   /// which depends on the stepsize between the grid points.
   void setGrid(const Grid& ingrid);
   /// Evaluate \f$f(x)\f$.
-  double eval(const Point2D& x);
+  data_t eval(const Point2D& x);
   /// Get the shapelet model.
   /// This evaluates \f$f(x)\f$ on the whole grid.
-  const NumVector<double>& getModel();
+  const NumVector<data_t>& getModel();
   /// Access the shapelet model directly.
-  NumVector<double>& accessModel();
+  NumVector<data_t>& accessModel();
   /// Integrate \f$f(x)\f$.
-  double integrate();
+  data_t integrate();
   /// Integrate \f$f(x)\f$ in the range (x0min,x1min) .. (x0max,x1max).
-  double integrate(double x0min, double x0max, double x1min,double x1max);
+  data_t integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1max);
   /// Calculate the object flux from the coefficients.
   /// see Paper I, eq. 26
-  double getShapeletFlux() const;
+  data_t getShapeletFlux() const;
   /// Calculate the object centroid from the coefficients.
   /// see Paper I, eq. 27
   void getShapeletCentroid(Point2D& xc) const;
   /// Calculate 2nd brightness moments \f$Q_{ij}\f$.
-  void getShapelet2ndMoments(NumMatrix<double>& Q) const;
+  void getShapelet2ndMoments(NumMatrix<data_t>& Q) const;
   /// Calculate the object RMS radius from the coefficients.
   /// see Paper I, eq. 28
-  double getShapeletRMSRadius() const;
+  data_t getShapeletRMSRadius() const;
  private:
   Grid grid;
-  NumMatrix<double> shapeletCoeffs, M;
-  NumVector<double> model;
+  NumMatrix<data_t> shapeletCoeffs, M;
+  NumVector<data_t> model;
   Point2D xcentroid;
   int order0, order1, orderlimit0, orderlimit1;
-  double beta, stepsize0, stepsize1;
+  data_t beta, stepsize0, stepsize1;
   bool change, changeGrid, lockGrid;
   // defines dimensions of the grid depending on the shapelet orders
   void defineGrid();
-  double evalGridPoint(const Point2D& x);
+  data_t evalGridPoint(const Point2D& x);
   void evalGrid();
-  void makeShapeletMatrix(NumMatrix<double>& M, const IndexVector& nVector);
+  void makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector);
 };
 
 #endif

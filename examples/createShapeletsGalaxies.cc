@@ -6,17 +6,17 @@
 #include <gsl/gsl_randist.h>
 #include <list>
 
-typedef complex<double> Complex;
+typedef complex<data_t> Complex;
 
 /// Computes the average coeffs and the standard deviation of the average
 // and beta from sif files listed in listfile
-void averageShapeletCoeffs(NumMatrix<double>& average, NumMatrix<double>& std_mean, double& beta, std::string listfile) {
+void averageShapeletCoeffs(NumMatrix<data_t>& average, NumMatrix<data_t>& std_mean, data_t& beta, std::string listfile) {
   //create new average and std_mean
   average.clear();
   std_mean.clear();
 
   // set up list of coeff matrices
-  std::list<NumMatrix<double> > matrixList;
+  std::list<NumMatrix<data_t> > matrixList;
   beta = 0;
   int count = 0;
   std::ifstream files;
@@ -27,7 +27,7 @@ void averageShapeletCoeffs(NumMatrix<double>& average, NumMatrix<double>& std_me
      if (!files.good()) break;
     
     ShapeletObject* s = new ShapeletObject(filename);
-    const NumMatrix<double>& coeffs = s->getCartesianCoeffs();
+    const NumMatrix<data_t>& coeffs = s->getCartesianCoeffs();
     matrixList.push_back(coeffs);
     // if new coeff matrix is bigger than current average matrix
     // expand average
@@ -45,8 +45,8 @@ void averageShapeletCoeffs(NumMatrix<double>& average, NumMatrix<double>& std_me
   beta /= count; // that's the number of considered images
   
   // now average over all coeffs and all matrices
-  NumVector<double> entries(count);
-  std::list<NumMatrix<double> >::iterator iter;
+  NumVector<data_t> entries(count);
+  std::list<NumMatrix<data_t> >::iterator iter;
   for (int i=0; i<average.getRows(); i++) {
     for (int j=0; j<average.getColumns(); j++) {
       entries.clear();
@@ -71,7 +71,7 @@ void averageShapeletCoeffs(NumMatrix<double>& average, NumMatrix<double>& std_me
 /// and beta derived from this sample of galaxies will be stored also in 
 /// the directory.\n
 /// Note: Don't forget the / at the end of the path.
-void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& sigmaCoeffs, double betamin, double betamax, std::string path, int N) {
+void createShapeletImages(NumMatrix<data_t>& averageCoeffs, NumMatrix<data_t>& sigmaCoeffs, data_t betamin, data_t betamax, std::string path, int N) {
   // create directory if it doesn't exist
   std::ostringstream dircall;
   dircall << "mkdir -p " << path << "&> /dev/null";
@@ -87,8 +87,8 @@ void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& s
   
   // build template shapelet
   Point2D xcentroid(0,0);
-  NumMatrix<double> coeffs(averageCoeffs.getRows(),averageCoeffs.getColumns());
-  double beta = 1;
+  NumMatrix<data_t> coeffs(averageCoeffs.getRows(),averageCoeffs.getColumns());
+  data_t beta = 1;
   ShapeletObject *s = new ShapeletObject(coeffs,beta,xcentroid);
   
    // now different galaxies, all normalized and with beta = 1
@@ -132,8 +132,8 @@ void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& s
   std::system(job.str().c_str());
 
   // create average sif file
-  NumMatrix<double> average, std_mean;
-  double averageBeta;
+  NumMatrix<data_t> average, std_mean;
+  data_t averageBeta;
   std::ostringstream filename;
   filename << path << "shapelets.ls";
   averageShapeletCoeffs(average,std_mean,averageBeta,filename.str());
@@ -149,8 +149,8 @@ void createShapeletImages(NumMatrix<double>& averageCoeffs, NumMatrix<double>& s
 /// Creates shapelet image base on the dominant shapelet states
 /// and their scatter, derived in Kelly & McKay (2003): astro-ph/0307395.
 /// \f$N\f$ denotes the number of created galaxies.
-void createShapeletImagesPCA(double betamin, double betamax,std::string path, int N) {
-  NumMatrix<double> coeffs(9,9), sigma(9,9);
+void createShapeletImagesPCA(data_t betamin, data_t betamax,std::string path, int N) {
+  NumMatrix<data_t> coeffs(9,9), sigma(9,9);
   // this is the table 1 in the reference
   coeffs(0,0) = 0.293;
   coeffs(4,0) = 0.047;
@@ -197,7 +197,7 @@ void createShapeletImagesPCA(double betamin, double betamax,std::string path, in
   createShapeletImages(coeffs,sigma,betamin,betamax,path,N);
 }
 
-void createLensedShapeletImages(double dx, NumMatrix<double>& kappa, NumMatrix<Complex>& gamma, NumMatrix<Complex>& F, NumMatrix<Complex>& G, std::string listfilename, std::string writeDirectory, int NOBJ) {
+void createLensedShapeletImages(data_t dx, NumMatrix<data_t>& kappa, NumMatrix<Complex>& gamma, NumMatrix<Complex>& F, NumMatrix<Complex>& G, std::string listfilename, std::string writeDirectory, int NOBJ) {
   int N = kappa.getRows();
   int J = kappa.getColumns(); 
   std::string filename;
@@ -244,12 +244,12 @@ void createLensedShapeletImages(double dx, NumMatrix<double>& kappa, NumMatrix<C
   // for each point in the map select N_obj objects from sif files randomly
   // and apply lensing operations on them
   // store them as lensed_i_j_n.sif
-  NumMatrix<double> dGamma(2,2);
+  NumMatrix<data_t> dGamma(2,2);
   for (int i = 0; i < N; i++) {
     for (int j =0 ; j < J; j++) {
       for (int n = 0; n < NOBJ; n++) {
 	// random number from filelist
-	randomnumber = (int)floor((double)filenumber*rand()/(RAND_MAX+1.0));
+	randomnumber = (int)floor((data_t)filenumber*rand()/(RAND_MAX+1.0));
 	filename = filelist[randomnumber];
 	ShapeletObject* s = new ShapeletObject(filename);
 	// since mass sheat degeneracy: don't include kappa
@@ -275,6 +275,6 @@ int main(int argc, char *argv[]) {
   } 
 
   int NGLX = atoi(argv[4]);
-  double betamin = atof(argv[2]), betamax = atof(argv[3]);
+  data_t betamin = atof(argv[2]), betamax = atof(argv[3]);
   createShapeletImagesPCA(betamin,betamax,argv[1],NGLX);
 }

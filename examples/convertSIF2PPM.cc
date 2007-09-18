@@ -10,15 +10,15 @@ int main(int argc, char *argv[]) {
     std::string filename = argv[1];
     std::string ppmname = argv[2];
     int poissonian = atoi(argv[3]);
-    double noisemean = atof(argv[4]);
-    double noisesigma = atof(argv[5]);
+    data_t noisemean = atof(argv[4]);
+    data_t noisesigma = atof(argv[5]);
 
     // open sif file
     ShapeletObject * sobj =  new ShapeletObject(filename);
     // get grid from sobj
     const Grid& grid = sobj->getGrid();
     // construct shapelet model from coeffs stored in sobj
-    NumVector<double> data = sobj->getModel();
+    NumVector<data_t> data = sobj->getModel();
     // add noise if required
     if (poissonian==1)
       addPoissonianNoise(data,noisemean,noisesigma);

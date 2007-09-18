@@ -4,6 +4,7 @@
 #include <fitsio.h>
 #include <string>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <IO.h>
 #include <frame/Grid.h>
 

@@ -2,7 +2,7 @@
 #include <shapelets/CoefficientVector.h>
 #include <shapelets/ComplexDouble.h>
 
-typedef complex<double> Complex;
+typedef complex<data_t> Complex;
 const Complex I = Complex(0,1);
 
 PolarTransformation::PolarTransformation() {
@@ -31,7 +31,7 @@ void PolarTransformation::setOrder (unsigned int innmax) {
   }
 }
 
-void PolarTransformation::getPolarCoeffs(const NumMatrix<double>& cartesianCoeffs, NumMatrix<Complex>& polarCoeffs) {
+void PolarTransformation::getPolarCoeffs(const NumMatrix<data_t>& cartesianCoeffs, NumMatrix<Complex>& polarCoeffs) {
   // convert matrix into vector, typecast to Complex
   CoefficientVector<Complex> cartesianVector(cartesianCoeffs);
   // the actual transformation in coeff space
@@ -40,14 +40,14 @@ void PolarTransformation::getPolarCoeffs(const NumMatrix<double>& cartesianCoeff
   polarVector.fillCoeffMatrix(polarCoeffs);
 }
 
-void PolarTransformation::getCartesianCoeffs(const NumMatrix<Complex>& polarCoeffs, NumMatrix<double>& cartesianCoeffs){
+void PolarTransformation::getCartesianCoeffs(const NumMatrix<Complex>& polarCoeffs, NumMatrix<data_t>& cartesianCoeffs){
   // convert matrix into vector
   CoefficientVector<Complex> polarVector(polarCoeffs);
   // the transformation in coeff space
-  // ComplexDouble is needed here for the type converion to double below
+  // ComplexDouble is needed here for the type converion to data_t below
   CoefficientVector<ComplexDouble> cartesianVector = p2c*(NumVector<Complex>)polarVector;
   // this time reconstruct into cartesian form, aka upper left triangular matrix form
-  // typecast from Complex to double
+  // typecast from Complex to data_t
   cartesianVector.fillCoeffMatrix(cartesianCoeffs);
 }
 
@@ -64,7 +64,7 @@ void PolarTransformation::buildTransformationMatrix() {
       int nr = nVector.getN1(i), nl = nVector.getN2(i);
       int n1 = nVector.getN1(j), n2 = nVector.getN2(j);
       // the prefactor
-      prefactor = pow(2,-(double)(nr+nl)/2)*pow(I,nr-nl);
+      prefactor = data_t(pow(2,-data_t(nr+nl)/2))*pow(I,nr-nl);
       // only orders with n1+n2 <= nmax are evaluated
       // since the cartesian orders are symmetric, n1 and n2 are bounded by nmax
       //if (n1+n2 <= nmax) {
@@ -80,9 +80,9 @@ void PolarTransformation::buildTransformationMatrix() {
 	    m_ = nr_ - nl_;
 	    // the second kronecker
 	    if (n_ == n1) {
-	      doublesum += pow(I,- m_) * gsl_sf_fact(nr) * gsl_sf_fact(nl) /
+	      doublesum += data_t(gsl_sf_fact(nr) * gsl_sf_fact(nl) /
 		(gsl_sf_fact(nr_)*gsl_sf_fact(nr - nr_) * 
-		 gsl_sf_fact(nl_)*gsl_sf_fact(nl - nl_));
+		 gsl_sf_fact(nl_)*gsl_sf_fact(nl - nl_))) * pow(I,- m_);
 	    }
 	  }
 	}

@@ -5,6 +5,7 @@
 #include <string>
 #include <NumMatrix.h>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <History.h>
 #include <IO.h>
 #include <ShapeLensConfig.h>
@@ -41,11 +42,11 @@ class ShapeletObject : public Composite2D {
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
-  ShapeletObject(const NumMatrix<double>& cartesianCoeffs, double beta, const Point2D& xcentroid);
+  ShapeletObject(const NumMatrix<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid);
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const NumMatrix<complex<double> >& polarCoeffs, double beta, const Point2D& xcentroid);
+  ShapeletObject(const NumMatrix<complex<data_t> >& polarCoeffs, data_t beta, const Point2D& xcentroid);
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically.\n
@@ -57,69 +58,69 @@ class ShapeletObject : public Composite2D {
   ShapeletObject(const Object& obj);
   
   /// Set new cartesian coefficients.
-  void setCartesianCoeffs(const NumMatrix<double>& cartesianCoeffs);
+  void setCartesianCoeffs(const NumMatrix<data_t>& cartesianCoeffs);
   /// Set cartesian coefficient errors.
-  void setCartesianCoeffErrors(const NumMatrix<double>& errors);
+  void setCartesianCoeffErrors(const NumMatrix<data_t>& errors);
   /// Set new polar coeficients.
-  void setPolarCoeffs(const NumMatrix<complex<double> >& polarCoeffs);
+  void setPolarCoeffs(const NumMatrix<complex<data_t> >& polarCoeffs);
   /// Return active cartesian coefficients.
-  const NumMatrix<double>& getCartesianCoeffs();
+  const NumMatrix<data_t>& getCartesianCoeffs();
   /// Return active polar coeficients.
-  const NumMatrix<complex<double> >& getPolarCoeffs();
+  const NumMatrix<complex<data_t> >& getPolarCoeffs();
 
   // methods depending on the decomposition
   /// Return best fit \f$\chi^2\f$ from decomposition.
   /// It will return 0, if ShapeletObject is not constructed from a Fits file.
-  double getDecompositionChiSquare();
+  data_t getDecompositionChiSquare();
   /// Return error matrix of the cartesian shapelet coefficients.
   /// It will return empty matrix if ShapeletObject is not constructed from a Fits file.
-  const NumMatrix<double>& getDecompositionErrors();
+  const NumMatrix<data_t>& getDecompositionErrors();
 
   // methods depending on ImageTransformations
   /// Rotate image counterclockwise by angle \f$\rho\f$.
-  void rotate(double rho);
+  void rotate(data_t rho);
   /// Apply convergence of \f$\kappa\f$ to the image.
-  void converge(double kappa);
+  void converge(data_t kappa);
   /// Shear the image by \f$\gamma_0, \gamma_1\f$.
   /// The dimension of the coefficient matrix will be increased by 2.
-  void shear(complex<double> gamma);
+  void shear(complex<data_t> gamma);
   /// Apply flexion to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
-  void flex(const NumMatrix<double>& Dgamma);
+  void flex(const NumMatrix<data_t>& Dgamma);
   /// Apply lensing operations converge, shear and flex to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
-  void lens(double kappa, complex<double> gamma, complex<double> F, complex<double> G);
+  void lens(data_t kappa, complex<data_t> gamma, complex<data_t> F, complex<data_t> G);
   /// Translate the image by \f$dx0, dx1\f$.
   /// This is only valid for small translations (less than 1 pixel). 
   /// For larger translations, adjust the centroid by calling setCentroid().\n
   /// \f$dx0, dx1\f$ are assumed to be in pixel scale.
-  void translate(double dx0, double dx1);
+  void translate(data_t dx0, data_t dx1);
   /// Circularize the image.
   void circularize();
   /// Flip the image along the X axis
   void flipX();
   /// Brighten the image by the given factor.
-  void brighten(double factor);
+  void brighten(data_t factor);
   /// Convolve the image with another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void convolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel);
+  void convolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel);
   /// Deconvolve the image from another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void deconvolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel);
+  void deconvolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel);
   /// Rescale the image.
   /// This changes the coefficients such, that they show the same object with
   /// the new scale size.\n
   /// This is only correct for small changes of \f$\beta\f$.
   /// Larger changes of \f$\beta\f$ can be achieved by setBeta().
-  void rescale(double newBeta);
+  void rescale(data_t newBeta);
 
   // method for making a profile plot
   /// Return Profile derived from given values from the staring point 
   /// through the ShapeletObject centroid.
   /// The ending point will be symmetric to the starting point.
-  void getProfile(const Point2D& start, NumVector<double>& values, int axsize);
+  void getProfile(const Point2D& start, NumVector<data_t>& values, int axsize);
   /// Return a Profile from the starting point to the ending point.
-  void getProfile(const Point2D& start, const Point2D& end, NumVector<double>& values, int axsize);
+  void getProfile(const Point2D& start, const Point2D& end, NumVector<data_t>& values, int axsize);
 
   // methods for reading/writing sif files that contain 
   // all necessary information of a shapelet image
@@ -136,11 +137,11 @@ class ShapeletObject : public Composite2D {
   void setHistory(std::string comment);
 
  private:
-  NumMatrix<double> cartesianCoeffs, errors;
-  NumMatrix<complex<double> > polarCoeffs;
+  NumMatrix<data_t> cartesianCoeffs, errors;
+  NumMatrix<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
-  double chisquare, R;
+  data_t chisquare, R;
   bool fits, regularized;
   History history;
   std::ostringstream text;

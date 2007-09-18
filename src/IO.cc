@@ -8,7 +8,7 @@
 
 namespace ublas = boost::numeric::ublas;
 
-void addUniformNoise(NumVector<double>& data, double noisemean, double noiselimit) {
+void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit) {
   const gsl_rng_type * T;
   gsl_rng * r;
   T = gsl_rng_mt19937;
@@ -25,7 +25,7 @@ void addUniformNoise(NumVector<double>& data, double noisemean, double noiselimi
   gsl_rng_free (r);
 }
 
-void addGaussianNoise(NumVector<double>& data, double noisemean, double noisesigma) {
+void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma) {
   const gsl_rng_type * T;
   gsl_rng * r;
   T = gsl_rng_mt19937;
@@ -43,7 +43,7 @@ void addGaussianNoise(NumVector<double>& data, double noisemean, double noisesig
   gsl_rng_free (r);
 }
 
-void addPoissonianNoise(NumVector<double>& data, double noisemean, double noisesigma) {
+void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma) {
   const gsl_rng_type * T;
   gsl_rng * r;
   T = gsl_rng_mt19937;
@@ -61,8 +61,8 @@ void addPoissonianNoise(NumVector<double>& data, double noisemean, double noises
   gsl_rng_free (r);
 }
 
-void convolveGaussian(const NumVector<double>& image, NumVector<double>& result, int width,int height) {
-  NumVector<double> temp = image;
+void convolveGaussian(const NumVector<data_t>& image, NumVector<data_t>& result, int width,int height) {
+  NumVector<data_t> temp = image;
         
   int i,x,y,k0,k;
   int size=width*height;
@@ -323,7 +323,7 @@ int makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
   return maxcolors;
 }
 
-unsigned int getScaledValue(double value, int maxcolors, double min, double max, char scaling) {
+unsigned int getScaledValue(data_t value, int maxcolors, data_t min, data_t max, char scaling) {
   if (value < min) 
     value = min;
   else if (value > max)
@@ -336,15 +336,15 @@ unsigned int getScaledValue(double value, int maxcolors, double min, double max,
     return (unsigned int) floor((maxcolors-1)*sqrt((value-min)/(max-min)));
     break;
   case 2: // logarithmic
-    double value_scaled = (value-min)/(max-min); // between 0 and 1
-    double offset = 1e-2;
-    double value_log = (log(value_scaled + offset)-log(offset)) /
+    data_t value_scaled = (value-min)/(max-min); // between 0 and 1
+    data_t offset = 1e-2;
+    data_t value_log = (log(value_scaled + offset)-log(offset)) /
       (log(1+offset) - log(offset));
     return (unsigned int) floor((maxcolors-1)*value_log);
     break;
   }
 }
-void writePPMImage(std::string filename, std::string colorscheme, std::string scaling, double min, double max, const Grid& grid, const NumVector<double>& data) {
+void writePPMImage(std::string filename, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
   FILE *file;
   long x,y,k;
     
@@ -390,7 +390,7 @@ void writePPMImage(std::string filename, std::string colorscheme, std::string sc
   fclose(file);
 }
 
-void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, double min, double max, const Grid& grid, const NumVector<double>& data) {
+void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
   unsigned int width = grid.getSize(0);
   unsigned int height= grid.getSize(1);
   

@@ -7,14 +7,14 @@ using namespace std;
 
 unsigned int ShapeLensConfig::NMAX_LOW = 0;
 unsigned int ShapeLensConfig::NMAX_HIGH = 100;
-double ShapeLensConfig::BETA_LOW = 0;
-double ShapeLensConfig::BETA_HIGH = INFINITY;
+data_t ShapeLensConfig::BETA_LOW = 0;
+data_t ShapeLensConfig::BETA_HIGH = INFINITY;
 bool ShapeLensConfig::REGULARIZE = 0;
-double ShapeLensConfig::REG_LIMIT = 1e-5;
+data_t ShapeLensConfig::REG_LIMIT = 1e-5;
 std::string ShapeLensConfig::UNREG_SIFFILE = "";
 bool ShapeLensConfig::ALLOW_FLATTENING = 0;
 bool ShapeLensConfig::FILTER_SPURIOUS = 0;
-double ShapeLensConfig::ADD_BORDER = 0.5;
+data_t ShapeLensConfig::ADD_BORDER = 0.5;
 
 ShapeLensConfig::ShapeLensConfig() {
 }
@@ -46,13 +46,13 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
       if (column[0].compare("NMAX_HIGH") == 0)
 	NMAX_HIGH = (unsigned int) atoi (column[1].c_str());
       if (column[0].compare("BETA_LOW") == 0)
-	BETA_LOW = (double) atof (column[1].c_str());
+	BETA_LOW = (data_t) atof (column[1].c_str());
       if (column[0].compare("BETA_HIGH") == 0)
-	BETA_HIGH = (double) atof (column[1].c_str());
+	BETA_HIGH = (data_t) atof (column[1].c_str());
       if (column[0].compare("REGULARIZE") == 0)
 	REGULARIZE = (bool) atoi (column[1].c_str());
       if (column[0].compare("REG_LIMIT") == 0)
-	REG_LIMIT = (double) atof (column[1].c_str());
+	REG_LIMIT = (data_t) atof (column[1].c_str());
       if (column[0].compare("UNREG_SIFFILE") == 0)
 	UNREG_SIFFILE = column[1];
       if (column[0].compare("ALLOW_FLATTENING") == 0)
@@ -60,7 +60,7 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
       if (column[0].compare("FILTER_SPURIOUS") == 0)
         FILTER_SPURIOUS = (bool) atoi (column[1].c_str());
       if (column[0].compare("ADD_BORDER") == 0)
-        ADD_BORDER = (double) atof (column[1].c_str());
+        ADD_BORDER = (data_t) atof (column[1].c_str());
     }
   }
 }

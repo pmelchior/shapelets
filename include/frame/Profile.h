@@ -6,6 +6,7 @@
 
 #include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <frame/Point2D.h>
 
 class Profile {
@@ -17,9 +18,9 @@ class Profile {
   /// The center will be exactly in the middle between the starting and ending point.
   Profile(const Point2D& start, const Point2D& end);
   /// Return distance of the ith pixel of the Profile to the center.
-  double getDistance(unsigned int i);
+  data_t getDistance(unsigned int i);
   /// Return the value of the ith pixel of the Profile.
-  double getValue(unsigned int i);
+  data_t getValue(unsigned int i);
   /// Return starting point.
   Point2D& getStart();
   /// Return ending point.
@@ -31,13 +32,13 @@ class Profile {
   /// the value is simply the value of the ith pixel.\n
   /// The axsize is needed for converting positions to indices, because data 
   /// is arranged as a vector.
-  void calculate(NumVector<double>& data, int axsize);
+  void calculate(NumVector<data_t>& data, int axsize);
   /// Return the number of pixels contained in the Profile.
   int size();
  private:
   Point2D start, stop, center;
   int pixels;
-  boost::numeric::ublas::matrix<double> distance_value;
+  boost::numeric::ublas::matrix<data_t> distance_value;
 };
 
 #endif

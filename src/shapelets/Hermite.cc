@@ -8,7 +8,7 @@ Hermite::Hermite () {
 
 Hermite::Hermite (unsigned int order) {
   computed = 0;
-  HermiteCoeffs = boost::numeric::ublas::triangular_matrix<double,lower>(order+1,order+1);
+  HermiteCoeffs = boost::numeric::ublas::triangular_matrix<data_t,lower>(order+1,order+1);
   HermiteCoeffs.clear();
   computeHermiteCoeffs(order);
 }
@@ -55,15 +55,15 @@ void Hermite::setOrder (unsigned int order) {
   }
 }
 
-double Hermite::eval (unsigned int order, double x) {
+data_t Hermite::eval (unsigned int order, data_t x) {
   if (order > computed) setOrder(order);
-  double result = 0;
+  data_t result = 0;
   for (int i = 0; i  < order+1; i+=1 )
     result +=  HermiteCoeffs(order,i) * gsl_pow_int(x,i);
   return result;
 }
 
-double Hermite::getCoefficient(unsigned int order, unsigned int power) {
+data_t Hermite::getCoefficient(unsigned int order, unsigned int power) {
   if (order > computed) setOrder(order);
   if (power > order) return 0;
   else return HermiteCoeffs(order,power);

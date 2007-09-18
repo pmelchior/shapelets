@@ -3,7 +3,7 @@
 #include <gsl/gsl_math.h>
 #include <fitsio.h>
 
-Object::Object(unsigned int inid) : Image<double>(), segMap(*this) {
+Object::Object(unsigned int inid) : Image<data_t>(), segMap(*this) {
   id = inid;
   flag = 0;
   blend = s_g = -1;
@@ -11,7 +11,7 @@ Object::Object(unsigned int inid) : Image<double>(), segMap(*this) {
   number = 0;
 }
 
-Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
+Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   fitsfile *fptr;
   int status, nkeys, keypos, hdutype;
   char card[FLEN_CARD];
@@ -28,12 +28,12 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
   fits_read_key (fptr,TSTRING,"BASEFILE",card,comment, &status);
   basefilename = std::string(card);
   fits_read_key (fptr,TINT,"ID",&id,comment, &status);
-  double grid_min_0, grid_max_0, grid_min_1, grid_max_1;
+  data_t grid_min_0, grid_max_0, grid_min_1, grid_max_1;
   fits_read_key (fptr,TDOUBLE,"XMIN",&grid_min_0,comment, &status);
   fits_read_key (fptr,TDOUBLE,"XMAX",&grid_max_0,comment, &status);
   fits_read_key (fptr,TDOUBLE,"YMIN",&grid_min_1,comment, &status);
   fits_read_key (fptr,TDOUBLE,"YMAX",&grid_max_1,comment, &status);
-  Image<double>::accessGrid() = Grid(grid_min_0,grid_max_0,1,grid_min_1,grid_max_1,1);
+  Image<data_t>::accessGrid() = Grid(grid_min_0,grid_max_0,1,grid_min_1,grid_max_1,1);
   fits_read_key (fptr,TDOUBLE,"BG_MEAN",&noise_mean,comment, &status);
   fits_read_key (fptr,TDOUBLE,"BG_RMS",&noise_rms,comment, &status);
   fits_read_key (fptr,TSTRING,"NOISE",card,comment, &status);
@@ -73,18 +73,18 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
   long npixels = axsize0*axsize1;
   // grid is defined by XMIN..YMAX; this should have the same
   // number of pixels as the actual image
-  if (npixels != Image<double>::getGrid().size()) {
+  if (npixels != Image<data_t>::getGrid().size()) {
     std::cout << "Object: Grid size from header keywords wrong" << std::endl;
     std::terminate();
   }
   
   history.append("# Reading object's pixel data");
-  Image<double>::resize(npixels);
+  Image<data_t>::resize(npixels);
   long firstpix[2] = {1,1};
-  double vald;
+  data_t vald;
   int imageformat, datatype;
   setFITSTypes(vald,imageformat,datatype);
-  fits_read_pix(fptr, datatype, firstpix, npixels, NULL,Image<double>::c_array(), NULL, &status);
+  fits_read_pix(fptr, datatype, firstpix, npixels, NULL,Image<data_t>::c_array(), NULL, &status);
   
   history.append(", segmentation map");
   // move to 1st extHDU for the segmentation map
@@ -93,7 +93,7 @@ Object::Object(std::string objfile) : Image<double>(), segMap(*this) {
   int vali;
   setFITSTypes(vali,imageformat,datatype);
   fits_read_pix(fptr, datatype, firstpix, npixels, NULL,segMap.c_array(), NULL, &status);
-  segMap.accessGrid() = Image<double>::getGrid();
+  segMap.accessGrid() = Image<data_t>::getGrid();
 
   // check if there is 2nd extHDU: the weight map
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
@@ -121,11 +121,11 @@ unsigned int Object::getNumber() const {
   return number;
 }
 
-const NumVector<double>& Object::getWeightMap() const {
+const NumVector<data_t>& Object::getWeightMap() const {
   return weight;
 }
 
-NumVector<double>& Object::accessWeightMap() {
+NumVector<data_t>& Object::accessWeightMap() {
   return weight;
 }
 
@@ -140,21 +140,21 @@ void Object::setCentroid(const Point2D& xc) {
   history.append(text);
 }
 
-double Object::getFlux() const {
+data_t Object::getFlux() const {
   return flux;
 }
 
-void Object::setFlux(double F) {
+void Object::setFlux(data_t F) {
   flux = F;
   std::ostringstream text;
   text << "# Flux set to " << flux << " by user." <<std::endl;
   history.append(text);
 }
 
-NumMatrix<double> Object::get2ndBrightnessMoments() {
-  const NumVector<double>& data = Image<double>::getData();
-  const Grid& grid = Image<double>::getGrid();
-  NumMatrix<double> Q(2,2);
+NumMatrix<data_t> Object::get2ndBrightnessMoments() {
+  const NumVector<data_t>& data = Image<data_t>::getData();
+  const Grid& grid = Image<data_t>::getGrid();
+  NumMatrix<data_t> Q(2,2);
   for (int i=0; i< grid.size(); i++) {
     Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i);
     Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
@@ -168,20 +168,20 @@ NumMatrix<double> Object::get2ndBrightnessMoments() {
 }
 
 // ellipticity as defined in Bartelmann & Schneider (2001)
-complex<double> Object::getEllipticity() {
-  NumMatrix<double> Q = get2ndBrightnessMoments();
-  complex<double> I(0,1);
-  complex<double> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
-  complex<double> epsilon = (Q11 - Q22 + 2.*I*Q12)/(Q11+Q22 + 2.*sqrt(Q11*Q22-Q12*Q12));
+complex<data_t> Object::getEllipticity() {
+  NumMatrix<data_t> Q = get2ndBrightnessMoments();
+  complex<data_t> I(0,1);
+  complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
+  complex<data_t> epsilon = (Q11 - Q22 + data_t(2)*I*Q12)/(Q11+Q22 + data_t(2)*sqrt(Q11*Q22-Q12*Q12));
   return epsilon;
   // axis ratio
-  //double e = abs(epsilon);
-  //double r = (1-e)/(1+e);
+  //data_t e = abs(epsilon);
+  //data_t r = (1-e)/(1+e);
 }
 
 void Object::computeFluxCentroid() {
-  const NumVector<double>& data = Image<double>::getData();
-  const Grid& grid = Image<double>::getGrid();
+  const NumVector<data_t>& data = Image<data_t>::getData();
+  const Grid& grid = Image<data_t>::getGrid();
   flux = 0;
   centroid(0) = centroid(1) = 0;
   for (int i=0; i< grid.size(); i++) {
@@ -206,15 +206,15 @@ void Object::setDetectionFlag(unsigned short inflag) {
   flag = inflag;
 }
 
-double Object::getNoiseMean() const {
+data_t Object::getNoiseMean() const {
   return noise_mean;
 }
 
-double Object::getNoiseRMS() const {
+data_t Object::getNoiseRMS() const {
   return noise_rms;
 }
 
-void Object::setNoiseMeanRMS(double mean, double rms) {
+void Object::setNoiseMeanRMS(data_t mean, data_t rms) {
   noise_mean = mean;
   noise_rms = rms;
   std::ostringstream text;
@@ -231,19 +231,19 @@ std::string Object::getNoiseModel() const {
   return noisemodel;
 }
 
-double Object::getBlendingProbability() const {
+data_t Object::getBlendingProbability() const {
   return blend;
 }
 
-void Object::setBlendingProbability(double b) {
+void Object::setBlendingProbability(data_t b) {
   blend = b;
 }
 
-double Object::getStarGalaxyProbability() const {
+data_t Object::getStarGalaxyProbability() const {
   return s_g;
 }
 
-void Object::setStarGalaxyProbability(double sg) {
+void Object::setStarGalaxyProbability(data_t sg) {
   s_g = sg;
 }
 
@@ -277,8 +277,8 @@ CorrelationFunction& Object::accessCorrelationFunction() {
 
 void Object::save(std::string filename) {
   // write pixel data
-  const NumVector<double>& data = Image<double>::getData();
-  const Grid& grid = Image<double>::getGrid();
+  const NumVector<data_t>& data = Image<data_t>::getData();
+  const Grid& grid = Image<data_t>::getGrid();
   writeFITSFile(filename,grid,data);
 
   // add object information to header
@@ -289,7 +289,7 @@ void Object::save(std::string filename) {
   fits_write_key (outfptr,TSTRING,"BASEFILE",const_cast<char*>(basefilename.c_str()),"name of source file", &status);
   fits_write_key (outfptr,TINT,"ID",&id,"object id", &status);
   fits_write_key (outfptr,TINT,"NUMBER",&number,"object number", &status);
-  double buffer;
+  data_t buffer;
   buffer = grid.getStartPosition(0);
   fits_write_key (outfptr,TDOUBLE,"XMIN",&buffer,"min(X) in image pixels", &status);
   buffer = grid.getStopPosition(0);

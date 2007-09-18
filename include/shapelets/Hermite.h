@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <gsl/gsl_math.h>
 #include <boost/numeric/ublas/triangular.hpp>
+#include <Typedef.h>
 
 /// Hermite polynomial class.
 /// Provides calculation of values of Hermite polynomials and its coefficients
@@ -25,14 +26,14 @@ class Hermite {
   void setOrder (unsigned int n);
   /// Return the coefficient of the \f$i\f$th power of the \f$n\f$th Hermite polynomial.
   /// Double values neccessary because these coefficients become very large at high orders.
-  double getCoefficient(unsigned int n, unsigned int i);
+  data_t getCoefficient(unsigned int n, unsigned int i);
   /// Evaluate \f$H_{n}(x)\f$.
-  double eval (unsigned int n, double x);
+  data_t eval (unsigned int n, data_t x);
   /// Print coeffs of \f$H_{n}\f$ to stdout.
   void printCoeffs (unsigned int n);
 
 private:
-  boost::numeric::ublas::triangular_matrix<double,boost::numeric::ublas::lower> HermiteCoeffs;
+  boost::numeric::ublas::triangular_matrix<data_t,boost::numeric::ublas::lower> HermiteCoeffs;
   int computed;
   void computeHermiteCoeffs(unsigned int n);
 };

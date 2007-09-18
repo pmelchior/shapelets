@@ -11,7 +11,7 @@ Composite2D::Composite2D() : Shapelets2D() {
   change = changeGrid = 1;
 }
 
-Composite2D::Composite2D(double inbeta, Point2D& inxcentroid, const NumMatrix<double>& startCoeffs) : Shapelets2D() {  
+Composite2D::Composite2D(data_t inbeta, Point2D& inxcentroid, const NumMatrix<data_t>& startCoeffs) : Shapelets2D() {  
   shapeletCoeffs = startCoeffs;
   xcentroid = inxcentroid;
   order0 = orderlimit0 = shapeletCoeffs.getRows() -1;
@@ -62,7 +62,7 @@ void Composite2D::setOrderLimit(bool direction, int orderlimit) {
     cout << "Warning: setOrderLimit attempts to increase number of orders to evaluate." << endl << endl;
 }
 
-void  Composite2D::setCoeffs(const NumMatrix<double>& newCoeffs ) {
+void  Composite2D::setCoeffs(const NumMatrix<data_t>& newCoeffs ) {
   shapeletCoeffs = newCoeffs;
   change = 1;
   // set new orders and limits
@@ -76,16 +76,16 @@ void  Composite2D::setCoeffs(const NumMatrix<double>& newCoeffs ) {
   }
 }
 
-double Composite2D::getBeta() const {
+data_t Composite2D::getBeta() const {
   return beta;
 }
 
-double& Composite2D::accessBeta() {
+data_t& Composite2D::accessBeta() {
   change = 1;
   return beta;
 }
 
-void Composite2D::setBeta(double inbeta) {
+void Composite2D::setBeta(data_t inbeta) {
   beta = inbeta;
   Shapelets2D::setBeta(beta);
   change = changeGrid = 1;
@@ -118,8 +118,8 @@ void Composite2D::setGrid(const Grid& ingrid) {
   change = 1;
 }
 
-double Composite2D::eval(const Point2D& x) {
-  double result = 0;
+data_t Composite2D::eval(const Point2D& x) {
+  data_t result = 0;
   Point2D xdiff;
   xdiff(0) = x(0) - xcentroid(0);
   xdiff(1) = x(1) - xcentroid(1);
@@ -133,10 +133,10 @@ double Composite2D::eval(const Point2D& x) {
   return result;
 }
 
-double Composite2D::evalGridPoint(const Point2D& x) {
-  double result = 0;
+data_t Composite2D::evalGridPoint(const Point2D& x) {
+  data_t result = 0;
   Point2D xdiff;
-  //double range = 2 * Shapelets2D::getThetaMax(orderlimit0,orderlimit1);
+  //data_t range = 2 * Shapelets2D::getThetaMax(orderlimit0,orderlimit1);
   // shift to center of pixel
   //xdiff(0) = x(0) + 0.5*stepsize0 - xcentroid(0);    
   //xdiff(1) = x(1) + 0.5*stepsize1 - xcentroid(1);
@@ -162,28 +162,28 @@ void Composite2D::evalGrid() {
   } else {
     // this approach only works for square, upper triangular coeff matrices
     // which is assumed for this ansatz here.
-    CoefficientVector<double> coeffVector(shapeletCoeffs);
+    CoefficientVector<data_t> coeffVector(shapeletCoeffs);
     const IndexVector& nVector = coeffVector.getIndexVector();
-    NumMatrix<double> M(grid.size(),nVector.getNCoeffs());
+    NumMatrix<data_t> M(grid.size(),nVector.getNCoeffs());
     makeShapeletMatrix(M,nVector);
-    model = M * (NumVector<double>) coeffVector;
+    model = M * (NumVector<data_t>) coeffVector;
     
   }
   change = 0;
 }  
 
-const NumVector<double>& Composite2D::getModel() {
+const NumVector<data_t>& Composite2D::getModel() {
   if (change) evalGrid();
   return model;
 }
 
-NumVector<double>& Composite2D::accessModel() {
+NumVector<data_t>& Composite2D::accessModel() {
   change = 0;
   return model;
 }
 
-double Composite2D::integrate() {
-   double result = 0;
+data_t Composite2D::integrate() {
+   data_t result = 0;
   // result = sum over l0,l1 (coeff_(l0,l1) * Integral of B_(l0,l1))
   for (int l0 = 0; l0 <= orderlimit0; l0+=1) 
     for (int l1 = 0; l1 <= orderlimit1; l1+=1)
@@ -191,8 +191,8 @@ double Composite2D::integrate() {
 	result += shapeletCoeffs(l0,l1) * Shapelets2D::integrate(l0,l1);
   return result;
 }
-double Composite2D::integrate(double x0min, double x0max, double x1min,double x1max) {
-   double result = 0;
+data_t Composite2D::integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1max) {
+   data_t result = 0;
    x0min -= xcentroid(0);
    x0max -= xcentroid(0);
    x1min -= xcentroid(1);
@@ -209,8 +209,8 @@ double Composite2D::integrate(double x0min, double x0max, double x1min,double x1
 
 // compute flux from shapelet coeffs
 // see Paper I, eq. 26
-double Composite2D::getShapeletFlux() const {
-  double result = 0;
+data_t Composite2D::getShapeletFlux() const {
+  data_t result = 0;
   for (int l0 = 0; l0 <= orderlimit0; l0+=1) {
     for (int l1 = 0; l1 <= orderlimit1; l1+=1) {
       if (l0%2 == 0 && l1%2 ==0) {
@@ -230,26 +230,26 @@ void Composite2D::getShapeletCentroid(Point2D& xc) const {
   for (int l0 = 0; l0 <= orderlimit0; l0+=1) {
     for (int l1 = 0; l1 <= orderlimit1; l1+=1) {
       if (l0%2 == 1 && l1%2 ==0) {
-	xc(0) += sqrt((double)l0 + 1)*pow(2,0.5*(2-l0-l1)) *
+	xc(0) += sqrt((data_t)l0 + 1)*pow(2,0.5*(2-l0-l1)) *
 	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1)) /
 	  (gsl_sf_fact((l0+1)/2)*gsl_sf_fact(l1/2)) *
 	  shapeletCoeffs(l0,l1);
       }
       if (l0%2 == 0 && l1%2 ==1) {
-	xc(1) += sqrt((double)l1 + 1)*pow(2,0.5*(2-l0-l1)) * 
+	xc(1) += sqrt((data_t)l1 + 1)*pow(2,0.5*(2-l0-l1)) * 
 	  sqrt(gsl_sf_fact(l1+1)*gsl_sf_fact(l0)) /
 	  (gsl_sf_fact((l1+1)/2)*gsl_sf_fact(l0/2)) *
 	  shapeletCoeffs(l0,l1);
       }
     }
   }
-  double flux = getShapeletFlux();
+  data_t flux = getShapeletFlux();
   xc(0) = M_SQRTPI*beta*beta*xc(0)/flux;
   xc(1) = M_SQRTPI*beta*beta*xc(1)/flux;
 }
 
 // compute 2nd brightness moments from shapelet coeffs
-void Composite2D::getShapelet2ndMoments(NumMatrix<double>& Q) const {
+void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
   if (Q.getRows() != 2 || Q.getColumns() != 2)
     Q.resize(2,2);
   Q.clear();
@@ -263,13 +263,13 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<double>& Q) const {
 	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
 	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * shapeletCoeffs(l0,l1);
       } else if (l0%2 == 1 && l1%2 == 1) {
-	Q(0,1) += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt((double)(l0+1)*(l1+1)) *
+	Q(0,1) += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt((data_t)(l0+1)*(l1+1)) *
 	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1+1)) /
 	  (gsl_sf_fact((l0+1)/2)*gsl_sf_fact((l1+1)/2)) * shapeletCoeffs(l0,l1);
       }
     }
   }
-  double flux = getShapeletFlux();
+  data_t flux = getShapeletFlux();
   Q(0,0) *= M_SQRTPI * beta*beta*beta / flux;
   Q(0,1) *= M_SQRTPI * beta*beta*beta / flux;
   Q(1,1) *= M_SQRTPI * beta*beta*beta / flux;
@@ -277,8 +277,8 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<double>& Q) const {
 }
 
 // see Paper I, eq. (28)
-double Composite2D::getShapeletRMSRadius() const {
-  double rms = 0;
+data_t Composite2D::getShapeletRMSRadius() const {
+  data_t rms = 0;
   for (int l0 = 0; l0 <= orderlimit0; l0++) {
     for (int l1 = 0; l1 <= orderlimit1; l1++) {
       if (l0%2 == 0 && l1%2 ==0) {
@@ -288,7 +288,7 @@ double Composite2D::getShapeletRMSRadius() const {
       }
     }
   }
-  double flux = getShapeletFlux();
+  data_t flux = getShapeletFlux();
   return sqrt(rms * M_SQRTPI * beta*beta*beta / flux);
 }
 
@@ -299,19 +299,19 @@ void Composite2D::defineGrid() {
   changeGrid = 0;
   if (!lockGrid) {
     stepsize0 = stepsize1 = Shapelets2D::getThetaMin(order0,order1)/2;
-    double range = Shapelets2D::getThetaMax(order0,order1)*3; 
+    data_t range = Shapelets2D::getThetaMax(order0,order1)*3; 
     grid = Grid(xcentroid(0)-range,xcentroid(0)+range,stepsize0,xcentroid(1)-range,xcentroid(1)+range,stepsize1);
   }
 }
 
-void Composite2D::makeShapeletMatrix(NumMatrix<double>& M, const IndexVector& nVector) {
+void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector) {
   int nmax = orderlimit0;
   int nCoeffs = nVector.getNCoeffs();
   int npixels = grid.size();
-  NumMatrix<double> M0(nmax+1,npixels), M1(nmax+1,npixels);
+  NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);
   // start with 0th and 1st order shapelets
-  double x0_scaled, x1_scaled;
-  double factor0 = 1./sqrt(M_SQRTPI*beta);
+  data_t x0_scaled, x1_scaled;
+  data_t factor0 = 1./sqrt(M_SQRTPI*beta);
   for (int i=0; i<npixels; i++) {
     x0_scaled = (grid(i,0) - xcentroid(0))/beta;
     x1_scaled = (grid(i,1) - xcentroid(1))/beta;
@@ -324,7 +324,7 @@ void Composite2D::makeShapeletMatrix(NumMatrix<double>& M, const IndexVector& nV
   }
   // use recurrance relation to compute higher orders
   for (int n=2;n<=nmax;n++) {
-    double factor1 = sqrt(1./(2*n)), factor2 =sqrt((n-1.)/n); 
+    data_t factor1 = sqrt(1./(2*n)), factor2 =sqrt((n-1.)/n); 
     for (int i=0; i<npixels; i++) {
       M0(n,i) = 2*(grid(i,0) - xcentroid(0))/beta*factor1*M0(n-1,i) 
 	- factor2*M0(n-2,i);

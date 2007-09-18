@@ -3,6 +3,7 @@
 
 #include <NumVector.h>
 #include <NumMatrix.h>
+#include <Typedef.h>
 #include <History.h>
 #include <frame/SegmentationMap.h>
 #include <frame/CorrelationFunction.h>
@@ -39,27 +40,27 @@ class PixelCovarianceMatrix {
   /// Set the entry of the given <tt>band</tt>.
   /// This set the values of the band with a given horizontal <tt>offset</tt> to
   /// <tt>val</tt>.
-  void setBand(unsigned int band, int offset, double val);
+  void setBand(unsigned int band, int offset, data_t val);
   /// Get the offset of the given <tt>band</tt>.
   int getOffset(unsigned int band) const;
   /// Get the value of the given <tt>band</tt>.
-  double getValue(unsigned int band) const;
+  data_t getValue(unsigned int band) const;
   /// Index operator.
   /// Since the matrix is not stored as a whole but rather only the values and offsets 
   /// of all bands, this method returns <tt>val</tt> if <tt>i-j=offset</tt>.
-  double operator()(unsigned int i, unsigned int j) const;
+  data_t operator()(unsigned int i, unsigned int j) const;
   /// Get a block matrix representation of dimension \f$N\times N\f$.
-  NumMatrix<double> getMatrix(unsigned int N) const;
+  NumMatrix<data_t> getMatrix(unsigned int N) const;
   /// Multiply with block matrix.
   /// The PixelCovarianceMatrix will have the appropriate number of columns
   /// to allow a defined multiplication. Thus, the resulting matrix will have the 
   /// dimensions of the matrix <tt>M</tt>.
-  NumMatrix<double> operator*(const NumMatrix<double>& M) const;
+  NumMatrix<data_t> operator*(const NumMatrix<data_t>& M) const;
   /// Multiply with NumVector.
   /// The PixelCovarianceMatrix will have the appropriate number of columns
   /// to allow a defined multiplication. Thus, the resulting vector will have the 
   /// size of the vector <tt>v</tt>.
-  NumVector<double> operator*(const NumVector<double>& v) const;
+  NumVector<data_t> operator*(const NumVector<data_t>& v) const;
   /// Invert the covariance matrix.
   /// Since inversion of banded matrices is not easily done analytically, 
   /// a small portion of the covariance matrix is build as block matrix.
@@ -74,7 +75,7 @@ class PixelCovarianceMatrix {
   /// Save covariance matrix to text file.
   /// The format is as follows:
   /// \code
-  /// # int band int offset double entry
+  /// # int band int offset data_t entry
   /// 0 -1 0.256
   /// 1  0 1.001
   /// 2  1 0.310
@@ -86,9 +87,9 @@ class PixelCovarianceMatrix {
  private:
   unsigned int bandwidth;
   NumVector<int> offset;
-  NumVector<double> entry;
+  NumVector<data_t> entry;
 };
 
-NumMatrix<double> operator*(const NumMatrix<double>& M, const PixelCovarianceMatrix& V);
+NumMatrix<data_t> operator*(const NumMatrix<data_t>& M, const PixelCovarianceMatrix& V);
 
 #endif

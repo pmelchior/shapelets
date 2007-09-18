@@ -7,6 +7,7 @@
 #include <map>
 #include <NumVector.h>
 #include <NumMatrix.h>
+#include <Typedef.h>
 #include <frame/Grid.h>
 
 /// Functions for reading and writing into several formats
@@ -121,21 +122,21 @@ void addFITSExtension(std::string filename, std::string extname, const NumMatrix
 /// - "LOGAITHMIC"
 /// min and max indicate the ends of the accepted range of values, values smaller
 /// (larger) than min (max) are set to min (max).
-void writePPMImage(std::string filename,std::string colorscheme, std::string scaling, double min, double max, const Grid& grid, const NumVector<double>& data);
+void writePPMImage(std::string filename,std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
 /// Create RGB representation of data.
 /// This function is usefull for manipulations of the data in RGB space. 
 /// See writePPMImage() for details.
-void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, double min, double max, const Grid& grid, const NumVector<double>& data);
+void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
 /// Write RGBImage from makeRGBImage() to PPM file.
 void writeRGB2PPMImage (std::string filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage);
 /// Add uniform noise from noisemean to noisemean+noiselimit.
-void addUniformNoise(NumVector<double>& data, double noisemean, double noiselimit);
+void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit);
 /// Add gaussian noise.
-void addGaussianNoise(NumVector<double>& data, double noisemean, double noisesigma);
+void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma);
 /// Add poissonian noise.
 /// The noise of the \f$i\f$th pixel is drawn from a gaussian distribution with
 /// \f$ \sigma_i = \sigma_n + \sqrt{data_i}\f$.
-void addPoissonianNoise(NumVector<double>& data, double noisemean, double noisesigma);
+void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma);
 /// Convolve input with a 3x3 Gaussian.
-void convolveGaussian(const NumVector<double>& input, NumVector<double>& result, int width,int height);
+void convolveGaussian(const NumVector<data_t>& input, NumVector<data_t>& result, int width,int height);
 #endif

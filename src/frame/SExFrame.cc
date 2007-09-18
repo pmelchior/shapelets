@@ -14,14 +14,14 @@ using namespace boost;
 
 typedef unsigned int uint;
 
-SExFrame::SExFrame (std::string fitsfile) : Image<double>(fitsfile) {
+SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile) {
   SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
   sf = empty;
   catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
   // axsizes of underlying Image copied since often used
-  axsize0 = Image<double>::getSize(0);
-  axsize1 = Image<double>::getSize(1);
+  axsize0 = Image<data_t>::getSize(0);
+  axsize1 = Image<data_t>::getSize(1);
 
   text << "# Reading FITS file " << fitsfile << endl;
   text << "# Image properties: size = "<< axsize0 << "/" << axsize1 << std::endl; 
@@ -34,15 +34,15 @@ SExFrame::SExFrame (std::string fitsfile) : Image<double>(fitsfile) {
   r = gsl_rng_alloc (T);
 }
 
-SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<double>(fitsfile) {
-  weight = Image<double>(weightfile);
+SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<data_t>(fitsfile) {
+  weight = Image<data_t>(weightfile);
   SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
   sf = empty;
   catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
   // axsizes of underlying Image copied since often used
-  axsize0 = Image<double>::getSize(0);
-  axsize1 = Image<double>::getSize(1);
+  axsize0 = Image<data_t>::getSize(0);
+  axsize1 = Image<data_t>::getSize(1);
 
   text << "# Reading FITS file " << fitsfile << endl;
   text << "# Image properties: size = "<< axsize0 << "/" << axsize1 << std::endl; 
@@ -106,7 +106,7 @@ void SExFrame::readCatalog(std::string catfile) {
       so.YWIN_IMAGE = atof(column[sf.YWIN_IMAGE-1].c_str())-1;
       so.FLUX_AUTO = atof(column[sf.FLUX_AUTO-1].c_str())-1;
       so.FLAGS = (unsigned char) atoi(column[sf.FLAGS-1].c_str());
-      so.CLASS_STAR = (double) atof(column[sf.CLASS_STAR-1].c_str());
+      so.CLASS_STAR = (data_t) atof(column[sf.CLASS_STAR-1].c_str());
      // then push it on objectList
       objectList.push_back(so);
     }
@@ -171,12 +171,12 @@ void SExFrame::fillObject(Object& O) {
   // than 4 pixels and set their pixelmap flag to -2
   // in the end only object data into new vector of smaller size, the rest will
   // filled up with artificial noise
-  const NumVector<double>& data = Image<double>::getData();
-  NumVector<double>& objdata = O.accessData();
+  const NumVector<data_t>& data = Image<data_t>::getData();
+  NumVector<data_t>& objdata = O.accessData();
   objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
   SegmentationMap& objSegMap = O.accessSegmentationMap();
   objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
-  NumVector<double>& objWeightMap = O.accessWeightMap();
+  NumVector<data_t>& objWeightMap = O.accessWeightMap();
   if (weight.size()!=0) 
     objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
   vector<uint> nearby_objects;
@@ -186,7 +186,7 @@ void SExFrame::fillObject(Object& O) {
     int axis0 = xmax-xmin+1;
     int x = i%axis0 + xmin;
     int y = i/axis0 + ymin;
-    uint j = Image<double>::getGrid().getPixel(x,y);
+    uint j = Image<data_t>::getGrid().getPixel(x,y);
 
     // if pixel is out of image region, fill noise from default values
     // since we fill same noise into data and into bgrms
@@ -249,7 +249,7 @@ void SExFrame::fillObject(Object& O) {
   O.setDetectionFlag(objectList[id].FLAGS);
   O.setStarGalaxyProbability(objectList[id].CLASS_STAR);
   O.setBlendingProbability(computeBlendingProbability(id));
-  O.setBaseFilename(Image<double>::getFilename());
+  O.setBaseFilename(Image<data_t>::getFilename());
   O.setNumber(objectList[id].NUMBER);
 }
 
@@ -335,7 +335,7 @@ void SExFrame::checkFormat() {
 
 // now extend to region around the object by
 // typically objectsize/2, minimum 12 pixels
-void SExFrame::addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
+void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
   int xrange, yrange, xborder, yborder;
   xrange = xmax - xmin;
   yrange = ymax - ymin;
@@ -363,7 +363,7 @@ void SExFrame::addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, in
 
 // compute probability of an object being blended with another one
 // simple: if SExtractor FLAG contains 2, probability equals 1, else 0
-double SExFrame::computeBlendingProbability(unsigned int nr) {
+data_t SExFrame::computeBlendingProbability(unsigned int nr) {
   unsigned short flag = objectList[nr].FLAGS;
   // if 2 is in FLAGS: object flaged as blended
   if ((flag >> 1)%2 == 1) 
@@ -389,12 +389,12 @@ void SExFrame::estimateNoise() {
   // 1) set mask(i)=1, when segMap(i) != 0
   // 2) create NumVectorMasked from objdata and mask
   // 3) compute std from that
-  const NumVector<double>& data = Image<double>::getData();
+  const NumVector<data_t>& data = Image<data_t>::getData();
   NumVector<bool> mask(data.size());
   for(int i =0; i < data.size(); i++)
     if (segMap(i) != 0) 
       mask(i) = 1;
-  NumVectorMasked<double> masked(data,mask);
+  NumVectorMasked<data_t> masked(data,mask);
   masked.kappa_sigma_clip(bg_mean,bg_rms);
   text << "# Background estimation (object masked):";
   text << " mean = " << bg_mean << ", sigma = " << bg_rms << endl;
@@ -402,17 +402,17 @@ void SExFrame::estimateNoise() {
   estimatedBG = 1;
 }
 
-double SExFrame::getNoiseMean() {
+data_t SExFrame::getNoiseMean() {
   if (!estimatedBG) estimateNoise();
   return bg_mean;
 }
 
-double SExFrame::getNoiseRMS() {
+data_t SExFrame::getNoiseRMS() {
   if (!estimatedBG) estimateNoise();
   return bg_rms;
 }
 
-void SExFrame::setNoiseMeanRMS(double mean, double rms) {
+void SExFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
   estimatedBG = 1;
   bg_mean = mean;
   bg_rms = rms;

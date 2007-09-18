@@ -6,7 +6,7 @@ typedef unsigned int uint;
 CorrelationFunction::CorrelationFunction () {
 }
 
-CorrelationFunction::CorrelationFunction (const Image<double>& im, const SegmentationMap& segMap, uint insize, bool mask) {
+CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, uint insize, bool mask) {
   size = insize;
   uint x,y,x1,y1,i;
 
@@ -73,7 +73,7 @@ CorrelationFunction::CorrelationFunction (const Image<double>& im, const Segment
 
 // same as above but with out segmentation map;
 // this runs over all data pixels.
-CorrelationFunction::CorrelationFunction (const NumVector<double>& data, const Grid& grid, uint insize) {
+CorrelationFunction::CorrelationFunction (const NumVector<data_t>& data, const Grid& grid, uint insize) {
   size = insize;
   uint x,y,x1,y1,i;
 
@@ -132,26 +132,26 @@ void CorrelationFunction::operator= (const CorrelationFunction& xi2) {
   size = xi2.size;
 }
 
-const NumVector<double>& CorrelationFunction::getCorrelationFunction() const {
+const NumVector<data_t>& CorrelationFunction::getCorrelationFunction() const {
   return xi;
 }
-NumVector<double>& CorrelationFunction::accessCorrelationFunction() {
+NumVector<data_t>& CorrelationFunction::accessCorrelationFunction() {
   return xi;
 }
 
-const NumVector<double>& CorrelationFunction::getDistances() const {
+const NumVector<data_t>& CorrelationFunction::getDistances() const {
   return dist;
 }
 
-NumVector<double>& CorrelationFunction::accessDistances() {
+NumVector<data_t>& CorrelationFunction::accessDistances() {
   return dist;
 }
 
-const NumVector<double>& CorrelationFunction::getCorrelationError() const {
+const NumVector<data_t>& CorrelationFunction::getCorrelationError() const {
   return sigma;
 }
 
-NumVector<double>& CorrelationFunction::accessCorrelationError() {
+NumVector<data_t>& CorrelationFunction::accessCorrelationError() {
   return sigma;
 }
 

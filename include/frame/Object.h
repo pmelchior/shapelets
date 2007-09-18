@@ -2,6 +2,7 @@
 #define OBJECT_H
 
 #include <History.h>
+#include <Typedef.h>
 #include <IO.h>
 #include <frame/Image.h>
 #include <frame/SegmentationMap.h>
@@ -26,7 +27,7 @@
 /// 
 ///\todo Save PixelCovarianceMatrix and CorrelationFunction to Fits file during save()
 
-class Object : public Image<double> {
+class Object : public Image<data_t> {
  public:
   /// Argumented constructor.
   /// The ID is the object ID determined during the segmentation process
@@ -44,15 +45,15 @@ class Object : public Image<double> {
   unsigned int getNumber() const;
   /// Return the weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
-  const NumVector<double>& getWeightMap() const;
+  const NumVector<data_t>& getWeightMap() const;
   /// Access the weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
-  NumVector<double>& accessWeightMap();
+  NumVector<data_t>& accessWeightMap();
   /// Return flux of object.
   /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
-  double getFlux() const;
+  data_t getFlux() const;
   /// Set flux of object.
-  void setFlux(double F);
+  void setFlux(data_t F);
   /// Return the position of the object's centroid.
   /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
   const Point2D& getCentroid() const;
@@ -61,12 +62,12 @@ class Object : public Image<double> {
   /// Return 2nd brightness moments.
   /// The 2nd brightness moments are defined relative to the centroid computed
   /// with getCentroid().
-  NumMatrix<double> get2ndBrightnessMoments();
+  NumMatrix<data_t> get2ndBrightnessMoments();
   /// Return ellipticity of the object.
   /// Ellipticity is calculated from the 2nd brightness moments \f$Q_{ij}\f$ as defined
   /// in Bartelmann & Schneider (2001):\n
   /// \f$ \epsilon = (Q_{11}-Q_{22}+2iQ_{12})/(Q_{11}+Q_{22}+2\sqrt{Q_{11}Q_{22}-Q_{12}^2})\f$
-  complex<double> getEllipticity();
+  complex<data_t> getEllipticity();
   /// Return the detection flag.
   /// It indicates problems during the various procedures. 
   /// Higher numbers supersede lower ones.
@@ -81,26 +82,26 @@ class Object : public Image<double> {
   /// Set detection flag (from Frame).
   void setDetectionFlag(unsigned short flag);
   /// Return noise mean \f$\mu_n\f$.
-  double getNoiseMean() const;
+  data_t getNoiseMean() const;
   /// Return noise RMS \f$\sigma_n\f$.
-  double getNoiseRMS() const;
+  data_t getNoiseRMS() const;
   /// Set noise features from external measurements (e.g. in Frame).
-  void setNoiseMeanRMS(double mean, double rms);
+  void setNoiseMeanRMS(data_t mean, data_t rms);
   /// Set the noise model.
   void setNoiseModel(std::string noisemodel);
   /// Get the noise model.
   std::string getNoiseModel() const;
   /// Get the blending probability.
   /// If the probability is small, the object is considered to be unblended.
-  double getBlendingProbability() const;
+  data_t getBlendingProbability() const;
   /// Set the blending probability.
-  void setBlendingProbability(double blend);
+  void setBlendingProbability(data_t blend);
   /// Get star/galaxy discrimination index.
   /// The number is normalized, high values are given for objects, which are very 
   /// likely stars, low values for galaxies.
-  double getStarGalaxyProbability() const;
+  data_t getStarGalaxyProbability() const;
   /// Set the star/galaxy discrimination index.
-  void setStarGalaxyProbability(double s_g);
+  void setStarGalaxyProbability(data_t s_g);
   /// Get the segmentation map.
   const SegmentationMap& getSegmentationMap() const;
   /// Access the segmentation map.
@@ -131,12 +132,12 @@ class Object : public Image<double> {
   
  private:
   unsigned int id, number;
-  NumVector<double> weight;
+  NumVector<data_t> weight;
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;
   CorrelationFunction xi;
   Point2D centroid;
-  double flux, noise_mean, noise_rms, s_g, blend;
+  data_t flux, noise_mean, noise_rms, s_g, blend;
   unsigned short flag;
   std::string noisemodel, basefilename;
 };

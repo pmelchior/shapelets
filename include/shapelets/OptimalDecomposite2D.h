@@ -5,6 +5,7 @@
 #include <map>
 #include <NumMatrix.h>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <History.h>
 #include <frame/Point2D.h>
 #include <frame/Grid.h>
@@ -42,7 +43,7 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// nmaxLimit is the Limit for the maximum order of the decompososition.
   /// Estimators for \f$\beta\f$ and image centroid  \f$x_c\f$
   /// are obtained from Object, also the noisemodel.
-  OptimalDecomposite2D(const Object& obj, int nmaxLow, int nmaxHigh, double betaLow, double betaHigh);
+  OptimalDecomposite2D(const Object& obj, int nmaxLow, int nmaxHigh, data_t betaLow, data_t betaHigh);
   /// Employs a regularization to lower the negative flux.
   /// The minimization ends, whenever \f$R=- F^-/F^+ < wantedR\f$, where \f$F^{\pm}\f$
   /// is the positive or negative flux of the shapelet reconstruction. 
@@ -50,19 +51,19 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// If wantedR is chosen too low (e.g. \f$10^{-6}\f$, in some cases already 
   /// \f$10^{-5}\f$), the minimization procedure
   /// must increase \f$n_{max}\f$ and can therefore take a considerable amount of time.
-  double regularize(double wantedR);
+  data_t regularize(data_t wantedR);
   /// Deliver best fit shapelet coefficients.
-  void getShapeletCoeffs(NumMatrix<double>& coeffs);
+  void getShapeletCoeffs(NumMatrix<data_t>& coeffs);
    /// Deliver best fit shapelet coefficient errors.
-  void getShapeletErrors(NumMatrix<double>& errors);
+  void getShapeletErrors(NumMatrix<data_t>& errors);
   /// Get best fit residuals of the decomposition.
-  const NumVector<double>& getResiduals();
+  const NumVector<data_t>& getResiduals();
   /// Get best fit shapelet model.
-  const NumVector<double>&  getModel();
+  const NumVector<data_t>&  getModel();
   /// Return best fit  \f$\beta\f$
-  double getOptimalBeta();
+  data_t getOptimalBeta();
   /// Return best fit \f$\chi^2\f$.
-  double getOptimalChiSquare();
+  data_t getOptimalChiSquare();
   /// Return the decomposition flag.
   /// It indicates problems during the optimization.
   /// - 0: OK
@@ -78,32 +79,32 @@ class OptimalDecomposite2D : private Decomposite2D {
 private:
   const Object& obj;
   int npixels, optimalNMax, nmaxLow, nmaxHigh;
-  double beta,optimalBeta,optimalChiSquare,bestChiSquare,image_dimension, betaHigh, betaLow;
+  data_t beta,optimalBeta,optimalChiSquare,bestChiSquare,image_dimension, betaHigh, betaLow;
   bool optimized, nmaxTrouble, noise_correlated;
   char flag, comp_corr;
   History history;
   std::ostringstream text;
   std::string comp_corr_string;
-  std::map<int, double> bestBeta, bestChi2;
+  std::map<int, data_t> bestBeta, bestChi2;
   struct regResults {
     int nmax;
-    double f;
-    double lambda;
-    double beta;
-    double chi2;
-    double R;
-    NumVector<double> coeffs;
+    data_t f;
+    data_t lambda;
+    data_t beta;
+    data_t chi2;
+    data_t R;
+    NumVector<data_t> coeffs;
   };
   int findOptimalBeta(unsigned char step);
   void findOptimalNMax(unsigned char step), optimize(), checkBeta();
-  void getCoeffErrorFromBeta(const NumVector<double>& coeffVector, NumVector<double>& errorVector);
-  void getBetaTrafoMatrix(NumMatrix<double>& betaTrafo, double beta1, double beta2);
-  void appendRegResults(std::vector<regResults>& results, int nmax, double f, double lambda, double beta, double chi2, double R, const NumVector<double>& coeffs);
+  void getCoeffErrorFromBeta(const NumVector<data_t>& coeffVector, NumVector<data_t>& errorVector);
+  void getBetaTrafoMatrix(NumMatrix<data_t>& betaTrafo, data_t beta1, data_t beta2);
+  void appendRegResults(std::vector<regResults>& results, int nmax, data_t f, data_t lambda, data_t beta, data_t chi2, data_t R, const NumVector<data_t>& coeffs);
   int findNMaxofBestF(std::vector<regResults>& results);
   int findSuboptimalResultIndex(std::vector<regResults>& result);
   void checkCorrelationFunctionFromResiduals();
-  bool testBetaLowerLimit(double& beta);
-  bool testBetaUpperLimit(double& beta);
+  bool testBetaLowerLimit(data_t& beta);
+  bool testBetaUpperLimit(data_t& beta);
 };
 
 #endif

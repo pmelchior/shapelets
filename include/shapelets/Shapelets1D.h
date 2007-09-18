@@ -1,6 +1,7 @@
 #ifndef SHAPELETS1D_H
 #define SHAPELETS1D_H
 
+#include <Typedef.h>
 #include <shapelets/Hermite.h>
 
 /// 1D Shapelet class.
@@ -14,30 +15,30 @@ class Shapelets1D {
   /// Default constructor.
   Shapelets1D ();
   /// Constructor with scale size \f$\beta\f$ and maximal order
-  Shapelets1D (int order, double beta);
+  Shapelets1D (int order, data_t beta);
   
   /// Return highest order of B.
   int getOrder ();
   /// Set the highest order of B.
   void setOrder (int order);
   /// Return \f$\beta\f$.
-  double getBeta();
+  data_t getBeta();
   /// Set \f$\beta\f$ to arbitrary value.
-  void setBeta(double beta);
+  void setBeta(data_t beta);
   /// Get smallest reproducible object size \f$\theta_{min}\f$.
-  double getThetaMin(int order);
+  data_t getThetaMin(int order);
   /// Get biggest reproducible object size \f$\theta_{max}\f$.
-  double getThetaMax(int order);
+  data_t getThetaMax(int order);
   /// Get integral over basis function \f$B_{order}\f$.
-  double integrate(int order);
+  data_t integrate(int order);
   /// Get integral over basis fuction  \f$B_{order}\f$ within interval xmin .. xmax.
-  double integrate(int order, double xmin, double xmax);
+  data_t integrate(int order, data_t xmin, data_t xmax);
   /// Evaluate \f$B_{order}(x;\beta)\f$.
-  double eval (int order, double x);
+  data_t eval (int order, data_t x);
 
 private:
   Hermite H;
-  double beta,sqrt_beta;
+  data_t beta,sqrt_beta;
 };
 
 #endif

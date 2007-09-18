@@ -6,7 +6,7 @@ SIFFile::SIFFile(std::string infilename) {
   filename = infilename;
 }
 
-void SIFFile::save(std::string historyString, const NumMatrix<double>& cartesianCoeffs, const NumMatrix<double>& errors, const Grid& grid, double beta, const Point2D& xcentroid, double chi2, char fitsFlag, char decompositionFlag, bool regularize, double R) {
+void SIFFile::save(std::string historyString, const NumMatrix<data_t>& cartesianCoeffs, const NumMatrix<data_t>& errors, const Grid& grid, data_t beta, const Point2D& xcentroid, data_t chi2, char fitsFlag, char decompositionFlag, bool regularize, data_t R) {
     // version of the sif format definition
   int version = 0;
   const char* historyChar = historyString.c_str();
@@ -22,7 +22,7 @@ void SIFFile::save(std::string historyString, const NumMatrix<double>& cartesian
   fstream binary_file(file,ios::out|ios::binary);
   saveHeader(binary_file,header);
 
-  double dataArray[dimension], errorArray[errorDimension];
+  data_t dataArray[dimension], errorArray[errorDimension];
   for (int i = 0; i < lines; i++)
     for (int j = 0; j < columns; j++)
       dataArray[i*columns + j] = cartesianCoeffs(i,j);
@@ -31,8 +31,8 @@ void SIFFile::save(std::string historyString, const NumMatrix<double>& cartesian
       errorArray[i*errorColumns + j] = errors(i,j);
 
   binary_file.write(historyChar,historyString.length()*sizeof(char));
-  binary_file.write(reinterpret_cast<char *>(&dataArray),dimension*sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&errorArray),errorDimension*sizeof(double));
+  binary_file.write(reinterpret_cast<char *>(&dataArray),dimension*sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&errorArray),errorDimension*sizeof(data_t));
   binary_file.close();
 }
 
@@ -42,24 +42,24 @@ void SIFFile::saveHeader (fstream& binary_file, sifHeader& header) {
   binary_file.write(reinterpret_cast<char *>(&header.columns),sizeof(int));
   binary_file.write(reinterpret_cast<char *>(&header.errorLines),sizeof(int));
   binary_file.write(reinterpret_cast<char *>(&header.errorColumns),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.beta),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.xcentroid0),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.xcentroid1),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstart0),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstop0),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstepsize0),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstart1),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstop1),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstepsize1),sizeof(double));
-  binary_file.write(reinterpret_cast<char *>(&header.chi2),sizeof(double));
+  binary_file.write(reinterpret_cast<char *>(&header.beta),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.xcentroid0),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.xcentroid1),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.gridstart0),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.gridstop0),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.gridstepsize0),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.gridstart1),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.gridstop1),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.gridstepsize1),sizeof(data_t));
+  binary_file.write(reinterpret_cast<char *>(&header.chi2),sizeof(data_t));
   binary_file.write(reinterpret_cast<char *>(&header.fitsFlag),sizeof(int));
   binary_file.write(reinterpret_cast<char *>(&header.decompositionFlag),sizeof(int));
   binary_file.write(reinterpret_cast<char *>(&header.regularize),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.R),sizeof(double));
+  binary_file.write(reinterpret_cast<char *>(&header.R),sizeof(data_t));
   binary_file.write(reinterpret_cast<char *>(&header.historylength),sizeof(int));
 }
   
-void SIFFile::load(std::string& historyString, NumMatrix<double>& cartesianCoeffs, NumMatrix<double>& errors, Grid& grid, double& beta, Point2D& xcentroid, double& chi2, char& fitsFlag, char& decompositionFlag, bool& regularize, double& R) {
+void SIFFile::load(std::string& historyString, NumMatrix<data_t>& cartesianCoeffs, NumMatrix<data_t>& errors, Grid& grid, data_t& beta, Point2D& xcentroid, data_t& chi2, char& fitsFlag, char& decompositionFlag, bool& regularize, data_t& R) {
   sifHeader header;
 
   const char* file = filename.c_str();
@@ -83,13 +83,13 @@ void SIFFile::load(std::string& historyString, NumMatrix<double>& cartesianCoeff
 
   int dimension = header.lines * header.columns;
   int errorDimension = header.errorLines * header.errorColumns;
-  double dataArray[dimension], errorArray[errorDimension];
-  binary_file.read(reinterpret_cast<char *>(&dataArray),dimension*sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&errorArray),errorDimension*sizeof(double));
+  data_t dataArray[dimension], errorArray[errorDimension];
+  binary_file.read(reinterpret_cast<char *>(&dataArray),dimension*sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&errorArray),errorDimension*sizeof(data_t));
   binary_file.close();
 
-  cartesianCoeffs = NumMatrix<double>(header.lines, header.columns);
-  errors = NumMatrix<double>(header.errorLines, header.errorColumns);
+  cartesianCoeffs = NumMatrix<data_t>(header.lines, header.columns);
+  errors = NumMatrix<data_t>(header.errorLines, header.errorColumns);
   for (int i = 0; i < header.lines; i++)
     for (int j = 0; j < header.columns; j++)
       cartesianCoeffs(i,j) = dataArray[i*header.columns + j];
@@ -119,20 +119,20 @@ void SIFFile::loadHeader(fstream& binary_file, sifHeader& header) {
   binary_file.read(reinterpret_cast<char *>(&header.columns),sizeof(int));
   binary_file.read(reinterpret_cast<char *>(&header.errorLines),sizeof(int));
   binary_file.read(reinterpret_cast<char *>(&header.errorColumns),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.beta),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.xcentroid0),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.xcentroid1),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstart0),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstop0),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstepsize0),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstart1),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstop1),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstepsize1),sizeof(double));
-  binary_file.read(reinterpret_cast<char *>(&header.chi2),sizeof(double));
+  binary_file.read(reinterpret_cast<char *>(&header.beta),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.xcentroid0),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.xcentroid1),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.gridstart0),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.gridstop0),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.gridstepsize0),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.gridstart1),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.gridstop1),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.gridstepsize1),sizeof(data_t));
+  binary_file.read(reinterpret_cast<char *>(&header.chi2),sizeof(data_t));
   binary_file.read(reinterpret_cast<char *>(&header.fitsFlag),sizeof(int));
   binary_file.read(reinterpret_cast<char *>(&header.decompositionFlag),sizeof(int));
   binary_file.read(reinterpret_cast<char *>(&header.regularize),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.R),sizeof(double));
+  binary_file.read(reinterpret_cast<char *>(&header.R),sizeof(data_t));
   binary_file.read(reinterpret_cast<char *>(&header.historylength),sizeof(int));
 }
 
@@ -165,10 +165,10 @@ void SIFFile::printHeader() {
 
 void SIFFile::printHistory() {
   std::string historyString;
-  NumMatrix<double> cartesianCoeffs,errors;
+  NumMatrix<data_t> cartesianCoeffs,errors;
   Grid grid;
   Point2D xcentroid;
-  double beta, chi2, R;
+  data_t beta, chi2, R;
   char fitsFlag, decompositionFlag;
   bool regularized;
   load(historyString,cartesianCoeffs,errors,grid,beta,xcentroid,chi2,fitsFlag,decompositionFlag,regularized,R);
@@ -178,10 +178,10 @@ void SIFFile::printHistory() {
 
 void SIFFile::printCoefficients() {
   std::string historyString;
-  NumMatrix<double> cartesianCoeffs,errors;
+  NumMatrix<data_t> cartesianCoeffs,errors;
   Grid grid;
   Point2D xcentroid;
-  double beta, chi2, R;
+  data_t beta, chi2, R;
   char fitsFlag, decompositionFlag;
   bool regularized;
   load(historyString,cartesianCoeffs,errors,grid,beta,xcentroid,chi2,fitsFlag,decompositionFlag,regularized,R);

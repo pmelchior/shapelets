@@ -6,7 +6,7 @@ Shapelets2D::Shapelets2D () {
   beta = order0 = order1 = -1;
 }
 
-Shapelets2D::Shapelets2D (int inorder0, int inorder1, double inbeta) {
+Shapelets2D::Shapelets2D (int inorder0, int inorder1, data_t inbeta) {
   order0 = inorder0;
   order1 = inorder1;
   beta = inbeta;
@@ -27,33 +27,33 @@ void Shapelets2D::setOrders (int inorder0, int inorder1) {
    S1D = Shapelets1D(GSL_MAX_INT(order0,order1),beta);
 }
 
-double Shapelets2D::getBeta() {
+data_t Shapelets2D::getBeta() {
   return beta;
 }
 
-void Shapelets2D::setBeta(double inbeta) {
+void Shapelets2D::setBeta(data_t inbeta) {
   beta = inbeta;
   S1D.setBeta(beta);
 }
 
-double Shapelets2D::getThetaMin(int order0, int order1) {
-  return beta/sqrt((double) GSL_MAX_INT(order0,order1)+1);
+data_t Shapelets2D::getThetaMin(int order0, int order1) {
+  return beta/sqrt((data_t) GSL_MAX_INT(order0,order1)+1);
 }
 
-double Shapelets2D::getThetaMax(int order0, int order1) {
-  return beta*sqrt((double) GSL_MAX_INT(order0,order1)+1);
+data_t Shapelets2D::getThetaMax(int order0, int order1) {
+  return beta*sqrt((data_t) GSL_MAX_INT(order0,order1)+1);
 }
 
-double Shapelets2D::integrate(int order0, int order1) {
+data_t Shapelets2D::integrate(int order0, int order1) {
   return S1D.integrate(order0)*S1D.integrate(order1);
 }
 
 // integrate basis function within range
 // see Paper III. eq. (82)
-double Shapelets2D::integrate(int order0, int order1, double x0min, double x0max, double x1min,double x1max) {
+data_t Shapelets2D::integrate(int order0, int order1, data_t x0min, data_t x0max, data_t x1min,data_t x1max) {
   return S1D.integrate(order0,x0min,x0max)*S1D.integrate(order1,x1min,x1max);
 }
 
-double Shapelets2D::eval (int order0, int order1, Point2D& x) {
+data_t Shapelets2D::eval (int order0, int order1, Point2D& x) {
   return S1D.eval(order0,x(0)) * S1D.eval(order1,x(1));
 }

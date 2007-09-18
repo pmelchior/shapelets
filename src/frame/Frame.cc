@@ -12,19 +12,19 @@ using namespace std;
 
 typedef unsigned int uint;
 
-Frame::Frame(string filename) : Image<double>(filename), weight(), segMap(*this, weight) {
+Frame::Frame(string filename) : Image<data_t>(filename), weight(), segMap(*this, weight) {
   text << "# Reading FITS file " << filename << endl;
-  text << "# Image properties: size = "<< Image<double>::getSize(0) << "/" << Image<double>::getSize(1) << endl; 
+  text << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
   history.append(text);
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
   numberofObjects = 0;
 }
 
-Frame::Frame(string datafile, string weightfile) : Image<double>(datafile), weight(weightfile), segMap(*this, weight) {
+Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weight(weightfile), segMap(*this, weight) {
   text << "# Reading data from " << datafile << " and weights from " << weightfile << endl;
-  text << "# Image properties: size = "<< Image<double>::getSize(0) << "/" << Image<double>::getSize(1) << endl; 
-  //weight = Image<double>(weightfile);
+  text << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
+  //weight = Image<data_t>(weightfile);
   history.append(text);
   if (weight.size() != (*this).size()) {
     history.append("Frame: weight map has different layout than data!\n");
@@ -37,24 +37,24 @@ Frame::Frame(string datafile, string weightfile) : Image<double>(datafile), weig
 
 // estimate noise by iterative sigma clipping
 void Frame::estimateNoise() {
-  Image<double>::getData().kappa_sigma_clip(noise_mean,noise_rms);
+  Image<data_t>::getData().kappa_sigma_clip(noise_mean,noise_rms);
   text << "# Background estimation: mean = " << noise_mean;
   text << ", sigma = " << noise_rms << std::endl;
   history.append(text);
   estimatedBG = 1;
 }
 
-double Frame::getNoiseMean() {
+data_t Frame::getNoiseMean() {
   if (!estimatedBG) estimateNoise();
   return noise_mean;
 }
 
-double Frame::getNoiseRMS() {
+data_t Frame::getNoiseRMS() {
   if (!estimatedBG) estimateNoise();
   return noise_rms;
 }
 
-void Frame::setNoiseMeanRMS(double mean, double rms) {
+void Frame::setNoiseMeanRMS(data_t mean, data_t rms) {
   estimatedBG = 1;
   noise_mean = mean;
   noise_rms = rms;
@@ -65,8 +65,8 @@ void Frame::setNoiseMeanRMS(double mean, double rms) {
 void Frame::subtractBackground() {
   if (!estimatedBG) estimateNoise();
   if (!subtractedBG) {
-    for (int i=0; i < Image<double>::size(); i++) {
-      (Image<double>::accessData())(i) -= noise_mean;
+    for (int i=0; i < Image<data_t>::size(); i++) {
+      (Image<data_t>::accessData())(i) -= noise_mean;
     }
     subtractedBG = 1;
     text << "# Background subtraction: noise level = " << noise_mean << std::endl;
@@ -77,7 +77,7 @@ void Frame::subtractBackground() {
 
 // return threshold for findObject
 // if weight map is provided, uses rms from this
-double Frame::getThreshold(unsigned int pixel, double factor) {
+data_t Frame::getThreshold(unsigned int pixel, data_t factor) {
   if (weight.size()==0) {
     if (!estimatedBG) estimateNoise();
     return noise_mean + factor*noise_rms;
@@ -86,10 +86,10 @@ double Frame::getThreshold(unsigned int pixel, double factor) {
     return noise_mean + factor*sqrt(1./weight(pixel));
 }
 
-void Frame::findObjects(unsigned int minPixels, double significanceThreshold, double detectionThreshold) {
-  const NumVector<double>& data = Image<double>::getData();
+void Frame::findObjects(unsigned int minPixels, data_t significanceThreshold, data_t detectionThreshold) {
+  const NumVector<data_t>& data = Image<data_t>::getData();
   int counter = 0;
-  unsigned int npixels = Image<double>::size();
+  unsigned int npixels = Image<data_t>::size();
 
   // clean stuff from previous runs of this function
   if (numberofObjects > 0) {
@@ -105,14 +105,14 @@ void Frame::findObjects(unsigned int minPixels, double significanceThreshold, do
 
   // look for all positive fluctuations with at least 1 pixel above
   // highThreshold and minPixels above significanceThreshold
-  double highThreshold;
+  data_t highThreshold;
   for (int i =0; i < npixels; i++) {
     highThreshold = getThreshold(i,detectionThreshold);
     if (data(i) > highThreshold && segMap(i) == 0) {
       counter++;
       segMap.linkPixelsSetMap (pixellist,i,counter,significanceThreshold,noise_mean,noise_rms,1);
       if (pixellist.size() >= minPixels) {
-	text << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<double>::getSize(0)) << "/" << i/(Image<double>::getSize(0)) << ")"  << std::endl;
+	text << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<data_t>::getSize(0)) << "/" << i/(Image<data_t>::getSize(0)) << ")"  << std::endl;
 	history.append(text);
 	objectsPixels.push_back(pixellist);
       }
@@ -138,7 +138,7 @@ void Frame::findObjects(unsigned int minPixels, double significanceThreshold, do
 //       for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ )
 // 	mask(*iter) = 1;
 //     }
-//     NumVectorMasked<double> masked(data,mask);
+//     NumVectorMasked<data_t> masked(data,mask);
 //     masked.kappa_sigma_clip(noise_mean,noise_rms);
 //     text << "# Improved background estimation (objects masked):";
 //     text << " mean = " << noise_mean << ", sigma = " << noise_rms << endl;
@@ -166,9 +166,9 @@ void Frame::fillObject(Object& O) {
     // that enclose the object
     list<uint>& pixellist = objectsPixels[O.getID()];
     int axsize0, axsize1,xmin, xmax, ymin, ymax;
-    xmin = axsize0 = Image<double>::getSize(0);
+    xmin = axsize0 = Image<data_t>::getSize(0);
     xmax = 0;
-    ymin = axsize1 = Image<double>::getSize(1);
+    ymin = axsize1 = Image<data_t>::getSize(1);
     ymax = 0;
     // loop over all pixels of current object
     for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ ) {
@@ -206,12 +206,12 @@ void Frame::fillObject(Object& O) {
     }
 
     // fill the object pixel data
-    const NumVector<double>& data = Image<double>::getData();
-    NumVector<double>& objdata = O.accessData();
+    const NumVector<data_t>& data = Image<data_t>::getData();
+    NumVector<data_t>& objdata = O.accessData();
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     SegmentationMap& objSegMap = O.accessSegmentationMap();
     objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
-    NumVector<double>& objWeightMap = O.accessWeightMap();
+    NumVector<data_t>& objWeightMap = O.accessWeightMap();
     if (weight.size()!=0) 
       objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
     vector<uint> nearby_objects;
@@ -222,7 +222,7 @@ void Frame::fillObject(Object& O) {
       int axis0 = xmax-xmin+1;
       int x = i%axis0 + xmin;
       int y = i/axis0 + ymin;
-      uint j = Image<double>::getGrid().getPixel(x,y);
+      uint j = Image<data_t>::getGrid().getPixel(x,y);
 
       // if pixel is out of image region, fill noise
       if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
@@ -271,7 +271,7 @@ void Frame::fillObject(Object& O) {
       O.setNoiseModel("GAUSSIAN");
       O.setNoiseMeanRMS(noise_mean,noise_rms);
     }
-    O.setBaseFilename(Image<double>::getFilename());
+    O.setBaseFilename(Image<data_t>::getFilename());
     // this calculates flux and centroid;
     O.history.append("# Segment:\n");
     O.computeFluxCentroid();
@@ -281,8 +281,8 @@ void Frame::fillObject(Object& O) {
   else if (O.getID()==0) {
     O.history = history;
     O.history.append("# Extracting Object 0 (whole Fits image).\n");
-    O.accessData() = Image<double>::getData();
-    O.accessGrid() = Image<double>::getGrid();
+    O.accessData() = Image<data_t>::getData();
+    O.accessGrid() = Image<data_t>::getGrid();
     O.accessSegmentationMap() = segMap;
     if (weight.size()!=0) {
       O.accessWeightMap() = weight;
@@ -291,7 +291,7 @@ void Frame::fillObject(Object& O) {
     else
       O.setNoiseModel("GAUSSIAN");
     O.setNoiseMeanRMS(noise_mean,noise_rms);
-    O.setBaseFilename(Image<double>::getFilename());
+    O.setBaseFilename(Image<data_t>::getFilename());
     O.computeFluxCentroid();
     O.setNumber(O.getID());
   } else {
@@ -307,7 +307,7 @@ SegmentationMap& Frame::getSegmentationMap() {
 
 // now extend to region around the object by
 // typically objectsize/4, minimum 8 pixels
-void Frame::addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
+void Frame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
   int xrange, yrange, xborder, yborder;
   xrange = xmax - xmin;
   yrange = ymax - ymin;

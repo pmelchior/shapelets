@@ -2,26 +2,27 @@
 #define COMPLEXDOUBLE_H
 
 #include <complex>
+#include <Typedef.h>
 
-/// Enhanced <tt>complex<double></tt> class.
-/// This class provides an typecast operator from <tt>complex<double></tt> to <tt>double</tt> which is missing
+/// Enhanced <tt>complex<data_t></tt> class.
+/// This class provides an typecast operator from <tt>complex<data_t></tt> to <tt>data_t</tt> which is missing
 /// in the base class.
 
-class ComplexDouble : public complex<double> {
+class ComplexDouble : public complex<data_t> {
  public:
   /// Default constructor.
-  ComplexDouble() : complex<double>() {
+  ComplexDouble() : complex<data_t>() {
   }
-  /// Argumented constructor to form a complex number from two double numbers.
-  ComplexDouble(double real, double imag=0) : complex<double>(real,imag) {
+  /// Argumented constructor to form a complex number from two data_t numbers.
+  ComplexDouble(data_t real, data_t imag=0) : complex<data_t>(real,imag) {
   }
   /// Copy constructor.
-  ComplexDouble (const complex<double>& c) {
-    complex<double>::operator=(c);
+  ComplexDouble (const complex<data_t>& c) {
+    complex<data_t>::operator=(c);
   }
   /// Typecast operator.
   /// Returns the real part of the complex number.
-  operator double() const {
+  operator data_t() const {
     return std::real(*this);
   }
 };

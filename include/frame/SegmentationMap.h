@@ -2,6 +2,7 @@
 #define SEGMENTATION_MAP
 
 #include <list>
+#include <Typedef.h>
 #include <frame/Image.h>
 
 /// Segmentation map class.
@@ -16,14 +17,14 @@
 class SegmentationMap : public Image<int> {
  public:
   /// Constructor for generating a new segmentation map from a FitsImage.
-  SegmentationMap(const Image<double>& image);
+  SegmentationMap(const Image<data_t>& image);
   /// Constructor for generating a new segmentation map from a FitsImage and an appropriate
   /// weight (inverse variance) map.
-  SegmentationMap(const Image<double>& image, const Image<double>& weight);
+  SegmentationMap(const Image<data_t>& image, const Image<data_t>& weight);
   /// Constructor from the existing segmentation FITS file <tt>segMapFile</tt>.
   /// The <tt>image</tt> has to be defined on the same Grid as the given  
   /// segmentation map.
-  SegmentationMap(std::string segMapFile, const Image<double>& image);
+  SegmentationMap(std::string segMapFile, const Image<data_t>& image);
   /// Copy constructor
   SegmentationMap(const SegmentationMap& segMap);
   /// Copy operator
@@ -38,7 +39,7 @@ class SegmentationMap : public Image<int> {
   /// <tt>segMap(startpixel) = tag</tt> if <tt>imageData(startpixel) > (<) threshold</tt>.
   /// Then it performs these two steps for all neighbors of pixels in the list until no
   /// new pixels are found.
-  void linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, double threshold, double noise_mean, double noise_rms, bool positive);
+  void linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, data_t threshold, data_t noise_mean, data_t noise_rms, bool positive);
   /// Find the positive halo around the object which is typically unrecognized by a 
   /// threshold detection.
   /// Starting from <tt>corelist</tt> (already found pixels of object),
@@ -56,7 +57,7 @@ class SegmentationMap : public Image<int> {
   /// the halo pixels are set to <tt>objectnr</tt> in the segmentation map and added to <tt>corelist</tt>.\n
   /// For the found pixel groups not related to the halo, segmentation map is set to <tt>-1</tt>
   /// (positive) or <tt>-2</tt> (negative).
-  void findHalo(unsigned int objectnr, std::list<unsigned int>& corelist, int& xmin, int& xmax, int& ymin, int& ymax, double correlationLength, double bg_mean, double bg_rms);
+  void findHalo(unsigned int objectnr, std::list<unsigned int>& corelist, int& xmin, int& xmax, int& ymin, int& ymax, data_t correlationLength, data_t bg_mean, data_t bg_rms);
   /// Find list of pixels due to given object from segmentation map.
   /// It reads the segmentation map in the range of <tt>xmin..xmax,ymin..ymax</tt> only.
   void findObjectPixels(std::list<unsigned int>& pixellist, unsigned int objectnr, int xmin, int xmax, int ymin, int ymax);
@@ -76,11 +77,11 @@ class SegmentationMap : public Image<int> {
   /// The extension has to given in the standard cfitsio way as <tt>filename[extension]</tt>.
   void save(std::string filename, std::map<std::string,std::string> keywords);
  private:
-  NumVector<double>& data, weight;
-  void addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax);
-  double distanceFromRim(std::list<unsigned int>& objectlist, unsigned int pixel);
+  NumVector<data_t>& data, weight;
+  void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
+  data_t distanceFromRim(std::list<unsigned int>& objectlist, unsigned int pixel);
   void cleanSegMapArea(int xmin, int xmax, int ymin, int ymax);
-  double getThreshold(unsigned int pixel, double factor, double noise_mean, double noise_rms, bool positive);
+  data_t getThreshold(unsigned int pixel, data_t factor, data_t noise_mean, data_t noise_rms, bool positive);
 };
 
 #endif

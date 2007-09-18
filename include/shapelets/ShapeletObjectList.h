@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <boost/shared_ptr.hpp>
+#include <Typedef.h>
 #include <shapelets/ShapeletObject.h>
 
 /// Class for managing an ensemble of ShapeletObjects.

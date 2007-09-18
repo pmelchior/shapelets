@@ -2,6 +2,7 @@
 #define COMPOSITE1D_H
 
 #include <NumVector.h>
+#include <Typedef.h>
 #include <frame/Grid.h>
 #include <shapelets/Shapelets1D.h>
 #include <gsl/gsl_math.h>
@@ -16,7 +17,7 @@ class Composite1D : private Shapelets1D {
  public:
   /// Argumented constructor.
   /// Shapelet coefficients determine the maximum shapelet order.
-  Composite1D(double beta, double xcentroid, const NumVector<double>& coeffs);
+  Composite1D(data_t beta, data_t xcentroid, const NumVector<data_t>& coeffs);
   /// Get maximal order for composition.
   int getOrder();
   /// Set maximal order for composition.
@@ -24,35 +25,35 @@ class Composite1D : private Shapelets1D {
   /// It's usefull to see the effect of truncation.
   void setOrderLimit(int orderlimit);
   /// Get \f$\beta\f$ from basis function.
-  double getBeta();
+  data_t getBeta();
   /// Set new \f$\beta\f$ for basis functions.
-  void setBeta(double beta);
+  void setBeta(data_t beta);
    /// Get smallest reproducible object size \f$\theta_{min}\f$.
-  double getThetaMin();
+  data_t getThetaMin();
   /// Get biggest reproducible object size \f$\theta_{max}\f$.
-  double getThetaMax();
+  data_t getThetaMax();
   /// Set new Grid for evaluation.
   /// Set the shapelet coeffs.
   /// Enlarge basis set when needed.
-  void setCoeffs(const NumVector<double>& newCoeffs);
+  void setCoeffs(const NumVector<data_t>& newCoeffs);
     /// Set new Grid for evaluation.
   void setGrid(const Grid& grid);
   /// Get active Grid.
   /// This is especially useful when retrieving the default grid.
   const Grid& getGrid();
   /// Evaluate \f$f(x)\f$.
-  double eval(double x);
+  data_t eval(data_t x);
   /// Evaluate \f$f(x)\f$ on a 1D grid.
-  void evalGrid(NumVector<double>& values);
+  void evalGrid(NumVector<data_t>& values);
   /// Integrate \f$f(x)\f$
-  double integrate();
+  data_t integrate();
   /// Integrate  \f$f(x)\f$ within the range xmin..xmax.
-  double integrate(double xmin, double xmax);
+  data_t integrate(data_t xmin, data_t xmax);
   
  private:
-  NumVector<double> shapeletCoeffs;
+  NumVector<data_t> shapeletCoeffs;
   int order,orderlimit;
-  double xcentroid;
+  data_t xcentroid;
   Grid grid;
 };
 

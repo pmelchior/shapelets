@@ -4,7 +4,7 @@
 
 namespace ublas = boost::numeric::ublas;
 
-Decomposite2D::Decomposite2D(int innmax, double inbeta, const Object& O) : 
+Decomposite2D::Decomposite2D(int innmax, data_t inbeta, const Object& O) : 
 obj(O) {
   nmax = innmax;
   nVector = IndexVector(nmax);
@@ -31,7 +31,7 @@ obj(O) {
   }
   else if (obj.getNoiseModel().compare("POISSONIAN")==0) {
     noise = 3;
-    NumVector<double> tmp = obj;
+    NumVector<data_t> tmp = obj;
     Weight.resize(npixels);
     for (int i=0; i < npixels; i++)
       tmp(i) += background_variance;
@@ -46,10 +46,10 @@ obj(O) {
 void Decomposite2D::makeLSMatrix () {
   const Point2D& xcentroid = obj.getCentroid();
   const Grid& grid = obj.getGrid();
-  NumMatrix<double> M0(nmax+1,npixels), M1(nmax+1,npixels);
+  NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);
   // start with 0th and 1st order shapelets
-  double x0_scaled, x1_scaled;
-  double factor0 = 1./sqrt(M_SQRTPI*beta);
+  data_t x0_scaled, x1_scaled;
+  data_t factor0 = 1./sqrt(M_SQRTPI*beta);
   for (int i=0; i<npixels; i++) {
     x0_scaled = (grid(i,0) - xcentroid(0))/beta;
     x1_scaled = (grid(i,1) - xcentroid(1))/beta;
@@ -62,7 +62,7 @@ void Decomposite2D::makeLSMatrix () {
   }
   // use recurrance relation to compute higher orders
   for (int n=2;n<=nmax;n++) {
-    double factor1 = sqrt(1./(2*n)), factor2 =sqrt((n-1.)/n); 
+    data_t factor1 = sqrt(1./(2*n)), factor2 =sqrt((n-1.)/n); 
     for (int i=0; i<npixels; i++) {
       M0(n,i) = 2*(grid(i,0) - xcentroid(0))/beta*factor1*M0(n-1,i) 
 	- factor2*M0(n-2,i);
@@ -102,7 +102,7 @@ void Decomposite2D::computeCoeffs() {
   makeLSMatrix();
   // this is useful only for the regularization in OptimalDecomposite2D
   if (updateC) {
-    coeffVector = LS * (const NumVector<double>)obj;
+    coeffVector = LS * (const NumVector<data_t>)obj;
   }
   change = 0;
 }
@@ -129,22 +129,22 @@ void Decomposite2D::computeResiduals() {
   }
 }
 
-const NumVector<double>& Decomposite2D::getCoeffs() {
+const NumVector<data_t>& Decomposite2D::getCoeffs() {
   // are shapelet coeffs still effective, otherwise compute new ones
   if (change) computeCoeffs();
   return coeffVector;
 }
 
-NumVector<double>& Decomposite2D::accessCoeffs() {
+NumVector<data_t>& Decomposite2D::accessCoeffs() {
   // are shapelet coeffs still effective, otherwise compute new ones
   if (change) computeCoeffs();
   return coeffVector;
 }
 
-const NumVector<double>& Decomposite2D::getErrors() {
+const NumVector<data_t>& Decomposite2D::getErrors() {
   if (change) computeCoeffs();
-  if (errorVector.size() != nCoeffs) errorVector = NumVector<double>(nCoeffs);
-  NumMatrix<double> MtNoise_1;
+  if (errorVector.size() != nCoeffs) errorVector = NumVector<data_t>(nCoeffs);
+  NumMatrix<data_t> MtNoise_1;
   // since Mt here is in fact Mt*V_, we can compute the covariance matrix
   // of the coefficients simply by Mt*M
   MtNoise_1 = (Mt*M).invert();
@@ -157,31 +157,31 @@ const NumVector<double>& Decomposite2D::getErrors() {
   return errorVector;
 }
 
-const NumVector<double>& Decomposite2D::getModel() {
+const NumVector<data_t>& Decomposite2D::getModel() {
   computeModel();
   return model;
 }
 
-NumVector<double>& Decomposite2D::accessModel() {
+NumVector<data_t>& Decomposite2D::accessModel() {
   computeModel();
   return model;
 }
 
-const NumVector<double>& Decomposite2D::getResiduals() {
+const NumVector<data_t>& Decomposite2D::getResiduals() {
   computeResiduals();
   return residual;
 }
 
-NumVector<double>& Decomposite2D::accessResiduals() {
+NumVector<data_t>& Decomposite2D::accessResiduals() {
   computeResiduals();
   return residual;
 }
 
 // chi^2 for reconstruction
 // see Paper III, eq. 18
-double Decomposite2D::getChiSquare() {
+data_t Decomposite2D::getChiSquare() {
   computeResiduals();
-  double result = 0;
+  data_t result = 0;
   if (noise == 0)
     result = (residual*residual)/background_variance;
   else if (noise == 1 || noise == 3)
@@ -193,7 +193,7 @@ double Decomposite2D::getChiSquare() {
 }
 
 // see Paper III, eq. 19
-double Decomposite2D::getChiSquareVariance() {
+data_t Decomposite2D::getChiSquareVariance() {
   return M_SQRT2 /sqrt(npixels - nCoeffs);
 }      
   
@@ -201,7 +201,7 @@ int Decomposite2D::getNMax() {
   return nmax;
 }
   
-void Decomposite2D::setBeta(double inbeta) {
+void Decomposite2D::setBeta(data_t inbeta) {
   if (beta!=inbeta) {
     beta = inbeta;
     change = updateModel = updateResiduals = 1;

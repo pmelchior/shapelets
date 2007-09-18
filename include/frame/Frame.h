@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <History.h>
 #include <ShapeLensConfig.h>
 #include <frame/Grid.h>
@@ -25,7 +26,7 @@
 /// \code
 /// Frame* f = new Frame(fitsfile);
 /// f->subtractBackground();
-/// NumVector<double>& data = f->getData();
+/// NumVector<data_t>& data = f->getData();
 /// Grid& grid = f->getGrid();
 /// \endcode
 /// This reads the extension of a FITS file, estimates the noise statistics
@@ -39,7 +40,7 @@
 ///   Object* obj = new Object(i);
 ///   f->fillObject(obj);
 ///   if (obj.getDetectionFlag() < 3) {
-///     NumVector<double>& data = obj->getData();
+///     NumVector<data_t>& data = obj->getData();
 ///     Grid& grid = obj->getGrid();
 ///   }
 /// }
@@ -72,7 +73,7 @@
 /// If detection of blended objects or stars is neccessary, use SExFrame instead.
 /// 
 
-class Frame : public Image<double> {
+class Frame : public Image<data_t> {
  public:
   /// Argumented constructor.
   /// <tt>filename</tt> is the name of the Fits file.\n Extensions or other selections can be 
@@ -87,13 +88,13 @@ class Frame : public Image<double> {
   /// Return noise mean \f$\mu_n\f$.
   /// The mean is obtained by \f$\kappa-\sigma\f$-clipping of the noisy pixel data.
   /// see NumVector::kappa_sigma_clip() for details.
-  double getNoiseMean();
+  data_t getNoiseMean();
   /// Return noise RMS \f$\sigma_n\f$.
   /// The RMS is obtained by \f$\kappa-\sigma\f$-clipping of the noisy pixel data.
   /// see NumVector::kappa_sigma_clip() for details.
-  double getNoiseRMS();
+  data_t getNoiseRMS();
   /// Set noise features explicitly.
-  void setNoiseMeanRMS(double mean, double rms);
+  void setNoiseMeanRMS(data_t mean, data_t rms);
   /// Subtract background brightness from image.
   /// The background mean \f$\mu_n\f$ will be taken from the value set by calling
   /// setNoiseMeanRMS() or estimated by running getNoiseMean().
@@ -109,7 +110,7 @@ class Frame : public Image<double> {
   /// linearly on the number of detected objects, thus on \f$\tau_{high}\f$.\n
   /// The noise measures \f$\mu_n\f$ and \f$\sigma_n\f$ are the ones defined 
   /// in estimateNoise().\n
-  void findObjects(unsigned int minPixels=50, double F_signific=1.5, double F_detect=5.0);
+  void findObjects(unsigned int minPixels=50, data_t F_signific=1.5, data_t F_detect=5.0);
   /// Return number of objects found during findObjects().
   /// If it returns 0, no objects have been found.
   unsigned int getNumberOfObjects();
@@ -134,12 +135,12 @@ class Frame : public Image<double> {
   const History& getHistory ();
 
  private:
-  double noise_mean, noise_rms;
-  Image<double> weight;
+  data_t noise_mean, noise_rms;
+  Image<data_t> weight;
   void estimateNoise();
   void reset();
-  void addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax);
-  double getThreshold(unsigned int pixel, double factor);
+  void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
+  data_t getThreshold(unsigned int pixel, data_t factor);
   SegmentationMap segMap;
   std::vector< std::list<unsigned int> > objectsPixels;
   bool subtractedBG, estimatedBG;

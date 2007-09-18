@@ -8,17 +8,17 @@ using namespace std;
 
 typedef unsigned int uint;
 
-SegmentationMap::SegmentationMap(const Image<double>& image) : Image<int>(), data(const_cast<NumVector<double>& >(image.getData())), weight() {
+SegmentationMap::SegmentationMap(const Image<data_t>& image) : Image<int>(), data(const_cast<NumVector<data_t>& >(image.getData())), weight() {
   Image<int>::accessData().resize_clear(image.size());
   Image<int>::accessGrid() = image.getGrid();
 }
 
-SegmentationMap::SegmentationMap(const Image<double>& image, const Image<double>& weightmap) : Image<int>(), data(const_cast<NumVector<double>& >(image.getData())), weight(const_cast<NumVector<double>& >(weightmap.getData())) {
+SegmentationMap::SegmentationMap(const Image<data_t>& image, const Image<data_t>& weightmap) : Image<int>(), data(const_cast<NumVector<data_t>& >(image.getData())), weight(const_cast<NumVector<data_t>& >(weightmap.getData())) {
   Image<int>::accessData().resize_clear(image.size());
   Image<int>::accessGrid() = image.getGrid();
 }
 
-SegmentationMap::SegmentationMap(string segMapFile, const Image<double>& image) : Image<int>(segMapFile), data(const_cast<NumVector<double>& >(image.getData())), weight() {
+SegmentationMap::SegmentationMap(string segMapFile, const Image<data_t>& image) : Image<int>(segMapFile), data(const_cast<NumVector<data_t>& >(image.getData())), weight() {
 }
 
 SegmentationMap::SegmentationMap(const SegmentationMap& segIn) : Image<int>(), data(segIn.data), weight(segIn.weight) {
@@ -42,7 +42,7 @@ unsigned int SegmentationMap::getNumberOfObjects() {
   return objects.size();
 }
 
-double SegmentationMap::getThreshold(unsigned int pixel, double factor, double noise_mean, double noise_rms, bool positive) {
+data_t SegmentationMap::getThreshold(unsigned int pixel, data_t factor, data_t noise_mean, data_t noise_rms, bool positive) {
   if (weight.size()==0) {
     if (positive)
       return noise_mean + factor*noise_rms;
@@ -57,7 +57,7 @@ double SegmentationMap::getThreshold(unsigned int pixel, double factor, double n
   }
 }
 
-void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, double threshold, double noise_mean, double noise_rms, bool positive) {
+void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsigned int startpixel, int tag, data_t threshold, data_t noise_mean, data_t noise_rms, bool positive) {
   NumVector<int>& segMap = Image<int>::accessData();
   pixellist.clear();
   pixellist.push_back(startpixel);
@@ -72,7 +72,7 @@ void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsig
     for (uint dir = 1; dir <= 8 ; dir++) {
       uint neighbor = Image<int>::getGrid().getNeighborPixel(pixel,dir);
       if (neighbor != -1) {
-	double threshold_neighbor = getThreshold(neighbor,threshold,noise_mean,noise_rms,positive);
+	data_t threshold_neighbor = getThreshold(neighbor,threshold,noise_mean,noise_rms,positive);
 	if ((data(neighbor) > threshold_neighbor && positive) || 
 	    (data(neighbor) < threshold_neighbor && !positive)) {
 	  if (segMap(neighbor) == 0) {
@@ -87,7 +87,7 @@ void SegmentationMap::linkPixelsSetMap(std::list<unsigned int>& pixellist, unsig
   }
 }
 
-void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xmax, int& ymin, int& ymax, double correlationLength, double bg_mean, double bg_rms) {
+void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xmax, int& ymin, int& ymax, data_t correlationLength, data_t bg_mean, data_t bg_rms) {
   NumVector<int>& segMap = Image<int>::accessData();
   uint axsize0 = Image<int>::getSize(0), axsize1 = Image<int>::getSize(1);
 
@@ -114,8 +114,8 @@ void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xm
       if (segMap(j) == 0) {
 	bool positive = 0;
 	// define thresholds for 1-sigma fluctuations
-	double thresh_pos = getThreshold(j,1.0,bg_mean,bg_rms,1);
-	double thresh_neg = getThreshold(j,1.0,bg_mean,bg_rms,0);
+	data_t thresh_pos = getThreshold(j,1.0,bg_mean,bg_rms,1);
+	data_t thresh_neg = getThreshold(j,1.0,bg_mean,bg_rms,0);
 	// positive pixels
 	if (data(j) > thresh_pos) {
 	  positive = 1;
@@ -144,13 +144,13 @@ void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xm
   // maximal distances are from the center to the top corners
   // since the size of the features we want tor resolve is correlationLength
   // we will use maxdist/correlationLength bins
-  double maxdist = (double) GSL_MAX_INT(xmax-xmin,ymax-ymin)/M_SQRT2;
+  data_t maxdist = (data_t) GSL_MAX_INT(xmax-xmin,ymax-ymin)/M_SQRT2;
   gsl_histogram * h = gsl_histogram_alloc ((unsigned int) ceil(maxdist/correlationLength));
   gsl_histogram_set_ranges_uniform (h, 0, maxdist);
 
   // for each pixel in pixellist in groups compute minimal distance to object
   // which is to the boundary of the object
-  double distance;
+  data_t distance;
   for (int i=0; i < groups.size(); i++) {
     for(iter = groups[i].begin(); iter != groups[i].end(); iter++) {
       distance = distanceFromRim(centrallist,*iter);
@@ -211,7 +211,7 @@ void SegmentationMap::findHalo(uint nr, list<uint>& corelist, int& xmin, int& xm
 
 // now extend to region around the object by
 // typically objectsize/2, minimum 12 pixels
-void SegmentationMap::addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
+void SegmentationMap::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
   int xrange, yrange, xborder, yborder;
   xrange = xmax - xmin;
   yrange = ymax - ymin;
@@ -317,12 +317,12 @@ void SegmentationMap::cleanSegMapArea(int xmin, int xmax, int ymin, int ymax) {
 }
 
 // computes for all pixels in objectlist the euclidean distance to given pixel
-double SegmentationMap::distanceFromRim(std::list<uint>& objectlist, uint pixel) {
+data_t SegmentationMap::distanceFromRim(std::list<uint>& objectlist, uint pixel) {
   uint x0, y0;
   Image<int>::getGrid().getCoords(pixel,x0,y0);
   uint x,y;
-  double mindist=INFINITY;
-  double distance;
+  data_t mindist=INFINITY;
+  data_t distance;
   for(std::list<uint>::iterator iter = objectlist.begin(); iter != objectlist.end(); iter++) {
     Image<int>::getGrid().getCoords(*iter,x,y);
     distance = sqrt(gsl_pow_2(x0-x) + gsl_pow_2(y0-y));

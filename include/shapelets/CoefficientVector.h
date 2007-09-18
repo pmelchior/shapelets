@@ -3,6 +3,7 @@
 
 #include <NumMatrix.h>
 #include <NumVector.h>
+#include <Typedef.h>
 #include <shapelets/IndexVector.h>
 
 /// Class for storing shapelet coefficients as vector.
@@ -38,9 +39,9 @@
 /// Usage is straightforward:
 /// \code
 /// // transform coeffs into vector form
-///  CoefficientVector<double> f(cartesianCoeffs);
+///  CoefficientVector<data_t> f(cartesianCoeffs);
 ///  // perform the convolution
-///  CoefficientVector<double> h = P*f;
+///  CoefficientVector<data_t> h = P*f;
 ///  // transform vector back to coefficient matrix
 ///  h.fillCoefficientMatrix(cartesianCoeffs);
 /// \endcode
@@ -56,7 +57,7 @@ class CoefficientVector : public NumVector<T> {
   }
   /// Argumented constructor from a NumMatrix.
   /// If the data types of <tt>coeffMatrix</tt> and <tt>*this</tt> differ, the input matrix decides
-  /// on the mapping (<tt>double</tt> for cartesian, <tt>complex<double></tt> for polar coeffs), and
+  /// on the mapping (<tt>data_t</tt> for cartesian, <tt>complex<data_t></tt> for polar coeffs), and
   /// a explicit typecast is performed.
   template <class R> 
     CoefficientVector(const NumMatrix<R>& coeffMatrix) : NumVector<T>() {
@@ -69,15 +70,15 @@ class CoefficientVector : public NumVector<T> {
     // since polar and cartesian coeffs are stored in a different fashion, check datatype first
     R testval;
     T ownval;
-    double doubleval;
-    complex<double> complexval;
-    // double cartesian coeffs
-    if (typeid(testval) == typeid(doubleval)) {
+    data_t data_tval;
+    complex<data_t> complexval;
+    // data_t cartesian coeffs
+    if (typeid(testval) == typeid(data_tval)) {
       for (int n = 0; n < NumVector<T>::size(); n++) {
 	// no typecast required
 	if (typeid(testval) == typeid(ownval))
 	  NumVector<T>::operator()(n) = coeffMatrix(nVector.getN1(n),nVector.getN2(n));
-	// double -> complex typecast
+	// data_t -> complex typecast
 	else
 	  NumVector<T>::operator()(n) = static_cast<T>(coeffMatrix(nVector.getN1(n),nVector.getN2(n)));
       }
@@ -88,7 +89,7 @@ class CoefficientVector : public NumVector<T> {
 	// no typecast required
 	if (typeid(testval) == typeid(ownval))
 	  NumVector<T>::operator()(n) = coeffMatrix(nVector.getN(n),nVector.getN1(n));
-	// complex -> double typecast
+	// complex -> data_t typecast
 	else
 	  NumVector<T>::operator()(n) = static_cast<T>(coeffMatrix(nVector.getN1(n),nVector.getN2(n)));
       }
@@ -108,7 +109,7 @@ class CoefficientVector : public NumVector<T> {
   }
   /// Reverse mapping onto a matrix.
   /// If the data types of <tt>coeffMatrix</tt> and <tt>*this</tt> differ, the input matrix decides
-  /// on the mapping (<tt>double</tt> for cartesian, <tt>complex<double></tt> for polar coeffs), and
+  /// on the mapping (<tt>data_t</tt> for cartesian, <tt>complex<data_t></tt> for polar coeffs), and
   /// a explicit typecast is performed.
   template <class R> 
     void fillCoeffMatrix(NumMatrix<R>& coeffMatrix) const {
@@ -120,15 +121,15 @@ class CoefficientVector : public NumVector<T> {
     // since polar and cartesian coeffs are stored in a different fashion, check datatype first
     R testval;
     T ownval;
-    double doubleval;
-    complex<double> complexval;
+    data_t data_tval;
+    complex<data_t> complexval;
     // cartesian coeffs
-    if (typeid(testval) == typeid(doubleval)) {
+    if (typeid(testval) == typeid(data_tval)) {
       for (int n = 0; n < NumVector<T>::size(); n++) {
 	// no typecast
 	if (typeid(testval) == typeid(ownval))
 	  coeffMatrix(nVector.getN1(n),nVector.getN2(n)) = NumVector<T>::operator()(n);
-	// double -> complex typecast
+	// data_t -> complex typecast
 	else
 	  coeffMatrix(nVector.getN1(n),nVector.getN2(n)) = static_cast<T>(NumVector<T>::operator()(n));
       }
@@ -139,7 +140,7 @@ class CoefficientVector : public NumVector<T> {
 	// no typecast
 	if (typeid(testval) == typeid(ownval))
 	  coeffMatrix(nVector.getN(n),nVector.getN1(n)) = NumVector<T>::operator()(n);
-	// complex -> double typecast
+	// complex -> data_t typecast
 	else
 	  coeffMatrix(nVector.getN(n),nVector.getN1(n)) = static_cast<T>(NumVector<T>::operator()(n));
       }

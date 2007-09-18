@@ -21,10 +21,10 @@ uint PixelCovarianceMatrix::getBandwidth() const {
 void PixelCovarianceMatrix::setBandwidth(uint bw) {
   bandwidth = bw;
   offset = NumVector<int>(bandwidth);
-  entry = NumVector<double>(bandwidth);
+  entry = NumVector<data_t>(bandwidth);
 }
 
-void PixelCovarianceMatrix::setBand(unsigned int band, int os, double val) {
+void PixelCovarianceMatrix::setBand(unsigned int band, int os, data_t val) {
   if (band<bandwidth) {
     offset(band) = os;
     entry(band) = val;
@@ -38,7 +38,7 @@ int PixelCovarianceMatrix::getOffset(unsigned int band) const {
     return 0;
 }
 
-double PixelCovarianceMatrix::getValue(unsigned int band) const {
+data_t PixelCovarianceMatrix::getValue(unsigned int band) const {
   if (band<bandwidth)
     return entry(band);
   else
@@ -54,11 +54,11 @@ void PixelCovarianceMatrix::save(std::string filename) const {
 
 void PixelCovarianceMatrix::load(std::string filename) {
   int o;
-  double e;
+  data_t e;
   std::fstream pcm_file(filename.c_str(),std::ios::in);
   bandwidth = 0;
   offset = NumVector<int>();
-  entry = NumVector<double>();
+  entry = NumVector<data_t>();
   while (pcm_file.good()) {
     bandwidth++;
     offset.resize(bandwidth);
@@ -71,7 +71,7 @@ void PixelCovarianceMatrix::load(std::string filename) {
   pcm_file.close();
 }
 
-double PixelCovarianceMatrix::operator()(unsigned int i, unsigned int j) const {
+data_t PixelCovarianceMatrix::operator()(unsigned int i, unsigned int j) const {
   int k;
   for (uint b=0; b <bandwidth; b++) {
     k = (int)i + offset(b);
@@ -84,9 +84,9 @@ double PixelCovarianceMatrix::operator()(unsigned int i, unsigned int j) const {
 
 void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid, History& hist) {
   hist.append("# Reading correlation function:\n");
-  const NumVector<double>& corr = xi.getCorrelationFunction();
-  const NumVector<double>& distance = xi.getDistances();
-  const NumVector<double>& sigma = xi.getCorrelationError();
+  const NumVector<data_t>& corr = xi.getCorrelationFunction();
+  const NumVector<data_t>& distance = xi.getDistances();
+  const NumVector<data_t>& sigma = xi.getCorrelationError();
   if (corr.size() == 0) {
     std::cout << "PixelCovarianceMatrix: correlation function has size 0" << std::endl;
     std::terminate();
@@ -239,8 +239,8 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
   }
 }
 
-NumMatrix<double> PixelCovarianceMatrix::getMatrix(unsigned int N) const {
-  NumMatrix<double> M(N,N);
+NumMatrix<data_t> PixelCovarianceMatrix::getMatrix(unsigned int N) const {
+  NumMatrix<data_t> M(N,N);
   for (uint i=0; i<N; i++) {
     for (uint band=0; band<bandwidth; band++) {
       uint j = i + offset(band);
@@ -269,15 +269,15 @@ PixelCovarianceMatrix PixelCovarianceMatrix::invert() const {
   else {
     uint N = GSL_MAX_INT(10,offset.max())*5;
     if (N%2==1) N++; // ensure that divides by 2
-    NumMatrix<double> M = getMatrix(N).svd_invert();
+    NumMatrix<data_t> M = getMatrix(N).svd_invert();
 
     int center = N/2;
-    double max = fabs(M(center,center));
+    data_t max = fabs(M(center,center));
     uint inv_bandwidth = 0;
     std::vector<int> inv_offset;
-    std::vector<double> inv_entry;
+    std::vector<data_t> inv_entry;
     for (int j=1; j<N-1; j++) {
-      double val = M(N-j,j);
+      data_t val = M(N-j,j);
       if (fabs(val) > 0.001*max) {
 	inv_offset.push_back(2*(j-center));
 	inv_entry.push_back(val);
@@ -305,10 +305,10 @@ PixelCovarianceMatrix PixelCovarianceMatrix::transpose() const {
 }
   
 
-NumVector<double> PixelCovarianceMatrix::operator*(const NumVector<double>& v) const {
+NumVector<data_t> PixelCovarianceMatrix::operator*(const NumVector<data_t>& v) const {
   // diagonal matrix
   if (bandwidth==1) {
-    NumVector<double> w=v;
+    NumVector<data_t> w=v;
     if (entry(0) != 1) 
       w *= entry(0);
     return w;
@@ -317,7 +317,7 @@ NumVector<double> PixelCovarianceMatrix::operator*(const NumVector<double>& v) c
   // exploit limited index range for inner loop
   else {
     int N = v.size();
-    NumVector<double> w(N);
+    NumVector<data_t> w(N);
     for (int i=0; i<N; i++)
       for (uint band=0; band<bandwidth; band++)
 	// there cannot be entries for offset that are too large
@@ -327,10 +327,10 @@ NumVector<double> PixelCovarianceMatrix::operator*(const NumVector<double>& v) c
   }
 }
 
-NumMatrix<double> PixelCovarianceMatrix::operator*(const NumMatrix<double>& M) const {
+NumMatrix<data_t> PixelCovarianceMatrix::operator*(const NumMatrix<data_t>& M) const {
   // diagonal matrix
   if (bandwidth==1) {
-    NumMatrix<double> M2=M;
+    NumMatrix<data_t> M2=M;
     if (entry(0) != 1)
       M2 *= entry(0);
     return M2;
@@ -339,10 +339,10 @@ NumMatrix<double> PixelCovarianceMatrix::operator*(const NumMatrix<double>& M) c
   // exploit limited index range for inner loop
   else {
     int N = M.getRows(), N2 = M.getColumns();
-    NumMatrix<double> M2(N,N2);
+    NumMatrix<data_t> M2(N,N2);
     for (uint j=0; j<N2; j++) {
-      boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > mc((boost::numeric::ublas::matrix<double>&)M,j);
-      boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > m2c(M2,j);
+      boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<data_t> > mc((boost::numeric::ublas::matrix<data_t>&)M,j);
+      boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<data_t> > m2c(M2,j);
       for (int i=0; i<N; i++)
 	for (uint band=0; band<bandwidth; band++)
 	  // there cannot be entries for offset that are too large
@@ -357,10 +357,10 @@ NumMatrix<double> PixelCovarianceMatrix::operator*(const NumMatrix<double>& M) c
 /// Operator for multiplication to general NumMatrix.
 /// This is essentially an extension of NumMatrix to work together with
 /// PixelCovarianceMatrix.
-NumMatrix<double> operator*(const NumMatrix<double>& M, const PixelCovarianceMatrix& V) {
+NumMatrix<data_t> operator*(const NumMatrix<data_t>& M, const PixelCovarianceMatrix& V) {
   // diagonal matrix
   if (V.getBandwidth()==1) {
-    NumMatrix<double> M2=M;
+    NumMatrix<data_t> M2=M;
     if (V(0,0) != 1)
       M2 *= V(0,0);
     return M2;

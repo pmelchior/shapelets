@@ -37,6 +37,7 @@ space, thus saving memory and computation time.
 \author Peter Melchior (pmelchior at ita dot uni-heidelberg dot de)
 */
 
+#include <Typedef.h>
 #include <IO.h>
 #include <ShapeLensConfig.h>
 #include <History.h>

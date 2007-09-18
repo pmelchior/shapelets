@@ -5,6 +5,7 @@
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <NumMatrixDiagonal.h>
+#include <Typedef.h>
 #include <frame/Point2D.h>
 #include <frame/Grid.h>
 #include <frame/Image.h>
@@ -47,39 +48,39 @@
 class Decomposite2D {
  public:
   /// Contructor for decomposing a Object into shapelets of maximum order \f$n_{max}\f$.
-  Decomposite2D(int nmax, double beta, const Object& obj);
+  Decomposite2D(int nmax, data_t beta, const Object& obj);
   /// Get the decomposition shapelet coefficients as matrix.
-  const NumVector<double>& getCoeffs();
+  const NumVector<data_t>& getCoeffs();
   /// Access the decomposition shapelet coefficients as matrix.
-  NumVector<double>& accessCoeffs();
+  NumVector<data_t>& accessCoeffs();
   /// Allows to update coeffs to best fit values w.r.t. \f$\chi^2\f$.
   /// Is set to 1 by default, but can be switched of in case the coefficients
   /// are given from outside.
   void updateCoeffs(bool update);
   /// Get error matrix of the shapelet coefficients.
-  const NumVector<double>& getErrors();
+  const NumVector<data_t>& getErrors();
   /// Get shapelet model.
   /// This is the model reconstructed from the coefficients provided by getCoeffs().
-  const NumVector<double>& getModel();
+  const NumVector<data_t>& getModel();
   /// Access shapelet model.
   /// The model will not be updated automatically. If you want to use best-fit values,
   /// call getChiSquare() before.
-  NumVector<double>& accessModel();
+  NumVector<data_t>& accessModel();
   /// Get residuals between data and shapelet model.
   /// \f$res = data-model\f$.
-  const NumVector<double>& getResiduals();
+  const NumVector<data_t>& getResiduals();
   /// Access residuals.
   /// The residuals will not be updated automatically. If you want to use best-fit values,
   /// call getChiSquare() before.
-  NumVector<double>& accessResiduals();
+  NumVector<data_t>& accessResiduals();
   /// Set scale size \f$\beta\f$ for decomposition.
-  void setBeta(double beta);
+  void setBeta(data_t beta);
   /// Set maximal shapelet orders for decomposition.
   void setNMax(int nmax);
   /// Return \f$\chi^2\f$ of decomposition.
-  double getChiSquare();
+  data_t getChiSquare();
   /// Return the variance \f$\sigma(\chi^2)\f$.
-  double getChiSquareVariance();
+  data_t getChiSquareVariance();
   /// Return maximal decomposition order in each direction.
   int getNMax();
   /// Update model and residuals during the next call to
@@ -91,15 +92,15 @@ class Decomposite2D {
   void computeModel();
   void computeResiduals();
   void makeLSMatrix ();
-  NumMatrix<double> M, Mt, LS;
+  NumMatrix<data_t> M, Mt, LS;
   //Grid grid;
   //Point2D xcentroid;
-  double beta, background_variance;
+  data_t beta, background_variance;
   int nmax,nCoeffs,npixels;
   char noise;
-  NumVector<double> coeffVector, errorVector, model, residual;
+  NumVector<data_t> coeffVector, errorVector, model, residual;
   const Object& obj;
-  NumMatrixDiagonal<double> Weight;
+  NumMatrixDiagonal<data_t> Weight;
   PixelCovarianceMatrix V_;
   IndexVector nVector;
   bool change, updateC, updateModel, updateResiduals, gaussian;

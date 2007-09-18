@@ -15,7 +15,7 @@
 
 using namespace std;
 
-OptimalDecomposite2D::OptimalDecomposite2D(const Object& O, int innmaxLow, int innmaxHigh, double inbetaLow, double inbetaHigh) : 
+OptimalDecomposite2D::OptimalDecomposite2D(const Object& O, int innmaxLow, int innmaxHigh, data_t inbetaLow, data_t inbetaHigh) : 
 Decomposite2D(2,(O.getSize(0) + O.getSize(1))/(2*8),O), obj(O) {
   // set limits for nmax and beta 
   nmaxLow = GSL_MIN_INT(innmaxLow,innmaxHigh);
@@ -119,8 +119,8 @@ void OptimalDecomposite2D::optimize() {
        while (comp_corr < 0) {
 	 int newNMAX = Decomposite2D::getNMax() - 1;
 	 Decomposite2D::setNMax(newNMAX);
-	 double chisquare = Decomposite2D::getChiSquare();
-	 double variance = Decomposite2D::getChiSquareVariance();
+	 data_t chisquare = Decomposite2D::getChiSquare();
+	 data_t variance = Decomposite2D::getChiSquareVariance();
 	 checkCorrelationFunctionFromResiduals();
 	 text << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
 	 text << chisquare << "\t" << variance << "\t" + comp_corr_string << endl;
@@ -151,7 +151,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
   text<< endl;
   history.append(text);
 
-  double chisquare,newChisquare,derivative_chi2,variance;
+  data_t chisquare,newChisquare,derivative_chi2,variance;
   chisquare = Decomposite2D::getChiSquare();
   variance = Decomposite2D::getChiSquareVariance();
 
@@ -345,10 +345,10 @@ double getChiSquare_Beta (double beta, void *p) {
   return decomp->d.getChiSquare();
 }
 
-bool OptimalDecomposite2D::testBetaLowerLimit(double& beta) {
+bool OptimalDecomposite2D::testBetaLowerLimit(data_t& beta) {
   // undersampling is minimum beta to avoid 2*theta_min < 1
   // see Paper IV, eq. (13)
-  double undersampling = 0.5*sqrt(Decomposite2D::getNMax()+1.);
+  data_t undersampling = 0.5*sqrt(Decomposite2D::getNMax()+1.);
   if (beta < GSL_MAX(undersampling,betaLow)) {
     beta = GSL_MAX(undersampling,betaLow);
     return 0;
@@ -356,9 +356,9 @@ bool OptimalDecomposite2D::testBetaLowerLimit(double& beta) {
     return 1;
 }
 
-bool OptimalDecomposite2D::testBetaUpperLimit(double& beta) {
+bool OptimalDecomposite2D::testBetaUpperLimit(data_t& beta) {
   // geometric is maximum beta to avoid theta_max > image_dimension
-  double geometric = 0.5*image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
+  data_t geometric = 0.5*image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
   if (beta > GSL_MIN(geometric, betaHigh)) {
     beta = GSL_MIN(geometric, betaHigh);
     return 0;
@@ -375,7 +375,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
   history.append(text);
 
   // first check if we already did a minimization at this nmax
-  map<int,double>::iterator iter = bestBeta.find(Decomposite2D::getNMax());
+  map<int,data_t>::iterator iter = bestBeta.find(Decomposite2D::getNMax());
   if (iter != bestBeta.end()) {
     optimalBeta = beta = iter->second;
     Decomposite2D::setBeta(optimalBeta);
@@ -396,7 +396,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
   else {
     size_t iter = 0;
     int status;
-    double a,b, accuracy;
+    data_t a,b, accuracy;
 
     // in step 1) correct beta is completely unknown, therefore define very loose bounds a,b
     // since this probably not be the last call of the function, coarse accuracy is enough
@@ -420,7 +420,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     // in addition, we have to ensure that a < beta < b for the minimizer below
     bool testa = testBetaLowerLimit(a), testb = testBetaUpperLimit(b);
     bool limitTrouble = 0;
-    double mina=0, maxb=image_dimension;
+    data_t mina=0, maxb=image_dimension;
     testBetaLowerLimit(mina); // mina = minimal allowed scale size
     testBetaUpperLimit(maxb); // maxb = maximal allowed scale size
 
@@ -466,11 +466,11 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     // for the bracketing used in the minimizer we have to also ensure that
     // f(a) > f(beta) and f(b) > f(beta);
     Decomposite2D::setBeta(beta);
-    double f = Decomposite2D::getChiSquare();
+    data_t f = Decomposite2D::getChiSquare();
     Decomposite2D::setBeta(a);
-    double fa = Decomposite2D::getChiSquare();
+    data_t fa = Decomposite2D::getChiSquare();
     Decomposite2D::setBeta(b);
-    double fb = Decomposite2D::getChiSquare();
+    data_t fb = Decomposite2D::getChiSquare();
     text << "# starting values: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
     history.append(text);
     
@@ -579,12 +579,12 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
   }
 }
 
-const NumVector<double>& OptimalDecomposite2D::getResiduals() {
+const NumVector<data_t>& OptimalDecomposite2D::getResiduals() {
   if (!optimized) optimize();
   return Decomposite2D::getResiduals();
 }
 
-const NumVector<double>& OptimalDecomposite2D::getModel() {
+const NumVector<data_t>& OptimalDecomposite2D::getModel() {
   if (!optimized) optimize();
   return Decomposite2D::getModel();
 }
@@ -605,7 +605,7 @@ void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals() {
   }
   
   CorrelationFunction xi_res(Decomposite2D::getResiduals(),obj.getGrid(),size);
-  NumVector<double> corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(),
+  NumVector<data_t> corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(),
     corr_res = xi_res.getCorrelationFunction(), sigma_res = xi_res.getCorrelationError();
 
   comp_corr = 0;
@@ -624,27 +624,27 @@ void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals() {
   }
 }
  
-void OptimalDecomposite2D::getShapeletCoeffs(NumMatrix<double>& coeffs) {
+void OptimalDecomposite2D::getShapeletCoeffs(NumMatrix<data_t>& coeffs) {
   if (!optimized) optimize();
   if (coeffs.getRows() != optimalNMax+1 || coeffs.getColumns() != optimalNMax+1)
-    coeffs = NumMatrix<double>(optimalNMax+1,optimalNMax+1);
+    coeffs = NumMatrix<data_t>(optimalNMax+1,optimalNMax+1);
 
   // getting the active coeff vector
-  CoefficientVector<double> coeffVector = Decomposite2D::getCoeffs();
+  CoefficientVector<data_t> coeffVector = Decomposite2D::getCoeffs();
   // putting it into matrix form
   coeffVector.fillCoeffMatrix(coeffs);
 }
 
-void OptimalDecomposite2D::getShapeletErrors(NumMatrix<double>& errors) {
+void OptimalDecomposite2D::getShapeletErrors(NumMatrix<data_t>& errors) {
   if (!optimized) optimize();
   if (errors.getRows() != optimalNMax+1 || errors.getColumns() != optimalNMax+1)
-    errors = NumMatrix<double>(optimalNMax+1,optimalNMax+1);
+    errors = NumMatrix<data_t>(optimalNMax+1,optimalNMax+1);
 
   // getting error vector from noise only
-  const NumVector<double>& noiseError = Decomposite2D::getErrors();
+  const NumVector<data_t>& noiseError = Decomposite2D::getErrors();
   // now get error from uncertainty in beta
-  const NumVector<double>& coeffVector = Decomposite2D::getCoeffs();
-  CoefficientVector<double> errorVector(coeffVector.size());
+  const NumVector<data_t>& coeffVector = Decomposite2D::getCoeffs();
+  CoefficientVector<data_t> errorVector(coeffVector.size());
   getCoeffErrorFromBeta(coeffVector,errorVector);
 
   // combining the two by Gauss error propagation
@@ -654,11 +654,11 @@ void OptimalDecomposite2D::getShapeletErrors(NumMatrix<double>& errors) {
   errorVector.fillCoeffMatrix(errors);
 }
 
-double OptimalDecomposite2D::getOptimalBeta() {
+data_t OptimalDecomposite2D::getOptimalBeta() {
   if (!optimized) optimize();
   return optimalBeta;
 }
-double OptimalDecomposite2D::getOptimalChiSquare() {
+data_t OptimalDecomposite2D::getOptimalChiSquare() {
   if (!optimized) optimize();
   return optimalChiSquare;
 }
@@ -667,15 +667,15 @@ double OptimalDecomposite2D::getOptimalChiSquare() {
 // assume delta(beta) = 10% beta at maximum
 // to derive 3 sigma errors on coeffs
 // FIXME: find good assumptions on beta error?
-void OptimalDecomposite2D::getCoeffErrorFromBeta(const NumVector<double>& coeffVector, NumVector<double>& errorVector) {
+void OptimalDecomposite2D::getCoeffErrorFromBeta(const NumVector<data_t>& coeffVector, NumVector<data_t>& errorVector) {
   ImageTransformation trafo;
   IndexVector nVector(optimalNMax);
   int nCoeffs = nVector.getNCoeffs();
-  NumMatrix<double> betaTrafo(nCoeffs,nCoeffs);
+  NumMatrix<data_t> betaTrafo(nCoeffs,nCoeffs);
   trafo.makeRescalingMatrix(betaTrafo,beta*1.1,beta,nVector);
   errorVector = betaTrafo*coeffVector;
   trafo.makeRescalingMatrix(betaTrafo,beta*0.9,beta,nVector);
-  NumVector<double> lowerCoeffs;
+  NumVector<data_t> lowerCoeffs;
   lowerCoeffs = betaTrafo*coeffVector;
   // subtract them to get difference
   errorVector -= lowerCoeffs;
@@ -695,22 +695,22 @@ char OptimalDecomposite2D::getDecompositionFlag() {
 struct reg_parameters {
   Decomposite2D& d;
   History& history;
-  const NumVector<double>& reco;
-  const NumVector<double>& residual;
-  double& beta;
+  const NumVector<data_t>& reco;
+  const NumVector<data_t>& residual;
+  data_t& beta;
   int& nmax;
-  double& f;
-  double& chi2;
-  double& lambda;
-  double& H;
-  double& R;
-  double& wantedR;
+  data_t& f;
+  data_t& chi2;
+  data_t& lambda;
+  data_t& H;
+  data_t& R;
+  data_t& wantedR;
   bool updateCoeffs;
-  double betaLow;
-  double betaHigh;
+  data_t betaLow;
+  data_t betaHigh;
 };
 
-void computeFluxes(const NumVector<double>& model, double& negFlux, double& posFlux, double& R, double& H) {
+void computeFluxes(const NumVector<data_t>& model, data_t& negFlux, data_t& posFlux, data_t& R, data_t& H) {
   negFlux = 0;
   posFlux = 0;
   for(int i=0; i< model.size(); i++) {
@@ -734,9 +734,9 @@ void computeFluxes(const NumVector<double>& model, double& negFlux, double& posF
 double f_beta (const gsl_vector *v, void *params) {
   reg_parameters * p = (reg_parameters *)params;
 
-  double beta = gsl_vector_get(v, 0);
-  const NumVector<double>& reco = p->reco;
-  const NumVector<double>& residual = p->residual;
+  data_t beta = gsl_vector_get(v, 0);
+  const NumVector<data_t>& reco = p->reco;
+  const NumVector<data_t>& residual = p->residual;
 
   // constraints on beta: betaLow <= beta <= betaHigh
   if (beta >= p->betaLow && beta <= p->betaHigh) {
@@ -750,7 +750,7 @@ double f_beta (const gsl_vector *v, void *params) {
     // now compute chi^2, model values and residuals
     p->chi2 = p->d.getChiSquare();
   
-    double posFlux, negFlux;
+    data_t posFlux, negFlux;
     computeFluxes(reco,negFlux,posFlux, p->R, p->H);
     p->f = (p->chi2 + (p->lambda)*p->H);
     p->beta = beta;
@@ -762,7 +762,7 @@ double f_beta (const gsl_vector *v, void *params) {
 
 double f_coeffs(const gsl_vector *v, void *params) {
   reg_parameters * p = (reg_parameters *)params;
-  NumVector<double>& coeffs = p->d.accessCoeffs();
+  NumVector<data_t>& coeffs = p->d.accessCoeffs();
 
   // copy coeffs from vector into Decomposite2D
   for (int i=0; i< v->size; i++)
@@ -771,9 +771,9 @@ double f_coeffs(const gsl_vector *v, void *params) {
   // force update of model and residuals
   p->d.updateModelResiduals();
   // now compute chi^2
-  double chi2 = p->d.getChiSquare();
+  data_t chi2 = p->d.getChiSquare();
   
-  double posFlux, negFlux, R, f, H;
+  data_t posFlux, negFlux, R, f, H;
   computeFluxes(p->reco,negFlux,posFlux,R, H);
   f = chi2 + (p->lambda)*H;
   // since we want to check for the values at best f
@@ -795,7 +795,7 @@ void minimize_beta(reg_parameters& p) {
   my_func.n = 1;
   my_func.params = &p;
   
-  double beta = p.beta;
+  data_t beta = p.beta;
   x = gsl_vector_alloc (1);
   ss = gsl_vector_alloc (1);
   gsl_vector_set (x, 0, beta);
@@ -837,7 +837,7 @@ void minimize_beta(reg_parameters& p) {
 
 void minimize_coeffs(reg_parameters& p) {
   p.history.append("#\n# Minimizing w.r.t. shapelet coefficients\n");
-  const NumVector<double>& coeffVector = p.d.getCoeffs();
+  const NumVector<data_t>& coeffVector = p.d.getCoeffs();
   int nCoeffs = coeffVector.size();
   gsl_vector *x, *ss;
 
@@ -891,7 +891,7 @@ void minimize_coeffs(reg_parameters& p) {
 }
 
 // append actual regularization results to vector
-void OptimalDecomposite2D::appendRegResults(std::vector<regResults>& results, int nmax, double f, double lambda, double beta, double chi2, double R, const NumVector<double>& coeffs) {
+void OptimalDecomposite2D::appendRegResults(std::vector<regResults>& results, int nmax, data_t f, data_t lambda, data_t beta, data_t chi2, data_t R, const NumVector<data_t>& coeffs) {
   regResults reg = { nmax, f, lambda, beta, chi2, R , coeffs};
   results.push_back(reg);
 }
@@ -899,7 +899,7 @@ void OptimalDecomposite2D::appendRegResults(std::vector<regResults>& results, in
 // find nmax where f is minimal in results
 int OptimalDecomposite2D::findNMaxofBestF(std::vector<regResults>& results) {
   int maxnum = results.size()-1;
-  double bestf = results[maxnum].f;
+  data_t bestf = results[maxnum].f;
   int bestnmax = results[maxnum].nmax;
   for (int i=maxnum-1; i>=0; i--) {
     if (results[i].f < bestf) {
@@ -913,7 +913,7 @@ int OptimalDecomposite2D::findNMaxofBestF(std::vector<regResults>& results) {
 // find result set where R is minimal and chi2<=1
 int OptimalDecomposite2D::findSuboptimalResultIndex(std::vector<regResults>& results) {
   int maxnum = results.size()-1;
-  double bestR = results[0].R;
+  data_t bestR = results[0].R;
   int bestIndex = 0;
   for (int i=1; i<=maxnum; i++) {
     if (results[i].R < bestR && results[i].chi2 <= 1) {
@@ -924,14 +924,14 @@ int OptimalDecomposite2D::findSuboptimalResultIndex(std::vector<regResults>& res
   return bestIndex;
 }
   
-double OptimalDecomposite2D::regularize(double wantedR) {
+data_t OptimalDecomposite2D::regularize(data_t wantedR) {
   if (!optimized) optimize();
 
   int nmax;
-  double negFlux, posFlux, R, initialR, H, initialH, chi2, initialChi2, beta;
-  const NumVector<double>& model = Decomposite2D::getModel();
-  const NumVector<double>& residuals = Decomposite2D::getResiduals();
-  const NumVector<double>& coeffs = Decomposite2D::getCoeffs();
+  data_t negFlux, posFlux, R, initialR, H, initialH, chi2, initialChi2, beta;
+  const NumVector<data_t>& model = Decomposite2D::getModel();
+  const NumVector<data_t>& residuals = Decomposite2D::getResiduals();
+  const NumVector<data_t>& coeffs = Decomposite2D::getCoeffs();
 
   computeFluxes(model, negFlux, posFlux, R, H);
   initialR = R;
@@ -958,9 +958,9 @@ double OptimalDecomposite2D::regularize(double wantedR) {
     // lambda is adjusted such that chi2 and R are compatible;
     // for good performance lower lambda by factor 3
     // because model is less strong restricted by data/chi2
-    double lambda = 0.3*chi2/H;
-    double initialLambda = lambda;
-    double f = optimalChiSquare + lambda*H;
+    data_t lambda = 0.3*chi2/H;
+    data_t initialLambda = lambda;
+    data_t f = optimalChiSquare + lambda*H;
     text << "# Starting with lambda = " << lambda << std::endl;
     history.append(text);
 

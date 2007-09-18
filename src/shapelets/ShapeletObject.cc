@@ -1,7 +1,7 @@
 #include <shapelets/ShapeletObject.h>
 
 using namespace std;
-typedef complex<double> Complex;
+typedef complex<data_t> Complex;
 
 ShapeletObject::ShapeletObject() : Composite2D() {
 }
@@ -33,7 +33,7 @@ ShapeletObject::ShapeletObject(string sifFile) : Composite2D() {
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-ShapeletObject::ShapeletObject(const NumMatrix<double>& incartesianCoeffs, double beta, const Point2D& xcentroid) :
+ShapeletObject::ShapeletObject(const NumMatrix<data_t>& incartesianCoeffs, data_t beta, const Point2D& xcentroid) :
 Composite2D() {
   fits = regularized = chisquare = 0;
   fitsFlag = decompFlag = 0;
@@ -52,7 +52,7 @@ Composite2D() {
   text.str("");
 }
 
-ShapeletObject::ShapeletObject(const NumMatrix<Complex>& inpolarCoeffs, double beta, const Point2D& xcentroid) :
+ShapeletObject::ShapeletObject(const NumMatrix<Complex>& inpolarCoeffs, data_t beta, const Point2D& xcentroid) :
 Composite2D() {
   fits = regularized = chisquare = 0;
   fitsFlag = decompFlag = 0;
@@ -61,7 +61,7 @@ Composite2D() {
   Composite2D::setBeta(beta);
   triangularizeCoeffs(inpolarCoeffs,polarCoeffs,0);
   c2p = PolarTransformation(polarCoeffs.getRows()-1);
-  cartesianCoeffs = NumMatrix<double> (polarCoeffs.getRows(), polarCoeffs.getColumns());
+  cartesianCoeffs = NumMatrix<data_t> (polarCoeffs.getRows(), polarCoeffs.getColumns());
   c2p.getCartesianCoeffs(polarCoeffs,cartesianCoeffs);
   trafo = ImageTransformation();
   Composite2D::setCoeffs(cartesianCoeffs);
@@ -73,7 +73,7 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   const Grid& FitsGrid = obj.getGrid();
   const Point2D& xcentroid = obj.getCentroid();
   fitsFlag = obj.getDetectionFlag();
-  double beta;
+  data_t beta;
   // decomposing with given constraits on shapelet decomposition parameters
   OptimalDecomposite2D *optimalDecomp =  new OptimalDecomposite2D(obj, ShapeLensConfig::NMAX_LOW,ShapeLensConfig::NMAX_HIGH,ShapeLensConfig::BETA_LOW,ShapeLensConfig::BETA_HIGH);
 
@@ -125,7 +125,7 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
 }  
 
 
-void ShapeletObject::setCartesianCoeffs(const NumMatrix<double>& incartesianCoeffs) {
+void ShapeletObject::setCartesianCoeffs(const NumMatrix<data_t>& incartesianCoeffs) {
   // put the incoming cartesian coeffs into a triangular matrix of appropriate size
   triangularizeCoeffs(incartesianCoeffs,cartesianCoeffs,0);
   Composite2D::setCoeffs(cartesianCoeffs);
@@ -134,7 +134,7 @@ void ShapeletObject::setCartesianCoeffs(const NumMatrix<double>& incartesianCoef
   c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);
 }
 
-void ShapeletObject::setCartesianCoeffErrors(const NumMatrix<double>& newerrors) {
+void ShapeletObject::setCartesianCoeffErrors(const NumMatrix<data_t>& newerrors) {
   if (cartesianCoeffs.getRows() == newerrors.getRows() && cartesianCoeffs.getColumns() == newerrors.getColumns())
     errors = newerrors;
   else {
@@ -145,12 +145,12 @@ void ShapeletObject::setCartesianCoeffErrors(const NumMatrix<double>& newerrors)
 void ShapeletObject::setPolarCoeffs(const NumMatrix<Complex>& inpolarCoeffs) {
   triangularizeCoeffs(inpolarCoeffs,polarCoeffs,0);
   c2p = PolarTransformation(polarCoeffs.getRows()-1);
-  cartesianCoeffs = NumMatrix<double> (polarCoeffs.getRows(), polarCoeffs.getColumns());
+  cartesianCoeffs = NumMatrix<data_t> (polarCoeffs.getRows(), polarCoeffs.getColumns());
   Composite2D::setCoeffs(cartesianCoeffs);
   c2p.getCartesianCoeffs(polarCoeffs,cartesianCoeffs);
 }
 
-const NumMatrix<double>& ShapeletObject::getCartesianCoeffs() {
+const NumMatrix<data_t>& ShapeletObject::getCartesianCoeffs() {
   return cartesianCoeffs;
 }
 
@@ -158,22 +158,22 @@ const NumMatrix<Complex>& ShapeletObject::getPolarCoeffs() {
   return polarCoeffs;
 }
  
-double ShapeletObject::getDecompositionChiSquare() {
+data_t ShapeletObject::getDecompositionChiSquare() {
   return chisquare;
 }
 
-const NumMatrix<double>& ShapeletObject::getDecompositionErrors() {
+const NumMatrix<data_t>& ShapeletObject::getDecompositionErrors() {
   return errors;
 }
 
-void ShapeletObject::rotate(double rho) {
+void ShapeletObject::rotate(data_t rho) {
   trafo.rotate(polarCoeffs,rho,text);
   history.append(text);
   c2p.getCartesianCoeffs(polarCoeffs,cartesianCoeffs);
   Composite2D::setCoeffs(cartesianCoeffs);
  }
 
-void ShapeletObject::converge(double kappa) {
+void ShapeletObject::converge(data_t kappa) {
   trafo.converge(polarCoeffs,Composite2D::accessBeta(),kappa,text);
   history.append(text);
   c2p.getCartesianCoeffs(polarCoeffs,cartesianCoeffs);
@@ -195,7 +195,7 @@ void ShapeletObject::shear(Complex gamma) {
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-void ShapeletObject::flex(const NumMatrix<double>& Dgamma) {
+void ShapeletObject::flex(const NumMatrix<data_t>& Dgamma) {
   // since flexing mixes term with n+-3 we have to extend matrix dimension by 3
   //history << "# Increasing order nmax by 3 for flexing." << endl;
   polarCoeffs.resize_clear(polarCoeffs.getRows()+3,polarCoeffs.getColumns()+3);
@@ -208,13 +208,13 @@ void ShapeletObject::flex(const NumMatrix<double>& Dgamma) {
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-void ShapeletObject::lens(double kappa, Complex gamma, Complex F, Complex G) {
+void ShapeletObject::lens(data_t kappa, Complex gamma, Complex F, Complex G) {
   // lensing is applying convergence, shear and flexion simultaneously
   // since operations work as f' = (1 + x*T) f for any of these transformations
   // we have to do it this way
   // f' = (1+kappa*K) f + (1+gamma*S) f + (1+dGamma*Sij) f - 2*f;
-  NumMatrix<double> oldCoeffs = cartesianCoeffs;
-  NumMatrix<double> converged, sheared, flexed;
+  NumMatrix<data_t> oldCoeffs = cartesianCoeffs;
+  NumMatrix<data_t> converged, sheared, flexed;
   if (kappa != 0) {
     converge(kappa);
     converged = cartesianCoeffs;
@@ -225,7 +225,7 @@ void ShapeletObject::lens(double kappa, Complex gamma, Complex F, Complex G) {
   sheared = cartesianCoeffs;
   setCartesianCoeffs(oldCoeffs);
   // apply flexion
-  NumMatrix<double> dGamma(2,2);
+  NumMatrix<data_t> dGamma(2,2);
   dGamma(0,0) = 0.5*(real(F) + real(G));
   dGamma(0,1) = 0.5*(imag(G) - imag(F));
   dGamma(1,0) = 0.5*(imag(F) + imag(G));
@@ -248,7 +248,7 @@ void ShapeletObject::lens(double kappa, Complex gamma, Complex F, Complex G) {
   setCartesianCoeffs(flexed);
 } 
   
-void ShapeletObject::translate(double dx0, double dx1) {
+void ShapeletObject::translate(data_t dx0, data_t dx1) {
   trafo.translate(cartesianCoeffs,Composite2D::getBeta(),dx0,dx1,text);
   history.append(text);
   c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);
@@ -269,15 +269,15 @@ void ShapeletObject::flipX() {
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-void ShapeletObject::brighten(double factor) {
+void ShapeletObject::brighten(data_t factor) {
   trafo.brighten(cartesianCoeffs,polarCoeffs,factor,text);
   history.append(text);
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-void ShapeletObject::convolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel) {
+void ShapeletObject::convolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel) {
   // first triangularize coeffs
-  NumMatrix<double> triKernelCoeffs;
+  NumMatrix<data_t> triKernelCoeffs;
   triangularizeCoeffs(KernelCoeffs,triKernelCoeffs,0);
   trafo.convolve(cartesianCoeffs,Composite2D::accessBeta(),triKernelCoeffs,beta_kernel,text);
   history.append(text);
@@ -286,9 +286,9 @@ void ShapeletObject::convolve(const NumMatrix<double>& KernelCoeffs, double beta
   //  Composite2D::setBeta(beta);
 }
 
-void ShapeletObject::deconvolve(const NumMatrix<double>& KernelCoeffs, double beta_kernel) {
+void ShapeletObject::deconvolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel) {
   // first triangularize coeffs
-  NumMatrix<double> triKernelCoeffs;
+  NumMatrix<data_t> triKernelCoeffs;
   triangularizeCoeffs(KernelCoeffs,triKernelCoeffs,0);
   trafo.deconvolve(cartesianCoeffs,Composite2D::accessBeta(),triKernelCoeffs,beta_kernel,text);
   history.append(text);
@@ -297,7 +297,7 @@ void ShapeletObject::deconvolve(const NumMatrix<double>& KernelCoeffs, double be
   //Composite2D::setBeta(beta);
 }
 
-void ShapeletObject::rescale(double newBeta) {
+void ShapeletObject::rescale(data_t newBeta) {
   // since the rescaling transformation is only valid for infinite expansions
   // raising the order here helps to obtain proper results
   // But: The selected nmax is arbitrary; therefore we keep nmax fixed.
@@ -307,14 +307,14 @@ void ShapeletObject::rescale(double newBeta) {
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-void ShapeletObject::getProfile(const Point2D& start, NumVector<double>& values, int axsize) {
+void ShapeletObject::getProfile(const Point2D& start, NumVector<data_t>& values, int axsize) {
   const Point2D& xcentroid = Composite2D::getCentroid();
   const Point2D end = Point2D((xcentroid(0) - start(0))*2 + start(0), (xcentroid(1) - start(1))*2 + start(1));
   Profile profile(start,end);
   profile.calculate(values,axsize);
 }
 
-void ShapeletObject::getProfile(const Point2D& start, const Point2D& end, NumVector<double>& values, int axsize) {
+void ShapeletObject::getProfile(const Point2D& start, const Point2D& end, NumVector<data_t>& values, int axsize) {
    Profile profile (start,end);
    profile.calculate(values,axsize);
 }
@@ -327,7 +327,7 @@ void ShapeletObject::save(string sifFile) {
 void ShapeletObject::load(string sifFile) {
   std::string historyString;
   Grid grid;
-  double beta;
+  data_t beta;
   Point2D xcentroid;
   SIFFile sfile(sifFile);
   sfile.load(historyString,cartesianCoeffs,errors,grid,beta,xcentroid,chisquare,fitsFlag,decompFlag,regularized,R);

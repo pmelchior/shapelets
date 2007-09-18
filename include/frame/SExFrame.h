@@ -5,6 +5,7 @@
 #include <list>
 #include <gsl/gsl_rng.h>
 #include <NumMatrix.h>
+#include <Typedef.h>
 #include <History.h>
 #include <ShapeLensConfig.h>
 #include <frame/Grid.h>
@@ -59,13 +60,13 @@
 /// for(int n = 1; n <= f->getNumberOfObjects(); n++) {
 ///   Object* obj = new Object(i);
 ///   f->fillObject(obj);
-///   NumVector<double>& data = obj->getData();
+///   NumVector<data_t>& data = obj->getData();
 ///   Grid& grid = obj->getGrid();
 ///   ...
 /// }
 ///\endcode
 
-class SExFrame : public Image<double> {
+class SExFrame : public Image<data_t> {
  public:
   /// Argumented constructor.
   /// <tt>filename</tt> is the name of the Fits file.\n Extensions or other selections can be 
@@ -87,11 +88,11 @@ class SExFrame : public Image<double> {
   /// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>
   void readSegmentationMap(std::string segmentfile);
   /// Return noise mean \f$\mu_n\f$.
-  double getNoiseMean();
+  data_t getNoiseMean();
   /// Return noise RMS \f$\sigma_n\f$.
-  double getNoiseRMS();
+  data_t getNoiseRMS();
   /// Set noise features explicitly.
-  void setNoiseMeanRMS(double mean, double rms);
+  void setNoiseMeanRMS(data_t mean, data_t rms);
   /// Subtract constant background noise level.
   /// The noise level is obtained from the BACKGROUND keyword in the catalog file 
   /// for object independently.
@@ -121,8 +122,8 @@ class SExFrame : public Image<double> {
  private:
   void insertFormatField(std::string type, std::string columnnr);
   void checkFormat();
-  void addFrameBorder(double factor, int& xmin, int& xmax, int& ymin, int& ymax);
-  double computeBlendingProbability(unsigned int objectNr);
+  void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
+  data_t computeBlendingProbability(unsigned int objectNr);
   void estimateNoise();
   // Define the format of the SExtractor catalog list.
   // The entries of this struct have all to be filled with the number 
@@ -146,19 +147,19 @@ class SExFrame : public Image<double> {
     int XMAX_IMAGE;
     int YMIN_IMAGE;
     int YMAX_IMAGE;
-    double XWIN_IMAGE;
-    double YWIN_IMAGE;
-    double FLUX_AUTO;
+    data_t XWIN_IMAGE;
+    data_t YWIN_IMAGE;
+    data_t FLUX_AUTO;
     unsigned char FLAGS;
-    double CLASS_STAR;
+    data_t CLASS_STAR;
   };
   SExCatFormat sf;
   std::vector<SExCatObject> objectList;
   bool segmapRead, catRead, catChecked, subtractBG, estimatedBG;
   NumVector<int> segMap;
-  double bg_mean, bg_rms;
+  data_t bg_mean, bg_rms;
   unsigned int axsize0, axsize1;
-  Image<double> weight;
+  Image<data_t> weight;
   gsl_rng* r;
   History history;
   std::ostringstream text;

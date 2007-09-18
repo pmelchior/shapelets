@@ -5,10 +5,11 @@
 /// publicly inherited from uBLAS vectors
 
 #include <boost/numeric/bindings/traits/ublas_vector.hpp>
+#include <Typedef.h>
 
-class Point2D : public boost::numeric::ublas::vector<double, boost::numeric::ublas::bounded_array<double,2> >
+class Point2D : public boost::numeric::ublas::vector<data_t, boost::numeric::ublas::bounded_array<data_t,2> >
 {
-  typedef boost::numeric::ublas::vector<double, boost::numeric::ublas::bounded_array<double,2> > Base_vector;
+  typedef boost::numeric::ublas::vector<data_t, boost::numeric::ublas::bounded_array<data_t,2> > Base_vector;
  public:
   Point2D () : Base_vector(2) {}
   template <class R> Point2D (R x0, R x1) : Base_vector(2) {
