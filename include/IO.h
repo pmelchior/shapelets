@@ -12,101 +12,204 @@
 
 /// Functions for reading and writing into several formats
 
-/// set imageformat and datatype according to the cfitsio definitions
 template <class T> 
-void setFITSTypes(T entry, int& imageformat, int& datatype) {
-  imageformat = DOUBLE_IMG;
-  datatype = TDOUBLE;
-  float tf;
+  int getFITSImageFormat(T entry) {
+  char tc;
+  unsigned char tuc;
   int ti;
+  unsigned int tui;
+  long tl;
+  unsigned long tul;
+  float tf;
+  double td;
+  if (typeid(entry) == typeid(tc) || typeid(entry) == typeid(tuc))
+    return BYTE_IMG;
+  if (typeid(entry) == typeid(ti))
+    return SHORT_IMG;
+  if (typeid(entry) == typeid(tui))
+    return USHORT_IMG;
+  if (typeid(entry) == typeid(tl))
+    return LONG_IMG;
+  if (typeid(entry) == typeid(tul))
+    return ULONG_IMG;
+  if (typeid(entry) == typeid(tf))
+    return FLOAT_IMG;
+  if (typeid(entry) == typeid(td))
+    return DOUBLE_IMG;
+  }
+  
+
+
+template <class T>
+  int getFITSDataType(T entry) {
   bool tb;
-  unsigned char tc;
-  if (typeid(entry) == typeid(tf)) {
-    imageformat = FLOAT_IMG;
-    datatype = TFLOAT;
-  }
-  if (typeid(entry) == typeid(ti)) {
-    imageformat = SHORT_IMG;
-    datatype = TINT;
-  }
-  if (typeid(entry) == typeid(tb) || typeid(entry) == typeid(tc)) {
-    imageformat = BYTE_IMG;
-    datatype = TBYTE;
-  }
+  char tc;
+  unsigned char tuc;
+  int ti;
+  unsigned int tui;
+  long tl;
+  unsigned long tul;
+  float tf;
+  double td;
+  complex<float> tcf;
+  complex<double> tcd;
+  std::string ts;
+  if (typeid(entry) == typeid(tb) || typeid(entry) == typeid(tc) || typeid(entry) == typeid(tuc))
+    return TBYTE;
+  if (typeid(entry) == typeid(ti))
+    return TINT;
+  if (typeid(entry) == typeid(tui))
+    return TUINT;
+  if (typeid(entry) == typeid(tl))
+    return TLONG;
+  if (typeid(entry) == typeid(tul))
+    return TULONG;
+  if (typeid(entry) == typeid(tf))
+    return TFLOAT;
+  if (typeid(entry) == typeid(td))
+    return TDOUBLE;
+  if (typeid(entry) == typeid(tcf))
+    return TCOMPLEX;
+  if (typeid(entry) == typeid(tcd))
+    return TDBLCOMPLEX;
+  if (typeid(entry) == typeid(ts))
+    return TSTRING;
 }
 
-/// creates a single HDU FITS file from the data defined on given grid
-/// \todo add support for fits header keywords of variable type
+fitsfile* openFITSFile(std::string filename, bool write=0);
+fitsfile* createFITSFile(std::string filename);
+
 template <class T>
-void writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string> keywords = std::map<std::string, std::string>()) {
+int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data) {
   int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
   int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
   long naxis = 2;      
   long naxes[2] = { dim0, dim1 };
   long npixels = dim0*dim1;
 
-  int status = 0;
-  fitsfile *outfptr;
-  filename = "!"+filename; // overwrite existing file if necessary
-  // open fits file
-  fits_create_file(&outfptr,filename.c_str(), &status);
-  
   // define image format and dataformat according to cfitsio definitions
-  int imageformat, datatype;
-  setFITSTypes(data(0),imageformat,datatype);
-  // create pHDU
+  int imageformat = getFITSImageFormat(data(0));
+  int datatype = getFITSDataType(data(0));
+  // create HDU
+  int status = 0;
   fits_create_img(outfptr, imageformat, naxis, naxes, &status);
   // write pixel data
   long firstpix[2] = {1,1};
   fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(data.c_array()), &status);
-  // insert keywords
-  keywords["CREATOR"]= "ShapeLens++";
-  for( std::map<std::string,std::string>::iterator iter = keywords.begin(); 
-       iter != keywords.end(); iter++ )
-    fits_update_key (outfptr, TSTRING,  const_cast<char *>((*iter).first.c_str()), const_cast<char *>((*iter).second.c_str()), "", &status);
-  fits_close_file(outfptr, &status);
+  return status;
 }
 
 template <class T>
-void writeFITSFile(std::string filename, const NumMatrix<T>& M, std::map<std::string,std::string> keywords = std::map<std::string, std::string>()) {
+int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M) {
   Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  writeFITSFile(filename,grid,M.vectorize(0),keywords);
+  return writeFITSImage(outfptr,grid,M.vectorize(0));
+}
+
+/// creates a single HDU FITS file from the data defined on given grid
+template <class T>
+int writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& data) {
+  int status = 0;
+  fitsfile *outfptr = createFITSFile(filename);
+  // write image data
+  writeFITSImage(outfptr,grid,data);
+  // insert creator keyword
+  std::string creator = "ShapeLens++";
+  fits_update_key (outfptr, TSTRING, "CREATOR" , const_cast<char *>(creator.c_str()), "", &status);
+  fits_close_file(outfptr, &status);
+  return status;
+}
+
+template <class T>
+int writeFITSFile(std::string filename, const NumMatrix<T>& M) {
+  Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
+  return writeFITSFile(filename,grid,M.vectorize(0));
+}
+
+
+template <class T>
+int addFITSExtension(fitsfile *outfptr, std::string extname, const Grid& grid, const NumVector<T>& data) {
+  int status = 0;
+  // write image data
+  writeFITSImage(outfptr,grid,data);
+  // insert creator and extname keywords
+  fits_update_key (outfptr, TSTRING, "EXTNAME" ,const_cast<char *>(extname.c_str()) , "", &status);
+  std::string creator = "ShapeLens++";
+  fits_update_key (outfptr, TSTRING, "CREATOR" , const_cast<char *>(creator.c_str()), "", &status);
+  return status;
 }
 
 /// adds extensions to an existing FITS file from the data on the given grid
 template <class T>
-void addFITSExtension(std::string filename, std::string extname, const Grid& grid, const NumVector<T>& data, std::map<std::string, std::string> keywords = std::map<std::string, std::string>()) {
-    int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
-  int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
-  long naxis = 2;      
-  long naxes[2] = { dim0, dim1 };
-  long npixels = dim0*dim1;
-
+int addFITSExtension(std::string filename, std::string extname, const Grid& grid, const NumVector<T>& data) {
   int status = 0;
-  fitsfile *outfptr;
-  fits_open_file(&outfptr, filename.c_str(), READWRITE, &status);
-  // define image format and dataformat according to cfitsio definitions
-  int imageformat, datatype;
-  setFITSTypes(data(0),imageformat,datatype);
-  // create extHDU
-  fits_create_img(outfptr, imageformat, naxis, naxes, &status);
-  // write pixel data 
-  long firstpix[2] = {1,1};
-  fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T* >(data.c_array()), &status);
-  // insert keywords
-  keywords["EXTNAME"]= extname;
-  keywords["CREATOR"]= "ShapeLens++";
-  for( std::map<std::string,std::string>::iterator iter = keywords.begin(); 
-       iter != keywords.end(); iter++ )
-    fits_update_key (outfptr, TSTRING,  const_cast<char *>((*iter).first.c_str()), const_cast<char *>((*iter).second.c_str()), "", &status);
+  fitsfile *outfptr = openFITSFile(filename,1);
+  status = addFITSExtension(outfptr,extname,grid,data);
   fits_close_file(outfptr, &status);
+  return status;
 }
 
 template <class T>
-void addFITSExtension(std::string filename, std::string extname, const NumMatrix<T>& M, std::map<std::string,std::string> keywords = std::map<std::string, std::string>()) {
+int addFITSExtension(fitsfile *outfptr, std::string extname, const NumMatrix<T>& M) {
   Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  addFITSExtension(filename,extname,grid,M.vectorize(0),keywords);
+  return addFITSExtension(outfptr,extname,grid,M.vectorize(0));
 }
+
+template <class T>
+int addFITSExtension(std::string filename, std::string extname, const NumMatrix<T>& M) {
+  Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
+  return addFITSExtension(filename,extname,grid,M.vectorize(0));
+}
+
+template <class T>
+int updateFITSKeyword(fitsfile *outfptr, std::string keyword, T value, std::string comment="") {
+  int status = 0;
+  fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), &value, const_cast<char *>(comment.c_str()), &status);
+  return status;
+}
+
+template <class T>
+void updateFITSKeyword(std::string filename, std::string keyword, T value, std::string comment="") {
+  int status = 0;
+  fitsfile *outfptr = openFITSFile(filename,1);;
+  status = updateFITSKeyword(outfptr ,keyword, value, comment);
+  fits_close_file(outfptr, &status);
+  return status;
+}
+
+int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
+int updateFITSKeywordString(std::string filename, std::string keyword, std::string value, std::string comment="");
+int appendFITSHistory(std::string filename, std::string history);
+int appendFITSHistory(fitsfile *outfptr, std::string history);
+
+
+template <class T>
+int readFITSImage(fitsfile *fptr, NumMatrix<T>& M) {
+  int naxis, status = 0;
+  fits_get_img_dim(fptr, &naxis, &status);
+  if (naxis!=2) {
+    std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
+    std::terminate();
+  }
+  long naxes[2] = {1,1};
+  fits_get_img_size(fptr, naxis, naxes, &status);
+  M.resize(naxes[0],naxes[1]);
+  long firstpix[2] = {1,1};
+  T val;
+  int imageformat = getFITSImageFormat(val);
+  int datatype = getFITSDataType(val);
+  fits_read_pix(fptr, datatype, firstpix, naxes[0]*naxes[1], NULL,M.c_array(), NULL, &status);
+}
+
+template <class T>
+int readFITSKeyword(fitsfile *fptr, std::string key, T& val) {
+  int status = 0;
+  char* comment = NULL;
+  fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&val,comment, &status);
+  return status;
+}
+
+int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val);
+int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
 
 /// Write PPM file from data on the given grid.
 /// Colorscheme is one of the following:
@@ -139,4 +242,5 @@ void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesig
 void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma);
 /// Convolve input with a 3x3 Gaussian.
 void convolveGaussian(const NumVector<data_t>& input, NumVector<data_t>& result, int width,int height);
+
 #endif

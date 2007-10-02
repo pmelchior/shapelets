@@ -83,7 +83,7 @@ data_t PixelCovarianceMatrix::operator()(unsigned int i, unsigned int j) const {
 
 
 void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid, History& hist) {
-  hist.append("# Reading correlation function:\n");
+  hist << "# Reading correlation function:" << std::endl;
   const NumVector<data_t>& corr = xi.getCorrelationFunction();
   const NumVector<data_t>& distance = xi.getDistances();
   const NumVector<data_t>& sigma = xi.getCorrelationError();
@@ -92,13 +92,13 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
     std::terminate();
   }
   // print correlation function in a nice way
-  hist.append("# dist\tcorr\t\t +- sigma\n");
+  hist << "# dist\tcorr\t\t +- sigma" << std::endl;
   char diststr[10];
   char corrstr[20];
   for (int i=0; i < corr.size(); i++) {
     sprintf(diststr,"%1.2f",distance(i)); 
     sprintf(corrstr,"%1.2e\t +- %1.2e",corr(i),sigma(i));
-    hist.append("# "+std::string(diststr)+"\t"+std::string(corrstr)+"\n");
+    hist << "# "+std::string(diststr)+"\t"+std::string(corrstr) << std::endl;
   }
 
   // the bandwidth depends on the values of the correlation function
@@ -109,7 +109,7 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
   // effectively zero pixel correlation
   if (corr.size() == 1 || corr(1) < 0.02*corr(0)) {
     bandwidth = 1;
-    hist.append("# Restricting covariance matrix to 1 band: corr(r>0) = 0\n");
+    hist << "# Restricting covariance matrix to 1 band: corr(r>0) = 0" << std::endl;
     setBandwidth(bandwidth);
     offset(0) = 0;
     entry(0) = corr(0);
@@ -117,7 +117,7 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
   // include all pixels with distance 1
   else if (corr.size() >= 3 && corr(2) < 0.02*corr(0)) {
     bandwidth = 5;
-    hist.append("# Restricting covariance matrix to 5 band: corr(r>1) = 0\n");
+    hist << "# Restricting covariance matrix to 5 band: corr(r>1) = 0" << std::endl;
     setBandwidth(bandwidth);
     offset(0) = -N1;
     offset(1) = -1;
@@ -130,7 +130,7 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
   // include now also top-right/top-left/bottom-right/bottom-left neighbor: 3x3 box
   else if (corr.size() == 3 || corr(3) < 0.02*corr(0)){
     bandwidth = 9;
-    hist.append("# Restricting covariance matrix to 9 bands: corr(r>=2) = 0\n");
+    hist << "# Restricting covariance matrix to 9 bands: corr(r>=2) = 0" << std::endl;
     setBandwidth(bandwidth);
     offset(0) = -N1-1;
     offset(1) = -N1;
@@ -148,7 +148,7 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
   // distance = 2 included
   else if (corr.size() >= 6 && corr(4) < 0.02*corr(0)) {
     bandwidth = 13;
-    hist.append("# Restricting covariance matrix to 13 bands: corr(r>2) = 0\n");
+    hist << "# Restricting covariance matrix to 13 bands: corr(r>2) = 0" << std::endl;
     setBandwidth(bandwidth);
     offset(0) = -2*N1;
     offset(1) = -N1-1;
@@ -171,7 +171,7 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
   // distance = sqrt(5) included
   else if (corr.size() >= 6 && corr(5) < 0.02*corr(0)) {
     bandwidth = 21;
-    hist.append("# Restricting covariance matrix to 21 bands: corr(r>sqrt(5)) = 0\n");
+    hist << "# Restricting covariance matrix to 21 bands: corr(r>sqrt(5)) = 0" << std::endl;
     setBandwidth(bandwidth);
     offset(0) = -2*N1-1;
     offset(1) = -2*N1;
@@ -203,7 +203,7 @@ void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, c
   // include all pixels in a box of 5x5
   else {
     bandwidth = 25;
-    hist.append("# Restricting covariance matrix to 25 bands: corr(r>=3)) = 0\n");
+    hist << "# Restricting covariance matrix to 25 bands: corr(r>=3)) = 0" << std::endl;
     setBandwidth(bandwidth);
     offset(0) = -2*N1-2;
     offset(1) = -2*N1-1;

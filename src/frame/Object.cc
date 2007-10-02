@@ -18,50 +18,50 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   char comment[FLEN_CARD];
   status = 0; 
 
-  std::ostringstream text;
-  history.append("# Loading object from Fits file "+objfile+":\n");
+  history << "# Loading object from Fits file " << objfile << ":" << std::endl;
   fits_open_file(&fptr, objfile.c_str(), READONLY, &status);
 
   // open pHDU and read header
   fits_movabs_hdu(fptr, 1, &hdutype, &status);
   // recover object information from header keywords
-  fits_read_key (fptr,TSTRING,"BASEFILE",card,comment, &status);
-  basefilename = std::string(card);
-  fits_read_key (fptr,TINT,"ID",&id,comment, &status);
-  data_t grid_min_0, grid_max_0, grid_min_1, grid_max_1;
-  fits_read_key (fptr,TDOUBLE,"XMIN",&grid_min_0,comment, &status);
-  fits_read_key (fptr,TDOUBLE,"XMAX",&grid_max_0,comment, &status);
-  fits_read_key (fptr,TDOUBLE,"YMIN",&grid_min_1,comment, &status);
-  fits_read_key (fptr,TDOUBLE,"YMAX",&grid_max_1,comment, &status);
-  Image<data_t>::accessGrid() = Grid(grid_min_0,grid_max_0,1,grid_min_1,grid_max_1,1);
-  fits_read_key (fptr,TDOUBLE,"BG_MEAN",&noise_mean,comment, &status);
-  fits_read_key (fptr,TDOUBLE,"BG_RMS",&noise_rms,comment, &status);
-  fits_read_key (fptr,TSTRING,"NOISE",card,comment, &status);
-  noisemodel = std::string(card);
-  fits_read_key (fptr,TUSHORT,"FLAG",&flag,comment, &status);
-  fits_read_key (fptr,TDOUBLE,"BLEND",&blend,comment, &status);
-  fits_read_key (fptr,TDOUBLE,"S_G",&s_g,comment, &status);
+  status = readFITSKeywordString(fptr,"BASEFILE",basefilename);
+  status = readFITSKeyword(fptr,"ID",id);
+  status = readFITSKeyword(fptr,"NUMBER",number);
+  data_t xmin,xmax,ymin,ymax;
+  status = readFITSKeyword(fptr,"XMIN",xmin);
+  status = readFITSKeyword(fptr,"XMAX",xmax);
+  status = readFITSKeyword(fptr,"YMIN",ymin);
+  status = readFITSKeyword(fptr,"YMAX",ymax);
+  Image<data_t>::accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
+  complex<data_t> xc;
+  status = readFITSKeyword(fptr,"CENTROID",xc);
+  centroid(0) = real(xc);
+  centroid(1) = imag(xc);
+  status = readFITSKeyword(fptr,"BG_MEAN",noise_mean);
+  status = readFITSKeyword(fptr,"BG_RMS",noise_rms);
+  status = readFITSKeyword(fptr,"FLAG",flag);
+  status = readFITSKeyword(fptr,"BLEND",blend);
+  status = readFITSKeyword(fptr,"S_G",s_g);
+  
+  // read history
+  std::string hstr;
+  readFITSKeyCards(fptr,"HISTORY",hstr);
+  history.clear();
+  bool verb = history.getVerbosity();
+  history.setVerbosity(0);
+  history << hstr;
+  history.setVerbosity(verb);
 
   // if status is not 0 we have faced an error
   if (status != 0) {
-    std::cout << "Object: header keywords erroneous!" << std::endl;
+    std::cerr << "Object: header keywords erroneous!" << std::endl;
     std::terminate();
   }
-
-  // write header information to history
-  text << "# Object " << id << " from " + basefilename + "\n";
-  text << "# Segment area =  (" << grid_min_0 << "/" << grid_min_1 << ") .. (";
-  text << grid_max_0 << "/" << grid_max_1 << ")" << std::endl;
-  text << "# Noise model = " + noisemodel << std::endl;
-  text << "# Background noise = (" << noise_mean << ") +- (" << noise_rms << ")" << std::endl;
-  text << "# Segmentation flag = "<< flag << ", Blending probability = ";
-  text << blend << ", Stellarity = " << s_g << std::endl;
-  history.append(text);
 
   int naxis;
   fits_get_img_dim(fptr, &naxis, &status);
   if (naxis!=2) {
-    std::cout << "Object: naxis != 2. This is not a FITS image!" << std::endl;
+    std::cerr << "Object: naxis != 2. This is not a FITS image!" << std::endl;
     std::terminate();
   } 
   // first obtain the size of the image array
@@ -74,35 +74,37 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   // grid is defined by XMIN..YMAX; this should have the same
   // number of pixels as the actual image
   if (npixels != Image<data_t>::getGrid().size()) {
-    std::cout << "Object: Grid size from header keywords wrong" << std::endl;
+    std::cerr << "Object: Grid size from header keywords wrong" << std::endl;
     std::terminate();
   }
   
-  history.append("# Reading object's pixel data");
+  history << "# Reading object's pixel data" << std::endl;
   Image<data_t>::resize(npixels);
   long firstpix[2] = {1,1};
   data_t vald;
-  int imageformat, datatype;
-  setFITSTypes(vald,imageformat,datatype);
+  int imageformat = getFITSImageFormat(vald);
+  int datatype = getFITSDataType(vald);
   fits_read_pix(fptr, datatype, firstpix, npixels, NULL,Image<data_t>::c_array(), NULL, &status);
   
-  history.append(", segmentation map");
+  history << ", segmentation map";
   // move to 1st extHDU for the segmentation map
   fits_movabs_hdu(fptr, 2, &hdutype, &status);
   segMap.resize(npixels);
   int vali;
-  setFITSTypes(vali,imageformat,datatype);
+  imageformat = getFITSImageFormat(vali);
+  datatype = getFITSDataType(vali);
   fits_read_pix(fptr, datatype, firstpix, npixels, NULL,segMap.c_array(), NULL, &status);
   segMap.accessGrid() = Image<data_t>::getGrid();
 
   // check if there is 2nd extHDU: the weight map
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
-    history.append(" and weight map");
+    history << " and weight map";
     weight.resize(npixels);
-    setFITSTypes(vald,imageformat,datatype);
+    imageformat = getFITSImageFormat(vald);
+    datatype = getFITSDataType(vald);
     fits_read_pix(fptr, datatype, firstpix, npixels, NULL,weight.c_array(), NULL, &status);
   }
-  history.append("\n");
+  history << std::endl;
   fits_close_file(fptr, &status);
 
   // since the grid is change, the centroid has to be recomputed
@@ -135,9 +137,7 @@ const Point2D& Object::getCentroid() const {
 
 void Object::setCentroid(const Point2D& xc) {
   centroid = xc;
-  std::ostringstream text;
-  text << "# Centroid set to ("<< centroid(0) << "/" << centroid(1) <<  ") by user." << std::endl;
-  history.append(text);
+  history << "# Centroid set to ("<< centroid(0) << "/" << centroid(1) <<  ") by user." << std::endl;
 }
 
 data_t Object::getFlux() const {
@@ -146,9 +146,7 @@ data_t Object::getFlux() const {
 
 void Object::setFlux(data_t F) {
   flux = F;
-  std::ostringstream text;
-  text << "# Flux set to " << flux << " by user." <<std::endl;
-  history.append(text);
+  history << "# Flux set to " << flux << " by user." <<std::endl;
 }
 
 NumMatrix<data_t> Object::get2ndBrightnessMoments() {
@@ -192,10 +190,8 @@ void Object::computeFluxCentroid() {
   centroid(0) /= flux;
   centroid(1) /= flux;
   
-  std::ostringstream text;
-  text << "# Flux = " << flux << ", Centroid = ("<< centroid(0) << "/" << centroid(1);
-  text <<  ")." <<std::endl;
-  history.append(text);
+  history << "# Flux = " << flux << ", Centroid = ("<< centroid(0) << "/" << centroid(1);
+  history <<  ")." <<std::endl;
 }
 
 unsigned short Object::getDetectionFlag() const {
@@ -217,18 +213,7 @@ data_t Object::getNoiseRMS() const {
 void Object::setNoiseMeanRMS(data_t mean, data_t rms) {
   noise_mean = mean;
   noise_rms = rms;
-  std::ostringstream text;
-  text << "# Setting noise to (" << mean << ") +- (" << rms << ")" << std::endl;
-  history.append(text);
-}
-
-void Object::setNoiseModel(std::string innoisemodel) {
-  noisemodel = innoisemodel;
-  history.append("# Setting noise model to "+noisemodel+"\n");
-}
-
-std::string Object::getNoiseModel() const {
-  return noisemodel;
+  history << "# Setting noise to (" << mean << ") +- (" << rms << ")" << std::endl;
 }
 
 data_t Object::getBlendingProbability() const {
@@ -250,7 +235,9 @@ void Object::setStarGalaxyProbability(data_t sg) {
 void Object::setBaseFilename(std::string filename) {
   basefilename = filename;
 }
-
+std::string Object::getBaseFilename() const {
+  return basefilename;
+}
 const SegmentationMap& Object::getSegmentationMap() const {
   return segMap;
 }
@@ -279,37 +266,34 @@ void Object::save(std::string filename) {
   // write pixel data
   const NumVector<data_t>& data = Image<data_t>::getData();
   const Grid& grid = Image<data_t>::getGrid();
-  writeFITSFile(filename,grid,data);
+  int status = 0;
+  fitsfile *outfptr = createFITSFile(filename);
+  status = writeFITSImage(outfptr,grid,data);
 
   // add object information to header
-  int status = 0;
-  fitsfile *outfptr;
-  // open pHUD of fits file
-  fits_open_data(&outfptr,filename.c_str(),READWRITE,&status);
-  fits_write_key (outfptr,TSTRING,"BASEFILE",const_cast<char*>(basefilename.c_str()),"name of source file", &status);
-  fits_write_key (outfptr,TINT,"ID",&id,"object id", &status);
-  fits_write_key (outfptr,TINT,"NUMBER",&number,"object number", &status);
-  data_t buffer;
-  buffer = grid.getStartPosition(0);
-  fits_write_key (outfptr,TDOUBLE,"XMIN",&buffer,"min(X) in image pixels", &status);
-  buffer = grid.getStopPosition(0);
-  fits_write_key (outfptr,TDOUBLE,"XMAX",&buffer,"max(X) in image pixels", &status);
-  buffer = grid.getStartPosition(1);
-  fits_write_key (outfptr,TDOUBLE,"YMIN",&buffer,"min(Y) in image pixels", &status);
-  buffer = grid.getStopPosition(1);
-  fits_write_key (outfptr,TDOUBLE,"YMAX",&buffer,"max(Y) in image pixels", &status);
-  fits_write_key (outfptr,TDOUBLE,"BG_MEAN",&noise_mean,"mean of background noise", &status);
-  fits_write_key (outfptr,TDOUBLE,"BG_RMS",&noise_rms,"rms of background noise", &status);
-  fits_write_key (outfptr,TSTRING,"NOISE",const_cast<char*>(noisemodel.c_str()),"noise model", &status);
-  fits_write_key (outfptr,TUSHORT,"FLAG",&flag,"extraction flag", &status);
-  fits_write_key (outfptr,TDOUBLE,"BLEND",&blend,"blending probability", &status);
-  fits_write_key (outfptr,TDOUBLE,"S_G",&s_g,"stellarity", &status);
-  fits_close_file(outfptr, &status);
+  status = updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
+  status = updateFITSKeyword(outfptr,"ID",id,"object id");
+  status = updateFITSKeyword(outfptr,"NUMBER",number,"object number");
+  status = updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
+  status = updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
+  status = updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
+  status = updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
+  complex<data_t> xc(centroid(0),centroid(1));
+  status = updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
+  status = updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
+  status = updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
+  status = updateFITSKeyword(outfptr,"FLAG",flag,"extraction flag");
+  status = updateFITSKeyword(outfptr,"BLEND",blend,"blending probability");
+  status = updateFITSKeyword(outfptr,"S_G",s_g,"stellarity");
+  status = appendFITSHistory(outfptr,history.str());
 
   // save segMap 
-  //keywords.clear();
-  addFITSExtension(filename,"SEGMAP",grid,segMap.getData());
+  status = addFITSExtension(outfptr,"SEGMAP",grid,segMap.getData());
+  status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
+
   //if weight map provided, save it too
   if (weight.size() != 0)
-    addFITSExtension(filename,"WEIGHT",grid,weight);
+    status = addFITSExtension(outfptr,"WEIGHT",grid,weight);
+
+  fits_close_file(outfptr, &status);
 }

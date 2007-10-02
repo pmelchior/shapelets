@@ -35,13 +35,13 @@ Decomposite2D(2,(O.getSize(0) + O.getSize(1))/(2*8),O), obj(O) {
   flag = 0;
 
   // whether correlation function has to be considered as termination criterium
-  if (obj.getNoiseModel().compare("COVARIANCE")==0)
+  if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
     noise_correlated = 1;
   else
     noise_correlated = 0; 
   
-  // set precision in text for history to 4
-  text << std::setprecision(4);
+  // set precision in history for history to 4
+  history << std::setprecision(4);
 }
   
 void OptimalDecomposite2D::optimize() {
@@ -66,7 +66,7 @@ void OptimalDecomposite2D::optimize() {
     Decomposite2D::setNMax(Decomposite2D::getNMax()+2);
     status = findOptimalBeta(1);
     if (status != 0) {
-      history.append("Minimization doesn't converge (well), probably due to image distortions close to the object.\n");
+      history << "Minimization doesn't converge (well), probably due to image distortions close to the object." <<  endl;
       flag = 5;
     }
   }
@@ -81,7 +81,7 @@ void OptimalDecomposite2D::optimize() {
    // we could have run into problems during step 2, therefore chi^2
    // might be larger than 1
    if (!noise_correlated && optimalChiSquare >  1 + Decomposite2D::getChiSquareVariance()) {
-     history.append("#\n# Decomposition stopped before chi^2 = 1!\n");
+     history << "#" << endl << "# Decomposition stopped before chi^2 = 1!" << endl;
      if (flag==0) flag = 4;
    }
    // step 5) opposite: if chisquare is too good, reduce nmax
@@ -92,14 +92,13 @@ void OptimalDecomposite2D::optimize() {
        int newNMAX = (int) floor(0.75*oldoptimalNMax) - 1;
        if (newNMAX < nmaxLow) newNMAX = nmaxLow;
        Decomposite2D::setNMax(newNMAX);
-       text << "#" << endl << "# Checking for lower n_max: chi^2 < 1" << endl;
-       text << "# Restarting with n_max = " << newNMAX << "."<< endl;
-       history.append(text);
+       history << "#" << endl << "# Checking for lower n_max: chi^2 < 1" << endl;
+       history << "# Restarting with n_max = " << newNMAX << "."<< endl;
        findOptimalNMax(5);
        Decomposite2D::setNMax(optimalNMax);
        // step 6) if optimal nmax has decreased now look again for beta and xc
        if (Decomposite2D::getNMax() < oldoptimalNMax) {
-	 history.append("# Found lower n_max.\n");
+	 history << "# Found lower n_max." << endl;
 	 status = findOptimalBeta(6);
        }
        else if (Decomposite2D::getNMax() == oldoptimalNMax) {
@@ -114,7 +113,7 @@ void OptimalDecomposite2D::optimize() {
    // search for nmax and beta such that corr_res >= corr
    else {
      if (comp_corr < 0) {
-       history.append("#\n# Lowering n_max for residuals compatible with expectation\n");
+       history << "#" << endl << "# Lowering n_max for residuals compatible with expectation" << endl;
        int iter = 1;
        while (comp_corr < 0) {
 	 int newNMAX = Decomposite2D::getNMax() - 1;
@@ -122,9 +121,8 @@ void OptimalDecomposite2D::optimize() {
 	 data_t chisquare = Decomposite2D::getChiSquare();
 	 data_t variance = Decomposite2D::getChiSquareVariance();
 	 checkCorrelationFunctionFromResiduals();
-	 text << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
-	 text << chisquare << "\t" << variance << "\t" + comp_corr_string << endl;
-	 history.append(text);
+	 history << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
+	 history << chisquare << "\t" << variance << "\t" + comp_corr_string << endl;
 	 if (comp_corr >= 0)
 	   status = findOptimalBeta(7);
        }
@@ -135,34 +133,31 @@ void OptimalDecomposite2D::optimize() {
 
   if (status == 0) optimized = 1;
   t1 = time(NULL);
-  text << "#" << endl << "# Computation time for decomposition: " << t1 - t0 << " seconds" << endl;
-  history.append(text);
+  history << "#" << endl << "# Computation time for decomposition: " << t1 - t0 << " seconds" << endl;
 }
 
 
 // see Paper III, eq. 39
 void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
   int iter = 1;
-  text << "#" << endl << "# Finding optimal decomposition order n_max";
-  text << ", beta = " << beta << std::endl;
-  text << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
+  history << "#" << endl << "# Finding optimal decomposition order n_max";
+  history << ", beta = " << beta << std::endl;
+  history << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
   if (noise_correlated)
-    text<<"\txi_res - xi";
-  text<< endl;
-  history.append(text);
+    history<<"\txi_res - xi";
+  history<< endl;
 
   data_t chisquare,newChisquare,derivative_chi2,variance;
   chisquare = Decomposite2D::getChiSquare();
   variance = Decomposite2D::getChiSquareVariance();
 
-  text << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
-  text << chisquare << "\t" << variance;
+  history << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
+  history << chisquare << "\t" << variance;
   if (noise_correlated) {
     checkCorrelationFunctionFromResiduals();
-    text<<"\t\t" + comp_corr_string;
+    history<<"\t\t" + comp_corr_string;
   }
-  text << endl;
-  history.append(text);
+  history << endl;
 
 // during the first steps of the search only use even orders for a fast decomposition
   // only when decomposition is too good ( chisquare < 1 - sigma), go back and
@@ -173,48 +168,43 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
   
   if (chisquare <= 1) {
     optimalNMax = Decomposite2D::getNMax();
-    text << "# Optimal decomposition order n_max = " << optimalNMax;
-    text << " already reached" << endl;
-    history.append(text);
+    history << "# Optimal decomposition order n_max = " << optimalNMax;
+    history << " already reached" << endl;
   }
   while (chisquare > 1) {
     // break during step 2 if order gets too high
     // for a relatively fast findOptimalBeta() here
     if (step == 2 && Decomposite2D::getNMax() == 6) {
-      history.append("# Interrupting here for better estimation of beta\n");
+      history << "# Interrupting here for better estimation of beta" << endl;
       findOptimalBeta(2);
       if (optimalChiSquare <= 1) {
 	optimalNMax = Decomposite2D::getNMax();
-	text << "# Optimal decomposition order n_max = " << optimalNMax << endl;
-	history.append(text);
+	history << "# Optimal decomposition order n_max = " << optimalNMax << endl;
 	break;
       }
       else {
-	history.append("#\n# Continuing search for optimal n_max\n");
-	text << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
+	history << "#" << endl << "# Continuing search for optimal n_max" << endl;
+	history << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
 	if (noise_correlated)
-	  text<<"\txi_res - xi";
-	text<< endl;
-	history.append(text);
+	  history<<"\txi_res - xi";
+	history<< endl;
       }
     }
     
     else if (step == 2 && Decomposite2D::getNMax()%12 == 0) {
-      history.append("# Interrupting here for better estimation of beta\n");
+      history << "# Interrupting here for better estimation of beta" << endl;
       findOptimalBeta(3);
       if (optimalChiSquare <= 1) {
 	optimalNMax = Decomposite2D::getNMax();
-	text << "# Optimal decomposition order n_max = " << optimalNMax << endl;
-	history.append(text);
+	history << "# Optimal decomposition order n_max = " << optimalNMax << endl;
 	break;
       }
       else {
-	history.append("#\n# Continuing search for optimal n_max\n");
-	text << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
+	history << "#" << endl << "# Continuing search for optimal n_max" << endl;
+	history << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
 	if (noise_correlated)
-	  text<<"\txi_res - xi";
-	text<< endl;
-	history.append(text);
+	  history<<"\txi_res - xi";
+	history<< endl;
       }
     }
     
@@ -224,8 +214,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	optimalNMax = Decomposite2D::getNMax();
 	flag = 1;
       }
-      text << "# Stopping at nmax limit = " << nmaxHigh << endl;
-      history.append(text);
+      history << "# Stopping at nmax limit = " << nmaxHigh << endl;
       break;
     }
 
@@ -234,27 +223,25 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     newChisquare = Decomposite2D::getChiSquare();
     variance = Decomposite2D::getChiSquareVariance();
 
-    text << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
-    text << newChisquare << "\t" << variance;
+    history << "# " << iter << "\t" << Decomposite2D::getNMax() << "\t";
+    history << newChisquare << "\t" << variance;
     if (noise_correlated) {
       checkCorrelationFunctionFromResiduals();
-      text<<"\t\t" + comp_corr_string;
+      history<<"\t\t" + comp_corr_string;
     }
-    text << endl;
-    history.append(text);
+    history << endl;
 
     // depending on result of chi^2:
     // chisquare is smaller than 1: we've reached the goal
     if (newChisquare <= 1) {
       optimalNMax = Decomposite2D::getNMax();
-      text << "# Optimal decomposition order n_max = " << optimalNMax << endl;
-      history.append(text);
+      history << "# Optimal decomposition order n_max = " << optimalNMax << endl;
       break;
     }
 
     // correlation function of residuals goes below correlation function of noise
     if (noise_correlated && comp_corr < 0) {
-      history.append("# Stopping here: pixel correlation in residuals becomes less than expected\n");
+      history << "# Stopping here: pixel correlation in residuals becomes less than expected" << endl;
       optimalNMax = Decomposite2D::getNMax();
       break;
     }
@@ -266,8 +253,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
       if (ShapeLensConfig::ALLOW_FLATTENING && !nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
 	  bestChiSquare = chisquare = newChisquare;
 	  optimalNMax = Decomposite2D::getNMax();
-	  text << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
-	  history.append(text);
+	  history << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
 	  break;
       }
 
@@ -278,22 +264,19 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	bestChiSquare = chisquare;
 	optimalNMax = Decomposite2D::getNMax() - increment;
 	derivative_chi2 = (newChisquare - chisquare)/increment;
-	text << "# chi^2 becomes worse! Saving best fit n_max = " << optimalNMax << " now." << endl;
-	history.append(text);
+	history << "# chi^2 becomes worse! Saving best fit n_max = " << optimalNMax << " now." << endl;
       }
       // if chi2 becomes better again remember new best values
       if (nmaxTrouble && newChisquare >= 0 && newChisquare < bestChiSquare) {
 	nmaxTrouble = 0;
 	bestChiSquare = newChisquare;
 	optimalNMax = Decomposite2D::getNMax();
-	text << "# Better n_max = " <<  optimalNMax << " found now. Continuing search for optimal n_max." << endl;
-	history.append(text);
+	history << "# Better n_max = " <<  optimalNMax << " found now. Continuing search for optimal n_max." << endl;
       }
       // if increase in chi^2 becomes even bigger: break
       if (nmaxTrouble && (newChisquare - chisquare)/increment > derivative_chi2) {
-	text << "# chi^2 becomes increasingly worse. Object underconstrained." << endl;
-	text << "# Returning to best fit n_max = " << optimalNMax << endl;
-	history.append(text);
+	history << "# chi^2 becomes increasingly worse. Object underconstrained." << endl;
+	history << "# Returning to best fit n_max = " << optimalNMax << endl;
 	Decomposite2D::setNMax(optimalNMax);
 	break;
       }
@@ -304,9 +287,8 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	  nmaxTrouble = 1;
 	}
 	Decomposite2D::setNMax(optimalNMax);
-	text << "# nPixels <= nCoeffs! Object underconstrained." << endl;
-	text << "# Returning to best fit n_max = " << optimalNMax << endl;
-	history.append(text);
+	history << "# nPixels <= nCoeffs! Object underconstrained." << endl;
+	history << "# Returning to best fit n_max = " << optimalNMax << endl;
 	flag = 3;
 	break;
       }
@@ -317,9 +299,8 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	  nmaxTrouble = 1;
 	}
 	Decomposite2D::setNMax(optimalNMax);
-	text << "# 2 Theta_min < 1! Image becomes undersampled." << endl;
-	text << "# Returning to best fit n_max = " << optimalNMax << endl;
-	history.append(text);
+	history << "# 2 Theta_min < 1! Image becomes undersampled." << endl;
+	history << "# Returning to best fit n_max = " << optimalNMax << endl;
 	flag = 2;
 	break;
       }
@@ -370,9 +351,8 @@ bool OptimalDecomposite2D::testBetaUpperLimit(data_t& beta) {
 // beta is contrained by image_dimension/2
 // return 0 if minimum has been found, -2 if not, and other numbers for error codes
 int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
-  text << "#" << endl << "# Finding optimal beta";
-  text << ", n_max = " << Decomposite2D::getNMax() << endl;
-  history.append(text);
+  history << "#" << endl << "# Finding optimal beta";
+  history << ", n_max = " << Decomposite2D::getNMax() << endl;
 
   // first check if we already did a minimization at this nmax
   map<int,data_t>::iterator iter = bestBeta.find(Decomposite2D::getNMax());
@@ -381,14 +361,13 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     Decomposite2D::setBeta(optimalBeta);
     iter = bestChi2.find(Decomposite2D::getNMax());
     optimalChiSquare = iter->second;
-    text<< "# Using already found minimum: chi^2 = " << optimalChiSquare << " at beta = ";
-    text << beta;
+    history<< "# Using already found minimum: chi^2 = " << optimalChiSquare << " at beta = ";
+    history << beta;
     if (noise_correlated) {
       checkCorrelationFunctionFromResiduals();
-      text<<", xi_res - xi = (" + comp_corr_string +")";
+      history<<", xi_res - xi = (" + comp_corr_string +")";
     }
-    text << endl; 
-    history.append(text);
+    history << endl; 
     return 0;
   }
   
@@ -412,8 +391,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     case 7: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
     }
     
-    text << "# initial setup: a = " << a << ", beta = " << beta << ", b = " << b << endl;
-    history.append(text);
+    history << "# initial setup: a = " << a << ", beta = " << beta << ", b = " << b << endl;
 
     // this ensures beta is within reasonable bounds
     // according to undersampling, orthogonality and evtl. specified bounds on beta
@@ -433,8 +411,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 	optimalChiSquare = Decomposite2D::getChiSquare();
 	bestBeta[Decomposite2D::getNMax()] = optimalBeta;
 	bestChi2[Decomposite2D::getNMax()] = optimalChiSquare;
-	text << "# Beta = " << beta << " by external constraints: chi^2 = " << optimalChiSquare << endl;
-	history.append(text);
+	history << "# Beta = " << beta << " by external constraints: chi^2 = " << optimalChiSquare << endl;
 	return 0;
       }
       else if (b < a) { // one of the constraints (on a or b) is severe
@@ -453,15 +430,14 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 	else
 	  limitTrouble = 1;
 	if (limitTrouble) {
-	  history.append("# Constraints on beta to severe. Minimization impossible!\n");
+	  history << "# Constraints on beta to severe. Minimization impossible!" << endl;
 	  return -2;
 	}
       }
       if (beta < a || beta > b)
 	beta = 0.5*(a+b); // a < beta < b
     }
-    text << "# after checking limits: a = " << a << ", beta = " << beta << ", b = " << b << endl;
-    history.append(text);
+    history << "# after checking limits: a = " << a << ", beta = " << beta << ", b = " << b << endl;
 
     // for the bracketing used in the minimizer we have to also ensure that
     // f(a) > f(beta) and f(b) > f(beta);
@@ -471,8 +447,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     data_t fa = Decomposite2D::getChiSquare();
     Decomposite2D::setBeta(b);
     data_t fb = Decomposite2D::getChiSquare();
-    text << "# starting values: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
-    history.append(text);
+    history << "# starting values: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
     
     if (fa < fb) {
       while (fa <= f) {
@@ -515,17 +490,14 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
       }
     } else {
       // fa == fb here: this object has a flat chi2 function
-      history.append("# chi^2 is flat; detection of minimum failed!\n");
+      history << "# chi^2 is flat; detection of minimum failed!" << endl;
       std::terminate();
     }
 
-    text << "# after bracketing: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
-    history.append(text);
-    
-    text << "# Setting limits: " << a << " <= beta <= " << b << endl;
-    text << "# Starting with beta = " << beta << endl;
-    text << "# iter.\tchi^2\tbeta\tdelta(beta)" << endl;
-    history.append(text);
+    history << "# after bracketing: f(a) = " << fa << ", f(beta) = " << f << ", f(b) = " << fb << endl;
+    history << "# Setting limits: " << a << " <= beta <= " << b << endl;
+    history << "# Starting with beta = " << beta << endl;
+    history << "# iter.\tchi^2\tbeta\tdelta(beta)" << endl;
 
     size_t max_iter = 100;
     const gsl_min_fminimizer_type *T = gsl_min_fminimizer_brent;
@@ -552,21 +524,19 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
       // when size is smaller than accuracy we have convergence
       status = gsl_min_test_interval (a, b, accuracy, 0.0);
      
-      text << "# " << iter << "\t" << gsl_min_fminimizer_f_minimum(s) << "\t" << beta << "\t" << b-a << endl;
-      history.append(text);
+      history << "# " << iter << "\t" << gsl_min_fminimizer_f_minimum(s) << "\t" << beta << "\t" << b-a << endl;
 
       if (status == GSL_SUCCESS) {
 	optimalBeta = beta;
 	Decomposite2D::setBeta(beta);
 	optimalChiSquare = Decomposite2D::getChiSquare();
-	text<< "# Converged to minimum: chi^2 = " << optimalChiSquare << " at beta = ";
-	text << optimalBeta;
+	history<< "# Converged to minimum: chi^2 = " << optimalChiSquare << " at beta = ";
+	history << optimalBeta;
 	if (noise_correlated) {
 	  checkCorrelationFunctionFromResiduals();
-	  text<<", xi_res - xi = (" + comp_corr_string +")";
+	  history<<", xi_res - xi = (" + comp_corr_string +")";
 	}
-	text << endl; 
-	history.append(text);
+	history << endl; 
       }
     }
     while (status == GSL_CONTINUE && iter < max_iter);
@@ -788,7 +758,7 @@ double f_coeffs(const gsl_vector *v, void *params) {
 }
 
 void minimize_beta(reg_parameters& p) {
-  p.history.append("#\n# Minimize w.r.t beta\n");
+  p.history << "#" << endl << "# Minimize w.r.t beta" << endl;
   gsl_vector *x, *ss;
   gsl_multimin_function my_func;
   my_func.f = &f_beta;
@@ -806,7 +776,7 @@ void minimize_beta(reg_parameters& p) {
   gsl_multimin_fminimizer_set (s, &my_func, x, ss);
 
   int iter =0, status;
-  std::ostringstream text;
+  std::ostringstream history;
   do {
       iter++;
       status = gsl_multimin_fminimizer_iterate (s);
@@ -819,15 +789,14 @@ void minimize_beta(reg_parameters& p) {
       status = gsl_multimin_test_size (gsl_multimin_fminimizer_size (s),0.01*beta);
       
       if (status == GSL_SUCCESS) {
-	p.history.append("# new minimum found:\n");
+	p.history << "# new minimum found:" << endl;
       }
   } while (status == GSL_CONTINUE); 
   // update all quantities with new beta
   // this is neccessary, since p contains values from last call, not from best f
   f_beta(s->x,&p);
-  text << "# " << iter << ":\t beta = " << gsl_vector_get (s->x, 0)<< "\t f = " << s->fval;
-  text << "\t chi^2 = " << p.chi2 <<  "\t R = "<< p.R << std::endl;
-  p.history.append(text);
+  history << "# " << iter << ":\t beta = " << gsl_vector_get (s->x, 0)<< "\t f = " << s->fval;
+  history << "\t chi^2 = " << p.chi2 <<  "\t R = "<< p.R << std::endl;
 
   // clean up
   gsl_multimin_fminimizer_free (s);
@@ -836,7 +805,7 @@ void minimize_beta(reg_parameters& p) {
 }
 
 void minimize_coeffs(reg_parameters& p) {
-  p.history.append("#\n# Minimizing w.r.t. shapelet coefficients\n");
+  p.history << "#" << endl << "# Minimizing w.r.t. shapelet coefficients" << endl;
   const NumVector<data_t>& coeffVector = p.d.getCoeffs();
   int nCoeffs = coeffVector.size();
   gsl_vector *x, *ss;
@@ -858,7 +827,7 @@ void minimize_coeffs(reg_parameters& p) {
   gsl_multimin_fminimizer_set (s, &my_func, x, ss);
 
   int iter =0, status;
-  std::ostringstream text;
+  std::ostringstream history;
   do {
       iter++;
       status = gsl_multimin_fminimizer_iterate (s);
@@ -875,15 +844,14 @@ void minimize_coeffs(reg_parameters& p) {
 
 
       if (status == GSL_SUCCESS) {
-      	p.history.append("# new minimum found:\n");
+      	p.history << "# new minimum found:" << endl;
       }
   } while (status == GSL_CONTINUE && iter < 1000);
  
   // update coeffs and all other quantities in p
   f_coeffs(s->x,&p);
 
-  text << "# " << iter << ":\t f = " << s->fval << "\t chi^2 = " << p.chi2 << "\t R = " << p.R << std::endl;
-  p.history.append(text);
+  history << "# " << iter << ":\t f = " << s->fval << "\t chi^2 = " << p.chi2 << "\t R = " << p.R << std::endl;
   
   gsl_multimin_fminimizer_free (s);
   gsl_vector_free (x);
@@ -939,20 +907,17 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
   chi2 = initialChi2 = optimalChiSquare;
   beta = optimalBeta;
   nmax = optimalNMax;
-  text << "#" << std::endl << "# Regularization: minimizing negative Flux " << std::endl;
-  text << "# Requirement: R = negative_Flux/positive_Flux < " << wantedR << std::endl;
-  text << "# Minimizing f = chi^2 + lambda*H, with H = acosh(1+R)" << std::endl;
-  text << "# initial R = " << initialR << ", => initial H = " << H << std::endl;
-  history.append(text);
+  history << "#" << std::endl << "# Regularization: minimizing negative Flux " << std::endl;
+  history << "# Requirement: R = negative_Flux/positive_Flux < " << wantedR << std::endl;
+  history << "# Minimizing f = chi^2 + lambda*H, with H = acosh(1+R)" << std::endl;
+  history << "# initial R = " << initialR << ", => initial H = " << H << std::endl;
 
   // nothing to do anymore?
   if (wantedR >= R ) {
-    text << "# Regularization not neccessary: R already lower than wanted R = " << wantedR << std::endl;
-    history.append(text);
+    history << "# Regularization not neccessary: R already lower than wanted R = " << wantedR << std::endl;
   }
   else if (!noise_correlated && optimalChiSquare > 1) {
-    text << "# Regularization not appropriate: chi^2 > 1"<< std::endl;
-    history.append(text);
+    history << "# Regularization not appropriate: chi^2 > 1"<< std::endl;
   }
   else {
     // lambda is adjusted such that chi2 and R are compatible;
@@ -961,8 +926,7 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
     data_t lambda = 0.3*chi2/H;
     data_t initialLambda = lambda;
     data_t f = optimalChiSquare + lambda*H;
-    text << "# Starting with lambda = " << lambda << std::endl;
-    history.append(text);
+    history << "# Starting with lambda = " << lambda << std::endl;
 
     // set up vector for storing the numerous regularization results
     std::vector<regResults> results;
@@ -985,7 +949,7 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
     while ((!noise_correlated &&(R > wantedR || chi2 > 1)) || (noise_correlated && comp_corr>=0)) {
       // introduce arbitrary time constraint
       if (t1-t0 > 900) {
-	history.append("# Regularization takes too long, stopping here!\n");
+	history << "# Regularization takes too long, stopping here!" << endl;
 	trouble = 1;
 	break;
       }	
@@ -1000,16 +964,17 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
 	if (bestnmax == nmax) {
 	  if (nmax + 1 <= nmaxHigh) {
 	    nmax+=1;
-	    text << "# Object too strongly constrained by data, setting nmax = " << nmax << " and lambda = " << lambda << std::endl;
-	    history.append(text);
+	    history << "# Object too strongly constrained by data, setting nmax = " << nmax << " and lambda = " << lambda << std::endl;
 	    par.updateCoeffs = 1;
 	  } else {
-	    history.append("# Object too strongly constrained by data, but nmax limit reached.\n# Stopping here and reverting to previous best fit values:\n");
+	    history << "# Object too strongly constrained by data, but nmax limit reached." << endl;
+            history << "# Stopping here and reverting to previous best fit values:" << endl;
 	    trouble = 1;
 	    break;
 	  }
 	} else {
-	  history.append("# f increased during last increase of nmax: regularization constraints to strict for this object.\n# Reverting to previous best values:\n");
+	  history << "# f increased during last increase of nmax: regularization constraints to strict for this object." << endl;
+          history << "# Reverting to previous best values:" << endl;
 	  trouble = 1;
 	  break;
 	}
@@ -1021,8 +986,7 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
 	// otherwise chi2 cannot be lowered sufficiently
 	if (chi2 > 1) {
 	  lambda /= GSL_MAX(2,1 + fabs(initialChi2-chi2)*100);
-	  text << "# Regularization too strong, setting lambda = " << lambda << std::endl;
-	  history.append(text);
+	  history << "# Regularization too strong, setting lambda = " << lambda << std::endl;
 	  par.updateCoeffs = 1;
 	}
 	// reg. too weak, problems is given by high R:
@@ -1030,8 +994,7 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
 	// search for optimal coeffs (w.r.t. f)
 	else if (R > wantedR && chi2 <= 1) {
 	  lambda *= GSL_MAX(1.5,initialH/fabs(initialH-H));
-	  text << "# Regularization too weak, setting lambda = " << lambda << std::endl;
-	  history.append(text);
+	  history << "# Regularization too weak, setting lambda = " << lambda << std::endl;
 	  par.updateCoeffs = 0;
 	}
       }
@@ -1046,7 +1009,7 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
 	optimalNMax = nmax;
 	optimalBeta = beta;
 	optimalChiSquare = chi2;
-    	text << "# Regularization converged: chi^2 = " << optimalChiSquare << ", R = "<< R << std::endl;
+    	history << "# Regularization converged: chi^2 = " << optimalChiSquare << ", R = "<< R << std::endl;
     }
     // we have to revert to those reg. parameters nmax and lambda, where 
     // chi2 <=1 and R minimal
@@ -1064,10 +1027,9 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
       Decomposite2D::setBeta(beta);
       Decomposite2D::accessCoeffs() = bestResult.coeffs;
       Decomposite2D::updateCoeffs(0);
-      text << "# nmax = " << optimalNMax << ", lambda = " << lambda << " -> beta = " << beta << ", f = " << f << ", chi^2 = " << chi2 << ", R = " << R << std::endl;
+      history << "# nmax = " << optimalNMax << ", lambda = " << lambda << " -> beta = " << beta << ", f = " << f << ", chi^2 = " << chi2 << ", R = " << R << std::endl;
     }
-    text << "#" << endl << "# Computation time for regularization: " << t1 - t0 << " seconds" << std::endl;
-    history.append(text);
+    history << "#" << endl << "# Computation time for regularization: " << t1 - t0 << " seconds" << std::endl;
   }
   return R;
 }

@@ -13,7 +13,7 @@ const Complex I = Complex(0,1);
 ImageTransformation::ImageTransformation() {
 }
 
-void ImageTransformation::rotate(NumMatrix<Complex>& polarCoeffs, data_t rho, ostringstream& history) {
+void ImageTransformation::rotate(NumMatrix<Complex>& polarCoeffs, data_t rho, History& history) {
   history << "# Rotating image by " << rho << endl;
   for (int n = 0; n < polarCoeffs.getRows(); n++) {
     for (int m = -n; m<=n; m++) {
@@ -24,7 +24,7 @@ void ImageTransformation::rotate(NumMatrix<Complex>& polarCoeffs, data_t rho, os
   }
 }
 
-void ImageTransformation::converge(NumMatrix<Complex>& polarCoeffs, data_t& beta, data_t kappa, ostringstream& history) {
+void ImageTransformation::converge(NumMatrix<Complex>& polarCoeffs, data_t& beta, data_t kappa, History& history) {
   history << "# Converging image by a factor 1 + kappa = " << 1 + kappa << endl;
   NumMatrix<Complex> tmp = polarCoeffs;
   // FIXME: which method to use: 
@@ -49,7 +49,7 @@ void ImageTransformation::converge(NumMatrix<Complex>& polarCoeffs, data_t& beta
 }
 
 // see Paper III, eq. 41
-void ImageTransformation::shear(NumMatrix<Complex>& polarCoeffs, data_t gamma0, data_t gamma1, ostringstream& history) {
+void ImageTransformation::shear(NumMatrix<Complex>& polarCoeffs, data_t gamma0, data_t gamma1, History& history) {
   history << "# Shearing image by gamma0 = " << gamma0 << ", gamma1 = " << gamma1 << endl;
   NumMatrix<Complex> tmp = polarCoeffs;
   Complex factor = data_t(0.25)*(gamma0 + I*gamma1);
@@ -84,7 +84,7 @@ void ImageTransformation::shear(NumMatrix<Complex>& polarCoeffs, data_t gamma0, 
     }
     //}
 }
-void ImageTransformation::flex(NumMatrix<data_t>& cartesianCoeffs, const NumMatrix<data_t>& dGamma, ostringstream& history) {
+void ImageTransformation::flex(NumMatrix<data_t>& cartesianCoeffs, const NumMatrix<data_t>& dGamma, History& history) {
  history << "# Applying flexion to the image by " << dGamma << endl;
  NumMatrix<data_t> flexed(cartesianCoeffs.getRows(),cartesianCoeffs.getColumns());
  for (int n1=0; n1 < cartesianCoeffs.getRows(); n1++) {
@@ -154,7 +154,7 @@ void ImageTransformation::flex(NumMatrix<data_t>& cartesianCoeffs, const NumMatr
      cartesianCoeffs(n1,n2) += flexed(n1,n2);
 }
 
-void ImageTransformation::translate(NumMatrix<data_t>& cartesianCoeffs, data_t beta, data_t dx1, data_t dx2, ostringstream& history) {
+void ImageTransformation::translate(NumMatrix<data_t>& cartesianCoeffs, data_t beta, data_t dx1, data_t dx2, History& history) {
   history << "# Translating image by " << dx1 << "/" << dx2 << endl;
   // rescale dx1 and dx2 to be in units of beta, 
   // change sign because eq. in paper gives invers transformation
@@ -176,7 +176,7 @@ void ImageTransformation::translate(NumMatrix<data_t>& cartesianCoeffs, data_t b
   }
 }
 
-void ImageTransformation::circularize(NumMatrix<Complex>& polarCoeffs, ostringstream& history) {
+void ImageTransformation::circularize(NumMatrix<Complex>& polarCoeffs, History& history) {
   history << "# Circularizing image" << endl; 
   NumMatrix<Complex> tmp = polarCoeffs;
   for (int n = 0; n < polarCoeffs.getRows(); n++) 
@@ -186,7 +186,7 @@ void ImageTransformation::circularize(NumMatrix<Complex>& polarCoeffs, ostringst
 	  polarCoeffs(n,mIndex(n,m)) = Complex(0,0);
 }
 
-void ImageTransformation::flipX(NumMatrix<Complex>& polarCoeffs, ostringstream& history) {
+void ImageTransformation::flipX(NumMatrix<Complex>& polarCoeffs, History& history) {
   history << "# Flipping image arround its X-axis" << endl;
   for (int n = 0; n < polarCoeffs.getRows(); n++)
     for (int m = -n; m<=n; m++) 
@@ -194,7 +194,7 @@ void ImageTransformation::flipX(NumMatrix<Complex>& polarCoeffs, ostringstream& 
 	polarCoeffs(n,mIndex(n,m)) = conj(polarCoeffs(n,mIndex(n,m)));
 }  
 
-void ImageTransformation::brighten(NumMatrix<data_t>& cartesianCoeffs, NumMatrix<Complex>& polarCoeffs, data_t factor, ostringstream& history) {
+void ImageTransformation::brighten(NumMatrix<data_t>& cartesianCoeffs, NumMatrix<Complex>& polarCoeffs, data_t factor, History& history) {
   history << "# Changing image brightness by the factor " << factor << endl;
   // cartesian coeffs first, then the same for polar coeffs
   for (int i =0; i < cartesianCoeffs.getRows();i++)
@@ -210,7 +210,7 @@ void ImageTransformation::brighten(NumMatrix<data_t>& cartesianCoeffs, NumMatrix
   }
 }
 
-void ImageTransformation::convolve(NumMatrix<data_t>& cartesianCoeffs, data_t& beta, const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel, ostringstream& history) {
+void ImageTransformation::convolve(NumMatrix<data_t>& cartesianCoeffs, data_t& beta, const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel, History& history) {
   history << "# Convolving image with kernel of order " << KernelCoeffs.getRows() - 1;
   history << ", beta = " << beta_kernel << endl;
   int nmax_orig = cartesianCoeffs.getRows() -1;
@@ -231,7 +231,7 @@ void ImageTransformation::convolve(NumMatrix<data_t>& cartesianCoeffs, data_t& b
   beta = beta_convolved;
 }
 
-void ImageTransformation::deconvolve(NumMatrix<data_t>& cartesianCoeffs, data_t& beta, const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel, ostringstream& history) {
+void ImageTransformation::deconvolve(NumMatrix<data_t>& cartesianCoeffs, data_t& beta, const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel, History& history) {
   history << "# Deconvolving image with kernel of order " << KernelCoeffs.getRows() - 1;
   history << ", beta = " << beta_kernel << endl;
   int nmax_convolved = cartesianCoeffs.getRows() -1;
@@ -352,7 +352,7 @@ void ImageTransformation::makeBTensor(boost::multi_array<data_t,3>& bt, data_t a
 	bt[l][m][n] *= prefactor[l][m][n];
 }
 
-void ImageTransformation::rescale(NumMatrix<data_t>& cartesianCoeffs, data_t beta, data_t newbeta, ostringstream& history) {
+void ImageTransformation::rescale(NumMatrix<data_t>& cartesianCoeffs, data_t beta, data_t newbeta, History& history) {
   history << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
   CoefficientVector<data_t> coeffVector(cartesianCoeffs);
   const IndexVector& nVector = coeffVector.getIndexVector();

@@ -5,6 +5,7 @@
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <list>
+#include <tclap/CmdLine.h>
 
 typedef complex<data_t> Complex;
 
@@ -269,12 +270,12 @@ void createLensedShapeletImages(data_t dx, NumMatrix<data_t>& kappa, NumMatrix<C
 
 
 int main(int argc, char *argv[]) {
-  if (argc != 5) {
-    std::cout << "usage: createShapeletGalaxies <path> <beta_min> <beta_max> <NOBJ>" << std::endl;
-    std::terminate();
-  } 
+  TCLAP::CmdLine cmd("Create set of simulated galaxy SIF files", ' ', "0.1");
+  TCLAP::ValueArg<data_t> minArg("m","min","min(beta)",true,1,"data_t", cmd);
+  TCLAP::ValueArg<data_t> maxArg("M","max","max(beta)",true,10,"data_t", cmd);
+  TCLAP::ValueArg<int> NArg("N","NOBJ","total number of galaxies",true,100,"int", cmd);
+  TCLAP::ValueArg<std::string> pathArg("p","path","path to store SIF files",true,"","string", cmd);
+  cmd.parse(argc,argv);
 
-  int NGLX = atoi(argv[4]);
-  data_t betamin = atof(argv[2]), betamax = atof(argv[3]);
-  createShapeletImagesPCA(betamin,betamax,argv[1],NGLX);
+  createShapeletImagesPCA(minArg.getValue(),maxArg.getValue(),pathArg.getValue(), NArg.getValue());
 }

@@ -5,8 +5,97 @@
 #include <gsl/gsl_randist.h>
 #include <time.h>
 #include <sys/timeb.h>
+#include <boost/tokenizer.hpp>
 
 namespace ublas = boost::numeric::ublas;
+
+fitsfile* openFITSFile(std::string filename, bool write) {
+  int status = 0;
+  fitsfile *outfptr;
+  fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
+  return outfptr;
+}
+
+fitsfile* createFITSFile(std::string filename) {
+  int status = 0;
+  fitsfile *outfptr;
+  filename = "!"+filename; // overwrite existing file if necessary
+  // create fits file
+  fits_create_file(&outfptr,filename.c_str(), &status); 
+  return outfptr;
+}
+
+
+int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment) {
+  int status = 0;
+  fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
+  return status;
+}
+
+int updateFITSKeywordString(std::string filename, std::string keyword, std::string value, std::string comment) {
+  int status = 0;
+  fitsfile *outfptr = openFITSFile(filename,1);
+  status = updateFITSKeywordString(outfptr, keyword, value, comment);
+  fits_close_file(outfptr, &status);
+  return status;
+}
+
+int appendFITSHistory(std::string filename, std::string history) {
+  int status = 0;
+  fitsfile *outfptr = openFITSFile(filename,1);
+  status = appendFITSHistory(outfptr,history);
+  fits_close_file(outfptr, &status);
+  return status;
+}
+
+int appendFITSHistory(fitsfile *outfptr, std::string history) {
+  // since it is too long the be saved in one shot
+  // split it line by line
+  // and for each line insert a HISTORY line in the header
+  boost::char_separator<char> sep("\n");
+  boost::tokenizer<boost::char_separator<char> > tok(history, sep);
+  boost::tokenizer<boost::char_separator<char> >::iterator tok_iter;
+  int status = 0, spaces = 8;
+  for(tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter) {
+    // replace tab by spaces because tab cannot be saved in FITS header card
+    // in order to mimick the tab style, an adaptive amount of spaces is inserted
+    std::string card = (*tok_iter);
+    char tabReplacement(' ');
+    while ((card).find("\t") != std::string::npos) {
+      int index = (card).find("\t");
+      card.replace(index,1,spaces - (index%spaces), tabReplacement);
+    }
+    fits_write_history (outfptr,const_cast<char*>(card.c_str()), &status);
+  }
+  return status;
+}
+
+int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val) {
+  int status = 0;
+  char* comment = NULL;
+  char value[FLEN_CARD];
+  fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&value, comment, &status);
+  val = std::string(value);
+  return status;
+}
+
+int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
+  int status = 0, nkeys, keylen=0;
+  char* comment = NULL;
+  char card[FLEN_CARD], keyword[FLEN_KEYWORD];
+  fits_get_hdrspace(fptr, &nkeys, NULL, &status);
+  for (int i = 1; i <= nkeys; i++) {
+    fits_read_record(fptr, i, card, &status);
+    fits_get_keyname(card,keyword,&keylen,&status);
+    if (std::string(keyword) == key) {
+      // append all but the first 8 characters
+      value += card + FLEN_CARD - FLEN_VALUE;
+      value += "\n";
+    }
+  }
+  return status;
+}
+
 
 void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit) {
   const gsl_rng_type * T;

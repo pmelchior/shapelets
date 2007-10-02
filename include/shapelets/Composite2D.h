@@ -4,8 +4,6 @@
 /// 2D Composition class.
 /// Provides values of a 2D composite shapelet function 
 /// \f$f(x0,x1) = \sum f_{n0,n1} \cdot B_{n0,n1}(x0,x1)\f$.\n
-/// A default Grid will be defined on construction, that will be appropriately sized
-/// to plot the whole image and all included details.
 
 #include <NumMatrix.h>
 #include <NumVector.h>
@@ -48,9 +46,8 @@ class Composite2D : private Shapelets2D {
   Point2D& accessCentroid();
   /// Set centroid position \f$x_c\f$
   void setCentroid(const Point2D& inxcentroid);
-  /// Get active Grid.
-  /// This is especially useful for retrieving the default grid.
-  const Grid& getGrid();
+  /// Get current Grid.
+  const Grid& getGrid() const;
   /// Set new Grid.
   /// This changes the default Grid and therefore also the behavior of evalGrid(),
   /// which depends on the stepsize between the grid points.
@@ -77,6 +74,9 @@ class Composite2D : private Shapelets2D {
   /// Calculate the object RMS radius from the coefficients.
   /// see Paper I, eq. 28
   data_t getShapeletRMSRadius() const;
+
+  friend class SIFFile;
+
  private:
   Grid grid;
   NumMatrix<data_t> shapeletCoeffs, M;
@@ -84,9 +84,7 @@ class Composite2D : private Shapelets2D {
   Point2D xcentroid;
   int order0, order1, orderlimit0, orderlimit1;
   data_t beta, stepsize0, stepsize1;
-  bool change, changeGrid, lockGrid;
-  // defines dimensions of the grid depending on the shapelet orders
-  void defineGrid();
+  bool change;
   data_t evalGridPoint(const Point2D& x);
   void evalGrid();
   void makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector);

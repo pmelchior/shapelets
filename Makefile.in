@@ -35,8 +35,9 @@ PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(NUMLAINCLPATH)/*.h)
 
 CC = g++
-CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLPATH) -I$(INCLPATH) ???OTHERINCL??? -L$(LIBPATH) ???OTHERLIB???
-LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio
+CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLPATH) -I$(INCLPATH) ???OTHERINCL???
+CFLAG_LIBS = -L$(LIBPATH) ???OTHERLIB???
+LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio -lboost_filesystem
 
 AR = ar
 ARFLAGS = -sr
@@ -99,5 +100,5 @@ $(LIBPATH)/%.o: $(SRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(PROGPATH)/%: $(PROGSRCPATH)/%.cc
-	$(CC) $(CFLAGS) $< -o $@ $(LIBS)
+	$(CC) $(CFLAGS) $(CFLAG_LIBS) $< -o $@ $(LIBS)
 

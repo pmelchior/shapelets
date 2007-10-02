@@ -12,10 +12,14 @@ data_t ShapeLensConfig::BETA_LOW = 0;
 data_t ShapeLensConfig::BETA_HIGH = numeric_limits<data_t>::infinity();
 bool ShapeLensConfig::REGULARIZE = 0;
 data_t ShapeLensConfig::REG_LIMIT = 1e-5;
-std::string ShapeLensConfig::UNREG_SIFFILE = "";
+bool ShapeLensConfig::SAVE_UNREG = 1;
 bool ShapeLensConfig::ALLOW_FLATTENING = 0;
 bool ShapeLensConfig::FILTER_SPURIOUS = 0;
 data_t ShapeLensConfig::ADD_BORDER = 0.5;
+unsigned int ShapeLensConfig::MIN_PIXELS = 20;
+data_t ShapeLensConfig::MIN_THRESHOLD = 1.25;
+data_t ShapeLensConfig::DETECT_THRESHOLD = 3.;
+std::string ShapeLensConfig::NOISEMODEL = "GAUSSIAN";
 
 ShapeLensConfig::ShapeLensConfig() {
 }
@@ -41,27 +45,35 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
     for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter)
       column.push_back(*tok_iter);
     // exclude empty and comment lines
-    if (column.size() >= 2 && column[0].compare("#") != 0) {
-      if (column[0].compare("NMAX_LOW") == 0)
+    if (column.size() >= 2 && column[0] != "#") {
+      if (column[0] == "NMAX_LOW")
 	NMAX_LOW = (unsigned int) atoi (column[1].c_str());
-      if (column[0].compare("NMAX_HIGH") == 0)
+      if (column[0] == "NMAX_HIGH")
 	NMAX_HIGH = (unsigned int) atoi (column[1].c_str());
-      if (column[0].compare("BETA_LOW") == 0)
+      if (column[0] == "BETA_LOW")
 	BETA_LOW = (data_t) atof (column[1].c_str());
-      if (column[0].compare("BETA_HIGH") == 0)
+      if (column[0] == "BETA_HIGH")
 	BETA_HIGH = (data_t) atof (column[1].c_str());
-      if (column[0].compare("REGULARIZE") == 0)
+      if (column[0] == "REGULARIZE")
 	REGULARIZE = (bool) atoi (column[1].c_str());
-      if (column[0].compare("REG_LIMIT") == 0)
+      if (column[0] == "REG_LIMIT")
 	REG_LIMIT = (data_t) atof (column[1].c_str());
-      if (column[0].compare("UNREG_SIFFILE") == 0)
-	UNREG_SIFFILE = column[1];
-      if (column[0].compare("ALLOW_FLATTENING") == 0)
+      if (column[0] == "SAVE_UNREG")
+	SAVE_UNREG = (bool) atoi(column[1].c_str());
+      if (column[0] == "ALLOW_FLATTENING")
 	ALLOW_FLATTENING = (bool) atoi (column[1].c_str());
-      if (column[0].compare("FILTER_SPURIOUS") == 0)
+      if (column[0] == "FILTER_SPURIOUS")
         FILTER_SPURIOUS = (bool) atoi (column[1].c_str());
-      if (column[0].compare("ADD_BORDER") == 0)
+      if (column[0] == "ADD_BORDER")
         ADD_BORDER = (data_t) atof (column[1].c_str());
+      if (column[0] == "MIN_PIXELS")
+	MIN_PIXELS = (unsigned int) atoi (column[1].c_str());
+      if (column[0] == "MIN_THRESHOLD")
+	MIN_THRESHOLD = (data_t) atof (column[1].c_str());
+      if (column[0] == "DETECT_THRESHOLD")
+	DETECT_THRESHOLD = (data_t) atof (column[1].c_str());
+      if (column[0] == "NOISEMODEL")
+	NOISEMODEL = column[1];
     }
   }
 }

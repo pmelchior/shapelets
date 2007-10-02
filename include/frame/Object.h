@@ -87,10 +87,6 @@ class Object : public Image<data_t> {
   data_t getNoiseRMS() const;
   /// Set noise features from external measurements (e.g. in Frame).
   void setNoiseMeanRMS(data_t mean, data_t rms);
-  /// Set the noise model.
-  void setNoiseModel(std::string noisemodel);
-  /// Get the noise model.
-  std::string getNoiseModel() const;
   /// Get the blending probability.
   /// If the probability is small, the object is considered to be unblended.
   data_t getBlendingProbability() const;
@@ -119,6 +115,9 @@ class Object : public Image<data_t> {
   /// The string should not exceed 80 characters, otherwise it becomes truncated 
   /// in the FITS header.
   void setBaseFilename(std::string filename);
+  /// Get the filename from which this object is derived.
+  /// see setBaseFilename() for details.
+  std::string getBaseFilename() const;
   /// Save the object information in a Fits file.
   /// Data and SegmentationMap will go to pHDU and 1st extHDU, respectively. 
   /// All other information goes to the pHDU header.
@@ -139,7 +138,7 @@ class Object : public Image<data_t> {
   Point2D centroid;
   data_t flux, noise_mean, noise_rms, s_g, blend;
   unsigned short flag;
-  std::string noisemodel, basefilename;
+  std::string basefilename;
 };
 
 #endif

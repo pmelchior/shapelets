@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <string>
+#include <bitset>
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Typedef.h>
@@ -19,7 +20,6 @@
 #include <shapelets/PolarTransformation.h>
 #include <shapelets/ImageTransformation.h>
 #include <shapelets/MatrixManipulations.h>
-#include <shapelets/SIFFile.h>
 
 
 /// Central class for 2D shapelet objects.
@@ -38,7 +38,7 @@ class ShapeletObject : public Composite2D {
   /// Constructor for reading a SIF file.
   ShapeletObject(std::string sifFile);
   /// Copy constructor.
-  ShapeletObject(ShapeletObject& sobj);
+  //ShapeletObject(ShapeletObject& sobj);
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
@@ -64,17 +64,17 @@ class ShapeletObject : public Composite2D {
   /// Set new polar coeficients.
   void setPolarCoeffs(const NumMatrix<complex<data_t> >& polarCoeffs);
   /// Return active cartesian coefficients.
-  const NumMatrix<data_t>& getCartesianCoeffs();
+  const NumMatrix<data_t>& getCartesianCoeffs() const;
   /// Return active polar coeficients.
-  const NumMatrix<complex<data_t> >& getPolarCoeffs();
+  const NumMatrix<complex<data_t> >& getPolarCoeffs() const;
 
   // methods depending on the decomposition
   /// Return best fit \f$\chi^2\f$ from decomposition.
   /// It will return 0, if ShapeletObject is not constructed from a Fits file.
-  data_t getDecompositionChiSquare();
+  data_t getDecompositionChiSquare() const;
   /// Return error matrix of the cartesian shapelet coefficients.
   /// It will return empty matrix if ShapeletObject is not constructed from a Fits file.
-  const NumMatrix<data_t>& getDecompositionErrors();
+  const NumMatrix<data_t>& getDecompositionErrors() const;
 
   // methods depending on ImageTransformations
   /// Rotate image counterclockwise by angle \f$\rho\f$.
@@ -114,38 +114,40 @@ class ShapeletObject : public Composite2D {
   /// Larger changes of \f$\beta\f$ can be achieved by setBeta().
   void rescale(data_t newBeta);
 
-  // method for making a profile plot
-  /// Return Profile derived from given values from the staring point 
-  /// through the ShapeletObject centroid.
-  /// The ending point will be symmetric to the starting point.
-  void getProfile(const Point2D& start, NumVector<data_t>& values, int axsize);
-  /// Return a Profile from the starting point to the ending point.
-  void getProfile(const Point2D& start, const Point2D& end, NumVector<data_t>& values, int axsize);
-
   // methods for reading/writing sif files that contain 
   // all necessary information of a shapelet image
   /// Save active set of image parameters to given file.
-  void save(std::string filename);
+  void save(std::string filename) const;
   /// Load active set of image parameters from file.
-  void load(std::string filename);
+  void load(std::string filename, bool preserve_config = 0);
 
   /// Return history string of image.
   /// This contains all procedure parameters of decomposition, transformations etc.
-  std::string getHistory();
+  std::string getHistory() const;
   /// Set the history string of the image to an arbitrary string.
   /// This can be used for erasing the history by using a empty string.
   void setHistory(std::string comment);
+
+  data_t getRegularizationR() const;
+  data_t getNoiseMean() const;
+  data_t getNoiseRMS() const;
+  std::string getBaseFilename() const;
+  unsigned int getObjectID() const;
+  unsigned int getObjectNumber() const;
+  std::bitset<16> getFlags() const;
+  
+  friend class SIFFile;
 
  private:
   NumMatrix<data_t> cartesianCoeffs, errors;
   NumMatrix<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
-  data_t chisquare, R;
-  bool fits, regularized;
+  data_t chisquare, R, noise_mean, noise_rms;
+  bool fits;
   History history;
-  std::ostringstream text;
-  char fitsFlag,decompFlag;
+  unsigned int nr, id, flags;
+  std::string basefilename;
 };
 
 #endif

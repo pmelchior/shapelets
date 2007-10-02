@@ -116,8 +116,6 @@ class SExFrame : public Image<data_t> {
   /// - 0: noise
   /// - 1..N: objectID of an identified significant pixel group
   const NumVector<int>& getObjectMap();
-   /// Get the segmentation history of this image.
-  const History& getHistory ();
 
  private:
   void insertFormatField(std::string type, std::string columnnr);
@@ -161,8 +159,6 @@ class SExFrame : public Image<data_t> {
   unsigned int axsize0, axsize1;
   Image<data_t> weight;
   gsl_rng* r;
-  History history;
-  std::ostringstream text;
 };
 
 

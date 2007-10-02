@@ -36,6 +36,22 @@ class ShapeLensConfig {
   /// NMAX_HIGH   24
   /// \endcode
   ShapeLensConfig(std::string filename);
+  /// The minimum number of pixels above <tt>MIN_THRESHOLD</tt> to be regarded as object,
+  /// default = 20;
+  static unsigned int MIN_PIXELS;
+  /// The threshold (in units of the noise variance \f$\sigma_n\f$), which is supposed to 
+  /// be the isocontour of minimal significance, default = 1.
+  static data_t MIN_THRESHOLD;
+  /// The detection threshold (in units of the noise variance \f$\sigma_n\f$), which is the minimum
+  /// brightness an oject must have in at least one pixel in order to be detected, default = 2.
+  static data_t DETECT_THRESHOLD;
+  /// Whether objects with <tt>segMap(i) < 0</tt> are replaced by artificial noise,
+  /// default = 0.
+  static bool FILTER_SPURIOUS;
+  /// The amount by which the objects area is enlarged on each side relative to the
+  /// object's area in the segmentation map, default = 0.5
+  /// (50% increase in size an all sides).
+  static data_t ADD_BORDER;
   /// Lower bound for \f$n_{max}\f$, default = 0.
   static unsigned int NMAX_LOW;
   /// Upper bound for \f$n_{max}\f$, default = 100.
@@ -49,18 +65,15 @@ class ShapeLensConfig {
   static bool REGULARIZE;
   /// The upper limit for \f$R\f$ during regularizaton, default = 1e-5.
   static data_t REG_LIMIT;
-  /// The SIF filename for the unregularized model (empty string if not employed),
-  /// default = "".
-  static std::string UNREG_SIFFILE;
+  /// Whether the unregularized model is saved, before the regularization is performed,
+  /// default = 1.
+  static bool SAVE_UNREG;
   /// Whether flattening of \f$\chi^2\f$ is allowed as termination criterium
   /// for the optimization process, default = 0.
   static bool ALLOW_FLATTENING;
-  /// Whether objects with <tt>segMap(i) < 0</tt> are replaced by artificial noise,
-  /// default = 0.
-  static bool FILTER_SPURIOUS;
-  /// The amount by which the objects area is enlarged on each side w.r.t. the
-  /// objects area in the segmentation map, default = 0.5
-  /// (50% increase in size an all sides).
-  static data_t ADD_BORDER;
+  /// The noise model employed during the decomposition (see Decomposite2D),
+  /// default = "GAUSSIAN"
+  static std::string NOISEMODEL;
+
 };
 #endif

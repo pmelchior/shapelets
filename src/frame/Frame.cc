@@ -12,22 +12,20 @@ using namespace std;
 
 typedef unsigned int uint;
 
-Frame::Frame(string filename) : Image<data_t>(filename), weight(), segMap(*this, weight) {
-  text << "# Reading FITS file " << filename << endl;
-  text << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
-  history.append(text);
+Frame::Frame(string filename) : Image<data_t>(filename), weight(), segMap(*this, weight), history(segMap.accessHistory()) {
+  history << "# Reading FITS file " << filename << endl;
+  history << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
   numberofObjects = 0;
 }
 
-Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weight(weightfile), segMap(*this, weight) {
-  text << "# Reading data from " << datafile << " and weights from " << weightfile << endl;
-  text << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
+Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weight(weightfile), segMap(*this, weight), history(segMap.accessHistory()) {
+  history << "# Reading data from " << datafile << " and weights from " << weightfile << endl;
+  history << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
   //weight = Image<data_t>(weightfile);
-  history.append(text);
   if (weight.size() != (*this).size()) {
-    history.append("Frame: weight map has different layout than data!\n");
+    history << "Frame: weight map has different layout than data!" << endl;
     terminate();
   } 
   subtractedBG = estimatedBG = 0;
@@ -38,9 +36,8 @@ Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weig
 // estimate noise by iterative sigma clipping
 void Frame::estimateNoise() {
   Image<data_t>::getData().kappa_sigma_clip(noise_mean,noise_rms);
-  text << "# Background estimation: mean = " << noise_mean;
-  text << ", sigma = " << noise_rms << std::endl;
-  history.append(text);
+  history << "# Background estimation: mean = " << noise_mean;
+  history << ", sigma = " << noise_rms << std::endl;
   estimatedBG = 1;
 }
 
@@ -58,8 +55,7 @@ void Frame::setNoiseMeanRMS(data_t mean, data_t rms) {
   estimatedBG = 1;
   noise_mean = mean;
   noise_rms = rms;
-  text << "# Noise estimates explicitly set: mean = " << mean << ", rms = " << rms << std::endl;
-  history.append(text);
+  history << "# Noise estimates explicitly set: mean = " << mean << ", rms = " << rms << std::endl;
 }
   
 void Frame::subtractBackground() {
@@ -69,8 +65,7 @@ void Frame::subtractBackground() {
       (Image<data_t>::accessData())(i) -= noise_mean;
     }
     subtractedBG = 1;
-    text << "# Background subtraction: noise level = " << noise_mean << std::endl;
-    history.append(text);
+    history << "# Background subtraction: noise level = " << noise_mean << std::endl;
     noise_mean = 0;
   }
 }
@@ -86,7 +81,7 @@ data_t Frame::getThreshold(unsigned int pixel, data_t factor) {
     return noise_mean + factor*sqrt(1./weight(pixel));
 }
 
-void Frame::findObjects(unsigned int minPixels, data_t significanceThreshold, data_t detectionThreshold) {
+void Frame::findObjects() {
   const NumVector<data_t>& data = Image<data_t>::getData();
   int counter = 0;
   unsigned int npixels = Image<data_t>::size();
@@ -107,13 +102,12 @@ void Frame::findObjects(unsigned int minPixels, data_t significanceThreshold, da
   // highThreshold and minPixels above significanceThreshold
   data_t highThreshold;
   for (int i =0; i < npixels; i++) {
-    highThreshold = getThreshold(i,detectionThreshold);
+    highThreshold = getThreshold(i,ShapeLensConfig::DETECT_THRESHOLD);
     if (data(i) > highThreshold && segMap(i) == 0) {
       counter++;
-      segMap.linkPixelsSetMap (pixellist,i,counter,significanceThreshold,noise_mean,noise_rms,1);
-      if (pixellist.size() >= minPixels) {
-	text << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<data_t>::getSize(0)) << "/" << i/(Image<data_t>::getSize(0)) << ")"  << std::endl;
-	history.append(text);
+      segMap.linkPixelsSetMap (pixellist,i,counter,ShapeLensConfig::MIN_THRESHOLD,noise_mean,noise_rms,1);
+      if (pixellist.size() >= ShapeLensConfig::MIN_PIXELS) {
+	history << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<data_t>::getSize(0)) << "/" << i/(Image<data_t>::getSize(0)) << ")"  << std::endl;
 	objectsPixels.push_back(pixellist);
       }
       else {
@@ -140,9 +134,9 @@ void Frame::findObjects(unsigned int minPixels, data_t significanceThreshold, da
 //     }
 //     NumVectorMasked<data_t> masked(data,mask);
 //     masked.kappa_sigma_clip(noise_mean,noise_rms);
-//     text << "# Improved background estimation (objects masked):";
-//     text << " mean = " << noise_mean << ", sigma = " << noise_rms << endl;
-//     history.append(text);
+//     history << "# Improved background estimation (objects masked):";
+//     history << " mean = " << noise_mean << ", sigma = " << noise_rms << endl;
+//     history.append(history);
 //   }
 }
 
@@ -180,29 +174,26 @@ void Frame::fillObject(Object& O) {
 	if (y > ymax) ymax = y;
     }
 
-    O.history = history;
-    text << "# Extracting Object " << O.getID() << ", ";
-    text << "found in the area (" << xmin << "/" << ymin << ") to (";
-    text << xmax << "/" << ymax << ")" << endl;
-    O.history.append(text);
+    O.history << "# Extracting Object " << O.getID() << ", ";
+    O.history << "found in the area (" << xmin << "/" << ymin << ") to (";
+    O.history << xmax << "/" << ymax << ")" << endl;
     
     // check if outer sizes of the object are identical to the image
     // boundary, since then the objects is cutted 
     if (xmin == 0 || ymin == 0 || xmax == axsize0 -1 || ymax == axsize1 - 1) {
       O.setDetectionFlag(GSL_MAX_INT(O.getDetectionFlag(),4));
-      O.history.append("# Object cut off at the image boundary!\n");
+      O.history << "# Object cut off at the image boundary!" << endl;
     }
 
     // add border around object for including the edges
     addFrameBorder(ShapeLensConfig::ADD_BORDER,xmin,xmax,ymin,ymax);
-    text << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
-    text << xmax << "/" << ymax << ")" << endl;
-    O.history.append(text);
+    O.history << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
+    O.history << xmax << "/" << ymax << ")" << endl;
 
     // check if object was close to the image boundary so that noise has to be added
     if (xmin < 0 || ymin < 0 || xmax >= axsize0 || ymax >= axsize1) {
       O.setDetectionFlag(GSL_MAX_INT(O.getDetectionFlag(),2));
-      O.history.append("# Object close to image boundary: Possible cut-off. Extending frame with noise.\n");
+      O.history << "# Object close to image boundary: Possible cut-off. Extending frame with noise." << endl;
     }
 
     // fill the object pixel data
@@ -210,6 +201,10 @@ void Frame::fillObject(Object& O) {
     NumVector<data_t>& objdata = O.accessData();
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     SegmentationMap& objSegMap = O.accessSegmentationMap();
+    History& objSegMapHistory = objSegMap.accessHistory();
+    objSegMapHistory.setSilent();
+    objSegMapHistory << history.str();
+    objSegMapHistory.unsetSilent();
     objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
     NumVector<data_t>& objWeightMap = O.accessWeightMap();
     if (weight.size()!=0) 
@@ -242,8 +237,7 @@ void Frame::fillObject(Object& O) {
 	  O.setDetectionFlag(GSL_MAX_INT(O.getDetectionFlag(),1));
 	  // this objects has to yet been found to be nearby
 	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
-	    text << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
-	    O.history.append(text);
+	    O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
 	    nearby_objects.push_back(segMap(j));
 	  }
 	} 
@@ -263,42 +257,27 @@ void Frame::fillObject(Object& O) {
     O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
 
     // Fill other quantities into Object
-    if (weight.size()!=0) {
-      O.setNoiseModel("WEIGHT");
-      O.setNoiseMeanRMS(-1,-1);
-    }
-    else {
-      O.setNoiseModel("GAUSSIAN");
-      O.setNoiseMeanRMS(noise_mean,noise_rms);
-    }
-    O.setBaseFilename(Image<data_t>::getFilename());
-    // this calculates flux and centroid;
-    O.history.append("# Segment:\n");
+    O.history << "# Segment:" << endl;
     O.computeFluxCentroid();
 
   } 
   // this is the whole frame
   else if (O.getID()==0) {
-    O.history = history;
-    O.history.append("# Extracting Object 0 (whole Fits image).\n");
+    O.history.clear();
+    O.history << "# Extracting Object 0 (whole Fits image)." << endl;
     O.accessData() = Image<data_t>::getData();
     O.accessGrid() = Image<data_t>::getGrid();
     O.accessSegmentationMap() = segMap;
-    if (weight.size()!=0) {
+    if (weight.size()!=0)
       O.accessWeightMap() = weight;
-      O.setNoiseModel("WEIGHT");
-    }
-    else
-      O.setNoiseModel("GAUSSIAN");
-    O.setNoiseMeanRMS(noise_mean,noise_rms);
-    O.setBaseFilename(Image<data_t>::getFilename());
     O.computeFluxCentroid();
-    O.setNumber(O.getID());
   } else {
-    text.str("# Frame: This Object does not exist!\n");
-    O.history.append(text);
+    std::cerr << "# Frame: This Object does not exist!" << endl;
     terminate();
   }
+  O.setNoiseMeanRMS(noise_mean,noise_rms);
+  O.setBaseFilename(Image<data_t>::getFilename());
+  O.setNumber(O.getID());
 }
 
 SegmentationMap& Frame::getSegmentationMap() {

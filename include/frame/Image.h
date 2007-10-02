@@ -6,6 +6,7 @@
 #include <NumVector.h>
 #include <Typedef.h>
 #include <IO.h>
+#include <History.h>
 #include <frame/Grid.h>
 
 /// Class for image data.
@@ -20,12 +21,14 @@ class Image : public NumVector<T> {
   /// Only usefull when constructing a FitsImage from data in memory.
   Image() : NumVector<T>() {
     filename = "";
+    history.clear();
   }
   /// Argumented constructor for reading from a FITS file.
   /// The extension has to given in the standard cfitsio way as
   /// filename[extension].
   Image(std::string infilename) : NumVector<T>() {
     filename = infilename;
+    history.clear();
     read();
   }
   /// Get axis size of the whole image in given direction.
@@ -59,11 +62,23 @@ class Image : public NumVector<T> {
   /// Save as FITS file.
   void save(std::string fitsfile) const {
     writeFITSFile(fitsfile,grid,*this);
+    // if history is not empty, append history to FITS header
+    if (!history.isEmpty())
+      appendFITSHistory(fitsfile,history.str());
+  }
+  ///  Get image history.
+  const History& getHistory() const {
+    return history;
+  }
+  /// Access image history.
+  History& accessHistory() {
+    return history;
   }
 
  private:
   Grid grid;
   std::string filename;
+  History history;
   void read() {
     fitsfile *fptr;
     int status = 0;
@@ -84,8 +99,8 @@ class Image : public NumVector<T> {
       data::resize(npixels);
       long firstpix[2] = {1,1};
       T val;
-      int imageformat, datatype;
-      setFITSTypes(val,imageformat,datatype);
+      int imageformat = getFITSImageFormat(val);
+      int datatype = getFITSDataType(val);
       fits_read_pix(fptr, datatype, firstpix, npixels, NULL,data::c_array(), NULL, &status);
       fits_close_file(fptr, &status);
     }

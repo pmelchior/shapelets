@@ -100,17 +100,18 @@ class Frame : public Image<data_t> {
   /// setNoiseMeanRMS() or estimated by running getNoiseMean().
   void subtractBackground();
   /// Identify significant objects in the image.
-  /// Searches for connected pixel groups with more than minPixels 
-  /// above a lower significance threshold
+  /// Searches for connected pixel groups with more than ShapeLensConfig::MIN_PIXELS 
+  /// above a lower significance threshold ShapeLensConfig::MIN_THRESHOLD
   /// \f$ \tau_{low} = \mu_n + F_{signific}\cdot\sigma_n\f$
-  /// and at least 1 pixel above a higher detection threshold
+  /// and at least 1 pixel above the higher detection threshold 
+  /// ShapeLensConfig::DETECT_TRESHOLD
   /// \f$ \tau_{high} = \mu_n + F_{detect}\cdot\sigma_n\f$.\n
   /// Note that objects cannot be separated if there is a path from the one to the other
   /// that is entirely above \f$\tau_{low}\f$ and that the runtime of the algorithm depends
   /// linearly on the number of detected objects, thus on \f$\tau_{high}\f$.\n
   /// The noise measures \f$\mu_n\f$ and \f$\sigma_n\f$ are the ones defined 
   /// in estimateNoise().\n
-  void findObjects(unsigned int minPixels=50, data_t F_signific=1.5, data_t F_detect=5.0);
+  void findObjects();
   /// Return number of objects found during findObjects().
   /// If it returns 0, no objects have been found.
   unsigned int getNumberOfObjects();
@@ -142,11 +143,10 @@ class Frame : public Image<data_t> {
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
   data_t getThreshold(unsigned int pixel, data_t factor);
   SegmentationMap segMap;
+  History& history;
   std::vector< std::list<unsigned int> > objectsPixels;
   bool subtractedBG, estimatedBG;
   unsigned int numberofObjects;
-  History history;
-  std::ostringstream text;
 };
 
 #endif

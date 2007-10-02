@@ -1,3 +1,4 @@
+#include <ShapeLensConfig.h>
 #include <shapelets/Decomposite2D.h>
 #include <shapelets/MatrixManipulations.h>
 #include <gsl/gsl_math.h>
@@ -18,21 +19,23 @@ obj(O) {
   // WEIGHT :    weight (inverse variance) map -> weight
   // COVARIANCE: pixel cov. matrix -> full cov. matrix
   // POISSONIAN: sigma_n + data -> weight
-  if (obj.getNoiseModel().compare("GAUSSIAN")==0) {
+  if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
     noise = 0;
     background_variance = gsl_pow_2(obj.getNoiseRMS());
   }
-  else if (obj.getNoiseModel().compare("WEIGHT")==0) {
+  else if (ShapeLensConfig::NOISEMODEL == "WEIGHT") {
     noise = 1;
     Weight = obj.getWeightMap();
-  } else if (obj.getNoiseModel().compare("COVARIANCE")==0) {
+  } 
+  else if (ShapeLensConfig::NOISEMODEL == "COVARIANCE") {
     noise = 2;
     V_ = obj.getPixelCovarianceMatrix().invert(); 
   }
-  else if (obj.getNoiseModel().compare("POISSONIAN")==0) {
+  else if (ShapeLensConfig::NOISEMODEL == "POISSONIAN") {
     noise = 3;
     NumVector<data_t> tmp = obj;
     Weight.resize(npixels);
+    background_variance = gsl_pow_2(obj.getNoiseRMS());
     for (int i=0; i < npixels; i++)
       tmp(i) += background_variance;
     convolveGaussian(tmp,Weight,obj.getSize(0),obj.getSize(1));

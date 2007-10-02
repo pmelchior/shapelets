@@ -7,8 +7,7 @@
 using namespace std;
 
 Composite2D::Composite2D() : Shapelets2D() {
-  lockGrid = 0;
-  change = changeGrid = 1;
+  change = 1;
 }
 
 Composite2D::Composite2D(data_t inbeta, Point2D& inxcentroid, const NumMatrix<data_t>& startCoeffs) : Shapelets2D() {  
@@ -19,8 +18,7 @@ Composite2D::Composite2D(data_t inbeta, Point2D& inxcentroid, const NumMatrix<da
   //beta = inbeta;
   Shapelets2D::setOrders(order0,order1);
   // grid hast to be redefined before evaluation
-  change = changeGrid = 1;
-  lockGrid = 0;
+  change = 1;
   // set beta in the Shapelets2D and define if in-pixel-Integration will be used
   setBeta(inbeta);
 }
@@ -70,10 +68,8 @@ void  Composite2D::setCoeffs(const NumMatrix<data_t>& newCoeffs ) {
   order1 = orderlimit1 = shapeletCoeffs.getColumns() -1;
   // if new size is different, adapt the shapelet orders
   // and set flag for redefining the grid before evaluation
-  if (Shapelets2D::getOrder(0) != order0 || Shapelets2D::getOrder(1) != order1) {
+  if (Shapelets2D::getOrder(0) != order0 || Shapelets2D::getOrder(1) != order1)
     Shapelets2D::setOrders(order0,order1);
-    changeGrid = 1;
-  }
 }
 
 data_t Composite2D::getBeta() const {
@@ -88,7 +84,7 @@ data_t& Composite2D::accessBeta() {
 void Composite2D::setBeta(data_t inbeta) {
   beta = inbeta;
   Shapelets2D::setBeta(beta);
-  change = changeGrid = 1;
+  change = 1;
 }
 
 const Point2D& Composite2D::getCentroid() const {
@@ -102,11 +98,10 @@ Point2D& Composite2D::accessCentroid() {
 
 void Composite2D::setCentroid(const Point2D& inxcentroid) {
   xcentroid = inxcentroid;
-  change = changeGrid = 1;
+  change = 1;
 }
 
-const Grid& Composite2D::getGrid() {
-  if (changeGrid) defineGrid();
+const Grid& Composite2D::getGrid() const {
   return grid;
 }
 
@@ -114,7 +109,6 @@ void Composite2D::setGrid(const Grid& ingrid) {
   grid = ingrid;
   stepsize0 = grid.getStepsize(0);
   stepsize1 = grid.getStepsize(1);
-  lockGrid = 1;
   change = 1;
 }
 
@@ -153,7 +147,6 @@ data_t Composite2D::evalGridPoint(const Point2D& x) {
 }
 
 void Composite2D::evalGrid() {
-  if (changeGrid) defineGrid();
   if ((orderlimit0 != orderlimit1) || (shapeletCoeffs(orderlimit0-1,orderlimit1-1)!=0)) {
     if (model.size() != grid.size())
       model.resize(grid.size());
@@ -290,18 +283,6 @@ data_t Composite2D::getShapeletRMSRadius() const {
   }
   data_t flux = getShapeletFlux();
   return sqrt(rms * M_SQRTPI * beta*beta*beta / flux);
-}
-
-// define Grid in such a way that it contains all the large scale structure
-// and all details contained in a shapelet image
-// therefore use 2*theta_max as image dimension and theta_min/2 as stepsize of the grid points
-void Composite2D::defineGrid() {
-  changeGrid = 0;
-  if (!lockGrid) {
-    stepsize0 = stepsize1 = Shapelets2D::getThetaMin(order0,order1)/2;
-    data_t range = Shapelets2D::getThetaMax(order0,order1)*3; 
-    grid = Grid(xcentroid(0)-range,xcentroid(0)+range,stepsize0,xcentroid(1)-range,xcentroid(1)+range,stepsize1);
-  }
 }
 
 void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector) {

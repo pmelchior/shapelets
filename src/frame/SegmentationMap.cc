@@ -333,9 +333,3 @@ data_t SegmentationMap::distanceFromRim(std::list<uint>& objectlist, uint pixel)
   return mindist + 0.01;
 }
 
-
-void SegmentationMap::save(std::string filename, std::map<std::string, std::string> keywords = std::map<std::string, std::string>()) {
-  writeFITSFile(filename,Image<int>::getGrid(),Image<int>::getData(),keywords);
-}
-
-

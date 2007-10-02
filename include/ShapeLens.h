@@ -46,6 +46,7 @@ space, thus saving memory and computation time.
 #include <frame/SExFrame.h>
 
 #include <shapelets/ShapeletObject.h>
+#include <shapelets/SIFFile.h>
 #include <shapelets/ShapeletObjectList.h>
 
 #include <lensing/LensingEstimator.h>

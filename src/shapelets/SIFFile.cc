@@ -1,4 +1,6 @@
 #include <shapelets/SIFFile.h>
+#include <IO.h>
+#include <ShapeLensConfig.h>
 
 using namespace std;
 
@@ -6,197 +8,143 @@ SIFFile::SIFFile(std::string infilename) {
   filename = infilename;
 }
 
-void SIFFile::save(std::string historyString, const NumMatrix<data_t>& cartesianCoeffs, const NumMatrix<data_t>& errors, const Grid& grid, data_t beta, const Point2D& xcentroid, data_t chi2, char fitsFlag, char decompositionFlag, bool regularize, data_t R) {
-    // version of the sif format definition
-  int version = 0;
-  const char* historyChar = historyString.c_str();
-  int lines = cartesianCoeffs.getRows();
-  int columns = cartesianCoeffs.getColumns();
-  int errorLines = errors.getRows();
-  int errorColumns = errors.getColumns();
-  int dimension = lines*columns;
-  int errorDimension = errorLines*errorColumns;
-  const char* file = filename.c_str();
-  sifHeader header = { version, lines, columns, errorLines, errorColumns, beta, xcentroid(0), xcentroid(1), grid.getStartPosition(0), grid.getStopPosition(0), grid.getStepsize(0), grid.getStartPosition(1), grid.getStopPosition(1), grid.getStepsize(1), chi2, (int) fitsFlag, (int) decompositionFlag, regularize, R, historyString.length()};
+// void SIFFile::save(std::string historyString, const NumMatrix<data_t>& cartesianCoeffs, const NumMatrix<data_t>& errors, const Grid& grid, data_t beta, const Point2D& centroid, data_t chi2, unsigned int flags, data_t R, std::string basefilename, unsigned int id, unsigned int nr, data_t noise_mean, data_t noise_rms) {
+void SIFFile::save(const ShapeletObject& sobj) {
+  // write coefficients to FITS pHDUs
+  int status = 0;
+  fitsfile *outfptr = createFITSFile(filename);
+  writeFITSImage(outfptr,sobj.getCartesianCoeffs());
+
+  // when present, save errors also
+  bool saveErrors = 0;
+  const NumMatrix<data_t>& errors = sobj.getDecompositionErrors();
+  if (errors.getRows() != 0 && errors.getColumns() != 0)
+    saveErrors = 1;
   
-  fstream binary_file(file,ios::out|ios::binary);
-  saveHeader(binary_file,header);
 
-  data_t dataArray[dimension], errorArray[errorDimension];
-  for (int i = 0; i < lines; i++)
-    for (int j = 0; j < columns; j++)
-      dataArray[i*columns + j] = cartesianCoeffs(i,j);
-  for (int i = 0; i < errorLines; i++)
-    for (int j = 0; j < errorColumns; j++)
-      errorArray[i*errorColumns + j] = errors(i,j);
+  // add shapelet parameters and other necessary information in pHDU header
+  updateFITSKeyword(outfptr,"VERSION",(unsigned int) 1,"SIF version");
 
-  binary_file.write(historyChar,historyString.length()*sizeof(char));
-  binary_file.write(reinterpret_cast<char *>(&dataArray),dimension*sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&errorArray),errorDimension*sizeof(data_t));
-  binary_file.close();
-}
+  // ** Shapelet parameters **
+  fits_write_record(outfptr,"",&status);
+  fits_write_record(outfptr,"        / Shapelet parameters  /",&status);
+  updateFITSKeyword(outfptr,"BETA",sobj.getBeta(),"scale size in pixel units");
+  updateFITSKeyword(outfptr,"DIM",sobj.getCartesianCoeffs().getRows(),"dimensions in shapelet space (nmax+1)");
+  updateFITSKeyword(outfptr,"CHI2",sobj.getDecompositionChiSquare(),"decomposition quality");
+  updateFITSKeyword(outfptr,"ERRORS",saveErrors,"whether coefficient errors are available");
+  updateFITSKeyword(outfptr,"R",sobj.getRegularizationR(),"negative flux / positive flux");
+  updateFITSKeyword(outfptr,"FLAGS",(unsigned int) sobj.getFlags().to_ulong(),"extraction and decomposition flags");
 
-void SIFFile::saveHeader (fstream& binary_file, sifHeader& header) {
-  binary_file.write(reinterpret_cast<char *>(&header.version),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.lines),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.columns),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.errorLines),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.errorColumns),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.beta),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.xcentroid0),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.xcentroid1),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstart0),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstop0),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstepsize0),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstart1),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstop1),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.gridstepsize1),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.chi2),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.fitsFlag),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.decompositionFlag),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.regularize),sizeof(int));
-  binary_file.write(reinterpret_cast<char *>(&header.R),sizeof(data_t));
-  binary_file.write(reinterpret_cast<char *>(&header.historylength),sizeof(int));
-}
+  // ** Frame parameters **
+  fits_write_record(outfptr,"        / Frame parameters     /",&status);
+  updateFITSKeywordString(outfptr,"BASEFILE",sobj.getBaseFilename(),"originating data file");
+  updateFITSKeyword(outfptr,"ID",sobj.getObjectID(),"object id in BASEFILE");
+  updateFITSKeyword(outfptr,"NR",sobj.getObjectNumber(),"object nr in BASEFILE");
+  updateFITSKeyword(outfptr,"NOISE_MEAN",sobj.getNoiseMean(),"mean of pixel noise");
+  updateFITSKeyword(outfptr,"NOISE_RMS",sobj.getNoiseRMS(),"rms of pixel noise");
+  const Grid& grid = sobj.getGrid();
+  updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
+  updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
+  updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
+  updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
+  const Point2D& centroid = sobj.getCentroid();
+  complex<data_t> xc(centroid(0),centroid(1));
+  updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
+
+  // ** ShapeLensConfig parameters **
+  fits_write_record(outfptr,"        / ShapeLensConfig parameters /",&status);
+  updateFITSKeywordString(outfptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL,"noise model");
+  updateFITSKeyword(outfptr," NMAX_LOW",ShapeLensConfig::NMAX_LOW,"lower bound for n_max");
+  updateFITSKeyword(outfptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH,"upper bound for n_max");
+  updateFITSKeyword(outfptr," BETA_LOW",ShapeLensConfig::BETA_LOW,"lower bound for beta");
+  updateFITSKeyword(outfptr,"BETA_HIGH",ShapeLensConfig::BETA_HIGH,"upper bound for beta");
+  updateFITSKeyword(outfptr,"REGULARIZE",ShapeLensConfig::REGULARIZE,"whether regularization has been employed");
+  updateFITSKeyword(outfptr,"REG_LIMIT",ShapeLensConfig::REG_LIMIT,"demanded upper limit for R");
+  updateFITSKeyword(outfptr,"SAVE_UNREG",ShapeLensConfig::SAVE_UNREG,"whether unregularized model is saved");
+  updateFITSKeyword(outfptr,"ALLOW_FLATTENING",ShapeLensConfig::ALLOW_FLATTENING,"whether flattening of chi^2 is allowed");
+  updateFITSKeyword(outfptr,"FILTER_SPURIOUS",ShapeLensConfig::FILTER_SPURIOUS,"whether spurious detection are removed");
+  updateFITSKeyword(outfptr,"ADD_BORDER",ShapeLensConfig::ADD_BORDER,"amount of border around detected objects");
+  updateFITSKeyword(outfptr,"MIN_PIXELS",ShapeLensConfig::MIN_PIXELS,"minimum number of pixels for an object");
+  updateFITSKeyword(outfptr,"MIN_THRESHOLD",ShapeLensConfig::MIN_THRESHOLD,"threshold for MIN_PIXELS");
+  updateFITSKeyword(outfptr,"DETECT_THRESHOLD",ShapeLensConfig::DETECT_THRESHOLD,"detection threshold for objects");
+
+  fits_write_record(outfptr,"",&status);
+  appendFITSHistory(outfptr,sobj.getHistory());
   
-void SIFFile::load(std::string& historyString, NumMatrix<data_t>& cartesianCoeffs, NumMatrix<data_t>& errors, Grid& grid, data_t& beta, Point2D& xcentroid, data_t& chi2, char& fitsFlag, char& decompositionFlag, bool& regularize, data_t& R) {
-  sifHeader header;
+  if (saveErrors)
+    addFITSExtension(outfptr,"ERRORS",errors);
 
-  const char* file = filename.c_str();
-  fstream binary_file (file,ios::binary|ios::in);
-  // check if file handle is valid
-  testFileHandle(binary_file);
-  binary_file.clear();
+  fits_close_file(outfptr, &status);
+}
 
-  // first read in header
-  loadHeader(binary_file,header);
+void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
+  int status = 0;
+  fitsfile *fptr;
+  // open pHUD of fits file
+  fits_open_file(&fptr,filename.c_str(),READONLY,&status);
+  // read shapelet coeff from pHDU
+  status = readFITSImage(fptr,sobj.cartesianCoeffs);
 
-  // we have to expand historyChar by one 0 char, to finalize the string
-  char historyChar[header.historylength+1];
-  binary_file.read(historyChar,header.historylength*sizeof(char));
-  historyChar[header.historylength]=0;
-  historyString = string(historyChar);
-  fitsFlag = (char) header.fitsFlag;
-  decompositionFlag = (char) header.decompositionFlag;
-  regularize = (bool) header.regularize;
-  R = header.R;
-
-  int dimension = header.lines * header.columns;
-  int errorDimension = header.errorLines * header.errorColumns;
-  data_t dataArray[dimension], errorArray[errorDimension];
-  binary_file.read(reinterpret_cast<char *>(&dataArray),dimension*sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&errorArray),errorDimension*sizeof(data_t));
-  binary_file.close();
-
-  cartesianCoeffs = NumMatrix<data_t>(header.lines, header.columns);
-  errors = NumMatrix<data_t>(header.errorLines, header.errorColumns);
-  for (int i = 0; i < header.lines; i++)
-    for (int j = 0; j < header.columns; j++)
-      cartesianCoeffs(i,j) = dataArray[i*header.columns + j];
-  for (int i = 0; i < header.errorLines; i++)
-    for (int j = 0; j < header.errorColumns; j++)
-      errors(i,j) = errorArray[i*header.errorColumns + j];
-
+  // read shapelet parameters
+  // make use of friendship of Composite2D and ShapeletObject
+  sobj.change = 1;
+  status = readFITSKeyword(fptr,"BETA",sobj.beta);
+  status = readFITSKeyword(fptr,"CHI2",sobj.chisquare);
+  bool errors;
+  status = readFITSKeyword(fptr,"ERRORS",errors);
+  status = readFITSKeyword(fptr,"R",sobj.R);
+  status = readFITSKeyword(fptr,"FLAGS",sobj.flags);
   
-  grid = Grid(header.gridstart0, header.gridstop0, header.gridstepsize0, header.gridstart1, header.gridstop1, header.gridstepsize1);
-  beta = header.beta;
-  xcentroid = Point2D(header.xcentroid0,header.xcentroid1);
-  chi2 = header.chi2;
-}
-
-void SIFFile::loadHeader(sifHeader& header) {
-  const char* file = filename.c_str();
-  fstream binary_file (file,ios::binary|ios::in);
-  testFileHandle(binary_file);
-  binary_file.clear();
-  loadHeader(binary_file,header);
-  binary_file.close();
-}
-
-void SIFFile::loadHeader(fstream& binary_file, sifHeader& header) {
-  binary_file.read(reinterpret_cast<char *>(&header.version),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.lines),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.columns),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.errorLines),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.errorColumns),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.beta),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.xcentroid0),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.xcentroid1),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstart0),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstop0),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstepsize0),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstart1),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstop1),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.gridstepsize1),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.chi2),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.fitsFlag),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.decompositionFlag),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.regularize),sizeof(int));
-  binary_file.read(reinterpret_cast<char *>(&header.R),sizeof(data_t));
-  binary_file.read(reinterpret_cast<char *>(&header.historylength),sizeof(int));
-}
-
-void SIFFile::printHeader() {
-  sifHeader header;
-  const char* file = filename.c_str();
-  fstream binary_file (file,ios::binary|ios::in);
-  testFileHandle(binary_file);
-  binary_file.clear();
-  loadHeader(binary_file, header);
-  binary_file.close();
-
-  std::cout << "SIF header information" << std::endl;
-  std::cout << "Filename:\t" << filename << std::endl;
-  std::cout << "SIF version:\t" <<  header.version << std::endl;
-  std::cout << "Coefficients:\t" << header.lines <<"x" << header.columns << std::endl;
-  std::cout << "Coff. errors:\t" << header.errorLines <<"x" << header.errorColumns << std::endl;;
-  std::cout << "Beta:\t\t" << header.beta << std::endl;
-  std::cout << "Centroid:\t" << header.xcentroid0 << "/" << header.xcentroid1 << std::endl;
-  std::cout << "Grid:\t\t" << header.gridstart0 << ".." << header.gridstop0 << " (" <<  header.gridstepsize0 << "); " << header.gridstart1 << ".." << header.gridstop1 << " (" <<  header.gridstepsize1 << ")" << std::endl;
-  std::cout << "Chi^2:\t\t" << header.chi2 << std::endl;
-  std::cout << "Flags:\t\t" << header.fitsFlag << "/" << header.decompositionFlag << std::endl;
-  std::cout << "Regularized:\t" << header.regularize;
-  if (header.regularize)
-    std::cout << " (R = " << header.R << ")" << std::endl;
-  else 
-    std::cout << std::endl;
-  std::cout << "History length:\t" << header.historylength << std::endl;
-}
-
-void SIFFile::printHistory() {
-  std::string historyString;
-  NumMatrix<data_t> cartesianCoeffs,errors;
-  Grid grid;
-  Point2D xcentroid;
-  data_t beta, chi2, R;
-  char fitsFlag, decompositionFlag;
-  bool regularized;
-  load(historyString,cartesianCoeffs,errors,grid,beta,xcentroid,chi2,fitsFlag,decompositionFlag,regularized,R);
-
-  std::cout << historyString;
-}
-
-void SIFFile::printCoefficients() {
-  std::string historyString;
-  NumMatrix<data_t> cartesianCoeffs,errors;
-  Grid grid;
-  Point2D xcentroid;
-  data_t beta, chi2, R;
-  char fitsFlag, decompositionFlag;
-  bool regularized;
-  load(historyString,cartesianCoeffs,errors,grid,beta,xcentroid,chi2,fitsFlag,decompositionFlag,regularized,R);
-
-  std::cout << "Cartesian Coefficients:"<< std::endl;
-  std::cout << cartesianCoeffs << std::endl;
-  if (errors.getRows() != 0) {
-    std::cout << "Cartesian Errors:"<< std::endl;
-    std::cout << errors << std::endl;
+  // read frame parameters
+  status = readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
+  status = readFITSKeyword(fptr,"ID",sobj.id);
+  status = readFITSKeyword(fptr,"NR",sobj.nr);
+  status = readFITSKeyword(fptr,"NOISE_MEAN",sobj.noise_mean);
+  status = readFITSKeyword(fptr,"NOISE_RMS",sobj.noise_rms);
+  data_t xmin,xmax,ymin,ymax;
+  status = readFITSKeyword(fptr,"XMIN",xmin);
+  status = readFITSKeyword(fptr,"XMAX",xmax);
+  status = readFITSKeyword(fptr,"YMIN",ymin);
+  status = readFITSKeyword(fptr,"YMAX",ymax);
+  sobj.grid = Grid(xmin,xmax,1,ymin,ymax,1);
+  complex<data_t> xc;
+  status = readFITSKeyword(fptr,"CENTROID",xc);
+  sobj.xcentroid(0) = real(xc);
+  sobj.xcentroid(1) = imag(xc);
+  
+  // shapelensconfig parameters
+  // set them only if preserve_config == 0
+  if (!preserve_config) {
+    status = readFITSKeywordString(fptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL);
+    status = readFITSKeyword(fptr," NMAX_LOW",ShapeLensConfig::NMAX_LOW);
+    status = readFITSKeyword(fptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH);
+    status = readFITSKeyword(fptr," BETA_LOW",ShapeLensConfig::BETA_LOW);
+    status = readFITSKeyword(fptr,"BETA_HIGH",ShapeLensConfig::BETA_HIGH);
+    status = readFITSKeyword(fptr,"REGULARIZE",ShapeLensConfig::REGULARIZE);
+    status = readFITSKeyword(fptr,"REG_LIMIT",ShapeLensConfig::REG_LIMIT);
+    status = readFITSKeyword(fptr,"SAVE_UNREG",ShapeLensConfig::SAVE_UNREG);
+    status = readFITSKeyword(fptr,"ALLOW_FLATTENING",ShapeLensConfig::ALLOW_FLATTENING);
+    status = readFITSKeyword(fptr,"FILTER_SPURIOUS",ShapeLensConfig::FILTER_SPURIOUS);
+    status = readFITSKeyword(fptr,"ADD_BORDER",ShapeLensConfig::ADD_BORDER);
+    status = readFITSKeyword(fptr,"MIN_PIXELS",ShapeLensConfig::MIN_PIXELS);
+    status = readFITSKeyword(fptr,"MIN_THRESHOLD",ShapeLensConfig::MIN_THRESHOLD);
+    status = readFITSKeyword(fptr,"DETECT_THRESHOLD",ShapeLensConfig::DETECT_THRESHOLD);
   }
-}
 
-void SIFFile::testFileHandle(fstream& binary_file) {
-  if (binary_file.fail()) {
-    std::cout << "SIFFile: file does not exist!" << std::endl;
-    terminate();
+  // read history
+  std::string hstr;
+  readFITSKeyCards(fptr,"HISTORY",hstr);
+  sobj.history.clear();
+  sobj.history.setSilent();
+  sobj.history << hstr;
+  sobj.history.unsetSilent();
+
+  // if errors have been saved, load it
+  if (errors) {
+    fits_movnam_hdu(fptr,IMAGE_HDU, "ERRORS",0, &status);
+    status = readFITSImage(fptr,sobj.errors);
   }
+
+  fits_close_file(fptr, &status);
+
 }

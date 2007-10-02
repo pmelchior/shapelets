@@ -83,7 +83,6 @@ private:
   bool optimized, nmaxTrouble, noise_correlated;
   char flag, comp_corr;
   History history;
-  std::ostringstream text;
   std::string comp_corr_string;
   std::map<int, data_t> bestBeta, bestChi2;
   struct regResults {

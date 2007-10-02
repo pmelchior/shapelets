@@ -73,9 +73,6 @@ class SegmentationMap : public Image<int> {
   /// changing values on the border effectively removes those pixels from the set of
   /// background pixels whenever <tt>tag!=0</tt>.
   void setSegmentBorder(int tag, int xmin, int xmax, int ymin, int ymax);
-  /// Save segmentation map as FITS file.
-  /// The extension has to given in the standard cfitsio way as <tt>filename[extension]</tt>.
-  void save(std::string filename, std::map<std::string,std::string> keywords);
  private:
   NumVector<data_t>& data, weight;
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);

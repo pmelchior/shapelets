@@ -23,10 +23,6 @@ SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile) {
   axsize0 = Image<data_t>::getSize(0);
   axsize1 = Image<data_t>::getSize(1);
 
-  text << "# Reading FITS file " << fitsfile << endl;
-  text << "# Image properties: size = "<< axsize0 << "/" << axsize1 << std::endl; 
-  history.append(text);
-
   // for artificial noise
   const gsl_rng_type * T;
   gsl_rng_env_setup();
@@ -43,10 +39,6 @@ SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<data_t
   // axsizes of underlying Image copied since often used
   axsize0 = Image<data_t>::getSize(0);
   axsize1 = Image<data_t>::getSize(1);
-
-  text << "# Reading FITS file " << fitsfile << endl;
-  text << "# Image properties: size = "<< axsize0 << "/" << axsize1 << std::endl; 
-  history.append(text);
 
   // for artificial noise
   const gsl_rng_type * T;
@@ -67,7 +59,7 @@ void SExFrame::readCatalog(std::string catfile) {
   // open cat file
   ifstream catalog (catfile.c_str());
   if (catalog.fail()) {
-    history.append("SExFrame: catalog file does not exist!\n");
+    std::cerr << "SExFrame: catalog file does not exist!" << endl;
     terminate();
   }
   catalog.clear();
@@ -139,33 +131,29 @@ void SExFrame::fillObject(Object& O) {
   ymin = objectList[id].YMIN_IMAGE;
   ymax = objectList[id].YMAX_IMAGE;
 
-  O.history = history;
-  text << "# Extracting Object " << O.getID() << " (NUMBER = " <<  objectList[id].NUMBER << "), ";
-  text << "found in the area (" << xmin << "/" << ymin << ") to (";
-  text << xmax << "/" << ymax << ")" << std::endl;
-  O.history.append(text);
+  O.history << "# Extracting Object " << O.getID() << " (NUMBER = " <<  objectList[id].NUMBER << "), ";
+  O.history << "found in the area (" << xmin << "/" << ymin << ") to (";
+  O.history << xmax << "/" << ymax << ")" << std::endl;
   
   // check if outer sizes of the object are identical to the image
   // boundary, since then the objects is cutted 
   bool cutflag = 0;
   if (xmin == 0 || ymin == 0 || xmax == axsize0 -1 || ymax == axsize1 - 1) {
-    O.history.append("# Object cut off at the image boundary!\n");
+    O.history << "# Object cut off at the image boundary!" << endl;
     cutflag = 1;
   }
   
   addFrameBorder(ShapeLensConfig::ADD_BORDER, xmin,xmax,ymin,ymax);
-  text << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
-  text << xmax << "/" << ymax << ")" << std::endl;
-  O.history.append(text);
+  O.history << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
+  O.history << xmax << "/" << ymax << ")" << std::endl;
 
   // check if object was close to the image boundary so that noise has to be added
   if (xmin < 0 || ymin < 0 || xmax >= axsize0 || ymax >= axsize1) {
     if (!cutflag)
-      text << "# Object close to image boundary: Possible cut-off. Extended area filled with noise." << std::endl;
+      O.history << "# Object close to image boundary: Possible cut-off. Extended area filled with noise." << std::endl;
     else
-       text << "# Extended area filled with noise." << std::endl;
+       O.history << "# Extended area filled with noise." << std::endl;
   }
-  O.history.append(text);
 
   // define new object data set, find 1-sigma noise oscillations with more 
   // than 4 pixels and set their pixelmap flag to -2
@@ -210,8 +198,7 @@ void SExFrame::fillObject(Object& O) {
 	  objdata(i) = gsl_ran_gaussian (r, bg_rms);
 	// this objects has to yet been found to be nearby
 	if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
-	  text << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
-	  O.history.append(text);
+	  O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
 	  nearby_objects.push_back(segMap(j));
 	}
  	if (!subtractBG)
@@ -232,25 +219,17 @@ void SExFrame::fillObject(Object& O) {
   O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
 
   // Fill other quantities into Object
-  if (weight.size()==0) {
-    O.setNoiseMeanRMS(bg_mean,bg_rms);
-    O.setNoiseModel("GAUSSIAN");
-  }
-  else {
-    O.setNoiseMeanRMS(-1,-1);
-    O.setNoiseModel("WEIGHT");
-  }
-  O.history.append("# Segment:\n");
+  O.history << "# Segment:" << endl;
   O.computeFluxCentroid();
   O.setFlux(objectList[id].FLUX_AUTO);
   Point2D centroid(objectList[id].XWIN_IMAGE,objectList[id].YWIN_IMAGE);
   O.setCentroid(centroid);
-
   O.setDetectionFlag(objectList[id].FLAGS);
   O.setStarGalaxyProbability(objectList[id].CLASS_STAR);
   O.setBlendingProbability(computeBlendingProbability(id));
   O.setBaseFilename(Image<data_t>::getFilename());
   O.setNumber(objectList[id].NUMBER);
+  O.setNoiseMeanRMS(bg_mean,bg_rms);
 }
 
 void SExFrame::subtractBackground() {
@@ -286,46 +265,45 @@ void SExFrame::insertFormatField(std::string type, std::string columnnr) {
 void SExFrame::checkFormat() {
   bool trouble = 0;
   if (sf.NUMBER == 0) {
-    text << "SExFrame: NUMBER keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: NUMBER keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.XMIN_IMAGE == 0) {
-    text << "SExFrame: XMIN_IMAGE keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: XMIN_IMAGE keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.XMAX_IMAGE == 0) {
-    text << "SExFrame: XMAX_IMAGE keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: XMAX_IMAGE keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.YMIN_IMAGE == 0) {
-    text << "SExFrame: YMIN_IMAGE keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: YMIN_IMAGE keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.YMAX_IMAGE == 0) {
-    text << "SExFrame: YMAX_IMAGE keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: YMAX_IMAGE keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.XWIN_IMAGE == 0) {
-    text << "SExFrame: XWIN_IMAGE keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: XWIN_IMAGE keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.YWIN_IMAGE == 0) {
-    text << "SExFrame: YWIN_IMAGE keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: YWIN_IMAGE keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.FLUX_AUTO == 0) {
-    text << "SExFrame: FLUX_AUTO keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: FLUX_AUTO keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.FLAGS == 0) {
-    text << "SExFrame: FLAGS keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: FLAGS keyword not provided!" << std::endl;
     trouble = 1;
   }
   if (sf.CLASS_STAR == 0) {
-    text << "SExFrame: CLASS_STAR keyword not provided!" << std::endl;
+    std::cerr << "SExFrame: CLASS_STAR keyword not provided!" << std::endl;
     trouble = 1;
   }
-  history.append(text);
 
   if (trouble)
     terminate();
@@ -380,7 +358,7 @@ const NumVector<int>& SExFrame::getObjectMap() {
 // estimate noise by iterative sigma clipping
 void SExFrame::estimateNoise() {
   if (!segmapRead) {
-    std::cout << "SExFrame: provide segmentation map before calling subtractNoise()!" << std::endl;
+    std::cerr << "SExFrame: provide segmentation map before calling subtractNoise()!" << std::endl;
     std::terminate();
   }
   // set noise estimates
@@ -396,9 +374,6 @@ void SExFrame::estimateNoise() {
       mask(i) = 1;
   NumVectorMasked<data_t> masked(data,mask);
   masked.kappa_sigma_clip(bg_mean,bg_rms);
-  text << "# Background estimation (object masked):";
-  text << " mean = " << bg_mean << ", sigma = " << bg_rms << endl;
-  history.append(text);
   estimatedBG = 1;
 }
 
@@ -416,10 +391,4 @@ void SExFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
   estimatedBG = 1;
   bg_mean = mean;
   bg_rms = rms;
-  text << "# Noise estimates explicitly set: mean = " << mean << ", rms = " << rms << std::endl;
-  history.append(text);
-}
-
-const History& SExFrame::getHistory () {
-  return history;
 }
