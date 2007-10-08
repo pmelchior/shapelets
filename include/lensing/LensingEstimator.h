@@ -1,11 +1,10 @@
-#ifndef LENSINGESTIAMTOR_H
-#define LENSINGESTIAMTOR_H
+#ifndef LENSINGESTIMATOR_H
+#define LENSINGESTIMATOR_H
 
 #include <Typedef.h>
 #include <shapelets/ShapeletObject.h>
 #include <shapelets/ShapeletObjectList.h>
 #include <complex>
-#include <vector>
 
 class LensingEstimator {
  public:

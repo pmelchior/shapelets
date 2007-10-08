@@ -17,7 +17,7 @@ complex<data_t> LensingEstimator::getShearMoments(ShapeletObject& so) {
 complex<data_t> LensingEstimator::getEllipticity(NumMatrix<data_t>& Q) {
   complex<data_t> I(0,1);
   complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
-  complex<data_t> denom = Q11+Q22;// + 2.*sqrt(Q11*Q22-Q12*Q12);
+  complex<data_t> denom = Q11+Q22;// + data_t(2)*sqrt(Q11*Q22-Q12*Q12);
   return (Q11 - Q22 + data_t(2)*I*Q12)/denom;
 }
 
@@ -57,7 +57,6 @@ complex<data_t> LensingEstimator::getNormShearUnweighted(ShapeletObjectList& ens
   int counter = 0;
   NumMatrix<data_t> Q(2,2);
   for (iter = ensemble.begin(); iter != ensemble.end(); iter++) {
-    //std::cout << (*iter)->getHistory() << std::endl;
     const NumMatrix<Complex>& f = (*iter)->getPolarCoeffs();
     for (int n = 0; n <= (*iter)->getNMax(); n+=2)
       norm += data_t(sqrt((data_t) n+1)) * f(n,mIndex(n,0));

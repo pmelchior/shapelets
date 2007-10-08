@@ -14,27 +14,9 @@
 /// In this shapelet implementation the matrix storage scheme for cartesian and polar coefficient differs, 
 /// and so the mapping onto a coefficient vector (accomplished by IndexVector) also has to differ:
 /// - for cartesian coefficients:
-/// \f[
-/// \begin{bmatrix}
-/// (0,0) & (0,1) & (0,2) & (0,3)\\
-/// (1,0) & (1,1) & (1,2) & \\
-/// (2,0) & (2,1) & & \\
-/// (3,0) & & &
-/// \end{bmatrix}
-/// \longmapsto
-/// \bigl[ (0,0), (0,1), (1,0), (0,2), (1,1), (2,0), (0,3), (1,2), (2,1), (3,0)\bigr]
-/// \f]
+/// \f[ \begin{bmatrix} (0,0) & (0,1) & (0,2) & (0,3)\\ (1,0) & (1,1) & (1,2) & \\ (2,0) & (2,1) & & \\ (3,0) & & &  \end{bmatrix}  \longmapsto  \bigl[ (0,0), (0,1), (1,0), (0,2), (1,1), (2,0), (0,3), (1,2), (2,1), (3,0)\bigr]  \f]
 /// - for polar coefficients:
-/// \f[
-/// \begin{bmatrix}
-/// (0,0) & & & \\
-/// (1,-1) & (1,1) & & \\
-/// (2,-2) & (2,0) & (2,2) & \\
-/// (3,-3) & (3,-1) & (3,1) & (3,3)
-/// \end{bmatrix}
-/// \longmapsto
-/// \bigl[ (0,0), (1,-1), (1,1), (2,-2), (2,0), (2,2), (3,-3), (3,-1), (3,1), (3,3)\bigr]
-/// \f]
+/// \f[ \begin{bmatrix} (0,0) & & & \\ (1,-1) & (1,1) & & \\ (2,-2) & (2,0) & (2,2) & \\ (3,-3) & (3,-1) & (3,1) & (3,3) \end{bmatrix} \longmapsto \bigl[ (0,0), (1,-1), (1,1), (2,-2), (2,0), (2,2), (3,-3), (3,-1), (3,1), (3,3)\bigr] \f]
 ///
 /// Usage is straightforward:
 /// \code

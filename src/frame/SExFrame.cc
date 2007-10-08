@@ -14,7 +14,7 @@ using namespace boost;
 
 typedef unsigned int uint;
 
-SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile) {
+SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile), weight() {
   SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
   sf = empty;
   catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
@@ -30,8 +30,7 @@ SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile) {
   r = gsl_rng_alloc (T);
 }
 
-SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<data_t>(fitsfile) {
-  weight = Image<data_t>(weightfile);
+SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<data_t>(fitsfile), weight(weightfile) {
   SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
   sf = empty;
   catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
@@ -96,7 +95,7 @@ void SExFrame::readCatalog(std::string catfile) {
       so.YMAX_IMAGE = atoi(column[sf.YMAX_IMAGE-1].c_str())-1;
       so.XWIN_IMAGE = atof(column[sf.XWIN_IMAGE-1].c_str())-1;
       so.YWIN_IMAGE = atof(column[sf.YWIN_IMAGE-1].c_str())-1;
-      so.FLUX_AUTO = atof(column[sf.FLUX_AUTO-1].c_str())-1;
+      so.FLUX_AUTO = atof(column[sf.FLUX_AUTO-1].c_str());
       so.FLAGS = (unsigned char) atoi(column[sf.FLAGS-1].c_str());
       so.CLASS_STAR = (data_t) atof(column[sf.CLASS_STAR-1].c_str());
      // then push it on objectList

@@ -114,8 +114,6 @@ class ShapeletObject : public Composite2D {
   /// Larger changes of \f$\beta\f$ can be achieved by setBeta().
   void rescale(data_t newBeta);
 
-  // methods for reading/writing sif files that contain 
-  // all necessary information of a shapelet image
   /// Save active set of image parameters to given file.
   void save(std::string filename) const;
   /// Load active set of image parameters from file.
@@ -128,12 +126,26 @@ class ShapeletObject : public Composite2D {
   /// This can be used for erasing the history by using a empty string.
   void setHistory(std::string comment);
 
+  /// Get the value of the regularization parameter \f$R\f$.
+  /// See OptimalDecomposite2D::regularize() for details.
   data_t getRegularizationR() const;
+  /// Get mean of pixel noise \f$\mu_n\f$ obtained from Frame or SExFrame.
   data_t getNoiseMean() const;
+  /// Get RMS of pixel noise \f$\sigma_n\f$ obtained from Frame or SExFrame.
   data_t getNoiseRMS() const;
+  /// Get the filename from which this object originated.
   std::string getBaseFilename() const;
+  /// Get the object id assigned to this object.
+  /// See Object::getID() for details.
   unsigned int getObjectID() const;
+  /// Get the object number assigned to this object.
+  /// See Object::getNumber() for details.
   unsigned int getObjectNumber() const;
+  /// Get the object extraction and decomposition flags.
+  /// The extraction flags populate the lower 8 bits, the decomposition
+  /// flags upper ones.\n
+  /// See OptimalDecomposite2D::getDecompositionFlag() and Object::getDetectionFlag()
+  /// for details.
   std::bitset<16> getFlags() const;
   
   friend class SIFFile;

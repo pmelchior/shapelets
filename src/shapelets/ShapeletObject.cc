@@ -61,20 +61,20 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   nr = obj.getNumber();
   basefilename = obj.getBaseFilename();
   // decomposing with given constraits on shapelet decomposition parameters
-  OptimalDecomposite2D *optimalDecomp =  new OptimalDecomposite2D(obj, ShapeLensConfig::NMAX_LOW,ShapeLensConfig::NMAX_HIGH,ShapeLensConfig::BETA_LOW,ShapeLensConfig::BETA_HIGH);
+  OptimalDecomposite2D optimalDecomp(obj, ShapeLensConfig::NMAX_LOW,ShapeLensConfig::NMAX_HIGH,ShapeLensConfig::BETA_LOW,ShapeLensConfig::BETA_HIGH);
 
   // if set, save the unregularized model to sif file with given name
   if (ShapeLensConfig::REGULARIZE && ShapeLensConfig::SAVE_UNREG) {
     // first get all necessary data for model
-    optimalDecomp->getShapeletCoeffs(cartesianCoeffs);
-    optimalDecomp->getShapeletErrors(errors);
-    beta = optimalDecomp->getOptimalBeta();
-    chisquare = optimalDecomp->getOptimalChiSquare();
+    optimalDecomp.getShapeletCoeffs(cartesianCoeffs);
+    optimalDecomp.getShapeletErrors(errors);
+    beta = optimalDecomp.getOptimalBeta();
+    chisquare = optimalDecomp.getOptimalChiSquare();
     history.setSilent();
     history << obj.history.str();
-    history << optimalDecomp->getHistory().str();
+    history << optimalDecomp.getHistory().str();
     history.unsetSilent();
-    decompFlag = optimalDecomp->getDecompositionFlag();
+    decompFlag = optimalDecomp.getDecompositionFlag();
     if (decompFlag > 0)
       flags = decompFlag+256+fitsFlag;
     // save temporary file here
@@ -87,18 +87,18 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
 
   // use regularization if specified
   if (ShapeLensConfig::REGULARIZE)
-    R = optimalDecomp->regularize(ShapeLensConfig::REG_LIMIT);
+    R = optimalDecomp.regularize(ShapeLensConfig::REG_LIMIT);
 
-  optimalDecomp->getShapeletCoeffs(cartesianCoeffs);
-  optimalDecomp->getShapeletErrors(errors);
-  beta = optimalDecomp->getOptimalBeta();
-  chisquare = optimalDecomp->getOptimalChiSquare();
+  optimalDecomp.getShapeletCoeffs(cartesianCoeffs);
+  optimalDecomp.getShapeletErrors(errors);
+  beta = optimalDecomp.getOptimalBeta();
+  chisquare = optimalDecomp.getOptimalChiSquare();
   history.clear();
   history.setSilent();
   history << obj.history.str();
-  history << optimalDecomp->getHistory().str();
+  history << optimalDecomp.getHistory().str();
   history.unsetSilent();
-  decompFlag = optimalDecomp->getDecompositionFlag();
+  decompFlag = optimalDecomp.getDecompositionFlag();
   if (decompFlag > 0)
     flags = decompFlag+256+fitsFlag;
 
@@ -110,8 +110,7 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   Composite2D::setCentroid(xcentroid);
   Composite2D::setCoeffs(cartesianCoeffs);
   Composite2D::setGrid(FitsGrid);
-  Composite2D::accessModel() = optimalDecomp->getModel();
-  delete optimalDecomp;
+  Composite2D::accessModel() = optimalDecomp.getModel();
 }  
 
 

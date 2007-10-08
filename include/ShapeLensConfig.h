@@ -21,7 +21,7 @@
 /// Frame f(somefile);
 /// Object obj;
 /// ShapeletObject(obj);
-/// \endcode;
+/// \endcode
 
 class ShapeLensConfig {
  public:

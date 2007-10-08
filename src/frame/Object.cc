@@ -287,9 +287,11 @@ void Object::save(std::string filename) {
   status = updateFITSKeyword(outfptr,"S_G",s_g,"stellarity");
   status = appendFITSHistory(outfptr,history.str());
 
-  // save segMap 
-  status = addFITSExtension(outfptr,"SEGMAP",grid,segMap.getData());
-  status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
+  // save segMap
+  if (segMap.size() != 0) {
+    status = addFITSExtension(outfptr,"SEGMAP",grid,segMap.getData());
+    status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
+  }
 
   //if weight map provided, save it too
   if (weight.size() != 0)

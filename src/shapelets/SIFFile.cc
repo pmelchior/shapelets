@@ -93,12 +93,16 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   bool errors;
   status = readFITSKeyword(fptr,"ERRORS",errors);
   status = readFITSKeyword(fptr,"R",sobj.R);
-  status = readFITSKeyword(fptr,"FLAGS",sobj.flags);
+  int tmp;
+  status = readFITSKeyword(fptr,"FLAGS",tmp);
+  sobj.flags = (unsigned int) tmp;
   
   // read frame parameters
   status = readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
-  status = readFITSKeyword(fptr,"ID",sobj.id);
-  status = readFITSKeyword(fptr,"NR",sobj.nr);
+  status = readFITSKeyword(fptr,"ID",tmp);
+  sobj.id = tmp;
+  status = readFITSKeyword(fptr,"NR",tmp);
+  sobj.nr = tmp;
   status = readFITSKeyword(fptr,"NOISE_MEAN",sobj.noise_mean);
   status = readFITSKeyword(fptr,"NOISE_RMS",sobj.noise_rms);
   data_t xmin,xmax,ymin,ymax;

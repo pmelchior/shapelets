@@ -246,15 +246,15 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
   if (Q.getRows() != 2 || Q.getColumns() != 2)
     Q.resize(2,2);
   Q.clear();
+  data_t factor;
   for (int l0 = 0; l0 <= orderlimit0; l0++) {
     for (int l1 = 0; l1 <= orderlimit1; l1++) {
       if (l0%2 == 0 && l1%2 ==0) {
-	Q(0,0) += 2 * gsl_pow_int(2,-(l0+l1)/2) * (1+2*l0) *
+	factor = 2 * gsl_pow_int(2,-(l0+l1)/2) * 
 	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
 	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * shapeletCoeffs(l0,l1);
-	Q(1,1) += 2 * gsl_pow_int(2,-(l0+l1)/2) * (1+2*l1) *
-	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
-	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * shapeletCoeffs(l0,l1);
+	Q(1,1) += factor * (1+2*l0);
+	Q(0,0) += factor * (1+2*l1);
       } else if (l0%2 == 1 && l1%2 == 1) {
 	Q(0,1) += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt((data_t)(l0+1)*(l1+1)) *
 	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1+1)) /

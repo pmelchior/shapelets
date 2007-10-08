@@ -79,7 +79,7 @@ class PixelCovarianceMatrix {
   /// 0 -1 0.256
   /// 1  0 1.001
   /// 2  1 0.310
-  /// \endcode.
+  /// \endcode
   void save(std::string filename) const;
   /// Load covariance matrix from a file created by save().
   void load(std::string filename);
