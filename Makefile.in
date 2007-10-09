@@ -41,6 +41,7 @@ LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsi
 
 AR = ar
 ARFLAGS = -sr
+SHAREDFLAGS = -shared -fpic
 
 .DEFAULT: all
 
@@ -55,30 +56,35 @@ clean:
 cleanlib:
 	rm -f $(LIBPATH)/*
 
+cleanshared:
+	rm -f $(LIBPATH)/lib$(LIBNAME).so
+
 cleanshapelets:
 	rm -f $(SHAPELETSOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
+	rm -f $(LIBPATH)/lib$(LIBNAME).so
 
 cleanlensing:
 	rm -f $(LENSINGOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
+	rm -f $(LIBPATH)/lib$(LIBNAME).so
 
 cleanframe:
 	rm -f $(FRAMEOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
+	rm -f $(LIBPATH)/lib$(LIBNAME).so
 
 cleancommon:
 	rm -f $(COMMONOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
+	rm -f $(LIBPATH)/lib$(LIBNAME).so
 
 cleanprogs:
 	rm -f $(PROGSOBJECTS)
 
-dep:
-	$(CC) -MM $(SRC) > $(DEPENDFILE)
-	-include $(DEPENDFILE) 
-
 lib: $(LIBPATH)/lib$(LIBNAME).a
+
+shared: $(LIBPATH)/lib$(LIBNAME).so
 
 progs: $(PROGSOBJECTS)
 
@@ -86,6 +92,9 @@ progs: $(PROGSOBJECTS)
 
 $(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS)
 	$(AR) $(ARFLAGS) $@ $?
+
+$(LIBPATH)/lib$(LIBNAME).so: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS)
+	$(CC) $(SHAREDFLAGS) -o $@ $?
 
 $(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@

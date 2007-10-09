@@ -8,25 +8,37 @@ NUMLAINCLPATH = "$(HOME)/code/numla"
 OTHERINCL = ["$(HOME)/code/boost-local","$(HOME)/include","$(HOME)/code/ATLAS/include"]
 OTHERLIB = ["$(HOME)/lib","$(HOME)/code/ATLAS/lib/Linux_P4SSE3_2"]
 
-MARCH="pentium4"
-OPTIMIZE="3"
+# choose the appropriate values for the flags -march and -O during compilation
+MARCH = "pentium4"
+OPTIMIZE = "3"
+
+# create shared library
+SHARED = True
 
 # set this to False if you don't want an automatically generated documentation
 # if set to True, doxygen should be installed on your machine.
 DOCUMENTATION = True
 
-# no changes necessary beyond this point
+
+
+##########################################
+# no changes necessary beyond this point #
+##########################################
+
 # insert PATH and CFLAGS in Makefile
 infile = open('Makefile.in','r') 
 makefile = infile.read()
 infile.close()
 paths = "INSTALLPATH = "+INSTALLPATH+"\nSHAPELENSPATH = "+SHAPELENSPATH+"\nNUMLAINCLPATH = "+NUMLAINCLPATH
 
-targets = "all: lib progs docs"
-doctarget = "docs: $(HEADERS)\n\tdoxygen Doxyfile"
-if (DOCUMENTATION==False):
-	targets = "all: lib progs"
-	doctarget = ""
+targets = "all: lib"
+doctarget = ""
+if (SHARED == True):
+        targets = targets + " shared"
+if (DOCUMENTATION == True):
+	targets = targets + " docs"
+	doctarget = "docs: $(HEADERS)\n\tdoxygen Doxyfile"
+targets = targets + " progs"
 
 otherincl = ""
 for i in range(len(OTHERINCL)):

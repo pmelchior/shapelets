@@ -377,14 +377,20 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     int status;
     data_t a,b, accuracy;
 
-    // in step 1) correct beta is completely unknown, therefore define very loose bounds a,b
-    // since this probably not be the last call of the function, coarse accuracy is enough
-    // in step 2) beta is expected to decrease since nmax is larger than before, but things
-    // are still quite uncertain
-    // in steps 3-7) accuracy is improving as is the a priori knowledge of beta
-    // in steps 6,7) we try to find lower nmax, which raises beta, thus b higher
+    // in step 1) correct beta is completely unknown, 
+    // therefore define very loose bounds a,b; 
+    // a is chosen to be the minimum scale size for nmax = 2 not subject
+    // to random sampling (2 theta_min > 1)
+    // since this probably not be the last call of the function, 
+    // coarse accuracy is enough
+    // in step 2) beta is expected to decrease since nmax is 
+    // larger than before, but things are still quite uncertain
+    // in steps 3-7) accuracy is improving as is the a priori 
+    // knowledge of beta
+    // in steps 6,7) we try to find lower nmax, which raises beta, 
+    // thus b higher
     switch (step) {
-    case 1: a = 0.5*beta; b = 2*beta; accuracy = 0.01*beta; break;
+    case 1: a = 0.5*sqrt(3.); b = 2*beta; accuracy = 0.01*beta; break;
     case 2: beta *=0.75; a = 0.66*beta; b = 1.5*beta; accuracy = 0.01*beta; break;
     case 3: a = 0.8*beta; b = 1.1*beta; accuracy = 0.01*beta; break;
     case 6: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
@@ -541,8 +547,16 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     }
     while (status == GSL_CONTINUE && iter < max_iter);
 
-    bestBeta[Decomposite2D::getNMax()] = optimalBeta;
-    bestChi2[Decomposite2D::getNMax()] = optimalChiSquare;
+    // if minimizer did not converge within max_iter:
+    // save best solution found by now
+    if (status == GSL_CONTINUE) {
+      bestBeta[Decomposite2D::getNMax()] = beta;
+      bestChi2[Decomposite2D::getNMax()] = gsl_min_fminimizer_f_minimum(s);
+    }
+    else {
+      bestBeta[Decomposite2D::getNMax()] = optimalBeta;
+      bestChi2[Decomposite2D::getNMax()] = optimalChiSquare;
+    }
 
     gsl_min_fminimizer_free (s);
     return status;
