@@ -1,6 +1,6 @@
 #include <shapelets/ShapeletObject.h>
 #include <shapelets/SIFFile.h>
-#include <boost/filesystem/operations.hpp>
+#include <stdio.h>
 
 using namespace std;
 typedef complex<data_t> Complex;
@@ -77,6 +77,8 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
     decompFlag = optimalDecomp.getDecompositionFlag();
     if (decompFlag > 0)
       flags = decompFlag+256+fitsFlag;
+    else
+      flags = fitsFlag;
     // save temporary file here
     // TODO: use filesystem calls from boost to move is when save() is called
     SIFFile sfile("obj_unreg.sif");
@@ -101,6 +103,8 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   decompFlag = optimalDecomp.getDecompositionFlag();
   if (decompFlag > 0)
     flags = decompFlag+256+fitsFlag;
+  else
+    flags = fitsFlag;
 
   c2p = PolarTransformation(cartesianCoeffs.getRows()-1);
   polarCoeffs = NumMatrix<Complex> (cartesianCoeffs.getRows(),cartesianCoeffs.getRows());
@@ -310,7 +314,7 @@ void ShapeletObject::save(string sifFile) const {
     fits_close_file(infptr, &status);
     
     // remove temporary sif file
-    boost::filesystem::remove("obj_unreg.sif");
+    remove("obj_unreg.sif");
   }
 }
 

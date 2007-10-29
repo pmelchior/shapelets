@@ -37,7 +37,7 @@ HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wil
 CC = g++
 CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLPATH) -I$(INCLPATH) ???OTHERINCL???
 CFLAG_LIBS = -L$(LIBPATH) ???OTHERLIB???
-LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio -lboost_filesystem
+LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio
 
 AR = ar
 ARFLAGS = -sr

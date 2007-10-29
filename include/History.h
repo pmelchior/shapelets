@@ -57,7 +57,7 @@ class History {
   }
   /// Clear the history.
   void clear() {
-    s.clear();
+    s.str("");
   }
   /// Set the verbosity of operator<<.
   /// If set to 1, all texts added to History are printed to stdout.

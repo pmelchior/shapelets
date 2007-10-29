@@ -89,7 +89,7 @@ int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
     fits_get_keyname(card,keyword,&keylen,&status);
     if (std::string(keyword) == key) {
       // append all but the first 8 characters
-      value += card + FLEN_CARD - FLEN_VALUE;
+      value += card + 8;
       value += "\n";
     }
   }

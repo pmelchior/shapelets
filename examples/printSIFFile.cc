@@ -30,15 +30,16 @@ int main (int argc, char *argv[]) {
     std::cout << " (R = " << sobj.getRegularizationR() << ")" << std::endl;
   else 
     std::cout << std::endl;
+  std::cout << std::endl;
 
   // if required, print out decomposition history
   if (historySwitch.isSet())
-    std::cout << sobj.getHistory();
+    std::cout << "History:" << std::endl << sobj.getHistory() << std::endl;
   // if required, print out shapelet coeffs (+ errors)
   if (coefficientSwitch.isSet())
-    std::cout << "Cartesian coefficients:" << std::endl << sobj.getCartesianCoeffs() << std::endl;
+    std::cout << "Cartesian coefficients:" << std::endl << sobj.getCartesianCoeffs() << std::endl << std::endl;
   if (errorSwitch.isSet())
-    std::cout <<  "Cartesian coefficient errors:" << std::endl << sobj.getDecompositionErrors() << std::endl;
+    std::cout <<  "Cartesian coefficient errors:" << std::endl << sobj.getDecompositionErrors() << std::endl << std::endl;
   
 }
 
