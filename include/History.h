@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+#include <ShapeLensConfig.h>
 
 /// History class.
 /// The class stores the history of processing steps.
@@ -25,28 +26,28 @@ class History {
   /// Overloaded operator<<.
   /// With this operator, History behaves like a std::ostringstream.
   template <typename T> History& operator<<(T t) {
-    if (verbosity && !silent)
+    if (ShapeLensConfig::VERBOSITY && !silent)
       std::cout << t;
     s << t; 
     return *this; 
   }
 
   History& operator<<(std::ostream& (*func)(std::ostream&)) {
-    if (verbosity && !silent)
+    if (ShapeLensConfig::VERBOSITY && !silent)
       std::cout << func;
     s << func;
     return *this;
   } 
 
   History& operator<<(std::ios& (*func)(std::ios&)) {
-    if (verbosity && !silent)
+    if (ShapeLensConfig::VERBOSITY && !silent)
       std::cout << func;
     s << func;
     return *this;
   }
 
   History& operator<<(std::ios_base& (*func)(std::ios_base&)) {
-    if (verbosity && !silent)
+    if (ShapeLensConfig::VERBOSITY && !silent)
       std::cout << func;
     s << func;
     return *this;
@@ -63,11 +64,11 @@ class History {
   /// If set to 1, all texts added to History are printed to stdout.
   /// The default value is 0.
   static void setVerbosity(bool v) {
-    verbosity = v;
+    ShapeLensConfig::VERBOSITY = v;
   }
   /// Get the actual verbosity.
   bool getVerbosity() const {
-    return verbosity;
+    return ShapeLensConfig::VERBOSITY;
   }
   /// Turn verbose mode off temporarily.
   /// This does not change <tt>verbosity</tt>, but turns
@@ -85,7 +86,6 @@ class History {
   }
  private:
   std::ostringstream s;
-  static bool verbosity;
   bool silent;
 }; 
 

@@ -6,6 +6,7 @@
 
 using namespace std;
 
+bool ShapeLensConfig::VERBOSITY = 0;
 unsigned int ShapeLensConfig::NMAX_LOW = 0;
 unsigned int ShapeLensConfig::NMAX_HIGH = 100;
 data_t ShapeLensConfig::BETA_LOW = 0;
@@ -46,6 +47,8 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
       column.push_back(*tok_iter);
     // exclude empty and comment lines
     if (column.size() >= 2 && column[0] != "#") {
+      if (column[0] == "VERBOSITY")
+	VERBOSITY = (bool) atoi (column[1].c_str());
       if (column[0] == "NMAX_LOW")
 	NMAX_LOW = (unsigned int) atoi (column[1].c_str());
       if (column[0] == "NMAX_HIGH")

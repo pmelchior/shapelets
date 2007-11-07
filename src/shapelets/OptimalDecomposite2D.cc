@@ -556,6 +556,8 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     else {
       bestBeta[Decomposite2D::getNMax()] = optimalBeta;
       bestChi2[Decomposite2D::getNMax()] = optimalChiSquare;
+      // update weight map for upcoming decompositions
+      Decomposite2D::updateWeightMap();
     }
 
     gsl_min_fminimizer_free (s);
@@ -790,7 +792,6 @@ void minimize_beta(reg_parameters& p) {
   gsl_multimin_fminimizer_set (s, &my_func, x, ss);
 
   int iter =0, status;
-  std::ostringstream history;
   do {
       iter++;
       status = gsl_multimin_fminimizer_iterate (s);
@@ -809,8 +810,8 @@ void minimize_beta(reg_parameters& p) {
   // update all quantities with new beta
   // this is neccessary, since p contains values from last call, not from best f
   f_beta(s->x,&p);
-  history << "# " << iter << ":\t beta = " << gsl_vector_get (s->x, 0)<< "\t f = " << s->fval;
-  history << "\t chi^2 = " << p.chi2 <<  "\t R = "<< p.R << std::endl;
+  p.history << "# " << iter << ":\t beta = " << gsl_vector_get (s->x, 0)<< "\t f = " << s->fval;
+  p.history << "\t chi^2 = " << p.chi2 <<  "\t R = "<< p.R << std::endl;
 
   // clean up
   gsl_multimin_fminimizer_free (s);
@@ -841,7 +842,6 @@ void minimize_coeffs(reg_parameters& p) {
   gsl_multimin_fminimizer_set (s, &my_func, x, ss);
 
   int iter =0, status;
-  std::ostringstream history;
   do {
       iter++;
       status = gsl_multimin_fminimizer_iterate (s);
@@ -865,7 +865,7 @@ void minimize_coeffs(reg_parameters& p) {
   // update coeffs and all other quantities in p
   f_coeffs(s->x,&p);
 
-  history << "# " << iter << ":\t f = " << s->fval << "\t chi^2 = " << p.chi2 << "\t R = " << p.R << std::endl;
+  p.history << "# " << iter << ":\t f = " << s->fval << "\t chi^2 = " << p.chi2 << "\t R = " << p.R << std::endl;
   
   gsl_multimin_fminimizer_free (s);
   gsl_vector_free (x);

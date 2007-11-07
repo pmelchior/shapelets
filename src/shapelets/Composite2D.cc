@@ -253,8 +253,8 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
 	factor = 2 * gsl_pow_int(2,-(l0+l1)/2) * 
 	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
 	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * shapeletCoeffs(l0,l1);
-	Q(1,1) += factor * (1+2*l0);
-	Q(0,0) += factor * (1+2*l1);
+	Q(0,0) += factor * (1+2*l0);
+	Q(1,1) += factor * (1+2*l1);
       } else if (l0%2 == 1 && l1%2 == 1) {
 	Q(0,1) += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt((data_t)(l0+1)*(l1+1)) *
 	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1+1)) /

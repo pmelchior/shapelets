@@ -8,9 +8,9 @@ typedef complex<data_t> Complex;
 ShapeletObject::ShapeletObject() : Composite2D() {
 }
 
-ShapeletObject::ShapeletObject(string sifFile) : Composite2D() {
+ShapeletObject::ShapeletObject(string sifFile, bool preserve_config) : Composite2D() {
   // get infos from file
-  load(sifFile);
+  load(sifFile,preserve_config);
   c2p = PolarTransformation(cartesianCoeffs.getRows()-1);
   polarCoeffs = NumMatrix<Complex> (cartesianCoeffs.getRows(),cartesianCoeffs.getColumns());
   c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);

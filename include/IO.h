@@ -102,7 +102,7 @@ int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data
 template <class T>
 int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M) {
   Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  return writeFITSImage(outfptr,grid,M.vectorize(0));
+  return writeFITSImage(outfptr,grid,M.vectorize(1));
 }
 
 /// creates a single HDU FITS file from the data defined on given grid

@@ -36,8 +36,11 @@ class ShapeLensConfig {
   /// NMAX_HIGH   24
   /// \endcode
   ShapeLensConfig(std::string filename);
+  /// Whether the History should be printed to stdout during data processing,
+  /// default = 0.
+  static bool VERBOSITY;
   /// The minimum number of pixels above <tt>MIN_THRESHOLD</tt> to be regarded as object,
-  /// default = 20;
+  /// default = 20.
   static unsigned int MIN_PIXELS;
   /// The threshold (in units of the noise variance \f$\sigma_n\f$), which is supposed to 
   /// be the isocontour of minimal significance, default = 1.

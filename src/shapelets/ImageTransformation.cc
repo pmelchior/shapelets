@@ -14,11 +14,12 @@ ImageTransformation::ImageTransformation() {
 }
 
 void ImageTransformation::rotate(NumMatrix<Complex>& polarCoeffs, data_t rho, History& history) {
-  history << "# Rotating image by " << rho << endl;
+  data_t rho_scaled = 2*M_PI*rho/360;
+  history << "# Rotating image by " << rho << " degrees" << endl;
   for (int n = 0; n < polarCoeffs.getRows(); n++) {
     for (int m = -n; m<=n; m++) {
       if ((n%2==0 && m%2==0) || (n%2==1 && abs(m%2)==1)) {
-	polarCoeffs(n,mIndex(n,m)) *= exp(m*rho*I);
+	polarCoeffs(n,mIndex(n,m)) *= exp(m*rho_scaled*I);
       }
     }
   }

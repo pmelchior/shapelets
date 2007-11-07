@@ -17,18 +17,12 @@
 int main(int argc, char *argv[]) {
   // read in necessary information from command line
   TCLAP::CmdLine cmd("Decompose FITS file into shapelets", ' ', "0.1");
-  TCLAP::ValueArg<std::string> fileArg("f","file","FITS file to analyze",true,"","string", cmd);
+  TCLAP::UnlabeledValueArg<std::string> fileArg("file","FITS file to analyze",true,"","string", cmd);
   TCLAP::ValueArg<std::string> sifArg("p","prefix","Prefix of SIF files",true,"","string", cmd);
   TCLAP::ValueArg<std::string> confArg("c","config","ShapeLens configuration file",false,"","string", cmd);
   TCLAP::ValueArg<std::string> segmapArg("s","segmap","Name of segmentation map (stored as FITS file)",false,"","string", cmd);
-  TCLAP::SwitchArg historySwitch("v","verbose","Verbose output", cmd, false);
   cmd.parse( argc, argv );
   
-
-  // if you want to see what the is actually going on, set this to 1.
-  // if you want to have it quiet, set it to 0 (default).
-  if (historySwitch.isSet())
-    History::setVerbosity(1);
   // if a configuration file is provide, use it
   if (confArg.isSet())
     ShapeLensConfig sc(confArg.getValue());
@@ -63,26 +57,28 @@ int main(int argc, char *argv[]) {
     Object* obj = new Object(n);
     // "cut out" the object from whole frame and put it into Object obj
     f->fillObject(*obj);
-
     // dismiss objects with flag > 3 because of serious trouble
     // during the detection/segmentation process
     if (obj->getDetectionFlag() <= 3) {
+      // create FITS file with the original pixel data of the object...
+      std::ostringstream newname;
+      newname << sifArg.getValue() << "_" << n << ".fits";
+      std::string fitsname = newname.str();
+      obj->save(fitsname);
+
       // actual decomposition is done here
       ShapeletObject sobj (*obj);
       // save results
-      std::ostringstream newname;
+      newname.str("");
       newname << sifArg.getValue() << "_" << n << ".sif";
       sobj.save(newname.str());
-      // create FITS file with the original pixel data of the object...
-      newname.str("");
-      newname << sifArg.getValue() << "_" << n << ".fits";
-      writeFITSFile(newname.str(),obj->getGrid(),obj->getData());
+
       // ... add shapelet model ...
-      addFITSExtension(newname.str(),"MODEL",obj->getGrid(),sobj.getModel());
+      addFITSExtension(fitsname,"MODEL",obj->getGrid(),sobj.getModel());
       // ... and residuals (data - model).
       NumVector<data_t> residuals = obj->getData();
       residuals -= sobj.getModel();
-      addFITSExtension(newname.str(),"RESIDUAL",obj->getGrid(),residuals);
+      addFITSExtension(fitsname,"RESIDUAL",obj->getGrid(),residuals);
     }
     delete obj;
   }

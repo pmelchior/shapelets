@@ -36,7 +36,10 @@ class ShapeletObject : public Composite2D {
   /// Default constructor.
   ShapeletObject();
   /// Constructor for reading a SIF file.
-  ShapeletObject(std::string sifFile);
+  /// If <tt>preserve_config==1</tt>, the global ShapeLensConfig parameters
+  /// are preserved during the loading of <tt>sifFile</tt>, otherwise
+  /// they are overwritten by the values given in <tt>sifFile</tt>.
+  ShapeletObject(std::string sifFile, bool preserve_config=1);
   /// Copy constructor.
   //ShapeletObject(ShapeletObject& sobj);
   /// Constructor, using cartesian coefficients.
@@ -117,7 +120,10 @@ class ShapeletObject : public Composite2D {
   /// Save active set of image parameters to given file.
   void save(std::string filename) const;
   /// Load active set of image parameters from file.
-  void load(std::string filename, bool preserve_config = 0);
+  /// If <tt>preserve_config==1</tt>, the global ShapeLensConfig parameters
+  /// are preserved during the loading of <tt>sifFile</tt>, otherwise
+  /// they are overwritten by the values given in <tt>sifFile</tt>.
+  void load(std::string filename, bool preserve_config = 1);
 
   /// Return history string of image.
   /// This contains all procedure parameters of decomposition, transformations etc.

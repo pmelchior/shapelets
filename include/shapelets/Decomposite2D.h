@@ -86,6 +86,8 @@ class Decomposite2D {
   /// Update model and residuals during the next call to
   /// getModel() or accessModel().
   void updateModelResiduals();
+  /// Update weight map.
+  void updateWeightMap();
 
  private:
   void computeCoeffs();

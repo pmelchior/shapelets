@@ -33,14 +33,10 @@ obj(O) {
   }
   else if (ShapeLensConfig::NOISEMODEL == "POISSONIAN") {
     noise = 3;
-    NumVector<data_t> tmp = obj;
-    Weight.resize(npixels);
     background_variance = gsl_pow_2(obj.getNoiseRMS());
+    Weight.resize(npixels);
     for (int i=0; i < npixels; i++)
-      tmp(i) += background_variance;
-    convolveGaussian(tmp,Weight,obj.getSize(0),obj.getSize(1));
-    for (int i=0; i< npixels; i++)
-      Weight(i) = 1./Weight(i);
+      Weight(i) = 1./background_variance;
   }
   change = updateC = updateModel = updateResiduals = 1;
 }
@@ -223,4 +219,16 @@ void Decomposite2D::setNMax(int innmax) {
 
 void Decomposite2D::updateCoeffs(bool update) {
   updateC = update;
+}
+
+void Decomposite2D::updateWeightMap() {
+  if (ShapeLensConfig::NOISEMODEL == "POISSONIAN") {
+    computeModel();
+    for (int i=0; i < npixels; i++) {
+      if (model(i) > 0)
+	Weight(i) = 1./(background_variance + model(i));
+      else
+	Weight(i) = 1./background_variance;
+    }
+  }
 }
