@@ -174,26 +174,12 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
   while (chisquare > 1) {
     // break during step 2 if order gets too high
     // for a relatively fast findOptimalBeta() here
-    if (step == 2 && Decomposite2D::getNMax() == 6) {
+    if (step == 2 && (Decomposite2D::getNMax() == 6 || Decomposite2D::getNMax()%12 == 0)) {
       history << "# Interrupting here for better estimation of beta" << endl;
-      findOptimalBeta(2);
-      if (optimalChiSquare <= 1) {
-	optimalNMax = Decomposite2D::getNMax();
-	history << "# Optimal decomposition order n_max = " << optimalNMax << endl;
-	break;
-      }
-      else {
-	history << "#" << endl << "# Continuing search for optimal n_max" << endl;
-	history << "# iter.\tn_max\tchi^2\tsigma(chi^2)";
-	if (noise_correlated)
-	  history<<"\txi_res - xi";
-	history<< endl;
-      }
-    }
-    
-    else if (step == 2 && Decomposite2D::getNMax()%12 == 0) {
-      history << "# Interrupting here for better estimation of beta" << endl;
-      findOptimalBeta(3);
+      if (Decomposite2D::getNMax() == 6)
+	findOptimalBeta(2);
+      else
+	findOptimalBeta(3);
       if (optimalChiSquare <= 1) {
 	optimalNMax = Decomposite2D::getNMax();
 	history << "# Optimal decomposition order n_max = " << optimalNMax << endl;
@@ -210,11 +196,14 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     
     // reached the limit of nmax
     if (Decomposite2D::getNMax()+increment > nmaxHigh) {
+      history << "# Stopping at nmax limit = " << nmaxHigh << endl;
       if (!nmaxTrouble) {
 	optimalNMax = Decomposite2D::getNMax();
 	flag = 1;
+      } else {
+	Decomposite2D::setNMax(optimalNMax);
+	history << "# Returning to previous best fit n_max = " << optimalNMax << endl;
       }
-      history << "# Stopping at nmax limit = " << nmaxHigh << endl;
       break;
     }
 
@@ -390,11 +379,11 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     // in steps 6,7) we try to find lower nmax, which raises beta, 
     // thus b higher
     switch (step) {
-    case 1: a = 0.5*sqrt(3.); b = 2*beta; accuracy = 0.01*beta; break;
-    case 2: beta *=0.75; a = 0.66*beta; b = 1.5*beta; accuracy = 0.01*beta; break;
-    case 3: a = 0.8*beta; b = 1.1*beta; accuracy = 0.01*beta; break;
-    case 6: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
-    case 7: a = 0.9*beta; b= 1.2*beta; accuracy = 0.01*beta; break;
+    case 1: a = 0.5*sqrt(3.); b = 2*beta; accuracy = 0.02*beta; break;
+    case 2: beta *=0.75; a = 0.66*beta; b = 1.5*beta; accuracy = 0.02*beta; break;
+    case 3: a = 0.8*beta; b = 1.1*beta; accuracy = 0.02*beta; break;
+    case 6: a = 0.9*beta; b= 1.2*beta; accuracy = 0.02*beta; break;
+    case 7: a = 0.9*beta; b= 1.2*beta; accuracy = 0.02*beta; break;
     }
     
     history << "# initial setup: a = " << a << ", beta = " << beta << ", b = " << b << endl;
@@ -623,8 +612,6 @@ void OptimalDecomposite2D::getShapeletCoeffs(NumMatrix<data_t>& coeffs) {
 
 void OptimalDecomposite2D::getShapeletErrors(NumMatrix<data_t>& errors) {
   if (!optimized) optimize();
-  if (errors.getRows() != optimalNMax+1 || errors.getColumns() != optimalNMax+1)
-    errors = NumMatrix<data_t>(optimalNMax+1,optimalNMax+1);
 
   // getting error vector from noise only
   const NumVector<data_t>& noiseError = Decomposite2D::getErrors();

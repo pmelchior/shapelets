@@ -80,30 +80,9 @@ class Image : public NumVector<T> {
   std::string filename;
   History history;
   void read() {
-    fitsfile *fptr;
-    int status = 0;
-    fits_open_file(&fptr, filename.c_str(), READONLY, &status);
-    int naxis;
-    fits_get_img_dim(fptr, &naxis, &status);
-    if (naxis!=2) {
-      std::cout << "Image: naxis != 2. This is not a FITS image!" << std::endl;
-      std::terminate();
-    } else {
-      long naxes[2] = {1,1};
-      fits_get_img_size(fptr, naxis, naxes, &status);
-      unsigned int axsize0, axsize1;
-      axsize0 = naxes[0];
-      axsize1 = naxes[1];
-      grid = Grid(0,axsize0-1,1,0,axsize1-1,1);
-      long npixels = axsize0*axsize1;
-      data::resize(npixels);
-      long firstpix[2] = {1,1};
-      T val;
-      int imageformat = getFITSImageFormat(val);
-      int datatype = getFITSDataType(val);
-      fits_read_pix(fptr, datatype, firstpix, npixels, NULL,data::c_array(), NULL, &status);
-      fits_close_file(fptr, &status);
-    }
+    fitsfile *fptr = openFITSFile(filename);
+    int status = readFITSImage(fptr,grid,*this);
+    fits_close_file(fptr, &status);
   }
 };
 

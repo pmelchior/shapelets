@@ -10,7 +10,7 @@ obj(O) {
   nmax = innmax;
   nVector = IndexVector(nmax);
   nCoeffs = nVector.getNCoeffs();
-  setBeta(inbeta);
+  beta = inbeta;
   npixels = obj.size();
   Mt.resize(nCoeffs,npixels);
 

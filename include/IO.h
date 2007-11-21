@@ -197,7 +197,27 @@ int readFITSImage(fitsfile *fptr, NumMatrix<T>& M) {
   T val;
   int imageformat = getFITSImageFormat(val);
   int datatype = getFITSDataType(val);
-  fits_read_pix(fptr, datatype, firstpix, naxes[0]*naxes[1], NULL,M.c_array(), NULL, &status);
+  fits_read_pix(fptr, datatype, firstpix, naxes[0]*naxes[1], NULL, M.c_array(), NULL, &status);
+  return status;
+}
+
+template <class T>
+int readFITSImage(fitsfile *fptr, Grid& grid, NumVector<T>& v) {
+  int naxis, status = 0;
+  fits_get_img_dim(fptr, &naxis, &status);
+  if (naxis!=2) {
+    std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
+    std::terminate();
+  }
+  long naxes[2] = {1,1};
+  fits_get_img_size(fptr, naxis, naxes, &status);
+  grid = Grid(0,naxes[0]-1,1,0,naxes[1]-1,1);
+  v.resize(grid.size());
+  long firstpix[2] = {1,1};
+  T val;
+  int datatype = getFITSDataType(val);
+  fits_read_pix(fptr, datatype, firstpix, grid.size(), NULL, v.c_array(), NULL, &status);
+  return status;
 }
 
 template <class T>

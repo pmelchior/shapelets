@@ -25,7 +25,7 @@
 ///  // perform the convolution
 ///  CoefficientVector<data_t> h = P*f;
 ///  // transform vector back to coefficient matrix
-///  h.fillCoefficientMatrix(cartesianCoeffs);
+///  h.fillCoeffMatrix(cartesianCoeffs);
 /// \endcode
 /// 
 template <class T>

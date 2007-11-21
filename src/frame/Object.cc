@@ -111,15 +111,19 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   computeFluxCentroid();
 }
 
+void Object::setID(unsigned int inid) {
+  id = inid;
+}
+
 unsigned int Object::getID() const {
   return id;
 }
 
-void Object::setNumber(unsigned int num) {
+void Object::setNumber(data_t num) {
   number = num;
 }
 
-unsigned int Object::getNumber() const {
+data_t Object::getNumber() const {
   return number;
 }
 

@@ -106,11 +106,17 @@ void SExFrame::readCatalog(std::string catfile) {
   catRead = 1;
 }
 
-void SExFrame::readSegmentationMap(std::string segmentfile) {
-  Image<int>* seg = new Image<int>(segmentfile);
-  segMap = seg->getData();
-  delete seg;
+void SExFrame::readSegmentationMap(std::string segmapfile) {
+  segMap = SegmentationMap(segmapfile);
   segmapRead = 1;
+  // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
+  fitsfile* fptr = openFITSFile(segmapfile);
+  int status = readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
+  status = readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
+  if (status == 0) {
+    estimatedBG = 1;
+    
+  }
 }
 
 unsigned int SExFrame::getNumberOfObjects() {
@@ -123,6 +129,7 @@ unsigned int SExFrame::getNumberOfObjects() {
 
 void SExFrame::fillObject(Object& O) {
   if (!estimatedBG) estimateNoise();
+    
   unsigned int id = O.getID();
   int xmin, xmax, ymin, ymax;
   xmin = objectList[id].XMIN_IMAGE;
@@ -228,7 +235,10 @@ void SExFrame::fillObject(Object& O) {
   O.setBlendingProbability(computeBlendingProbability(id));
   O.setBaseFilename(Image<data_t>::getFilename());
   O.setNumber(objectList[id].NUMBER);
-  O.setNoiseMeanRMS(bg_mean,bg_rms);
+  data_t obj_bg_mean = 0;
+  if (!subtractBG)
+    obj_bg_mean = bg_mean;
+  O.setNoiseMeanRMS(obj_bg_mean,bg_rms);
 }
 
 void SExFrame::subtractBackground() {

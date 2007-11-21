@@ -35,14 +35,16 @@ class Object : public Image<data_t> {
   /// Argumented constructor for loading an object from a Fits file.
   /// The Fits file shold have been created by Object::save().
   Object (std::string fitsfile);
+  /// Set the ID.
+  void setID(unsigned int id);
   /// Return the ID.
   unsigned int getID() const;
-  /// Set the object number.
+  /// Set an object number.
   /// This can but does not have to be identical to the <tt>ID</tt> of this object,
-  /// this number can thus carry an additional identifier.
-  void setNumber(unsigned int num);
+  /// this number can thus carry an additional identifier or other information.
+  void setNumber(data_t num);
   /// Get object number.
-  unsigned int getNumber() const;
+  data_t getNumber() const;
   /// Return the weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
   const NumVector<data_t>& getWeightMap() const;
@@ -130,13 +132,13 @@ class Object : public Image<data_t> {
 
   
  private:
-  unsigned int id, number;
+  unsigned int id;
   NumVector<data_t> weight;
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;
   CorrelationFunction xi;
   Point2D centroid;
-  data_t flux, noise_mean, noise_rms, s_g, blend;
+  data_t flux, noise_mean, noise_rms, s_g, blend, number;
   unsigned short flag;
   std::string basefilename;
 };

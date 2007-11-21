@@ -343,7 +343,7 @@ unsigned int ShapeletObject::getObjectID() const {
   return id;
 }
 
-unsigned int ShapeletObject::getObjectNumber() const {
+data_t ShapeletObject::getObjectNumber() const {
   return nr;
 }
 

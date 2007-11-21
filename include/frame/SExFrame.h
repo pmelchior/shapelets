@@ -85,7 +85,9 @@ class SExFrame : public Image<data_t> {
   void readCatalog(std::string catfile);
   /// Read the segmentation map.
   /// This Fits file can be produced by SExtractor by setting 
-  /// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>
+  /// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>\n
+  /// The noise estimation step can be bypassed if the header keywords <tt>NOISE_MEAN</tt>
+  /// and <tt>NOISE_RMS</tt> are set in this FITS file.
   void readSegmentationMap(std::string segmentfile);
   /// Return noise mean \f$\mu_n\f$.
   data_t getNoiseMean();

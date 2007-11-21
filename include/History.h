@@ -18,10 +18,17 @@ class History {
     s.clear();
     silent = 0;
   }
+  /// Copy constructor
+  History(const History& h) {
+    s.clear();
+    s << h.s;
+    silent = h.silent;
+  }
   /// Copy operator.
   void operator=(const History& h) {
     s.clear();
     s << h.s;
+    silent = h.silent;
   }
   /// Overloaded operator<<.
   /// With this operator, History behaves like a std::ostringstream.

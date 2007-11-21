@@ -20,7 +20,7 @@
 #include <shapelets/PolarTransformation.h>
 #include <shapelets/ImageTransformation.h>
 #include <shapelets/MatrixManipulations.h>
-
+#include <shapelets/CoefficientVector.h>
 
 /// Central class for 2D shapelet objects.
 /// Provides all functionalities related to the work with 2D shapelet objects.\n
@@ -146,7 +146,7 @@ class ShapeletObject : public Composite2D {
   unsigned int getObjectID() const;
   /// Get the object number assigned to this object.
   /// See Object::getNumber() for details.
-  unsigned int getObjectNumber() const;
+  data_t getObjectNumber() const;
   /// Get the object extraction and decomposition flags.
   /// The extraction flags populate the lower 8 bits, the decomposition
   /// flags upper ones.\n
@@ -161,10 +161,10 @@ class ShapeletObject : public Composite2D {
   NumMatrix<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
-  data_t chisquare, R, noise_mean, noise_rms;
+  data_t chisquare, R, noise_mean, noise_rms, nr;
   bool fits;
   History history;
-  unsigned int nr, id, flags;
+  unsigned int id, flags;
   std::string basefilename;
 };
 
