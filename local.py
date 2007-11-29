@@ -2,15 +2,17 @@
 import os
 
 # change this according to your machine and paths
-SHAPELENSPATH = "$(HOME)/code/shapelens"
+# compiled lib and progs will go into lib/$SUBDIR and progs/$SUBDIR
 INSTALLPATH = "."
+SUBDIR = "i686/pentium4"	
+SHAPELENSPATH = "$(HOME)/code/shapelens"
 NUMLAINCLPATH = "$(HOME)/code/numla"
 OTHERINCL = ["$(HOME)/code/boost-local","$(HOME)/include","$(HOME)/code/ATLAS/include"]
-OTHERLIB = ["$(HOME)/lib","$(HOME)/code/ATLAS/lib/Linux_P4SSE3_2"]
+OTHERLIB = ["$(HOME)/lib"]
 
-# choose the appropriate values for the flags -march and -O during compilation
-MARCH = "pentium4"
-OPTIMIZE = "3"
+# choose the appropriate values for the compiler and flags
+COMPILER = "g++"
+FLAGS = "-ansi -g -DNDEBUG -Wno-deprecated -O3 -march=pentium4"
 
 # create shared library
 SHARED = True
@@ -48,8 +50,9 @@ for i in range(len(OTHERLIB)):
         otherlib = otherlib + " -L"+OTHERLIB[i]
 
 makefile = makefile.replace("???PATHS???",paths)
-makefile = makefile.replace("???OPTIMIZE???",OPTIMIZE)
-makefile = makefile.replace("???MARCH???",MARCH)
+makefile = makefile.replace("???SUBDIR???",SUBDIR)
+makefile = makefile.replace("???COMPILER???",COMPILER)
+makefile = makefile.replace("???CFLAGS???",FLAGS)
 makefile = makefile.replace("???OTHERINCL???",otherincl)
 makefile = makefile.replace("???OTHERLIB???",otherlib)
 makefile = makefile.replace("???TARGETS???",targets)
@@ -74,8 +77,7 @@ if (DOCUMENTATION == True):
 	outfile.close()
 
 # create directories
-arch = os.popen("uname -m").read().strip()
-os.system("mkdir -p progs/"+arch)
-os.system("mkdir -p lib/"+arch)
+os.system("mkdir -p progs/"+SUBDIR)
+os.system("mkdir -p lib/"+SUBDIR)
 if (DOCUMENTATION == True):
 	os.system("mkdir -p docs")

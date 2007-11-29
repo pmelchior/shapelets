@@ -54,7 +54,33 @@ class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> 
   /// The ShapeletObject <tt>sobj</tt> entities have to fulfill the criterium 
   /// <tt>selectionFunction (sobj) == 1</tt> to be included in the list.
   ShapeletObjectList(std::string listfile, bool (* selectionFunction) (ShapeletObject&));
+  /// Compute coefficient and scale size average of all SIFs in the list.
+  /// <tt>std_mean</tt> is the standard deviation of the mean of the coefficient set.
+  void average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std_mean, data_t& beta);
+  /// Compute coefficient and scale size average of all ShapeletObject entities in the list.
+  /// <tt>std_mean</tt> is the standard deviation of the mean of the coefficient set.
+  ///
+  /// One can weight the ShapeletObject entities according to an arbitrary <tt>weightFunction</tt>. For example:
+  /// \code
+  /// data_t weight(ShapeletObject& sobj) {
+  ///   return sobj.getShapeletFlux()/sobj.getDecompositionChiSquare();
+  /// }
+  /// NumMatrix<data_t> mean, std_mean;
+  /// data_t beta;
+  /// sl.average(mean,std_mean,beta,&weight);
+  /// \endcode
+  ///
+  /// This returns the weighted mean (weighted by flux times inverse \f$\chi^2\f$)
+  /// \f[\langle x\rangle = \frac{ \sum_{i=1}^n x_i/{\sigma_i}^2}{\sum_{i=1}^n 1/{\sigma_i}^2}\f]
+  /// and its standard deviation 
+  /// \f[s_{\langle x\rangle} = \frac{ \sum_{i=1}^N{w_i} }{(\sum_{i=1}^N{w_i})^2 - \sum_{i=1}^N{{w_i}^2}} \sum_{i=1}^N{{w_i}(x_i - \langle x\rangle)^2}\f]
+  /// which is computed as 
+  /// \f[s_{\langle x\rangle} = \frac{\sum_{i=1}^N{w_i {x_i}^2} \sum_{i=1}^N{w_i} - (\sum_{i=1}^N{w_i x_i})^2} {(\sum_{i=1}^N{w_i})^2 - \sum_{i=1}^N{{w_i}^2}}\f]
+  /// where \f$N\f$ is <tt>sl.size()</tt> and \f$x\f$ is any available coefficient in <tt>sl</tt>.
+  void average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&));
+
  private:
   void readListFile(std::string listfile, bool (* selectionFunction) (ShapeletObject&));
+  bool checkSIFFile(ShapeletObject&, std::string );
 };
 #endif

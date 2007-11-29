@@ -45,16 +45,16 @@ class ShapeletObject : public Composite2D {
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
-  ShapeletObject(const NumMatrix<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid);
+  ShapeletObject(const NumMatrix<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0));
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const NumMatrix<complex<data_t> >& polarCoeffs, data_t beta, const Point2D& xcentroid);
+  ShapeletObject(const NumMatrix<complex<data_t> >& polarCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically.\n
   /// As default, it uses extremely loose bounds on \f$n_{max}\f$ and \f$\beta\f$
-  /// (see DEFAULTS); a regularization (to avoid regions of negative flux) is not
+  /// (see ShapeLensConfig); a regularization (to avoid regions of negative flux) is not
   /// employed.\n
   /// If you want to change these settings, change them BEFORE calling this
   /// constructor.

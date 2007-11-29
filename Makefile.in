@@ -3,11 +3,11 @@
 SRCPATH = $(SHAPELENSPATH)/src
 INCLPATH = $(SHAPELENSPATH)/include
 
-ARCH = $(shell uname -m)
+SUBDIR = ???SUBDIR???
 DOCPATH = $(INSTALLPATH)/docs
-LIBPATH = $(INSTALLPATH)/lib/$(ARCH)
+LIBPATH = $(INSTALLPATH)/lib/$(SUBDIR)
 PROGSRCPATH = $(INSTALLPATH)/progs
-PROGPATH = $(PROGSRCPATH)/$(ARCH)
+PROGPATH = $(PROGSRCPATH)/$(SUBDIR)
 
 LIBNAME = shapelens
 
@@ -34,14 +34,14 @@ PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
 HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(NUMLAINCLPATH)/*.h)
 
-CC = g++
-CFLAGS = -ansi -DNDEBUG -g -O???OPTIMIZE??? -Wno-deprecated -march=???MARCH??? -I$(NUMLAINCLPATH) -I$(INCLPATH) ???OTHERINCL???
+CC = ???COMPILER???
+CFLAGS = ???CFLAGS??? -I$(NUMLAINCLPATH) -I$(INCLPATH) ???OTHERINCL???
 CFLAG_LIBS = -L$(LIBPATH) ???OTHERLIB???
 LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio
 
 AR = ar
 ARFLAGS = -sr
-SHAREDFLAGS = -shared -fpic
+SHAREDFLAGS = -shared -fPIC
 
 .DEFAULT: all
 
