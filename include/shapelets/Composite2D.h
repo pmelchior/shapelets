@@ -36,14 +36,10 @@ class Composite2D : private Shapelets2D {
   void setCoeffs(const NumMatrix<data_t>& newCoeffs);
   /// Get \f$\beta\f$ from basis function.
   data_t getBeta() const;
-  /// Access \f$\beta\f$ from basis function.
-  data_t& accessBeta();
   /// Set new \f$\beta\f$ for basis functions.
   void setBeta(data_t beta);
   /// Get centroid position \f$x_c\f$
   const Point2D& getCentroid() const;
-  /// Access centroid position \f$x_c\f$
-  Point2D& accessCentroid();
   /// Set centroid position \f$x_c\f$
   void setCentroid(const Point2D& inxcentroid);
   /// Get current Grid.
@@ -83,7 +79,6 @@ class Composite2D : private Shapelets2D {
   NumVector<data_t> model;
   Point2D xcentroid;
   int order0, order1, orderlimit0, orderlimit1;
-  data_t beta, stepsize0, stepsize1;
   bool change;
   data_t evalGridPoint(const Point2D& x);
   void evalGrid();

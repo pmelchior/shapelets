@@ -39,16 +39,14 @@ class ShapeletObject : public Composite2D {
   /// are preserved during the loading of <tt>sifFile</tt>, otherwise
   /// they are overwritten by the values given in <tt>sifFile</tt>.
   ShapeletObject(std::string sifFile, bool preserve_config=1);
-  /// Copy constructor.
-  //ShapeletObject(ShapeletObject& sobj);
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
-  ShapeletObject(const NumMatrix<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0));
+  ShapeletObject(const NumMatrix<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const NumMatrix<complex<data_t> >& polarCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0));
+  ShapeletObject(const NumMatrix<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically.\n

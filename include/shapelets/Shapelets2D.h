@@ -18,25 +18,25 @@ class Shapelets2D {
   /// Constructor with scale size \f$\beta\f$ and orders \f$n_0\f$ and \f$n_1\f$.
   Shapelets2D (int n0, int n1, data_t beta);
   /// Return maximum order of \f$B\f$ in direction (0/1).
-  int getOrder (bool direction);
+  int getOrder (bool direction) const;
   /// Set the maximum shapelets orders.
   void setOrders (int n0, int n1);
   /// Return \f$\beta\f$.
-  data_t getBeta();
+  data_t getBeta() const;
   /// Set \f$\beta\f$ to arbitrary value.
   void setBeta(data_t beta);
   /// Get smallest reproducible object size \f$\theta_{min}\f$.
-  data_t getThetaMin(int order0, int order1);
+  data_t getThetaMin(int order0, int order1) const;
   /// Get biggest reproducible object size \f$\theta_{max}\f$.
-  data_t getThetaMax(int order0, int order1);
+  data_t getThetaMax(int order0, int order1) const;
   /// Get integral over basis function  \f$B_{n_0,n_1}\f$.
-  data_t integrate(int order0, int order1);
+  data_t integrate(int order0, int order1) const;
   /// Get integral over basis function  \f$B_{n_0,n_1}\f$ within the area enclosed by
   /// \f$(x_0^{min}/x_1^{min})\ ..\ (x_0^{max}/x_1^{max})\f$.
   /// see Paper III. eq. (82)
-  data_t integrate(int n0, int n1, data_t x0min, data_t x0max, data_t x1min,data_t x1max);
+  data_t integrate(int n0, int n1, data_t x0min, data_t x0max, data_t x1min,data_t x1max) const;
   /// Evaluate \f$B_{n_0,n_1}((x_0,x_1);\beta)\f$.
-  data_t eval(int n0, int n1, Point2D& x);
+  data_t eval(int n0, int n1, Point2D& x) const;
 
 private:
   Shapelets1D S1D;

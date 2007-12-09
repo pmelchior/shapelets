@@ -21,16 +21,14 @@ class Hermite {
   Hermite (unsigned int n);
   
   /// Return highest order of H.
-  int getOrder ();
+  int getOrder () const;
   /// Set the highest polynomial order \f$n\f$.
   void setOrder (unsigned int n);
   /// Return the coefficient of the \f$i\f$th power of the \f$n\f$th Hermite polynomial.
   /// Double values neccessary because these coefficients become very large at high orders.
-  data_t getCoefficient(unsigned int n, unsigned int i);
+  data_t getCoefficient(unsigned int n, unsigned int i) const;
   /// Evaluate \f$H_{n}(x)\f$.
-  data_t eval (unsigned int n, data_t x);
-  /// Print coeffs of \f$H_{n}\f$ to stdout.
-  void printCoeffs (unsigned int n);
+  data_t eval (unsigned int n, data_t x) const;
 
 private:
   boost::numeric::ublas::triangular_matrix<data_t,boost::numeric::ublas::lower> HermiteCoeffs;

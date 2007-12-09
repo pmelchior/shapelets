@@ -10,22 +10,20 @@ Composite2D::Composite2D() : Shapelets2D() {
   change = 1;
 }
 
-Composite2D::Composite2D(data_t inbeta, Point2D& inxcentroid, const NumMatrix<data_t>& startCoeffs) : Shapelets2D() {  
-  shapeletCoeffs = startCoeffs;
+Composite2D::Composite2D(data_t beta, Point2D& inxcentroid, const NumMatrix<data_t>& Coeffs) : Shapelets2D() {  
+  shapeletCoeffs = Coeffs;
   xcentroid = inxcentroid;
   order0 = orderlimit0 = shapeletCoeffs.getRows() -1;
   order1 = orderlimit1 = shapeletCoeffs.getColumns() -1;
-  //beta = inbeta;
   Shapelets2D::setOrders(order0,order1);
+  Shapelets2D::setBeta(beta);
   // grid hast to be redefined before evaluation
   change = 1;
-  // set beta in the Shapelets2D and define if in-pixel-Integration will be used
-  setBeta(inbeta);
 }
 
 Composite2D & Composite2D::operator= (const Composite2D &source) {
   Shapelets2D::setOrders(source.order0,source.order1);
-  Shapelets2D::setBeta(beta);
+  Shapelets2D::setBeta(source.getBeta());
   shapeletCoeffs = source.shapeletCoeffs;
   grid = source.grid;
   xcentroid(0) = source.xcentroid(0);
@@ -34,8 +32,6 @@ Composite2D & Composite2D::operator= (const Composite2D &source) {
   order1 = source.order1;
   orderlimit0 = source.orderlimit0;
   orderlimit1 = source.orderlimit1;
-  stepsize0 = source.stepsize0;
-  stepsize1 = source.stepsize1;
   return *this;
 }
   
@@ -73,26 +69,15 @@ void  Composite2D::setCoeffs(const NumMatrix<data_t>& newCoeffs ) {
 }
 
 data_t Composite2D::getBeta() const {
-  return beta;
+  return Shapelets2D::getBeta();
 }
 
-data_t& Composite2D::accessBeta() {
-  change = 1;
-  return beta;
-}
-
-void Composite2D::setBeta(data_t inbeta) {
-  beta = inbeta;
+void Composite2D::setBeta(data_t beta) {
   Shapelets2D::setBeta(beta);
   change = 1;
 }
 
 const Point2D& Composite2D::getCentroid() const {
-  return xcentroid;
-}
-
-Point2D& Composite2D::accessCentroid() {
-  change = 1;
   return xcentroid;
 }
 
@@ -107,8 +92,6 @@ const Grid& Composite2D::getGrid() const {
 
 void Composite2D::setGrid(const Grid& ingrid) {
   grid = ingrid;
-  stepsize0 = grid.getStepsize(0);
-  stepsize1 = grid.getStepsize(1);
   change = 1;
 }
 
@@ -130,10 +113,9 @@ data_t Composite2D::eval(const Point2D& x) {
 data_t Composite2D::evalGridPoint(const Point2D& x) {
   data_t result = 0;
   Point2D xdiff;
-  //data_t range = 2 * Shapelets2D::getThetaMax(orderlimit0,orderlimit1);
   // shift to center of pixel
   //xdiff(0) = x(0) + 0.5*stepsize0 - xcentroid(0);    
-  //xdiff(1) = x(1) + 0.5*stepsize1 - xcentroid(1);
+  //xdiff(1) = x(1) + 0.5*stepsize 1 - xcentroid(1);
   xdiff(0) = x(0) - xcentroid(0);    
   xdiff(1) = x(1) - xcentroid(1);
   for (int l0 = 0; l0 <= orderlimit0; l0++)
@@ -213,7 +195,7 @@ data_t Composite2D::getShapeletFlux() const {
       }
     }
   }
-  return M_SQRTPI*beta*result;
+  return M_SQRTPI*Shapelets2D::getBeta()*result;
 }
 
 // compute centroid position from shapelet coeffs
@@ -237,6 +219,7 @@ void Composite2D::getShapeletCentroid(Point2D& xc) const {
     }
   }
   data_t flux = getShapeletFlux();
+  data_t beta = Shapelets2D::getBeta();
   xc(0) = M_SQRTPI*beta*beta*xc(0)/flux;
   xc(1) = M_SQRTPI*beta*beta*xc(1)/flux;
 }
@@ -263,6 +246,7 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
     }
   }
   data_t flux = getShapeletFlux();
+  data_t beta = Shapelets2D::getBeta();
   Q(0,0) *= M_SQRTPI * beta*beta*beta / flux;
   Q(0,1) *= M_SQRTPI * beta*beta*beta / flux;
   Q(1,1) *= M_SQRTPI * beta*beta*beta / flux;
@@ -282,6 +266,7 @@ data_t Composite2D::getShapeletRMSRadius() const {
     }
   }
   data_t flux = getShapeletFlux();
+  data_t beta = Shapelets2D::getBeta();
   return sqrt(rms * M_SQRTPI * beta*beta*beta / flux);
 }
 
@@ -292,6 +277,7 @@ void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nV
   NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);
   // start with 0th and 1st order shapelets
   data_t x0_scaled, x1_scaled;
+  data_t beta = Shapelets2D::getBeta();
   data_t factor0 = 1./sqrt(M_SQRTPI*beta);
   for (int i=0; i<npixels; i++) {
     x0_scaled = (grid(i,0) - xcentroid(0))/beta;

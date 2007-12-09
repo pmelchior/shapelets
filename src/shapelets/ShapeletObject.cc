@@ -19,11 +19,12 @@ ShapeletObject::ShapeletObject(string sifFile, bool preserve_config) : Composite
   Composite2D::setCoeffs(cartesianCoeffs);
 }
 
-ShapeletObject::ShapeletObject(const NumMatrix<data_t>& incartesianCoeffs, data_t beta, const Point2D& xcentroid) :
+ShapeletObject::ShapeletObject(const NumMatrix<data_t>& incartesianCoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
 Composite2D() {
   chisquare = R = noise_mean = noise_rms = nr = id = flags = fits = 0;
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
+  Composite2D::setGrid(grid);
   // put the incoming cartesian coeffs into a triangular matrix of appropriate size
   triangularizeCoeffs(incartesianCoeffs,cartesianCoeffs,0);
   // now set the triangular coeffs
@@ -35,11 +36,12 @@ Composite2D() {
   trafo = ImageTransformation();
 }
 
-ShapeletObject::ShapeletObject(const NumMatrix<Complex>& inpolarCoeffs, data_t beta, const Point2D& xcentroid) :
+ShapeletObject::ShapeletObject(const NumMatrix<Complex>& inpolarCoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
 Composite2D() {
   chisquare = R = noise_mean = noise_rms = nr = id = flags = fits = 0;
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
+  Composite2D::setGrid(grid);
   triangularizeCoeffs(inpolarCoeffs,polarCoeffs,0);
   c2p = PolarTransformation(polarCoeffs.getRows()-1);
   cartesianCoeffs = NumMatrix<data_t> (polarCoeffs.getRows(), polarCoeffs.getColumns());
@@ -166,9 +168,11 @@ void ShapeletObject::rotate(data_t rho) {
  }
 
 void ShapeletObject::converge(data_t kappa) {
-  trafo.converge(polarCoeffs,Composite2D::accessBeta(),kappa,history);
+  data_t beta = Composite2D::getBeta();
+  trafo.converge(polarCoeffs,beta,kappa,history);
   c2p.getCartesianCoeffs(polarCoeffs,cartesianCoeffs);
   Composite2D::setCoeffs(cartesianCoeffs);
+  Composite2D::setBeta(beta);
   // another method would be to change beta without changing the coeffs
   //Composite2D::setBeta((1+kappa)*beta);
 }
@@ -263,21 +267,23 @@ void ShapeletObject::brighten(data_t factor) {
 void ShapeletObject::convolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel) {
   // first triangularize coeffs
   NumMatrix<data_t> triKernelCoeffs;
+  data_t beta = Composite2D::getBeta();
   triangularizeCoeffs(KernelCoeffs,triKernelCoeffs,0);
-  trafo.convolve(cartesianCoeffs,Composite2D::accessBeta(),triKernelCoeffs,beta_kernel,history);
+  trafo.convolve(cartesianCoeffs,beta,triKernelCoeffs,beta_kernel,history);
   c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);
   Composite2D::setCoeffs(cartesianCoeffs);
-  //  Composite2D::setBeta(beta);
+  Composite2D::setBeta(beta);
 }
 
 void ShapeletObject::deconvolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel) {
   // first triangularize coeffs
   NumMatrix<data_t> triKernelCoeffs;
+  data_t beta = Composite2D::getBeta();
   triangularizeCoeffs(KernelCoeffs,triKernelCoeffs,0);
-  trafo.deconvolve(cartesianCoeffs,Composite2D::accessBeta(),triKernelCoeffs,beta_kernel,history);
+  trafo.deconvolve(cartesianCoeffs,beta,triKernelCoeffs,beta_kernel,history);
   c2p.getPolarCoeffs(cartesianCoeffs,polarCoeffs);
   Composite2D::setCoeffs(cartesianCoeffs);
-  //Composite2D::setBeta(beta);
+  Composite2D::setBeta(beta);
 }
 
 void ShapeletObject::rescale(data_t newBeta) {

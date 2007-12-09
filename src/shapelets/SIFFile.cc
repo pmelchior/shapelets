@@ -88,7 +88,9 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // read shapelet parameters
   // make use of friendship of Composite2D and ShapeletObject
   sobj.change = 1;
-  status = readFITSKeyword(fptr,"BETA",sobj.beta);
+  data_t beta;
+  status = readFITSKeyword(fptr,"BETA",beta);
+  sobj.setBeta(beta);
   status = readFITSKeyword(fptr,"CHI2",sobj.chisquare);
   bool errors;
   status = readFITSKeyword(fptr,"ERRORS",errors);

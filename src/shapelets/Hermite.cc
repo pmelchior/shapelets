@@ -35,16 +35,8 @@ void Hermite::computeHermiteCoeffs(unsigned int order) {
   }
 }
 
-int Hermite::getOrder () {
+int Hermite::getOrder () const {
   return HermiteCoeffs.size1() -1;
-}
-
-void Hermite::printCoeffs (unsigned int order) {
-  if (order > computed) setOrder(order);
-  for (int i = 0; i < order+1; i+=1 ) {
-    std::cout << HermiteCoeffs(order,i) << "\t";
-  }  
-  std::cout << std::endl;
 }
 
 void Hermite::setOrder (unsigned int order) {
@@ -55,16 +47,22 @@ void Hermite::setOrder (unsigned int order) {
   }
 }
 
-data_t Hermite::eval (unsigned int order, data_t x) {
-  if (order > computed) setOrder(order);
+data_t Hermite::eval (unsigned int order, data_t x) const {
+  if (order > computed) {
+    std::cerr << "Hermite: order higher than computed; call setOrder() before!" << std::cout;
+    std::terminate();
+  }
   data_t result = 0;
   for (int i = 0; i  < order+1; i+=1 )
     result +=  HermiteCoeffs(order,i) * gsl_pow_int(x,i);
   return result;
 }
 
-data_t Hermite::getCoefficient(unsigned int order, unsigned int power) {
-  if (order > computed) setOrder(order);
+data_t Hermite::getCoefficient(unsigned int order, unsigned int power) const {
+  if (order > computed) {
+    std::cerr << "Hermite: order higher than computed; call setOrder() before!" << std::cout;
+    std::terminate();
+  }
   if (power > order) return 0;
   else return HermiteCoeffs(order,power);
 }

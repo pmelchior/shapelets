@@ -18,23 +18,23 @@ class Shapelets1D {
   Shapelets1D (int order, data_t beta);
   
   /// Return highest order of B.
-  int getOrder ();
+  int getOrder () const;
   /// Set the highest order of B.
   void setOrder (int order);
   /// Return \f$\beta\f$.
-  data_t getBeta();
+  data_t getBeta() const;
   /// Set \f$\beta\f$ to arbitrary value.
   void setBeta(data_t beta);
   /// Get smallest reproducible object size \f$\theta_{min}\f$.
-  data_t getThetaMin(int order);
+  data_t getThetaMin(int order) const;
   /// Get biggest reproducible object size \f$\theta_{max}\f$.
-  data_t getThetaMax(int order);
+  data_t getThetaMax(int order) const;
   /// Get integral over basis function \f$B_{order}\f$.
-  data_t integrate(int order);
+  data_t integrate(int order) const;
   /// Get integral over basis fuction  \f$B_{order}\f$ within interval xmin .. xmax.
-  data_t integrate(int order, data_t xmin, data_t xmax);
+  data_t integrate(int order, data_t xmin, data_t xmax) const;
   /// Evaluate \f$B_{order}(x;\beta)\f$.
-  data_t eval (int order, data_t x);
+  data_t eval (int order, data_t x) const;
 
 private:
   Hermite H;
