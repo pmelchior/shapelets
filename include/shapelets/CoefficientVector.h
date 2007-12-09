@@ -34,6 +34,7 @@ class CoefficientVector : public NumVector<T> {
   /// Default constructor.
   CoefficientVector(): NumVector<T>() {
   }
+  /// Constructor for CoefficientVector of given <tt>size</tt>.
   CoefficientVector(unsigned int size): NumVector<T> (size) {
     nVector = IndexVector(computeNMax(size));
   }

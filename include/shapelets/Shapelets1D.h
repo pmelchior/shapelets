@@ -8,7 +8,7 @@
 /// Provides calculation of values of 1D Shapelets basis functions 
 /// \f$B_n(x;\beta) = \beta^{-\frac{1}{2}}\phi_n(\beta^{-1}x)\f$ where
 /// \f$\phi_n(x) = [2^n\pi^{\frac{1}{2}}n!]^{-\frac{1}{2}} H_n(x) \exp(-\frac{x^2}{2})\f$ 
-/// and \f$H_n(x)\f$ is the nth order Hermite polynomial. 
+/// and \f$H_n(x)\f$ is the \f$n\f$th order Hermite polynomial. 
 
 class Shapelets1D {
  public:

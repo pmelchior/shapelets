@@ -11,8 +11,8 @@
 #include <shapelets/ShapeletObject.h>
 #include <bitset>
 
-/// Definition and usage the ShapeletImageFormat.
-/// The SIF (Shapelet Image Format) is used to store and retreive all information 
+/// Read/Write methods for SIF files.
+/// The SIF (Shapelet Image Format) is used to store and retrieve all information 
 /// that specifies a ShapeletObject.
 
 class SIFFile {

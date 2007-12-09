@@ -43,7 +43,6 @@
 /// \todo
 /// - construct 2D LS matrix from 2 1D shapelet matrices (if Grid is square: only 1 matrix!)
 /// - shift the grid (and centroid) to start at (0/0) -> matrices are similar at most pixel
-/// - POISSONIAN: construct V from shapelet model instead of data
 
 class Decomposite2D {
  public:

@@ -3,7 +3,8 @@
 
 /// 2D Shapelet class.
 /// Provides calculation of values of 2D Shapelets basis functions 
-/// \f$B_{order0,order1}(x0,x1;\beta)\f$.
+/// \f$B_{n_0,n_1}(x_0,x_1;\beta) \equiv B_{n_0}(x_0;\beta)B_{n_1}(x_1;\beta)\f$, where
+/// \f$B_{n_i}(x_i;\beta)\f$ is the Shapelets1D basis function.
 
 #include <Typedef.h>
 #include <frame/Point2D.h>
@@ -14,13 +15,12 @@ class Shapelets2D {
  public:
   /// Default constructor.
   Shapelets2D ();
-  /// Constructor with scale size \f$\beta\f$ and orders.
-  Shapelets2D (int order0, int order1, data_t beta);
-  
-  /// Return highest order of \f$B\f$ in direction (0/1).
+  /// Constructor with scale size \f$\beta\f$ and orders \f$n_0\f$ and \f$n_1\f$.
+  Shapelets2D (int n0, int n1, data_t beta);
+  /// Return maximum order of \f$B\f$ in direction (0/1).
   int getOrder (bool direction);
-  /// Set the highest shapelets orders.
-  void setOrders (int order0, int order1);
+  /// Set the maximum shapelets orders.
+  void setOrders (int n0, int n1);
   /// Return \f$\beta\f$.
   data_t getBeta();
   /// Set \f$\beta\f$ to arbitrary value.
@@ -29,13 +29,14 @@ class Shapelets2D {
   data_t getThetaMin(int order0, int order1);
   /// Get biggest reproducible object size \f$\theta_{max}\f$.
   data_t getThetaMax(int order0, int order1);
-  /// Get integral over basis function  \f$B_{order0,order1}\f$.
+  /// Get integral over basis function  \f$B_{n_0,n_1}\f$.
   data_t integrate(int order0, int order1);
-  /// Get integral over basis function  \f$B_{order}\f$ within range (x0min/x1min)..(x0max/x1max).
+  /// Get integral over basis function  \f$B_{n_0,n_1}\f$ within the area enclosed by
+  /// \f$(x_0^{min}/x_1^{min})\ ..\ (x_0^{max}/x_1^{max})\f$.
   /// see Paper III. eq. (82)
-  data_t integrate(int order0, int order1, data_t x0min, data_t x0max, data_t x1min,data_t x1max);
-  /// Evaluate \f$B_{order}((x0,x1);\beta)\f$.
-  data_t eval(int order0, int order1, Point2D& x);
+  data_t integrate(int n0, int n1, data_t x0min, data_t x0max, data_t x1min,data_t x1max);
+  /// Evaluate \f$B_{n_0,n_1}((x_0,x_1);\beta)\f$.
+  data_t eval(int n0, int n1, Point2D& x);
 
 private:
   Shapelets1D S1D;

@@ -13,6 +13,9 @@ data_t alwaysOne(ShapeletObject& so) {
   return 1;
 }
 
+ShapeletObjectList::ShapeletObjectList() : vector<boost::shared_ptr<ShapeletObject> >() {
+}
+
 ShapeletObjectList::ShapeletObjectList(string filename) : vector<boost::shared_ptr<ShapeletObject> >() {
   readListFile(filename,&alwaysTrue);
 }
@@ -99,4 +102,11 @@ bool ShapeletObjectList::checkSIFFile(ShapeletObject& so, std::string siffile) {
     std::cerr << siffile << " contains errors, thus rejected from list." << std::cout;
   return ok;
 }
-		
+
+ShapeletObjectList ShapeletObjectList::select(bool (* selectionFunction) (ShapeletObject&)) {
+  ShapeletObjectList selection;
+  for(vector<boost::shared_ptr<ShapeletObject> >::iterator iter = vector<boost::shared_ptr<ShapeletObject> >::begin(); iter != vector<boost::shared_ptr<ShapeletObject> >::end(); iter++)
+    if ((*selectionFunction)(*(*iter)))
+      selection.push_back(*iter);				
+  return selection;
+}		

@@ -3,7 +3,7 @@
 
 /// 2D Composition class.
 /// Provides values of a 2D composite shapelet function 
-/// \f$f(x0,x1) = \sum f_{n0,n1} \cdot B_{n0,n1}(x0,x1)\f$.\n
+/// \f$f(x0,x1) = \sum_{n0,n1}^{n_{max}} f_{n0,n1} \cdot B_{n0,n1}(x0,x1;\beta)\f$.\n
 
 #include <NumMatrix.h>
 #include <NumVector.h>

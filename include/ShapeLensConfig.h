@@ -6,9 +6,9 @@
 
 /// Class for ShapeLens++ configuration parameters.
 /// This class stores configuration parameters determining the behaviour of the shapelet
-/// decomposition process and the frameing process.\n
-/// In order to be effective, the parameters have to be set/changed before the shapelet
-/// decomposition is called, e.g.
+/// decomposition process and the framing process.\n
+/// In order to be effective, the parameters have to be set/changed before the method
+/// is called, e.g.
 /// \code
 /// Object obj;
 /// ShapeLensConfig::NMAX_HIGH = 24;
@@ -17,7 +17,7 @@
 ///
 /// Alternatively, the parameters can be set by a configuration file at construction:
 /// \code
-/// ShapeLensConfig("shapelens.conf");
+/// ShapeLensConfig sconf("shapelens.conf");
 /// Frame f(somefile);
 /// Object obj;
 /// ShapeletObject(obj);
@@ -28,7 +28,7 @@ class ShapeLensConfig {
   /// Default constructor.
   ShapeLensConfig();
   /// Argumented constructor.
-  /// <tt>filename</tt> is expected to contain configureation parameters
+  /// <tt>filename</tt> is expected to contain configuration parameters
   /// in ASCII format, one keyword/value pair per line, separated by a single or multiple
   /// tab character(s):
   /// \code

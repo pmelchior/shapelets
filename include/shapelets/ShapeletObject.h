@@ -14,7 +14,6 @@
 #include <frame/Grid.h>
 #include <frame/Image.h>
 #include <frame/Object.h>
-#include <frame/Profile.h>
 #include <shapelets/Composite2D.h>
 #include <shapelets/OptimalDecomposite2D.h>
 #include <shapelets/PolarTransformation.h>
@@ -24,12 +23,12 @@
 
 /// Central class for 2D shapelet objects.
 /// Provides all functionalities related to the work with 2D shapelet objects.\n
-/// The shapelet objects can be defined by giving a binary SIF (Shapelet Image Format) file, 
-/// cartesian or polar coefficients or a FITS image, that is then decomposed into shapelets.\n\n
-/// With the coefficients one can then compose images on arbitrary grids for evaluation
-/// and transform the image in shapelet space.\n
+/// The shapelet objects can be defined by giving a SIFFile (Shapelet Image Format) name, 
+/// cartesian or polar coefficients or a Object entity, which is then decomposed into shapelets.\n\n
+/// With the coefficients one can then compose shapelet models (Composite2D entities) 
+/// and employ transformations in shapelet space.\n
 /// For efficient work with shapelet images the active set of image parameters can be saved
-/// in a SIF file and later be loaded from that file again.
+/// to a SIFFile and later be loaded from that file again.
 
 class ShapeletObject : public Composite2D {
  public:

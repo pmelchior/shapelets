@@ -9,8 +9,8 @@
 /// Hermite polynomial class.
 /// Provides calculation of values of Hermite polynomials and its coefficients
 /// \f$H_n(x) = \sum_{2i+j=n} (-1)^i(2x)^j\frac{n!}{i!j!}\f$. \n\n
-/// The code uses following recurrance relation for Hermite polynomials:
-/// \f$H_{n+1}(x) = 2xH_n(x) - 2nH_{n-1}(x)\f$, where \f$H_0 = 1\f$.
+/// The code makes use of the following recurrance relation for Hermite polynomials:
+/// \f$H_{n+1}(x) = 2xH_n(x) - 2nH_{n-1}(x)\f$ with \f$H_0 = 1\f$.
 
 class Hermite {
  public:
