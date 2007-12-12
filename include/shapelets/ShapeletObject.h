@@ -140,16 +140,19 @@ class ShapeletObject : public Composite2D {
   std::string getBaseFilename() const;
   /// Get the object id assigned to this object.
   /// See Object::getID() for details.
-  unsigned int getObjectID() const;
+  unsigned long getObjectID() const;
   /// Get the object number assigned to this object.
   /// See Object::getNumber() for details.
-  data_t getObjectNumber() const;
+  unsigned long getObjectNumber() const;
+  /// Get the classifier assigned to this object.
+  /// See Object::getClassifier() for details.
+  data_t getObjectClassifier() const;
   /// Get the object extraction and decomposition flags.
   /// The extraction flags populate the lower 8 bits, the decomposition
   /// flags upper ones.\n
   /// See OptimalDecomposite2D::getDecompositionFlag() and Object::getDetectionFlag()
   /// for details.
-  std::bitset<16> getFlags() const;
+  const std::bitset<16>& getFlags() const;
   
   friend class SIFFile;
 
@@ -158,10 +161,11 @@ class ShapeletObject : public Composite2D {
   NumMatrix<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
-  data_t chisquare, R, noise_mean, noise_rms, nr;
+  data_t chisquare, R, noise_mean, noise_rms, classifier;
   bool fits;
   History history;
-  unsigned int id, flags;
+  std::bitset<16> flags;
+  unsigned long id, nr;
   std::string basefilename;
 };
 

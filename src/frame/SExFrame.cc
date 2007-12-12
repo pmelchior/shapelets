@@ -9,6 +9,7 @@
 #include <gsl/gsl_statistics_double.h>
 #include <set>
 #include <vector>
+#include <bitset>
 using namespace std;
 using namespace boost;
 
@@ -176,9 +177,8 @@ void SExFrame::fillObject(Object& O) {
   O.setFlux(catalog[id].FLUX);
   Point2D centroid(catalog[id].XCENTROID,catalog[id].YCENTROID);
   O.setCentroid(centroid);
-  O.setDetectionFlag(catalog[id].FLAGS);
-  O.setStarGalaxyProbability(catalog[id].CLASSIFIER);
-  O.setBlendingProbability(computeBlendingProbability(id));
+  O.setDetectionFlags(std::bitset<8>(catalog[id].FLAGS));
+  O.setClassifier(catalog[id].CLASSIFIER);
   O.setBaseFilename(Image<data_t>::getFilename());
   O.setNumber(catalog[id].NUMBER);
   data_t obj_bg_mean = 0;
@@ -217,17 +217,6 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
   xmax += xborder-1;
   ymin -= yborder;
   ymax += yborder-1;
-}
-
-// compute probability of an object being blended with another one
-// simple: if SExtractor FLAG contains 2, probability equals 1, else 0
-data_t SExFrame::computeBlendingProbability(unsigned int nr) {
-  unsigned short flag = catalog[nr].FLAGS;
-  // if 2 is in FLAGS: object flaged as blended
-  if ((flag >> 1)%2 == 1) 
-    return 1;
-  else 
-    return 0;
 }
 
 const NumVector<int>& SExFrame::getObjectMap() {

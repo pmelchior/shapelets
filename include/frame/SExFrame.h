@@ -124,7 +124,6 @@ class SExFrame : public Image<data_t> {
 
  private:
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
-  data_t computeBlendingProbability(unsigned int objectNr);
   void estimateNoise();
   Catalog catalog;
   bool segmapRead, catRead, subtractBG, estimatedBG;

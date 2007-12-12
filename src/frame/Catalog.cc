@@ -53,7 +53,7 @@ void Catalog::read(string catfile) {
       if (!formatChecked) checkFormat();
       // then set up a true SExCatObject
       CatObject so;
-      so.NUMBER = (unsigned int) atoi(column[format.NUMBER].c_str());
+      so.NUMBER = (unsigned long) atoi(column[format.NUMBER].c_str());
       // the sextractor corrdinates start with (1,1), ours with (0,0)
       so.XMIN = atoi(column[format.XMIN].c_str())-1;
       so.XMAX = atoi(column[format.XMAX].c_str())-1;

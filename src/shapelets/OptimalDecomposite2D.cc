@@ -32,7 +32,7 @@ Decomposite2D(2,(O.getSize(0) + O.getSize(1))/(2*8),O), obj(O) {
 
   npixels = obj.size();
   optimized = nmaxTrouble = 0;
-  flag = 0;
+  flags.reset();
 
   // whether correlation function has to be considered as termination criterium
   if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
@@ -67,10 +67,10 @@ void OptimalDecomposite2D::optimize() {
     status = findOptimalBeta(1);
     if (status != 0) {
       history << "Minimization doesn't converge (well), probably due to image distortions close to the object." <<  endl;
-      flag = 5;
+      flags[7] = 1;
     }
   }
- if (flag != 5) {
+ if (!flags.test(7)) {
    // step 2) increase nmax until chi^2 = 1 or is flat
    // and store optimalNMax for comparison in step 4
    findOptimalNMax(2);
@@ -82,8 +82,10 @@ void OptimalDecomposite2D::optimize() {
    // might be larger than 1
    if (!noise_correlated && optimalChiSquare >  1 + Decomposite2D::getChiSquareVariance()) {
      history << "#" << endl << "# Decomposition stopped before chi^2 = 1!" << endl;
-     if (flag==0) flag = 4;
+     flags[0] = 1;
    }
+   if (nmaxTrouble)
+     flags[6] = 1;
    // step 5) opposite: if chisquare is too good, reduce nmax
    // and increase in steps of 1 to find fit with chisquare close to 1
    if (!noise_correlated) {
@@ -197,9 +199,9 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     // reached the limit of nmax
     if (Decomposite2D::getNMax()+increment > nmaxHigh) {
       history << "# Stopping at nmax limit = " << nmaxHigh << endl;
+      flags[2] = 1;
       if (!nmaxTrouble) {
 	optimalNMax = Decomposite2D::getNMax();
-	flag = 1;
       } else {
 	Decomposite2D::setNMax(optimalNMax);
 	history << "# Returning to previous best fit n_max = " << optimalNMax << endl;
@@ -232,6 +234,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     if (noise_correlated && comp_corr < 0) {
       history << "# Stopping here: pixel correlation in residuals becomes less than expected" << endl;
       optimalNMax = Decomposite2D::getNMax();
+      flags[1] = 1;
       break;
     }
 
@@ -243,6 +246,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	  bestChiSquare = chisquare = newChisquare;
 	  optimalNMax = Decomposite2D::getNMax();
 	  history << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
+	  flags[1] = 1;
 	  break;
       }
 
@@ -267,6 +271,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	history << "# chi^2 becomes increasingly worse. Object underconstrained." << endl;
 	history << "# Returning to best fit n_max = " << optimalNMax << endl;
 	Decomposite2D::setNMax(optimalNMax);
+	flags[4] = 1;
 	break;
       }
       // if chi^2 gets negative (nCoeffs >= nPixels): go back to last nmax
@@ -278,7 +283,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	Decomposite2D::setNMax(optimalNMax);
 	history << "# nPixels <= nCoeffs! Object underconstrained." << endl;
 	history << "# Returning to best fit n_max = " << optimalNMax << endl;
-	flag = 3;
+	flags[4] = 1;
 	break;
       }
       // if theta_min becomes too small -> undersampling
@@ -290,7 +295,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	Decomposite2D::setNMax(optimalNMax);
 	history << "# 2 Theta_min < 1! Image becomes undersampled." << endl;
 	history << "# Returning to best fit n_max = " << optimalNMax << endl;
-	flag = 2;
+	flags[3] = 1;
 	break;
       }
     }
@@ -656,8 +661,8 @@ void OptimalDecomposite2D::getCoeffErrorFromBeta(const NumVector<data_t>& coeffV
     errorVector(i) = fabs(errorVector(i))/3; // assume the error to be 3 sigma
 }
 
-char OptimalDecomposite2D::getDecompositionFlag() {
-  return flag;
+const bitset<8>& OptimalDecomposite2D::getDecompositionFlags() {
+  return flags;
 }
 
 

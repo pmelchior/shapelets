@@ -21,7 +21,8 @@ ShapeletObject::ShapeletObject(string sifFile, bool preserve_config) : Composite
 
 ShapeletObject::ShapeletObject(const NumMatrix<data_t>& incartesianCoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
 Composite2D() {
-  chisquare = R = noise_mean = noise_rms = nr = id = flags = fits = 0;
+  classifier = chisquare = R = noise_mean = noise_rms = nr = id = fits = 0;
+  flags.reset();
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
   Composite2D::setGrid(grid);
@@ -38,7 +39,8 @@ Composite2D() {
 
 ShapeletObject::ShapeletObject(const NumMatrix<Complex>& inpolarCoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
 Composite2D() {
-  chisquare = R = noise_mean = noise_rms = nr = id = flags = fits = 0;
+  classifier = chisquare = R = noise_mean = noise_rms = nr = id = fits = 0;
+  flags.reset();
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
   Composite2D::setGrid(grid);
@@ -53,14 +55,15 @@ Composite2D() {
 ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   fits = 1;
   R = 0;
+  flags.reset();
   const Grid& FitsGrid = obj.getGrid();
   const Point2D& xcentroid = obj.getCentroid();
-  unsigned int fitsFlag = obj.getDetectionFlag(), decompFlag = 0;
   data_t beta;
   noise_mean = obj.getNoiseMean();
   noise_rms = obj.getNoiseRMS();
   id = obj.getID();
   nr = obj.getNumber();
+  classifier = obj.getClassifier();
   basefilename = obj.getBaseFilename();
   // decomposing with given constraits on shapelet decomposition parameters
   OptimalDecomposite2D optimalDecomp(obj, ShapeLensConfig::NMAX_LOW,ShapeLensConfig::NMAX_HIGH,ShapeLensConfig::BETA_LOW,ShapeLensConfig::BETA_HIGH);
@@ -76,11 +79,13 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
     history << obj.history.str();
     history << optimalDecomp.getHistory().str();
     history.unsetSilent();
-    decompFlag = optimalDecomp.getDecompositionFlag();
-    if (decompFlag > 0)
-      flags = decompFlag+256+fitsFlag;
-    else
-      flags = fitsFlag;
+    // joing detection and decomposition flags to form a 16 bit set
+    const bitset<8>& fitsFlags = obj.getDetectionFlags();
+    const bitset<8>& decompFlags = optimalDecomp.getDecompositionFlags();
+    for (int i = 0; i < 8; i++) {
+      flags[i] = fitsFlags[i];
+      flags[8+i] = decompFlags[i];
+    }
     // save temporary file here
     // TODO: use filesystem calls from boost to move is when save() is called
     SIFFile sfile("obj_unreg.sif");
@@ -102,11 +107,14 @@ ShapeletObject::ShapeletObject(const Object& obj) : Composite2D() {
   history << obj.history.str();
   history << optimalDecomp.getHistory().str();
   history.unsetSilent();
-  decompFlag = optimalDecomp.getDecompositionFlag();
-  if (decompFlag > 0)
-    flags = decompFlag+256+fitsFlag;
-  else
-    flags = fitsFlag;
+  // joing detection and decomposition flags to form a 16 bit set
+  flags.reset();
+  const bitset<8>& fitsFlags = obj.getDetectionFlags();
+  const bitset<8>& decompFlags = optimalDecomp.getDecompositionFlags();
+  for (int i = 0; i < 8; i++) {
+    flags[i] = fitsFlags[i];
+    flags[8+i] = decompFlags[i];
+  }
 
   c2p = PolarTransformation(cartesianCoeffs.getRows()-1);
   polarCoeffs = NumMatrix<Complex> (cartesianCoeffs.getRows(),cartesianCoeffs.getRows());
@@ -345,16 +353,20 @@ std::string ShapeletObject::getBaseFilename() const {
   return basefilename;
 }
 
-unsigned int ShapeletObject::getObjectID() const {
+unsigned long ShapeletObject::getObjectID() const {
   return id;
 }
 
-data_t ShapeletObject::getObjectNumber() const {
+unsigned long ShapeletObject::getObjectNumber() const {
   return nr;
 }
 
-std::bitset<16> ShapeletObject::getFlags() const {
-  return std::bitset<16>(flags);
+data_t ShapeletObject::getObjectClassifier() const {
+  return classifier;
+}
+
+const std::bitset<16>& ShapeletObject::getFlags() const {
+  return flags;
 }
 
 data_t ShapeletObject::getNoiseMean() const {

@@ -7,6 +7,7 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_histogram.h>
 #include <algorithm>
+#include <bitset>
 
 using namespace std;
 
@@ -83,7 +84,7 @@ data_t Frame::getThreshold(unsigned int pixel, data_t factor) {
 
 void Frame::findObjects() {
   const NumVector<data_t>& data = Image<data_t>::getData();
-  int counter = 0;
+  unsigned long counter = 0;
   unsigned int npixels = Image<data_t>::size();
 
   // clean stuff from previous runs of this function
@@ -156,6 +157,8 @@ unsigned int Frame::getNumberOfObjects() {
 // and set all pixels to zero than are not related to the image
 void Frame::fillObject(Object& O) {
   if (O.getID() > 0 && O.getID() <= getNumberOfObjects()) {
+    // set up detection flags bitset
+    std::bitset<8> flags(0);
 
     // for artificial noise for area contaminated by different object
     const gsl_rng_type * T;
@@ -189,7 +192,7 @@ void Frame::fillObject(Object& O) {
     // check if outer sizes of the object are identical to the image
     // boundary, since then the objects is cutted 
     if (xmin == 0 || ymin == 0 || xmax == axsize0 -1 || ymax == axsize1 - 1) {
-      O.setDetectionFlag(GSL_MAX_INT(O.getDetectionFlag(),4));
+      flags[3] = 1;
       O.history << "# Object cut off at the image boundary!" << endl;
     }
 
@@ -200,7 +203,7 @@ void Frame::fillObject(Object& O) {
 
     // check if object was close to the image boundary so that noise has to be added
     if (xmin < 0 || ymin < 0 || xmax >= axsize0 || ymax >= axsize1) {
-      O.setDetectionFlag(GSL_MAX_INT(O.getDetectionFlag(),2));
+      flags[2] = 1;
       O.history << "# Object close to image boundary: Possible cut-off. Extending frame with noise." << endl;
     }
 
@@ -242,7 +245,7 @@ void Frame::fillObject(Object& O) {
 	    objdata(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
 	  else
 	    objdata(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
-	  O.setDetectionFlag(GSL_MAX_INT(O.getDetectionFlag(),1));
+	  flags[0] = 1;
 	  // this objects has to yet been found to be nearby
 	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
 	    O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
@@ -265,6 +268,7 @@ void Frame::fillObject(Object& O) {
     O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
 
     // Fill other quantities into Object
+    O.setDetectionFlags(flags);
     O.history << "# Segment:" << endl;
     O.computeFluxCentroid();
 
@@ -276,7 +280,7 @@ void Frame::fillObject(Object& O) {
     catalog[O.getID()].XCENTROID = O.getCentroid()(0);
     catalog[O.getID()].YCENTROID = O.getCentroid()(1);
     catalog[O.getID()].FLUX = O.getFlux();
-    catalog[O.getID()].FLAGS = O.getDetectionFlag();
+    catalog[O.getID()].FLAGS = (unsigned char) flags.to_ulong();
     catalog[O.getID()].CLASSIFIER = 0;
   } 
   // this is the whole frame

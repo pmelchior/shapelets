@@ -57,12 +57,11 @@
 /// - Overlapping objects will be masked with noise.
 /// - If subtractBackground() has been called, the global background level
 /// is subtracted from the object pixels.
-/// - \p detectionFlag is set according to the following scheme 
-/// (higher values supersed lower ones):
-///  - 0: OK
-///  - 1: another object nearby, but not overlapping
-///  - 2: object close to the image boundary, frame extended with noise, possible cut-off
-///  - 4: object cut-off at the image boundary
+/// - \p detectionFlags(i) are set according to the following scheme, which is similar to 
+/// those of SExtractor.
+///  - <tt>i = 0</tt>: another object nearby, but not overlapping
+///  - <tt>i = 2</tt>: object close to the image boundary, frame extended with noise, possible cut-off
+///  - <tt>i = 3</tt>: object cut-off at the image boundary
 /// - If a weight map is not given, <tt>noiseModel="GAUSSIAN"</tt>, otherwise 
 ///   <tt>noisemodel="WEIGHT"</tt>
 /// - \p StarGalaxyProbability and \p BlendingProbability are not set.

@@ -6,8 +6,8 @@
 Object::Object(unsigned int inid) : Image<data_t>(), segMap(*this) {
   id = inid;
   flag = 0;
-  blend = s_g = -1;
-  flux = centroid(0) = centroid(1) = -1;
+  classifier = 0;
+  flux = centroid(0) = centroid(1) = 0;
   number = 0;
 }
 
@@ -40,8 +40,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   status = readFITSKeyword(fptr,"BG_MEAN",noise_mean);
   status = readFITSKeyword(fptr,"BG_RMS",noise_rms);
   status = readFITSKeyword(fptr,"FLAG",flag);
-  status = readFITSKeyword(fptr,"BLEND",blend);
-  status = readFITSKeyword(fptr,"S_G",s_g);
+  status = readFITSKeyword(fptr,"CLASSIFIER",classifier);
   
   // read history
   std::string hstr;
@@ -111,19 +110,19 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   computeFluxCentroid();
 }
 
-void Object::setID(unsigned int inid) {
+void Object::setID(unsigned long inid) {
   id = inid;
 }
 
-unsigned int Object::getID() const {
+unsigned long Object::getID() const {
   return id;
 }
 
-void Object::setNumber(data_t num) {
+void Object::setNumber(unsigned long num) {
   number = num;
 }
 
-data_t Object::getNumber() const {
+unsigned long Object::getNumber() const {
   return number;
 }
 
@@ -198,12 +197,12 @@ void Object::computeFluxCentroid() {
   history <<  ")." <<std::endl;
 }
 
-unsigned short Object::getDetectionFlag() const {
+std::bitset<8> Object::getDetectionFlags() const {
   return flag;
 }
 
-void Object::setDetectionFlag(unsigned short inflag) {
-  flag = inflag;
+void Object::setDetectionFlags(const std::bitset<8>& inflag) {
+  flag = std::bitset<8>(inflag.to_ulong());
 }
 
 data_t Object::getNoiseMean() const {
@@ -220,20 +219,12 @@ void Object::setNoiseMeanRMS(data_t mean, data_t rms) {
   history << "# Setting noise to (" << mean << ") +- (" << rms << ")" << std::endl;
 }
 
-data_t Object::getBlendingProbability() const {
-  return blend;
+data_t Object::getClassifier() const {
+  return classifier;
 }
 
-void Object::setBlendingProbability(data_t b) {
-  blend = b;
-}
-
-data_t Object::getStarGalaxyProbability() const {
-  return s_g;
-}
-
-void Object::setStarGalaxyProbability(data_t sg) {
-  s_g = sg;
+void Object::setClassifier(data_t c) {
+  classifier = c;
 }
 
 void Object::setBaseFilename(std::string filename) {
@@ -287,8 +278,7 @@ void Object::save(std::string filename) {
   status = updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
   status = updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
   status = updateFITSKeyword(outfptr,"FLAG",flag,"extraction flag");
-  status = updateFITSKeyword(outfptr,"BLEND",blend,"blending probability");
-  status = updateFITSKeyword(outfptr,"S_G",s_g,"stellarity");
+  status = updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
   status = appendFITSHistory(outfptr,history.str());
 
   // save segMap

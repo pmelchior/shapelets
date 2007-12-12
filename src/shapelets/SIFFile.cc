@@ -33,13 +33,14 @@ void SIFFile::save(const ShapeletObject& sobj) {
   updateFITSKeyword(outfptr,"CHI2",sobj.getDecompositionChiSquare(),"decomposition quality");
   updateFITSKeyword(outfptr,"ERRORS",saveErrors,"whether coefficient errors are available");
   updateFITSKeyword(outfptr,"R",sobj.getRegularizationR(),"negative flux / positive flux");
-  updateFITSKeyword(outfptr,"FLAGS",(unsigned int) sobj.getFlags().to_ulong(),"extraction and decomposition flags");
+  updateFITSKeyword(outfptr,"FLAGS",sobj.getFlags().to_ulong(),"extraction and decomposition flags");
 
   // ** Frame parameters **
   fits_write_record(outfptr,"        / Frame parameters     /",&status);
   updateFITSKeywordString(outfptr,"BASEFILE",sobj.getBaseFilename(),"originating data file");
   updateFITSKeyword(outfptr,"ID",sobj.getObjectID(),"object id in BASEFILE");
   updateFITSKeyword(outfptr,"NR",sobj.getObjectNumber(),"object nr in BASEFILE");
+  updateFITSKeyword(outfptr,"CLASSIFIER",sobj.getObjectClassifier(),"object classifier");
   updateFITSKeyword(outfptr,"NOISE_MEAN",sobj.getNoiseMean(),"mean of pixel noise");
   updateFITSKeyword(outfptr,"NOISE_RMS",sobj.getNoiseRMS(),"rms of pixel noise");
   const Grid& grid = sobj.getGrid();
@@ -88,23 +89,26 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // read shapelet parameters
   // make use of friendship of Composite2D and ShapeletObject
   sobj.change = 1;
-  data_t beta;
-  status = readFITSKeyword(fptr,"BETA",beta);
-  sobj.setBeta(beta);
+  data_t tmp;
+  status = readFITSKeyword(fptr,"BETA",tmp);
+  sobj.setBeta(tmp);
   status = readFITSKeyword(fptr,"CHI2",sobj.chisquare);
   bool errors;
   status = readFITSKeyword(fptr,"ERRORS",errors);
   status = readFITSKeyword(fptr,"R",sobj.R);
-  int tmp;
-  status = readFITSKeyword(fptr,"FLAGS",tmp);
-  sobj.flags = (unsigned int) tmp;
+  unsigned long flags;
+  status = readFITSKeyword(fptr,"FLAGS",flags);
+  sobj.flags = std::bitset<16>(flags);
   
   // read frame parameters
   status = readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
-  status = readFITSKeyword(fptr,"ID",tmp);
-  sobj.id = tmp;
-  status = readFITSKeyword(fptr,"NR",tmp);
-  sobj.nr = tmp;
+  status = readFITSKeyword(fptr,"ID",sobj.id);
+  status = readFITSKeyword(fptr,"NR",sobj.nr);
+  status = readFITSKeyword(fptr,"CLASSIFIER",tmp);
+  if (status == 0)
+    sobj.classifier = tmp;
+  else
+    sobj.classifier = 0;
   status = readFITSKeyword(fptr,"NOISE_MEAN",sobj.noise_mean);
   status = readFITSKeyword(fptr,"NOISE_RMS",sobj.noise_rms);
   data_t xmin,xmax,ymin,ymax;

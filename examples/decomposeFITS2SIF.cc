@@ -76,6 +76,7 @@ int main(int argc, char *argv[]) {
 
       // ... add shapelet model ...
       addFITSExtension(fitsname,"MODEL",obj->getGrid(),sobj.getModel());
+      appendFITSHistory(fitsname+"[MODEL]",sobj.getHistory());
       // ... and residuals (data - model).
       NumVector<data_t> residuals = obj->getData();
       residuals -= sobj.getModel();

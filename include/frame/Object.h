@@ -8,6 +8,7 @@
 #include <frame/SegmentationMap.h>
 #include <frame/PixelCovarianceMatrix.h>
 #include <frame/CorrelationFunction.h>
+#include <bitset>
 
 /// Central object representing class.
 /// The purpose of this class is to faciliate the exchange of object related information
@@ -21,8 +22,7 @@
 /// - pixel covariance matrix
 /// - detection flags
 /// - processing history
-/// - blending information
-/// - galaxy/star discrimination index
+/// - arbitrary classifier variable
 /// - segmentation map
 /// 
 ///\todo Save PixelCovarianceMatrix and CorrelationFunction to Fits file during save()
@@ -36,15 +36,23 @@ class Object : public Image<data_t> {
   /// The Fits file shold have been created by Object::save().
   Object (std::string fitsfile);
   /// Set the ID.
-  void setID(unsigned int id);
+  void setID(unsigned long id);
   /// Return the ID.
-  unsigned int getID() const;
+  unsigned long getID() const;
   /// Set an object number.
   /// This can but does not have to be identical to the <tt>ID</tt> of this object,
   /// this number can thus carry an additional identifier or other information.
-  void setNumber(data_t num);
+  void setNumber(unsigned long num);
   /// Get object number.
-  data_t getNumber() const;
+  unsigned long getNumber() const;
+  /// Get object classifier.
+  /// This can be an arbitrary floating point number, e.g. <tt>CLASS_STAR</tt> from
+  /// SExFrame.\n
+  /// When the objects come from reading a Catalog (e.g. in SExFrame), CatObject.CLASSIFIER
+  /// will be used to set this variable.
+  data_t getClassifier() const;
+  /// Set the object classifier.
+  void setClassifier(data_t classifier);
   /// Return the weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
   const NumVector<data_t>& getWeightMap() const;
@@ -70,36 +78,18 @@ class Object : public Image<data_t> {
   /// in Bartelmann & Schneider (2001):\n
   /// \f$ \epsilon = (Q_{11}-Q_{22}+2iQ_{12})/(Q_{11}+Q_{22}+2\sqrt{Q_{11}Q_{22}-Q_{12}^2})\f$
   complex<data_t> getEllipticity();
-  /// Return the detection flag.
-  /// It indicates problems during the various procedures. 
-  /// Higher numbers supersede lower ones.
-  /// - 0: OK
-  /// - 1: Object nearby, but not overlapping
-  /// - 2: Object close to the image boundary, frame extended with noise, possible cut-off
-  /// - 3: Object overlapped by other object: BLENDED = 1
-  /// - 4: Object cut-off at the image boundary
-  /// 
-  /// Images with flag > 2 should not be used for further analysis.
-  unsigned short getDetectionFlag() const;
+  /// Return the detection flags.
+  /// They indicates problems during the various procedures and are filled by a frameing class.
+  /// Thus, look at Frame or SExFrame for the meaning of the individual bits.
+  std::bitset<8> getDetectionFlags() const;
   /// Set detection flag (from Frame).
-  void setDetectionFlag(unsigned short flag);
+  void setDetectionFlags(const std::bitset<8>& flags);
   /// Return noise mean \f$\mu_n\f$.
   data_t getNoiseMean() const;
   /// Return noise RMS \f$\sigma_n\f$.
   data_t getNoiseRMS() const;
   /// Set noise features from external measurements (e.g. in Frame).
   void setNoiseMeanRMS(data_t mean, data_t rms);
-  /// Get the blending probability.
-  /// If the probability is small, the object is considered to be unblended.
-  data_t getBlendingProbability() const;
-  /// Set the blending probability.
-  void setBlendingProbability(data_t blend);
-  /// Get star/galaxy discrimination index.
-  /// The number is normalized, high values are given for objects, which are very 
-  /// likely stars, low values for galaxies.
-  data_t getStarGalaxyProbability() const;
-  /// Set the star/galaxy discrimination index.
-  void setStarGalaxyProbability(data_t s_g);
   /// Get the segmentation map.
   const SegmentationMap& getSegmentationMap() const;
   /// Access the segmentation map.
@@ -132,14 +122,14 @@ class Object : public Image<data_t> {
 
   
  private:
-  unsigned int id;
+  unsigned long id, number;
   NumVector<data_t> weight;
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;
   CorrelationFunction xi;
   Point2D centroid;
-  data_t flux, noise_mean, noise_rms, s_g, blend, number;
-  unsigned short flag;
+  data_t flux, noise_mean, noise_rms, classifier;
+  std::bitset<8> flag;
   std::string basefilename;
 };
 

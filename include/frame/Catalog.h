@@ -13,7 +13,7 @@
 /// explicitly below.
 struct CatObject {
   /// Running number of Object (alternatives: <tt>NR</tt>)
-  unsigned int NUMBER;
+  unsigned long NUMBER;
   /// Minimum <tt>X</tt> coordinate of cutout (allowed: <tt>XMIN*</tt>).
   int XMIN;
   /// Maximum <tt>X</tt> coordinate of cutout (allowed: <tt>XMAX*</tt>).

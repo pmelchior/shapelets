@@ -3,6 +3,7 @@
 
 #include <gsl/gsl_vector.h>
 #include <map>
+#include <bitset>
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Typedef.h>
@@ -14,25 +15,26 @@
 
 /// Class for optimal 2D decomposition.
 /// Provides minimization of decomposition's \f$\chi^2\f$.\n
-/// This class delivers best fit \f$\beta\f$, 
-/// centroid position \f$x_c\f$ and \f$n_{max}\f$.\n\n
+/// This class delivers best fit \f$\beta\f$ and \f$n_{max}\f$, assuming a known position
+/// of the centroid \f$x_c\f$.\n\n
 /// The procedure:
-/// - Create Decomposite2D object of order (2,2) as starting point.
-/// - Search for \f$\beta\f$ and \f$x_c\f$ that minimize \f$\chi^2\f$.
-/// - If above minimizations doesn't converge with, increase order by 2
-///   in each direction.\n
+/// - Create Decomposite2D object with \f$n_{max}=2\f$ as starting point.
+/// - Search for \f$\beta\f$ that minimizes \f$\chi^2\f$.
+/// - If above minimizations does not converge, increase \f$n_{max}\f$ by 2.\n
 ///   If this is still not sufficient, there are probably image distortions
-///   close to the object and the decomposotion will therefore be aborted. 
-///   Try using an appropriate filter before decomposition.
-/// - Increase \f$n_{max}\f$ in steps of 2 until the decomposition has
-///   \f$\chi^2 < 1 + \sigma(\chi^2)\f$ or flattens out (for cases with 
-///   \f$\chi^2 > 2\f$ only).
-/// - Search again for the \f$\beta\f$ and \f$x_c\f$ that minimizes \f$\chi^2\f$.
-/// - Reset the order to (2,2) and search for a new \f$n_{max}\f$ (now in steps of 1 
-///   for possibly lower \f$n_{max}\f$ then before) with the presumably
-///   better values for \f$\beta\f$ and \f$x_c\f$.
-/// - If \f$n_{max}\f$ has decreased during last step, seach a last time for  
-///   \f$\beta\f$ and \f$x_c\f$. If \f$n_{max}\f$ has increased now, ignore it, since
+///   close to the object and the decomposition will therefore be aborted. 
+/// - Increase \f$n_{max}\f$ in steps of 2 until 
+///  - \f$\chi^2 < 1 + \sigma(\chi^2)\f$ or 
+///  - \f$\chi^2\f$ flattens out (if ShapeLensConfig::ALLOW_FLATTENING is set) or 
+///  - correlation function of the residuals becomes lower than the one of the noise
+///    (if <tt>ShapeLensConfig::NOISEMODEL = COVARIANCE</tt>)
+/// - If \f$n_{max}\ mod\ 6 = 0\f$, do an intermediate search for \f$\beta\f$ at current
+///   value of \f$n_{max}\f$
+/// - Search for \f$\beta\f$ that minimizes \f$\chi^2\f$ at the best-fit \f$n_{max}\f$.
+/// - Reset to a somewhat lower \f$n_{max}\f$ given the current best-fit value of \f$\beta\f$
+///   and search for a potentially lower \f$n_{max}\f$ (now in steps of 1).
+/// - If \f$n_{max}\f$ has decreased during last step, seach again for  
+///   \f$\beta\f$. If \f$n_{max}\f$ has increased now, ignore it, since
 ///   we have had already better values.
 ///
 /// See Paper III, sec. 3.4 and 7.5 for details.
@@ -45,11 +47,11 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// are obtained from Object, also the noisemodel.
   OptimalDecomposite2D(const Object& obj, int nmaxLow, int nmaxHigh, data_t betaLow, data_t betaHigh);
   /// Employs a regularization to lower the negative flux.
-  /// The minimization ends, whenever \f$R=- F^-/F^+ < wantedR\f$, where \f$F^{\pm}\f$
+  /// The minimization ends, whenever \f$R=- F^-/F^+ < \text{wanted}R\f$, where \f$F^{\pm}\f$
   /// is the positive or negative flux of the shapelet reconstruction. 
   /// The return value is the actual \f$R\f$.\n
-  /// If wantedR is chosen too low (e.g. \f$10^{-6}\f$, in some cases already 
-  /// \f$10^{-5}\f$), the minimization procedure
+  /// If \p wantedR is chosen too low (e.g. \f$10^{-6}\f$, in some cases already 
+  /// \f$10^{-3}\f$), the minimization procedure
   /// must increase \f$n_{max}\f$ and can therefore take a considerable amount of time.
   data_t regularize(data_t wantedR);
   /// Deliver best fit shapelet coefficients.
@@ -64,15 +66,20 @@ class OptimalDecomposite2D : private Decomposite2D {
   data_t getOptimalBeta();
   /// Return best fit \f$\chi^2\f$.
   data_t getOptimalChiSquare();
-  /// Return the decomposition flag.
-  /// It indicates problems during the optimization.
-  /// - 0: OK
-  /// - 1: \f$n_{max}\f$ limited by user defined range
-  /// - 2: \f$n_{max}\f$ limited due to \f$2\theta_{min}<1\f$
-  /// - 3: \f$n_{max}\f$ limited due to \f$n_{pixels} \leq n_{coeffs}\f$
-  /// - 4: decomposition not optimal, object probably ill-mathced by shapelets
-  /// - 5: optimal \f$\beta\f$ not found.
-  char getDecompositionFlag();
+  /// Return the decomposition flags.
+  /// if \p decompositionFlags(i) is set, it indicates problems during the optimization:
+  /// - <tt>i = 0</tt>: \f$\chi^2 > 1\f$
+  /// - <tt>i = 1</tt>: optimization stopped due to either 
+  ///   <tt>ShapeLensConfig::ALLOW_FLATTENING = 1</tt> or the correlation function of
+  ///   residuals becoming lower than the one of the noise (only if 
+  ///   <tt>ShapeLensConfig::NOISEMODEL = COVARIANCE</tt>.
+  /// - <tt>i = 2</tt>: \f$n_{max}\f$ limited by <tt>ShapeLensConfig::NMAX_HIGH</tt>
+  /// - <tt>i = 3</tt>: \f$n_{max}\f$ limited due to \f$2\ \theta_{min}<1\f$
+  /// - <tt>i = 4</tt>: \f$n_{max}\f$ limited due to \f$n_{pixels} \leq n_{coeffs}\f$
+  /// - <tt>i = 6</tt>: \f$\chi^2\f$ became worse during optimization and did not improve
+  ///    anymore.
+  /// - <tt>i = 7</tt>: \f$\chi^2(\beta) \bigl|_{n_{max}=2}\f$ does not have a useful minimum.
+  const std::bitset<8>& getDecompositionFlags();
   /// Get the decomposition History.
   const History& getHistory();
 
@@ -81,7 +88,8 @@ private:
   int npixels, optimalNMax, nmaxLow, nmaxHigh;
   data_t beta,optimalBeta,optimalChiSquare,bestChiSquare,image_dimension, betaHigh, betaLow;
   bool optimized, nmaxTrouble, noise_correlated;
-  char flag, comp_corr;
+  char comp_corr;
+  std::bitset<8> flags;
   History history;
   std::string comp_corr_string;
   std::map<int, data_t> bestBeta, bestChi2;

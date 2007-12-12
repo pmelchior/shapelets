@@ -24,7 +24,7 @@ int main (int argc, char *argv[]) {
   std::cout << "Centroid:\t" << (sobj.getCentroid())(0) << "/" << (sobj.getCentroid())(1) << std::endl;
   std::cout << "Grid:\t\t" << (sobj.getGrid()).getStartPosition(0) << ".." << (sobj.getGrid()).getStopPosition(0) << ", " << (sobj.getGrid()).getStartPosition(1) << ".." << (sobj.getGrid()).getStopPosition(1) << std::endl;
   std::cout << "Chi^2:\t\t" << sobj.getDecompositionChiSquare() << std::endl;
-  std::cout << "Flags:\t\t" << (sobj.getFlags()).to_ulong() << std::endl;
+  std::cout << "Flags:\t\t" << sobj.getFlags().to_string<char,std::char_traits<char>,std::allocator<char> >().insert(8," ") << std::endl;
   std::cout << "Regularized:\t" << ShapeLensConfig::REGULARIZE;
   if (ShapeLensConfig::REGULARIZE)
     std::cout << " (R = " << sobj.getRegularizationR() << ")" << std::endl;
