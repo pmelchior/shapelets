@@ -16,10 +16,11 @@
 
 int main(int argc, char *argv[]) {
   // read in necessary information from command line
-  TCLAP::CmdLine cmd("Decompose FITS file into shapelets", ' ', "0.1");
+  TCLAP::CmdLine cmd("Decompose FITS file into shapelets", ' ', "0.2");
   TCLAP::UnlabeledValueArg<std::string> fileArg("file","FITS file to analyze",true,"","string", cmd);
   TCLAP::ValueArg<std::string> sifArg("p","prefix","Prefix of SIF files",true,"","string", cmd);
   TCLAP::ValueArg<std::string> confArg("c","config","ShapeLens configuration file",false,"","string", cmd);
+  TCLAP::ValueArg<std::string> catArg("C","catalog","Name of catalog file (saved as ASCII file)",false,"","string",cmd);
   TCLAP::ValueArg<std::string> segmapArg("s","segmap","Name of segmentation map (stored as FITS file)",false,"","string", cmd);
   cmd.parse( argc, argv );
   
@@ -82,5 +83,8 @@ int main(int argc, char *argv[]) {
     }
     delete obj;
   }
+  if (catArg.isSet())
+    f->getCatalog().save(catArg.getValue());
+
   delete f;
 }

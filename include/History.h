@@ -89,7 +89,7 @@ class History {
   }
   /// Wheter history is empty.
   bool isEmpty() const {
-    return (bool) s.str().size();
+    return !(bool) s.str().size();
   }
  private:
   std::ostringstream s;

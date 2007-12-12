@@ -11,6 +11,7 @@
 #include <frame/Image.h>
 #include <frame/Object.h>
 #include <frame/SegmentationMap.h>
+#include <frame/Catalog.h>
 
 /// Image preprocessing class.
 /// The purpose of this class is to read in a Image and segment it into individual
@@ -132,6 +133,12 @@ class Frame : public Image<data_t> {
   const std::list<unsigned int>& getPixelList(unsigned int objectnr);
   /// Access list of pixels for the given <tt>objectnr</tt>.
   std::list<unsigned int>& accessPixelList(unsigned int objectnr);
+  /// Get Catalog of detected objects.
+  /// After calling findObject(), only the CatObject.NUMBER is set; if the method
+  /// fillObject(Object& obj) is called, all values of the catalog entry <tt>obj.getID()</tt>
+  /// are set. Thus, if you want to save the catalog detected by Frame, 
+  /// run through all detected objects before.
+  const Catalog& getCatalog();
   /// Get the history object of this image.
   const History& getHistory ();
 
@@ -146,7 +153,7 @@ class Frame : public Image<data_t> {
   History& history;
   std::vector< std::list<unsigned int> > objectsPixels;
   bool subtractedBG, estimatedBG;
-  unsigned int numberofObjects;
+  Catalog catalog;
 };
 
 #endif

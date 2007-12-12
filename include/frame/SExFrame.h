@@ -11,6 +11,7 @@
 #include <frame/Grid.h>
 #include <frame/Image.h>
 #include <frame/Object.h>
+#include <frame/Catalog.h>
 
 /// Wrapper class for SExtractor.
 /// Provides segmentation of a FitsFile into various Object entities employing 
@@ -118,44 +119,15 @@ class SExFrame : public Image<data_t> {
   /// - 0: noise
   /// - 1..N: objectID of an identified significant pixel group
   const NumVector<int>& getObjectMap();
+  /// Return Catalog read by readCatalog().
+  const Catalog& getCatalog();
 
  private:
-  void insertFormatField(std::string type, std::string columnnr);
-  void checkFormat();
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
   data_t computeBlendingProbability(unsigned int objectNr);
   void estimateNoise();
-  // Define the format of the SExtractor catalog list.
-  // The entries of this struct have all to be filled with the number 
-  // of the column of the respective keywords in the SExtractor catalog file.
-  struct SExCatFormat {
-    unsigned short NUMBER;
-    unsigned short XMIN_IMAGE;
-    unsigned short XMAX_IMAGE;
-    unsigned short YMIN_IMAGE;
-    unsigned short YMAX_IMAGE;
-    unsigned short XWIN_IMAGE;
-    unsigned short YWIN_IMAGE;
-    unsigned short FLUX_AUTO;
-    unsigned short FLAGS;
-    unsigned short CLASS_STAR;
-  };
-  // Store the entries of the SExtractor catalog for each object
-  struct SExCatObject {
-    unsigned int NUMBER;
-    int XMIN_IMAGE;
-    int XMAX_IMAGE;
-    int YMIN_IMAGE;
-    int YMAX_IMAGE;
-    data_t XWIN_IMAGE;
-    data_t YWIN_IMAGE;
-    data_t FLUX_AUTO;
-    unsigned char FLAGS;
-    data_t CLASS_STAR;
-  };
-  SExCatFormat sf;
-  std::vector<SExCatObject> objectList;
-  bool segmapRead, catRead, catChecked, subtractBG, estimatedBG;
+  Catalog catalog;
+  bool segmapRead, catRead, subtractBG, estimatedBG;
   NumVector<int> segMap;
   data_t bg_mean, bg_rms;
   unsigned int axsize0, axsize1;

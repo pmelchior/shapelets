@@ -17,7 +17,7 @@ Frame::Frame(string filename) : Image<data_t>(filename), weight(), segMap(*this,
   history << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
-  numberofObjects = 0;
+  catalog.clear();
 }
 
 Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weight(weightfile), segMap(*this, weight), history(segMap.accessHistory()) {
@@ -30,7 +30,7 @@ Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weig
   } 
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
-  numberofObjects = 0;
+  catalog.clear();
 }
 
 // estimate noise by iterative sigma clipping
@@ -87,8 +87,9 @@ void Frame::findObjects() {
   unsigned int npixels = Image<data_t>::size();
 
   // clean stuff from previous runs of this function
-  if (numberofObjects > 0) {
+  if (getNumberOfObjects() > 0) {
     objectsPixels.clear();
+    catalog.clear();
     for (int i=0; i<npixels; i++)
       segMap(i) = 0;
   }  
@@ -97,6 +98,12 @@ void Frame::findObjects() {
   list<uint> pixellist;
   list<uint>::iterator iter;
   objectsPixels.push_back(pixellist); // since object numbers start with 1, add a empty list
+  
+  // reset catalog and create dummy CatObject
+  CatObject co = {0,0,0,0,0,0,0,0,0,0};
+  // CatObject for object 0 (whole frame)
+  CatObject all = {0,0,Image<data_t>::getSize(0)-1,0,Image<data_t>::getSize(1)-1,0,0,0,0,0};
+  catalog.push_back(all);
 
   // look for all positive fluctuations with at least 1 pixel above
   // highThreshold and minPixels above significanceThreshold
@@ -109,6 +116,8 @@ void Frame::findObjects() {
       if (pixellist.size() >= ShapeLensConfig::MIN_PIXELS) {
 	history << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<data_t>::getSize(0)) << "/" << i/(Image<data_t>::getSize(0)) << ")"  << std::endl;
 	objectsPixels.push_back(pixellist);
+	co.NUMBER = counter;
+	catalog.push_back(co);
       }
       else {
 	for(iter = pixellist.begin(); iter != pixellist.end(); iter++ )
@@ -117,7 +126,6 @@ void Frame::findObjects() {
       }
     }
   }
-  numberofObjects = counter;
 
 //   // improve noise estimates (when weight map is not given)
 //   // since the position of all object is known now, we can compute the
@@ -141,13 +149,13 @@ void Frame::findObjects() {
 }
 
 unsigned int Frame::getNumberOfObjects() {
-  return numberofObjects;
+  return catalog.size()-1;
 }
 
 // cut the image to a small region around the object
 // and set all pixels to zero than are not related to the image
 void Frame::fillObject(Object& O) {
-  if (O.getID() > 0 && O.getID() <= numberofObjects) {
+  if (O.getID() > 0 && O.getID() <= getNumberOfObjects()) {
 
     // for artificial noise for area contaminated by different object
     const gsl_rng_type * T;
@@ -260,6 +268,16 @@ void Frame::fillObject(Object& O) {
     O.history << "# Segment:" << endl;
     O.computeFluxCentroid();
 
+    // Update catalog with object values
+    catalog[O.getID()].XMIN = xmin;
+    catalog[O.getID()].XMAX = xmax;
+    catalog[O.getID()].YMIN = ymin;
+    catalog[O.getID()].YMAX = ymax;
+    catalog[O.getID()].XCENTROID = O.getCentroid()(0);
+    catalog[O.getID()].YCENTROID = O.getCentroid()(1);
+    catalog[O.getID()].FLUX = O.getFlux();
+    catalog[O.getID()].FLAGS = O.getDetectionFlag();
+    catalog[O.getID()].CLASSIFIER = 0;
   } 
   // this is the whole frame
   else if (O.getID()==0) {
@@ -317,18 +335,22 @@ const History& Frame::getHistory () {
 }
 
 const std::list<unsigned int>& Frame::getPixelList(unsigned int objectnr) {
-  if (objectnr>0 && objectnr <= numberofObjects)
+  if (objectnr>0 && objectnr <= getNumberOfObjects())
     return objectsPixels[objectnr];
   else {
-    std::cout << "# Frame: This Object does not exist!" << std::endl;
+    std::cerr << "# Frame: This Object does not exist!" << std::endl;
     terminate();  
   }
 }
 std::list<unsigned int>& Frame::accessPixelList(unsigned int objectnr) {
-  if (objectnr>0 && objectnr <= numberofObjects)
+  if (objectnr>0 && objectnr <= getNumberOfObjects())
     return objectsPixels[objectnr];
   else {
-    std::cout << "# Frame: This Object does not exist!" << std::endl;
+    std::cerr << "# Frame: This Object does not exist!" << std::endl;
     terminate();  
   }
+}
+
+const Catalog& Frame::getCatalog() {
+  return catalog;
 }

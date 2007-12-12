@@ -15,9 +15,7 @@ using namespace boost;
 typedef unsigned int uint;
 
 SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile), weight() {
-  SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
-  sf = empty;
-  catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
+  catRead = segmapRead = subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
   // axsizes of underlying Image copied since often used
   axsize0 = Image<data_t>::getSize(0);
@@ -31,9 +29,7 @@ SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile), weight() {
 }
 
 SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<data_t>(fitsfile), weight(weightfile) {
-  SExCatFormat empty = {0,0,0,0,0,0,0,0,0,0};
-  sf = empty;
-  catChecked = catRead = segmapRead = subtractBG = estimatedBG = 0;
+  catRead = segmapRead = subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
   // axsizes of underlying Image copied since often used
   axsize0 = Image<data_t>::getSize(0);
@@ -51,58 +47,7 @@ SExFrame::~SExFrame() {
 }
 
 void SExFrame::readCatalog(std::string catfile) {
-  // first inser empty object 0, since SExtractor starts with NUMBER 1
-  objectList.clear();
-  SExCatObject s0 = {0,0,0,0,0,0,0,0,0,0};
-  objectList.push_back(s0);
-  // open cat file
-  ifstream catalog (catfile.c_str());
-  if (catalog.fail()) {
-    std::cerr << "SExFrame: catalog file does not exist!" << endl;
-    terminate();
-  }
-  catalog.clear();
-  // read in cat file
-  // 1) parse the format definition lines
-  // 2) fill object information into SExCatObjects -> objectList;
-  string line;
-  while(getline(catalog, line)) {
-    typedef boost::tokenizer<boost::char_separator<char> > Tok;
-    // split entries at empty chars
-    boost::char_separator<char> sep(" ");
-    Tok tok(line, sep);
-    // first of all we copy the token into string vector
-    // though this is not too sophisticated it does not hurt and is more 
-    // convenient
-    std::vector<std::string> column;
-    for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter)
-      column.push_back(*tok_iter);
-    // comment line: contains format definition at columns 2,3
-    if (column[0].compare("#") == 0)
-      insertFormatField(column[2],column[1]);
-    // at this point we should have a complete format definition
-    // check it!
-    // from here on we expect the list of object to come along.
-    else {
-      if (!catChecked) checkFormat();
-      // then set up a true SExCatObject
-      SExCatObject so;
-      so.NUMBER = (unsigned int) atoi(column[sf.NUMBER-1].c_str());
-      // the sextractor corrdinates start with (1,1), ours with (0,0)
-      so.XMIN_IMAGE = atoi(column[sf.XMIN_IMAGE-1].c_str())-1;
-      so.XMAX_IMAGE = atoi(column[sf.XMAX_IMAGE-1].c_str())-1;
-      so.YMIN_IMAGE = atoi(column[sf.YMIN_IMAGE-1].c_str())-1;
-      so.YMAX_IMAGE = atoi(column[sf.YMAX_IMAGE-1].c_str())-1;
-      so.XWIN_IMAGE = atof(column[sf.XWIN_IMAGE-1].c_str())-1;
-      so.YWIN_IMAGE = atof(column[sf.YWIN_IMAGE-1].c_str())-1;
-      so.FLUX_AUTO = atof(column[sf.FLUX_AUTO-1].c_str());
-      so.FLAGS = (unsigned char) atoi(column[sf.FLAGS-1].c_str());
-      so.CLASS_STAR = (data_t) atof(column[sf.CLASS_STAR-1].c_str());
-     // then push it on objectList
-      objectList.push_back(so);
-    }
-  }
-  catalog.close();
+  catalog = Catalog(catfile);
   catRead = 1;
 }
 
@@ -113,31 +58,32 @@ void SExFrame::readSegmentationMap(std::string segmapfile) {
   fitsfile* fptr = openFITSFile(segmapfile);
   int status = readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
   status = readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
-  if (status == 0) {
+  if (status == 0)
     estimatedBG = 1;
-    
-  }
 }
 
 unsigned int SExFrame::getNumberOfObjects() {
   if (catRead)
-    return objectList.size() - 1;
+    return catalog.size() - 1;
   else
     return 0;
 }
 
+const Catalog& SExFrame::getCatalog() {
+  return catalog;
+}
 
 void SExFrame::fillObject(Object& O) {
   if (!estimatedBG) estimateNoise();
     
   unsigned int id = O.getID();
   int xmin, xmax, ymin, ymax;
-  xmin = objectList[id].XMIN_IMAGE;
-  xmax = objectList[id].XMAX_IMAGE;
-  ymin = objectList[id].YMIN_IMAGE;
-  ymax = objectList[id].YMAX_IMAGE;
+  xmin = catalog[id].XMIN;
+  xmax = catalog[id].XMAX;
+  ymin = catalog[id].YMIN;
+  ymax = catalog[id].YMAX;
 
-  O.history << "# Extracting Object " << O.getID() << " (NUMBER = " <<  objectList[id].NUMBER << "), ";
+  O.history << "# Extracting Object " << O.getID() << " (NUMBER = " <<  catalog[id].NUMBER << "), ";
   O.history << "found in the area (" << xmin << "/" << ymin << ") to (";
   O.history << xmax << "/" << ymax << ")" << std::endl;
   
@@ -196,7 +142,7 @@ void SExFrame::fillObject(Object& O) {
     //now inside image region
     else {
       // mask other detected objects in the frame
-      if ((segMap(j) > 0 && segMap(j) != objectList[id].NUMBER) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
+      if ((segMap(j) > 0 && segMap(j) != catalog[id].NUMBER) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
  	// if we have a weight map 
 	if (weight.size()!=0)
 	  objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
@@ -227,14 +173,14 @@ void SExFrame::fillObject(Object& O) {
   // Fill other quantities into Object
   O.history << "# Segment:" << endl;
   O.computeFluxCentroid();
-  O.setFlux(objectList[id].FLUX_AUTO);
-  Point2D centroid(objectList[id].XWIN_IMAGE,objectList[id].YWIN_IMAGE);
+  O.setFlux(catalog[id].FLUX);
+  Point2D centroid(catalog[id].XCENTROID,catalog[id].YCENTROID);
   O.setCentroid(centroid);
-  O.setDetectionFlag(objectList[id].FLAGS);
-  O.setStarGalaxyProbability(objectList[id].CLASS_STAR);
+  O.setDetectionFlag(catalog[id].FLAGS);
+  O.setStarGalaxyProbability(catalog[id].CLASSIFIER);
   O.setBlendingProbability(computeBlendingProbability(id));
   O.setBaseFilename(Image<data_t>::getFilename());
-  O.setNumber(objectList[id].NUMBER);
+  O.setNumber(catalog[id].NUMBER);
   data_t obj_bg_mean = 0;
   if (!subtractBG)
     obj_bg_mean = bg_mean;
@@ -243,81 +189,6 @@ void SExFrame::fillObject(Object& O) {
 
 void SExFrame::subtractBackground() {
   subtractBG = 1;
-}
-
-// fill in the column position into the SExCatFormat struct
-void SExFrame::insertFormatField(std::string type, std::string columnnr) {
-  unsigned int colnr = atoi(columnnr.c_str());
-  if (type.compare("NUMBER")==0)
-    sf.NUMBER = colnr;
-  else if (type.compare("XMIN_IMAGE")==0)
-    sf.XMIN_IMAGE = colnr;
-  else if (type.compare("XMAX_IMAGE")==0)
-    sf.XMAX_IMAGE = colnr;
-  else if (type.compare("YMIN_IMAGE")==0)
-    sf.YMIN_IMAGE = colnr;
-  else if (type.compare("YMAX_IMAGE")==0)
-    sf.YMAX_IMAGE = colnr;
-  else if (type.compare("XWIN_IMAGE")==0)
-    sf.XWIN_IMAGE = colnr;
-  else if (type.compare("YWIN_IMAGE")==0)
-    sf.YWIN_IMAGE = colnr;
-  else if (type.compare("FLUX_AUTO")==0)
-    sf.FLUX_AUTO = colnr;
-  else if (type.compare("FLAGS")==0)
-    sf.FLAGS = colnr;
-  else if (type.compare("CLASS_STAR")==0)
-    sf.CLASS_STAR = colnr;
-}
-
-// check if all necessary keywords are present
-void SExFrame::checkFormat() {
-  bool trouble = 0;
-  if (sf.NUMBER == 0) {
-    std::cerr << "SExFrame: NUMBER keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.XMIN_IMAGE == 0) {
-    std::cerr << "SExFrame: XMIN_IMAGE keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.XMAX_IMAGE == 0) {
-    std::cerr << "SExFrame: XMAX_IMAGE keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.YMIN_IMAGE == 0) {
-    std::cerr << "SExFrame: YMIN_IMAGE keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.YMAX_IMAGE == 0) {
-    std::cerr << "SExFrame: YMAX_IMAGE keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.XWIN_IMAGE == 0) {
-    std::cerr << "SExFrame: XWIN_IMAGE keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.YWIN_IMAGE == 0) {
-    std::cerr << "SExFrame: YWIN_IMAGE keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.FLUX_AUTO == 0) {
-    std::cerr << "SExFrame: FLUX_AUTO keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.FLAGS == 0) {
-    std::cerr << "SExFrame: FLAGS keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-  if (sf.CLASS_STAR == 0) {
-    std::cerr << "SExFrame: CLASS_STAR keyword not provided!" << std::endl;
-    trouble = 1;
-  }
-
-  if (trouble)
-    terminate();
-  else
-    catChecked = 1;
 }
 
 // now extend to region around the object by
@@ -351,7 +222,7 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
 // compute probability of an object being blended with another one
 // simple: if SExtractor FLAG contains 2, probability equals 1, else 0
 data_t SExFrame::computeBlendingProbability(unsigned int nr) {
-  unsigned short flag = objectList[nr].FLAGS;
+  unsigned short flag = catalog[nr].FLAGS;
   // if 2 is in FLAGS: object flaged as blended
   if ((flag >> 1)%2 == 1) 
     return 1;
