@@ -110,31 +110,31 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
     format.NUMBER = colnr - 1;
     present[0] = 1;
   }
-  else if (type.find("XMIN") != string::npos) {
+  else if (type.find("XMIN") == 0) {
     format.XMIN = colnr - 1;
     present[1] = 1;
   }
-  else if (type.find("XMAX") != string::npos) {
+  else if (type.find("XMAX") == 0) {
     format.XMAX = colnr - 1;
     present[2] = 1;
   }
-  else if (type.find("YMIN") != string::npos) {
+  else if (type.find("YMIN") == 0) {
     format.YMIN = colnr - 1;
     present[3] = 1;
   }
-  else if (type.find("YMAX") != string::npos) {
+  else if (type.find("YMAX") == 0) {
     format.YMAX = colnr - 1;
     present[4] = 1;
   }
-  else if (type == "X" || type.find("X_") != string::npos || type.find("XWIN") != string::npos || type.find("XPEAK") != string::npos) {
+  else if (type == "X" || type.find("X_") == 0 || type.find("XWIN") == 0 || type.find("XPEAK") == 0) {
     format.XCENTROID = colnr - 1;
     present[5] = 1;
   }
-  else if (type == "Y" || type.find("Y_") != string::npos || type.find("YWIN") != string::npos || type.find("YPEAK") != string::npos) {
+  else if (type == "Y" || type.find("Y_") == 0 || type.find("YWIN") == 0 || type.find("YPEAK") == 0) {
     format.YCENTROID = colnr - 1;
     present[6] = 1;
   } 
-  else if (type.find("FLUX") != string::npos) {
+  else if (type.find("FLUX") == 0) {
     format.FLUX = colnr - 1;
     present[7] = 1;
   }
@@ -157,4 +157,6 @@ bool Catalog::checkFormat() {
     cerr << "Catalog: mandatory catalog parameters are missing!" << endl;
     terminate();
   }
+  else
+    formatChecked = 1;
 }
