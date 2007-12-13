@@ -58,9 +58,9 @@ int main(int argc, char *argv[]) {
     Object* obj = new Object(n);
     // "cut out" the object from whole frame and put it into Object obj
     f->fillObject(*obj);
-    // dismiss objects with flag > 3 because of serious trouble
+    // dismiss objects with flags[i] = 1 for i >= 3 because of serious trouble
     // during the detection/segmentation process
-    if (obj->getDetectionFlag() <= 3) {
+    if (obj->getDetectionFlags().to_ulong() < 8) {
       // create FITS file with the original pixel data of the object...
       std::ostringstream newname;
       newname << sifArg.getValue() << "_" << n << ".fits";
