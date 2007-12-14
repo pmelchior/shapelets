@@ -122,7 +122,7 @@ int writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& da
 template <class T>
 int writeFITSFile(std::string filename, const NumMatrix<T>& M) {
   Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  return writeFITSFile(filename,grid,M.vectorize(0));
+  return writeFITSFile(filename,grid,M.vectorize(1));
 }
 
 
