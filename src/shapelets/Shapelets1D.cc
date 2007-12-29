@@ -6,19 +6,10 @@
 Shapelets1D::Shapelets1D() {
 }
 
-Shapelets1D::Shapelets1D(int order, data_t inbeta) {
-  H = Hermite(order);
+Shapelets1D::Shapelets1D(data_t inbeta) {
   beta = inbeta;
   // defined for fast computation
   sqrt_beta = sqrt(beta);
-}
-
-int Shapelets1D::getOrder () const {
-  return H.getOrder();
-}
-
-void Shapelets1D::setOrder (int order) {
-  H.setOrder(order);
 }
 
 data_t Shapelets1D::getBeta() const {
@@ -39,7 +30,7 @@ data_t Shapelets1D::getThetaMax(int order) const {
   return beta*sqrt(order + 0.5);
 }
 
-data_t Shapelets1D::eval (int order, data_t x) const {
+data_t Shapelets1D::eval (int order, data_t x) {
   data_t x_scaled = x/beta;
   return 1./(sqrt_beta * sqrt(M_SQRTPI*gsl_pow_int(2,order)*gsl_sf_fact(order))) * 
   H.eval(order,x_scaled) *
@@ -58,7 +49,7 @@ data_t Shapelets1D::integrate(int order) const {
 
 // integrate basis function within range xmin-xmax
 // see Paper III, eq. (78) - (81)
-data_t Shapelets1D::integrate(int order, data_t xmin, data_t xmax) const {
+data_t Shapelets1D::integrate(int order, data_t xmin, data_t xmax) {
   data_t result;
   if (order == 0) 
     result = (gsl_sf_erf(xmax/(M_SQRT2*beta)) - gsl_sf_erf(xmin/(M_SQRT2*beta))) * sqrt_beta *sqrt(M_SQRTPI/2);

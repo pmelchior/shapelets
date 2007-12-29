@@ -1,6 +1,7 @@
 #include <shapelets/SIFFile.h>
 #include <IO.h>
 #include <ShapeLensConfig.h>
+#include <bitset>
 
 using namespace std;
 
@@ -8,12 +9,28 @@ SIFFile::SIFFile(std::string infilename) {
   filename = infilename;
 }
 
-// void SIFFile::save(std::string historyString, const NumMatrix<data_t>& cartesianCoeffs, const NumMatrix<data_t>& errors, const Grid& grid, data_t beta, const Point2D& centroid, data_t chi2, unsigned int flags, data_t R, std::string basefilename, unsigned int id, unsigned int nr, data_t noise_mean, data_t noise_rms) {
 void SIFFile::save(const ShapeletObject& sobj) {
-  // write coefficients to FITS pHDUs
-  int status = 0;
   fitsfile *outfptr = createFITSFile(filename);
-  writeFITSImage(outfptr,sobj.getCartesianCoeffs());
+  saveSObj(outfptr, sobj);
+  closeFITSFile(outfptr);
+}
+
+void SIFFile::save(const ShapeletObject& sobj, const ShapeletObject& unreg) {
+  fitsfile *outfptr = createFITSFile(filename);
+  saveSObj(outfptr, sobj);
+  saveSObj(outfptr, unreg);
+  closeFITSFile(outfptr);
+}
+
+void SIFFile::save(ShapeletObjectList& sl) {
+  fitsfile *outfptr = createFITSFile(filename);
+  for(ShapeletObjectList::iterator iter = sl.begin(); iter != sl.end(); iter++) 
+    saveSObj(outfptr, *(*iter));
+  closeFITSFile(outfptr);
+}
+
+void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
+  int status = writeFITSImage(outfptr,sobj.getCartesianCoeffs());
 
   // when present, save errors also
   bool saveErrors = 0;
@@ -34,6 +51,8 @@ void SIFFile::save(const ShapeletObject& sobj) {
   updateFITSKeyword(outfptr,"ERRORS",saveErrors,"whether coefficient errors are available");
   updateFITSKeyword(outfptr,"R",sobj.getRegularizationR(),"negative flux / positive flux");
   updateFITSKeyword(outfptr,"FLAGS",sobj.getFlags().to_ulong(),"extraction and decomposition flags");
+  updateFITSKeywordString(outfptr, "EXTNAME", sobj.getName(), "shapelet object name");
+  updateFITSKeyword(outfptr, "TAG", sobj.getTag(), "shapelet object tag");
 
   // ** Frame parameters **
   fits_write_record(outfptr,"        / Frame parameters     /",&status);
@@ -73,9 +92,8 @@ void SIFFile::save(const ShapeletObject& sobj) {
   appendFITSHistory(outfptr,sobj.getHistory());
   
   if (saveErrors)
-    addFITSExtension(outfptr,"ERRORS",errors);
+    writeFITSImage(outfptr,errors,sobj.getName()+"ERRORS");
 
-  fits_close_file(outfptr, &status);
 }
 
 void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
@@ -99,16 +117,21 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   unsigned long flags;
   status = readFITSKeyword(fptr,"FLAGS",flags);
   sobj.flags = std::bitset<16>(flags);
-  
+  status = readFITSKeywordString(fptr,"EXTNAME",sobj.name);
+  if (status != 0)
+    sobj.name = "";
+  status = readFITSKeyword(fptr,"TAG",sobj.tag);
+  if (status != 0)
+    sobj.tag = 0;
+
   // read frame parameters
   status = readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
   status = readFITSKeyword(fptr,"ID",sobj.id);
   status = readFITSKeyword(fptr,"NR",sobj.nr);
-  status = readFITSKeyword(fptr,"CLASSIFIER",tmp);
-  if (status == 0)
-    sobj.classifier = tmp;
-  else
+  status = readFITSKeyword(fptr,"CLASSIFIER",sobj.classifier);
+  if (status != 0)
     sobj.classifier = 0;
+
   status = readFITSKeyword(fptr,"NOISE_MEAN",sobj.noise_mean);
   status = readFITSKeyword(fptr,"NOISE_RMS",sobj.noise_rms);
   data_t xmin,xmax,ymin,ymax;

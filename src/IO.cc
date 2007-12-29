@@ -25,26 +25,15 @@ fitsfile* createFITSFile(std::string filename) {
   return outfptr;
 }
 
+int closeFITSFile(fitsfile* fptr) {
+  int status = 0;
+  fits_close_file(fptr, &status);
+  return status;
+}
 
 int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment) {
   int status = 0;
   fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
-  return status;
-}
-
-int updateFITSKeywordString(std::string filename, std::string keyword, std::string value, std::string comment) {
-  int status = 0;
-  fitsfile *outfptr = openFITSFile(filename,1);
-  status = updateFITSKeywordString(outfptr, keyword, value, comment);
-  fits_close_file(outfptr, &status);
-  return status;
-}
-
-int appendFITSHistory(std::string filename, std::string history) {
-  int status = 0;
-  fitsfile *outfptr = openFITSFile(filename,1);
-  status = appendFITSHistory(outfptr,history);
-  fits_close_file(outfptr, &status);
   return status;
 }
 

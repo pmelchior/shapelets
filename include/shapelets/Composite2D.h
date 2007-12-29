@@ -20,9 +20,13 @@ class Composite2D : private Shapelets2D {
   Composite2D();
   /// Argumented constructor.
   /// Different shapelet orders are allowed by giving matrix of appropriate dimensions.
-  Composite2D(data_t beta, Point2D& xcentroid, const NumMatrix<data_t>& startCoeffs);
+  Composite2D(data_t beta, Point2D& xcentroid, const NumMatrix<data_t>& Coeffs);
+  /// Copy constructor.
+  Composite2D(const Composite2D &source);
   /// Copy operator
   Composite2D & operator = (const Composite2D &source);
+  /// Set shapelet coefficients.
+  void setCoeffs(const NumMatrix<data_t>& newCoeffs);
   /// Get maximal order for composition in direction (0/1).
   int getOrder(bool direction) const;
   /// Get \f$n_{max}\f$, the maximum order of the shapelet model.
@@ -31,9 +35,6 @@ class Composite2D : private Shapelets2D {
   /// Set the maximum composition order without affecting the shapelet coefficients.
   /// This lowers the composition order to see effect of truncation. */
   void setOrderLimit(bool direction, int orderlimit);
-  /// Set the shapelet coefficients to new values.
-  /// Enlarge basis set when needed
-  void setCoeffs(const NumMatrix<data_t>& newCoeffs);
   /// Get \f$\beta\f$ from basis function.
   data_t getBeta() const;
   /// Set new \f$\beta\f$ for basis functions.
@@ -53,8 +54,6 @@ class Composite2D : private Shapelets2D {
   /// Get the shapelet model.
   /// This evaluates \f$f(x)\f$ on the whole grid.
   const NumVector<data_t>& getModel();
-  /// Access the shapelet model directly.
-  NumVector<data_t>& accessModel();
   /// Integrate \f$f(x)\f$.
   data_t integrate();
   /// Integrate \f$f(x)\f$ in the range (x0min,x1min) .. (x0max,x1max).
@@ -72,17 +71,19 @@ class Composite2D : private Shapelets2D {
   data_t getShapeletRMSRadius() const;
 
   friend class SIFFile;
+  friend class ShapeletObject;
 
  private:
   Grid grid;
-  NumMatrix<data_t> shapeletCoeffs, M;
+  NumMatrix<data_t> coeffs, M;
   NumVector<data_t> model;
   Point2D xcentroid;
-  int order0, order1, orderlimit0, orderlimit1;
   bool change;
   data_t evalGridPoint(const Point2D& x);
   void evalGrid();
   void makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector);
+  NumVector<data_t>& accessModel();
+  void updateOrders();
 };
 
 #endif

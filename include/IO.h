@@ -78,9 +78,10 @@ template <class T>
 
 fitsfile* openFITSFile(std::string filename, bool write=0);
 fitsfile* createFITSFile(std::string filename);
+int closeFITSFile(fitsfile* fptr);
 
 template <class T>
-int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data) {
+int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data, std::string extname="") {
   int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
   int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
   long naxis = 2;      
@@ -96,68 +97,16 @@ int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data
   // write pixel data
   long firstpix[2] = {1,1};
   fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(data.c_array()), &status);
-  return status;
-}
-
-template <class T>
-int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M) {
-  Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  return writeFITSImage(outfptr,grid,M.vectorize(1));
-}
-
-/// creates a single HDU FITS file from the data defined on given grid
-template <class T>
-int writeFITSFile(std::string filename, const Grid& grid, const NumVector<T>& data) {
-  int status = 0;
-  fitsfile *outfptr = createFITSFile(filename);
-  // write image data
-  writeFITSImage(outfptr,grid,data);
-  // insert creator keyword
-  std::string creator = "ShapeLens++";
-  fits_update_key (outfptr, TSTRING, "CREATOR" , const_cast<char *>(creator.c_str()), "", &status);
-  fits_close_file(outfptr, &status);
-  return status;
-}
-
-template <class T>
-int writeFITSFile(std::string filename, const NumMatrix<T>& M) {
-  Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  return writeFITSFile(filename,grid,M.vectorize(1));
-}
-
-
-template <class T>
-int addFITSExtension(fitsfile *outfptr, std::string extname, const Grid& grid, const NumVector<T>& data) {
-  int status = 0;
-  // write image data
-  writeFITSImage(outfptr,grid,data);
   // insert creator and extname keywords
-  fits_update_key (outfptr, TSTRING, "EXTNAME" ,const_cast<char *>(extname.c_str()) , "", &status);
-  std::string creator = "ShapeLens++";
-  fits_update_key (outfptr, TSTRING, "CREATOR" , const_cast<char *>(creator.c_str()), "", &status);
-  return status;
-}
-
-/// adds extensions to an existing FITS file from the data on the given grid
-template <class T>
-int addFITSExtension(std::string filename, std::string extname, const Grid& grid, const NumVector<T>& data) {
-  int status = 0;
-  fitsfile *outfptr = openFITSFile(filename,1);
-  status = addFITSExtension(outfptr,extname,grid,data);
-  fits_close_file(outfptr, &status);
+  status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
+  status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
   return status;
 }
 
 template <class T>
-int addFITSExtension(fitsfile *outfptr, std::string extname, const NumMatrix<T>& M) {
+int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
   Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  return addFITSExtension(outfptr,extname,grid,M.vectorize(0));
-}
-
-template <class T>
-int addFITSExtension(std::string filename, std::string extname, const NumMatrix<T>& M) {
-  Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
-  return addFITSExtension(filename,extname,grid,M.vectorize(0));
+  return writeFITSImage(outfptr,grid,M.vectorize(1),extname);
 }
 
 template <class T>
@@ -167,18 +116,7 @@ int updateFITSKeyword(fitsfile *outfptr, std::string keyword, T value, std::stri
   return status;
 }
 
-template <class T>
-void updateFITSKeyword(std::string filename, std::string keyword, T value, std::string comment="") {
-  int status = 0;
-  fitsfile *outfptr = openFITSFile(filename,1);;
-  status = updateFITSKeyword(outfptr ,keyword, value, comment);
-  fits_close_file(outfptr, &status);
-  return status;
-}
-
 int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
-int updateFITSKeywordString(std::string filename, std::string keyword, std::string value, std::string comment="");
-int appendFITSHistory(std::string filename, std::string history);
 int appendFITSHistory(fitsfile *outfptr, std::string history);
 
 

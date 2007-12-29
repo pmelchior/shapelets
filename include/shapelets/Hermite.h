@@ -28,7 +28,7 @@ class Hermite {
   /// Double values neccessary because these coefficients become very large at high orders.
   data_t getCoefficient(unsigned int n, unsigned int i) const;
   /// Evaluate \f$H_{n}(x)\f$.
-  data_t eval (unsigned int n, data_t x) const;
+  data_t eval (unsigned int n, data_t x);
 
 private:
   boost::numeric::ublas::triangular_matrix<data_t,boost::numeric::ublas::lower> HermiteCoeffs;

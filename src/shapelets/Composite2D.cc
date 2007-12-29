@@ -11,61 +11,38 @@ Composite2D::Composite2D() : Shapelets2D() {
 }
 
 Composite2D::Composite2D(data_t beta, Point2D& inxcentroid, const NumMatrix<data_t>& Coeffs) : Shapelets2D() {  
-  shapeletCoeffs = Coeffs;
+  coeffs = Coeffs;
   xcentroid = inxcentroid;
-  order0 = orderlimit0 = shapeletCoeffs.getRows() -1;
-  order1 = orderlimit1 = shapeletCoeffs.getColumns() -1;
-  Shapelets2D::setOrders(order0,order1);
   Shapelets2D::setBeta(beta);
-  // grid hast to be redefined before evaluation
+  // grid has to be redefined before evaluation
   change = 1;
 }
 
+Composite2D::Composite2D(const Composite2D& source) {
+  Composite2D::operator=(source);
+}
+
 Composite2D & Composite2D::operator= (const Composite2D &source) {
-  Shapelets2D::setOrders(source.order0,source.order1);
+  coeffs = source.coeffs;
   Shapelets2D::setBeta(source.getBeta());
-  shapeletCoeffs = source.shapeletCoeffs;
   grid = source.grid;
   xcentroid(0) = source.xcentroid(0);
   xcentroid(1) = source.xcentroid(1);
-  order0 = source.order0;
-  order1 = source.order1;
-  orderlimit0 = source.orderlimit0;
-  orderlimit1 = source.orderlimit1;
   return *this;
 }
   
 int Composite2D::getOrder(bool direction) const{
-  // if orderlimit is set, this could be lower than max order
-  if (direction==0) return GSL_MIN_INT(order0,orderlimit0);
-  else return GSL_MIN_INT(order1,orderlimit1);
+  if (direction==0) return coeffs.getRows()-1;
+  else return coeffs.getColumns()-1;
 }
 
 int Composite2D::getNMax() const {
-  if (order0==order1 && orderlimit0 == orderlimit1) 
-    return GSL_MIN_INT(order0,orderlimit0);
-}
-
-void Composite2D::setOrderLimit(bool direction, int orderlimit) {
-  // only set orderlimit, if it's really lower then max order
-  if (Shapelets2D::getOrder(direction) >= orderlimit) {
-      if (direction==0) orderlimit0 = orderlimit;
-      else orderlimit1 = orderlimit;
-      change = 1;
-  } else 
-    cout << "Warning: setOrderLimit attempts to increase number of orders to evaluate." << endl << endl;
+  return GSL_MAX_INT(coeffs.getRows()-1,coeffs.getColumns()-1);
 }
 
 void  Composite2D::setCoeffs(const NumMatrix<data_t>& newCoeffs ) {
-  shapeletCoeffs = newCoeffs;
+  coeffs = newCoeffs;
   change = 1;
-  // set new orders and limits
-  order0 = orderlimit0 = shapeletCoeffs.getRows() -1;
-  order1 = orderlimit1 = shapeletCoeffs.getColumns() -1;
-  // if new size is different, adapt the shapelet orders
-  // and set flag for redefining the grid before evaluation
-  if (Shapelets2D::getOrder(0) != order0 || Shapelets2D::getOrder(1) != order1)
-    Shapelets2D::setOrders(order0,order1);
 }
 
 data_t Composite2D::getBeta() const {
@@ -101,10 +78,10 @@ data_t Composite2D::eval(const Point2D& x) {
   xdiff(0) = x(0) - xcentroid(0);
   xdiff(1) = x(1) - xcentroid(1);
   // result = sum over l0,l1 (coeff_(l0,l1) * B_(l0,l1)(x0,x1))
-  for (int l0 = 0; l0 <= orderlimit0; l0++)
-    for (int l1 = 0; l1 <= orderlimit1; l1++)
-      if (shapeletCoeffs(l0,l1) != 0)
-	result += shapeletCoeffs(l0,l1) * Shapelets2D::eval(l0,l1,xdiff);
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++)
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++)
+      if (coeffs(l0,l1) != 0)
+	result += coeffs(l0,l1) * Shapelets2D::eval(l0,l1,xdiff);
   // get rid of tiny values
   if (fabs(result) < 1e-20) result = 0;
   return result;
@@ -118,10 +95,10 @@ data_t Composite2D::evalGridPoint(const Point2D& x) {
   //xdiff(1) = x(1) + 0.5*stepsize 1 - xcentroid(1);
   xdiff(0) = x(0) - xcentroid(0);    
   xdiff(1) = x(1) - xcentroid(1);
-  for (int l0 = 0; l0 <= orderlimit0; l0++)
-    for (int l1 = 0; l1 <= orderlimit1; l1++)
-      if (shapeletCoeffs(l0,l1) != 0)
-	result += shapeletCoeffs(l0,l1) * Shapelets2D::eval(l0,l1,xdiff);
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++)
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++)
+      if (coeffs(l0,l1) != 0)
+	result += coeffs(l0,l1) * Shapelets2D::eval(l0,l1,xdiff);
 
   // get rid of tiny values
   if (fabs(result) < 1e-20) result = 0;
@@ -129,7 +106,7 @@ data_t Composite2D::evalGridPoint(const Point2D& x) {
 }
 
 void Composite2D::evalGrid() {
-  if ((orderlimit0 != orderlimit1) || (shapeletCoeffs(orderlimit0-1,orderlimit1-1)!=0)) {
+  if ((coeffs.getRows() - 1 != coeffs.getColumns() - 1) || (coeffs(coeffs.getRows() - 1-1,coeffs.getColumns() - 1-1)!=0)) {
     if (model.size() != grid.size())
       model.resize(grid.size());
     for (int j = 0; j < grid.size(); j +=1)
@@ -137,7 +114,7 @@ void Composite2D::evalGrid() {
   } else {
     // this approach only works for square, upper triangular coeff matrices
     // which is assumed for this ansatz here.
-    CoefficientVector<data_t> coeffVector(shapeletCoeffs);
+    CoefficientVector<data_t> coeffVector(coeffs);
     const IndexVector& nVector = coeffVector.getIndexVector();
     NumMatrix<data_t> M(grid.size(),nVector.getNCoeffs());
     makeShapeletMatrix(M,nVector);
@@ -160,10 +137,10 @@ NumVector<data_t>& Composite2D::accessModel() {
 data_t Composite2D::integrate() {
    data_t result = 0;
   // result = sum over l0,l1 (coeff_(l0,l1) * Integral of B_(l0,l1))
-  for (int l0 = 0; l0 <= orderlimit0; l0+=1) 
-    for (int l1 = 0; l1 <= orderlimit1; l1+=1)
-      if (shapeletCoeffs(l0,l1) != 0)
-	result += shapeletCoeffs(l0,l1) * Shapelets2D::integrate(l0,l1);
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) 
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1)
+      if (coeffs(l0,l1) != 0)
+	result += coeffs(l0,l1) * Shapelets2D::integrate(l0,l1);
   return result;
 }
 data_t Composite2D::integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1max) {
@@ -173,10 +150,10 @@ data_t Composite2D::integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1
    x1min -= xcentroid(1);
    x1max -= xcentroid(1);
   // result = sum over l0,l1 (coeff_(l0,l1) * Integral of B_(l0,l1))
-  for (int l0 = 0; l0 <= orderlimit0; l0+=1) 
-    for (int l1 = 0; l1 <= orderlimit1; l1+=1)
-      if (shapeletCoeffs(l0,l1) != 0)
-	result += shapeletCoeffs(l0,l1)* Shapelets2D::integrate(l0,l1,x0min,x0max,x1min,x1max);
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) 
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1)
+      if (coeffs(l0,l1) != 0)
+	result += coeffs(l0,l1)* Shapelets2D::integrate(l0,l1,x0min,x0max,x1min,x1max);
   // get rid of tiny values
   if (result < 1e-20) result = 0;
   return result;
@@ -186,12 +163,12 @@ data_t Composite2D::integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1
 // see Paper I, eq. 26
 data_t Composite2D::getShapeletFlux() const {
   data_t result = 0;
-  for (int l0 = 0; l0 <= orderlimit0; l0+=1) {
-    for (int l1 = 0; l1 <= orderlimit1; l1+=1) {
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) {
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1) {
       if (l0%2 == 0 && l1%2 ==0) {
 	//result += pow(2,0.5*(2-l0-l1))* sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
 	result += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
-	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * shapeletCoeffs(l0,l1);
+	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * coeffs(l0,l1);
       }
     }
   }
@@ -202,19 +179,19 @@ data_t Composite2D::getShapeletFlux() const {
 // see Paper I, eq. 27
 void Composite2D::getShapeletCentroid(Point2D& xc) const {
   xc = Point2D(0,0);
-  for (int l0 = 0; l0 <= orderlimit0; l0+=1) {
-    for (int l1 = 0; l1 <= orderlimit1; l1+=1) {
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) {
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1) {
       if (l0%2 == 1 && l1%2 ==0) {
 	xc(0) += sqrt((data_t)l0 + 1)*pow(2,0.5*(2-l0-l1)) *
 	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1)) /
 	  (gsl_sf_fact((l0+1)/2)*gsl_sf_fact(l1/2)) *
-	  shapeletCoeffs(l0,l1);
+	  coeffs(l0,l1);
       }
       if (l0%2 == 0 && l1%2 ==1) {
 	xc(1) += sqrt((data_t)l1 + 1)*pow(2,0.5*(2-l0-l1)) * 
 	  sqrt(gsl_sf_fact(l1+1)*gsl_sf_fact(l0)) /
 	  (gsl_sf_fact((l1+1)/2)*gsl_sf_fact(l0/2)) *
-	  shapeletCoeffs(l0,l1);
+	  coeffs(l0,l1);
       }
     }
   }
@@ -230,18 +207,18 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
     Q.resize(2,2);
   Q.clear();
   data_t factor;
-  for (int l0 = 0; l0 <= orderlimit0; l0++) {
-    for (int l1 = 0; l1 <= orderlimit1; l1++) {
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++) {
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++) {
       if (l0%2 == 0 && l1%2 ==0) {
 	factor = 2 * gsl_pow_int(2,-(l0+l1)/2) * 
 	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
-	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * shapeletCoeffs(l0,l1);
+	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * coeffs(l0,l1);
 	Q(0,0) += factor * (1+2*l0);
 	Q(1,1) += factor * (1+2*l1);
       } else if (l0%2 == 1 && l1%2 == 1) {
 	Q(0,1) += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt((data_t)(l0+1)*(l1+1)) *
 	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1+1)) /
-	  (gsl_sf_fact((l0+1)/2)*gsl_sf_fact((l1+1)/2)) * shapeletCoeffs(l0,l1);
+	  (gsl_sf_fact((l0+1)/2)*gsl_sf_fact((l1+1)/2)) * coeffs(l0,l1);
       }
     }
   }
@@ -256,12 +233,12 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
 // see Paper I, eq. (28)
 data_t Composite2D::getShapeletRMSRadius() const {
   data_t rms = 0;
-  for (int l0 = 0; l0 <= orderlimit0; l0++) {
-    for (int l1 = 0; l1 <= orderlimit1; l1++) {
+  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++) {
+    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++) {
       if (l0%2 == 0 && l1%2 ==0) {
 	rms += 4 * gsl_pow_int(2,-(l0+l1)/2) * (1+l0+l1) *
 	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) / (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * 
-	  shapeletCoeffs(l0,l1); 
+	  coeffs(l0,l1); 
       }
     }
   }
@@ -271,7 +248,7 @@ data_t Composite2D::getShapeletRMSRadius() const {
 }
 
 void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector) {
-  int nmax = orderlimit0;
+  int nmax = coeffs.getRows() - 1;
   int nCoeffs = nVector.getNCoeffs();
   int npixels = grid.size();
   NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);

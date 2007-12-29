@@ -60,11 +60,12 @@ class Image : public NumVector<T> {
     return filename;
   }
   /// Save as FITS file.
-  void save(std::string fitsfile) const {
-    writeFITSFile(fitsfile,grid,*this);
+  void save(std::string filename) const {
+    fitsfile* fptr = createFITSFile(filename);
+    writeFITSImage(fptr,grid,*this);
     // if history is not empty, append history to FITS header
     if (!history.isEmpty())
-      appendFITSHistory(fitsfile,history.str());
+      appendFITSHistory(fptr,history.str());
   }
   ///  Get image history.
   const History& getHistory() const {

@@ -14,13 +14,9 @@ class Shapelets1D {
  public:
   /// Default constructor.
   Shapelets1D ();
-  /// Constructor with scale size \f$\beta\f$ and maximal order
-  Shapelets1D (int order, data_t beta);
+  /// Constructor with scale size \f$\beta\f$
+  Shapelets1D (data_t beta);
   
-  /// Return highest order of B.
-  int getOrder () const;
-  /// Set the highest order of B.
-  void setOrder (int order);
   /// Return \f$\beta\f$.
   data_t getBeta() const;
   /// Set \f$\beta\f$ to arbitrary value.
@@ -32,9 +28,9 @@ class Shapelets1D {
   /// Get integral over basis function \f$B_{order}\f$.
   data_t integrate(int order) const;
   /// Get integral over basis fuction  \f$B_{order}\f$ within interval xmin .. xmax.
-  data_t integrate(int order, data_t xmin, data_t xmax) const;
+  data_t integrate(int order, data_t xmin, data_t xmax);
   /// Evaluate \f$B_{order}(x;\beta)\f$.
-  data_t eval (int order, data_t x) const;
+  data_t eval (int order, data_t x);
 
 private:
   Hermite H;

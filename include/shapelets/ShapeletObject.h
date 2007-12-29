@@ -34,6 +34,8 @@ class ShapeletObject : public Composite2D {
  public:
   /// Default constructor.
   ShapeletObject();
+  /// Copy constructor.
+  ShapeletObject(const ShapeletObject&);
   /// Constructor for reading a SIF file.
   /// If <tt>preserve_config==1</tt>, the global ShapeLensConfig parameters
   /// are preserved during the loading of <tt>sifFile</tt>, otherwise
@@ -56,7 +58,11 @@ class ShapeletObject : public Composite2D {
   /// If you want to change these settings, change them BEFORE calling this
   /// constructor.
   ShapeletObject(const Object& obj);
-  
+  ///Copy operator.
+  ShapeletObject& operator=(const ShapeletObject&);
+  /// Destructor.
+  ~ShapeletObject();
+
   /// Set new cartesian coefficients.
   void setCartesianCoeffs(const NumMatrix<data_t>& cartesianCoeffs);
   /// Set cartesian coefficient errors.
@@ -114,13 +120,13 @@ class ShapeletObject : public Composite2D {
   /// Larger changes of \f$\beta\f$ can be achieved by setBeta().
   void rescale(data_t newBeta);
 
-  /// Save active set of image parameters to given file.
-  void save(std::string filename) const;
-  /// Load active set of image parameters from file.
+  /// Save active set of image parameters to given SIFFile.
+  void save(std::string sifFile) const;
+  /// Load active set of image parameters from SIFFile.
   /// If <tt>preserve_config==1</tt>, the global ShapeLensConfig parameters
   /// are preserved during the loading of <tt>sifFile</tt>, otherwise
   /// they are overwritten by the values given in <tt>sifFile</tt>.
-  void load(std::string filename, bool preserve_config = 1);
+  void load(std::string sifFile, bool preserve_config = 1);
 
   /// Return history string of image.
   /// This contains all procedure parameters of decomposition, transformations etc.
@@ -153,20 +159,32 @@ class ShapeletObject : public Composite2D {
   /// See OptimalDecomposite2D::getDecompositionFlag() and Object::getDetectionFlag()
   /// for details.
   const std::bitset<16>& getFlags() const;
+
+  // two storage containers for a floating type and a string
+  /// Set the name for this ShapeletObject.
+  void setName(std::string name);
+  /// Get the name of this ShapeletObject.
+  std::string getName() const;
+  /// Assign a tag to this ShapeletObject.
+  void setTag(data_t tag);
+  /// Get the tag of this ShapeletObject.
+  data_t getTag() const;
   
   friend class SIFFile;
 
  private:
-  NumMatrix<data_t> cartesianCoeffs, errors;
+  NumMatrix<data_t>& cartesianCoeffs;
+  NumMatrix<data_t> errors;
   NumMatrix<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
-  data_t chisquare, R, noise_mean, noise_rms, classifier;
+  data_t chisquare, R, noise_mean, noise_rms, classifier, tag;
   bool fits;
   History history;
   std::bitset<16> flags;
   unsigned long id, nr;
-  std::string basefilename;
+  std::string basefilename, name;
+  ShapeletObject* unreg;
 };
 
 #endif

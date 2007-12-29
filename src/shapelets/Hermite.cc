@@ -47,11 +47,14 @@ void Hermite::setOrder (unsigned int order) {
   }
 }
 
-data_t Hermite::eval (unsigned int order, data_t x) const {
-  if (order > computed) {
-    std::cerr << "Hermite: order higher than computed; call setOrder() before!" << std::cout;
-    std::terminate();
-  }
+data_t Hermite::eval (unsigned int order, data_t x) {
+  // if (order > computed) {
+//     std::cerr << "Hermite: order higher than computed; call setOrder() before!" << std::cout;
+//     std::terminate();
+//   }
+  if (order > computed)
+    setOrder(order);
+
   data_t result = 0;
   for (int i = 0; i  < order+1; i+=1 )
     result +=  HermiteCoeffs(order,i) * gsl_pow_int(x,i);

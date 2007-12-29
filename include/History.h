@@ -21,13 +21,13 @@ class History {
   /// Copy constructor
   History(const History& h) {
     s.clear();
-    s << h.s;
+    s << h.s.str();
     silent = h.silent;
   }
   /// Copy operator.
   void operator=(const History& h) {
     s.clear();
-    s << h.s;
+    s << h.s.str();
     silent = h.silent;
   }
   /// Overloaded operator<<.
