@@ -18,7 +18,7 @@ int main (int argc, char *argv[]) {
   // always print out general infos:
   std::cout << "SIF header information" << std::endl;
   std::cout << "Filename:\t" << sobj.getBaseFilename() << std::endl;
-  std::cout << "Coefficients:\t" << sobj.getCartesianCoeffs().getRows() <<"x" <<  sobj.getCartesianCoeffs().getColumns() << std::endl;
+  std::cout << "Coefficients:\t" << sobj.getCoeffs().getRows() <<"x" <<  sobj.getCoeffs().getColumns() << std::endl;
   std::cout << "Coff. errors:\t" << sobj.getDecompositionErrors().getRows() <<"x" << sobj.getDecompositionErrors().getRows() << std::endl;;
   std::cout << "Beta:\t\t" << sobj.getBeta() << std::endl;
   std::cout << "Centroid:\t" << (sobj.getCentroid())(0) << "/" << (sobj.getCentroid())(1) << std::endl;
@@ -37,7 +37,7 @@ int main (int argc, char *argv[]) {
     std::cout << "History:" << std::endl << sobj.getHistory() << std::endl;
   // if required, print out shapelet coeffs (+ errors)
   if (coefficientSwitch.isSet())
-    std::cout << "Cartesian coefficients:" << std::endl << sobj.getCartesianCoeffs() << std::endl << std::endl;
+    std::cout << "Cartesian coefficients:" << std::endl << sobj.getCoeffs() << std::endl << std::endl;
   if (errorSwitch.isSet())
     std::cout <<  "Cartesian coefficient errors:" << std::endl << sobj.getDecompositionErrors() << std::endl << std::endl;
   

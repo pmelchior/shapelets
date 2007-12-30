@@ -28,7 +28,7 @@ void averageShapeletCoeffs(NumMatrix<data_t>& average, NumMatrix<data_t>& std_me
      if (!files.good()) break;
     
     ShapeletObject* s = new ShapeletObject(filename);
-    const NumMatrix<data_t>& coeffs = s->getCartesianCoeffs();
+    const NumMatrix<data_t>& coeffs = s->getCoeffs();
     matrixList.push_back(coeffs);
     // if new coeff matrix is bigger than current average matrix
     // expand average
@@ -99,7 +99,7 @@ void createShapeletImages(NumMatrix<data_t>& averageCoeffs, NumMatrix<data_t>& s
       for (int j=0; j<coeffs.getColumns();j++)
 	coeffs(i,j) = averageCoeffs(i,j) + gsl_ran_gaussian (r, sigmaCoeffs(i,j));
 
-    s->setCartesianCoeffs(coeffs);
+    s->setCoeffs(coeffs);
 
     // beta: uniform between betamin and betamax
     beta =  betamin + gsl_rng_uniform(r)*(betamax-betamin);
@@ -139,7 +139,7 @@ void createShapeletImages(NumMatrix<data_t>& averageCoeffs, NumMatrix<data_t>& s
   filename << path << "shapelets.ls";
   averageShapeletCoeffs(average,std_mean,averageBeta,filename.str());
   ShapeletObject *a = new ShapeletObject(average,averageBeta,xcentroid);
-  a->setCartesianCoeffErrors(std_mean);
+  a->setCoeffErrors(std_mean);
   
   filename.str("");
   filename << path << "average.sif";

@@ -64,14 +64,12 @@ class ShapeletObject : public Composite2D {
   ~ShapeletObject();
 
   /// Set new cartesian coefficients.
-  void setCartesianCoeffs(const NumMatrix<data_t>& cartesianCoeffs);
+  void setCoeffs(const NumMatrix<data_t>& cartesianCoeffs);
   /// Set cartesian coefficient errors.
-  void setCartesianCoeffErrors(const NumMatrix<data_t>& errors);
+  void setCoeffErrors(const NumMatrix<data_t>& errors);
   /// Set new polar coeficients.
   void setPolarCoeffs(const NumMatrix<complex<data_t> >& polarCoeffs);
-  /// Return active cartesian coefficients.
-  const NumMatrix<data_t>& getCartesianCoeffs() const;
-  /// Return active polar coeficients.
+  /// Return polar coeficients.
   const NumMatrix<complex<data_t> >& getPolarCoeffs() const;
 
   // methods depending on the decomposition
@@ -173,7 +171,7 @@ class ShapeletObject : public Composite2D {
   friend class SIFFile;
 
  private:
-  NumMatrix<data_t>& cartesianCoeffs;
+  NumMatrix<data_t>& coeffs;
   NumMatrix<data_t> errors;
   NumMatrix<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;

@@ -30,7 +30,7 @@ void SIFFile::save(ShapeletObjectList& sl) {
 }
 
 void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
-  int status = writeFITSImage(outfptr,sobj.getCartesianCoeffs());
+  int status = writeFITSImage(outfptr,sobj.getCoeffs());
 
   // when present, save errors also
   bool saveErrors = 0;
@@ -46,7 +46,7 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   fits_write_record(outfptr,"",&status);
   fits_write_record(outfptr,"        / Shapelet parameters  /",&status);
   updateFITSKeyword(outfptr,"BETA",sobj.getBeta(),"scale size in pixel units");
-  updateFITSKeyword(outfptr,"DIM",sobj.getCartesianCoeffs().getRows(),"dimensions in shapelet space (nmax+1)");
+  updateFITSKeyword(outfptr,"DIM",sobj.getCoeffs().getRows(),"dimensions in shapelet space (nmax+1)");
   updateFITSKeyword(outfptr,"CHI2",sobj.getDecompositionChiSquare(),"decomposition quality");
   updateFITSKeyword(outfptr,"ERRORS",saveErrors,"whether coefficient errors are available");
   updateFITSKeyword(outfptr,"R",sobj.getRegularizationR(),"negative flux / positive flux");
@@ -102,7 +102,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // open pHUD of fits file
   fits_open_file(&fptr,filename.c_str(),READONLY,&status);
   // read shapelet coeff from pHDU
-  status = readFITSImage(fptr,sobj.cartesianCoeffs);
+  status = readFITSImage(fptr,sobj.coeffs);
 
   // read shapelet parameters
   // make use of friendship of Composite2D and ShapeletObject

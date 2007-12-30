@@ -45,6 +45,10 @@ void  Composite2D::setCoeffs(const NumMatrix<data_t>& newCoeffs ) {
   change = 1;
 }
 
+const NumMatrix<data_t>& Composite2D::getCoeffs() const {
+  return coeffs;
+}
+
 data_t Composite2D::getBeta() const {
   return Shapelets2D::getBeta();
 }

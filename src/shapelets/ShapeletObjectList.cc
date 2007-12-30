@@ -56,7 +56,7 @@ void ShapeletObjectList::average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std
 
   // go through all ShapeletObjects
   for (ShapeletObjectList::iterator iter = ShapeletObjectList::begin(); iter != ShapeletObjectList::end(); iter++) {
-    const NumMatrix<data_t>& coeffs = (*iter)->getCartesianCoeffs();
+    const NumMatrix<data_t>& coeffs = (*iter)->getCoeffs();
     data_t weight = (*weightFunction)(*(*iter));
     // if new coeff matrix is bigger than current average matrix
     // expand average
@@ -88,7 +88,7 @@ void ShapeletObjectList::average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std
 
 bool ShapeletObjectList::checkSIFFile(ShapeletObject& so, std::string siffile) {
   // check coeffs and beta for correctness
-  const NumMatrix<data_t>& coeffs = so.getCartesianCoeffs();
+  const NumMatrix<data_t>& coeffs = so.getCoeffs();
   bool ok = 1;
   for (int i=0; i<coeffs.getRows(); i++) {
     for (int j=0; j<coeffs.getColumns(); j++) {

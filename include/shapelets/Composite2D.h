@@ -25,7 +25,9 @@ class Composite2D : private Shapelets2D {
   Composite2D(const Composite2D &source);
   /// Copy operator
   Composite2D & operator = (const Composite2D &source);
-  /// Set shapelet coefficients.
+  /// Get cartesian shapelet coefficients.
+  const NumMatrix<data_t>& getCoeffs() const;
+  /// Set cartesian shapelet coefficients.
   void setCoeffs(const NumMatrix<data_t>& newCoeffs);
   /// Get maximal order for composition in direction (0/1).
   int getOrder(bool direction) const;
