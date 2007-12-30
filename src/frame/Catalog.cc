@@ -5,10 +5,10 @@
 
 using namespace std;
 
-Catalog::Catalog() : vector<CatObject>() {
+Catalog::Catalog() : map<unsigned long, CatObject>() {
 }
 
-Catalog::Catalog(string catfile) : vector<CatObject>() {
+Catalog::Catalog(string catfile) : map<unsigned long, CatObject>() {
   read(catfile);
 }
 
@@ -17,10 +17,6 @@ void Catalog::read(string catfile) {
   // in other words: which of the format fields are set
   present.reset();
   formatChecked = 0;
-  // first inser empty object 0, since object numbers start with 1
-  vector<CatObject>::clear();
-  CatObject s0 = {0,0,0,0,0,0,0,0,0,0};
-  vector<CatObject>::push_back(s0);
   // open cat file
   ifstream catalog (catfile.c_str());
   if (catalog.fail()) {
@@ -30,7 +26,7 @@ void Catalog::read(string catfile) {
   catalog.clear();
   // read in cat file
   // 1) parse the format definition lines
-  // 2) fill object information into SExCatObjects -> vector<CatObject>;
+  // 2) fill object information into SExCatObjects -> map<unsigned long, CatObject>;
   string line;
   std::vector<std::string> column;
   while(getline(catalog, line)) {
@@ -53,7 +49,7 @@ void Catalog::read(string catfile) {
       if (!formatChecked) checkFormat();
       // then set up a true SExCatObject
       CatObject so;
-      so.NUMBER = (unsigned long) atoi(column[format.NUMBER].c_str());
+      unsigned long id = (unsigned long) atoi(column[format.ID].c_str());
       // the sextractor corrdinates start with (1,1), ours with (0,0)
       so.XMIN = atoi(column[format.XMIN].c_str())-1;
       so.XMAX = atoi(column[format.XMAX].c_str())-1;
@@ -67,8 +63,8 @@ void Catalog::read(string catfile) {
 	so.CLASSIFIER = (data_t) atof(column[format.CLASSIFIER].c_str());
       else
 	so.CLASSIFIER = (data_t) 0;
-     // then push it on vector<CatObject>
-      vector<CatObject>::push_back(so);
+      // then store it in map
+      Catalog::operator[](id) = so;
     }
   }
   catalog.close();
@@ -77,7 +73,7 @@ void Catalog::read(string catfile) {
 void Catalog::save(string catfile) const {
   // write header and the data section in SExtractor format
   ofstream catalog (catfile.c_str());
-  catalog << "#  1 NUMBER" << endl;
+  catalog << "#  1 ID" << endl;
   catalog << "#  2 XMIN_IMAGE" << endl;
   catalog << "#  3 XMAX_IMAGE" << endl;
   catalog << "#  4 YMIN_IMAGE" << endl;
@@ -89,25 +85,26 @@ void Catalog::save(string catfile) const {
   if (present.test(9))
     catalog << "# 10 CLASSIFIER" << endl;
   // now all objects in Catalog
-  for (unsigned int i=1; i<vector<CatObject>::size(); i++) {
-    catalog << vector<CatObject>::operator[](i).NUMBER << " ";
-    catalog << vector<CatObject>::operator[](i).XMIN + 1 << " ";
-    catalog << vector<CatObject>::operator[](i).XMAX + 1 << " ";
-    catalog << vector<CatObject>::operator[](i).YMIN + 1 << " ";
-    catalog << vector<CatObject>::operator[](i).YMAX + 1 << " ";
-    catalog << vector<CatObject>::operator[](i).XCENTROID + 1 << " ";
-    catalog << vector<CatObject>::operator[](i).YCENTROID + 1 << " ";
-    catalog << vector<CatObject>::operator[](i).FLUX << " ";
-    catalog << (unsigned int) vector<CatObject>::operator[](i).FLAGS << " ";
+  Catalog::const_iterator iter;
+  for (iter = Catalog::begin(); iter != Catalog::end(); iter++) {
+    catalog << (*iter).first << " ";
+    catalog << (*iter).second.XMIN + 1 << " ";
+    catalog << (*iter).second.XMAX + 1 << " ";
+    catalog << (*iter).second.YMIN + 1 << " ";
+    catalog << (*iter).second.YMAX + 1 << " ";
+    catalog << (*iter).second.XCENTROID + 1 << " ";
+    catalog << (*iter).second.YCENTROID + 1 << " ";
+    catalog << (*iter).second.FLUX << " ";
+    catalog << (unsigned int) (*iter).second.FLAGS << " ";
     if (present.test(9))
-      catalog << vector<CatObject>::operator[](i).CLASSIFIER << " ";
+      catalog << (*iter).second.CLASSIFIER << " ";
     catalog << endl;
   }
 }
 
 void Catalog::setFormatField(std::string type, unsigned short colnr) {
-  if (type == "NUMBER" || type == "NR") {
-    format.NUMBER = colnr - 1;
+  if (type == "ID" || type == "NUMBER" || type == "NR") {
+    format.ID = colnr - 1;
     present[0] = 1;
   }
   else if (type.find("XMIN") == 0) {
@@ -126,11 +123,11 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
     format.YMAX = colnr - 1;
     present[4] = 1;
   }
-  else if (type == "X" || type.find("X_") == 0 || type.find("XWIN") == 0 || type.find("XPEAK") == 0) {
+  else if (type == "X" || type.find("X_") == 0 || type.find("XWIN") == 0 || type.find("XPEAK") == 0 || type.find("XCENTROID") == 0) {
     format.XCENTROID = colnr - 1;
     present[5] = 1;
   }
-  else if (type == "Y" || type.find("Y_") == 0 || type.find("YWIN") == 0 || type.find("YPEAK") == 0) {
+  else if (type == "Y" || type.find("Y_") == 0 || type.find("YWIN") == 0 || type.find("YPEAK") == 0 || type.find("YCENTROID") == 0) {
     format.YCENTROID = colnr - 1;
     present[6] = 1;
   } 

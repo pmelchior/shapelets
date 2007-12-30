@@ -63,9 +63,9 @@ void SExFrame::readSegmentationMap(std::string segmapfile) {
     estimatedBG = 1;
 }
 
-unsigned int SExFrame::getNumberOfObjects() {
+unsigned long SExFrame::getNumberOfObjects() {
   if (catRead)
-    return catalog.size() - 1;
+    return catalog.size();
   else
     return 0;
 }
@@ -76,115 +76,122 @@ const Catalog& SExFrame::getCatalog() {
 
 void SExFrame::fillObject(Object& O) {
   if (!estimatedBG) estimateNoise();
-    
-  unsigned int id = O.getID();
-  int xmin, xmax, ymin, ymax;
-  xmin = catalog[id].XMIN;
-  xmax = catalog[id].XMAX;
-  ymin = catalog[id].YMIN;
-  ymax = catalog[id].YMAX;
-
-  O.history << "# Extracting Object " << O.getID() << " (NUMBER = " <<  catalog[id].NUMBER << "), ";
-  O.history << "found in the area (" << xmin << "/" << ymin << ") to (";
-  O.history << xmax << "/" << ymax << ")" << std::endl;
   
-  // check if outer sizes of the object are identical to the image
-  // boundary, since then the objects is cutted 
-  bool cutflag = 0;
-  if (xmin == 0 || ymin == 0 || xmax == axsize0 -1 || ymax == axsize1 - 1) {
-    O.history << "# Object cut off at the image boundary!" << endl;
-    cutflag = 1;
-  }
+  // check if object is in the catalog
+  // this will also provied us with the correct entry of catalog (if present)
+  Catalog::iterator catiter = catalog.find(O.getID());
+  if (catiter != catalog.end()) {
+    int xmin, xmax, ymin, ymax;
+    xmin = (*catiter).second.XMIN;
+    xmax = (*catiter).second.XMAX;
+    ymin = (*catiter).second.YMIN;
+    ymax = (*catiter).second.YMAX;
+
+    O.history << "# Extracting Object " << (*catiter).first;
+    O.history << " found in the area (" << xmin << "/" << ymin << ") to (";
+    O.history << xmax << "/" << ymax << ")" << std::endl;
   
-  addFrameBorder(ShapeLensConfig::ADD_BORDER, xmin,xmax,ymin,ymax);
-  O.history << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
-  O.history << xmax << "/" << ymax << ")" << std::endl;
-
-  // check if object was close to the image boundary so that noise has to be added
-  if (xmin < 0 || ymin < 0 || xmax >= axsize0 || ymax >= axsize1) {
-    if (!cutflag)
-      O.history << "# Object close to image boundary: Possible cut-off. Extended area filled with noise." << std::endl;
-    else
-       O.history << "# Extended area filled with noise." << std::endl;
-  }
-
-  // define new object data set, find 1-sigma noise oscillations with more 
-  // than 4 pixels and set their pixelmap flag to -2
-  // in the end only object data into new vector of smaller size, the rest will
-  // filled up with artificial noise
-  const NumVector<data_t>& data = Image<data_t>::getData();
-  NumVector<data_t>& objdata = O.accessData();
-  objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
-  SegmentationMap& objSegMap = O.accessSegmentationMap();
-  objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
-  NumVector<data_t>& objWeightMap = O.accessWeightMap();
-  if (weight.size()!=0) 
-    objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
-  vector<uint> nearby_objects;
-
-  for (int i =0; i < objdata.size(); i++) {
-    // old coordinates derived from new pixel index i
-    int axis0 = xmax-xmin+1;
-    int x = i%axis0 + xmin;
-    int y = i/axis0 + ymin;
-    uint j = Image<data_t>::getGrid().getPixel(x,y);
-
-    // if pixel is out of image region, fill noise from default values
-    // since we fill same noise into data and into bgrms
-    // the overall chi^2 (normalized by bg_rms) is unaffected by this region
-    if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
-      objdata(i) = gsl_ran_gaussian (r, bg_rms);
-      objSegMap(i) = 0;
-      if (weight.size()!=0) 
-	objWeightMap(i) = 1./gsl_pow_2(bg_rms);
-      if (!subtractBG)
-	objdata(i) += bg_mean;
-    } 
-    //now inside image region
-    else {
-      // mask other detected objects in the frame
-      if ((segMap(j) > 0 && segMap(j) != catalog[id].NUMBER) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
- 	// if we have a weight map 
-	if (weight.size()!=0)
-	  objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
-	else
-	  objdata(i) = gsl_ran_gaussian (r, bg_rms);
-	// this objects has to yet been found to be nearby
-	if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
-	  O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
-	  nearby_objects.push_back(segMap(j));
-	}
- 	if (!subtractBG)
-  	  objdata(i) += bg_mean;
-      }
-      else {
-	objdata(i) = data(j);
-	if (subtractBG) 
-	  objdata(i) -= bg_mean;
-      }
-      objSegMap(i) = segMap(j);
-      if (weight.size()!=0) 
-	objWeightMap(i) = weight(j);
+    // check if outer sizes of the object are identical to the image
+    // boundary, since then the objects is cutted 
+    bool cutflag = 0;
+    if (xmin == 0 || ymin == 0 || xmax == axsize0 -1 || ymax == axsize1 - 1) {
+      O.history << "# Object cut off at the image boundary!" << endl;
+      cutflag = 1;
     }
-  }
-    
-  // Grid will be changed but not shifted (all pixels stay at their position)
-  O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
+  
+    addFrameBorder(ShapeLensConfig::ADD_BORDER, xmin,xmax,ymin,ymax);
+    O.history << "# Extending the area around object to (" << xmin << "/" << ymin << ") to (";
+    O.history << xmax << "/" << ymax << ")" << std::endl;
 
-  // Fill other quantities into Object
-  O.history << "# Segment:" << endl;
-  O.computeFluxCentroid();
-  O.setFlux(catalog[id].FLUX);
-  Point2D centroid(catalog[id].XCENTROID,catalog[id].YCENTROID);
-  O.setCentroid(centroid);
-  O.setDetectionFlags(std::bitset<8>(catalog[id].FLAGS));
-  O.setClassifier(catalog[id].CLASSIFIER);
-  O.setBaseFilename(Image<data_t>::getFilename());
-  O.setNumber(catalog[id].NUMBER);
-  data_t obj_bg_mean = 0;
-  if (!subtractBG)
-    obj_bg_mean = bg_mean;
-  O.setNoiseMeanRMS(obj_bg_mean,bg_rms);
+    // check if object was close to the image boundary so that noise has to be added
+    if (xmin < 0 || ymin < 0 || xmax >= axsize0 || ymax >= axsize1) {
+      if (!cutflag)
+	O.history << "# Object close to image boundary: Possible cut-off. Extended area filled with noise." << std::endl;
+      else
+	O.history << "# Extended area filled with noise." << std::endl;
+    }
+
+    // define new object data set, find 1-sigma noise oscillations with more 
+    // than 4 pixels and set their pixelmap flag to -2
+    // in the end only object data into new vector of smaller size, the rest will
+    // filled up with artificial noise
+    const NumVector<data_t>& data = Image<data_t>::getData();
+    NumVector<data_t>& objdata = O.accessData();
+    objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
+    SegmentationMap& objSegMap = O.accessSegmentationMap();
+    objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
+    NumVector<data_t>& objWeightMap = O.accessWeightMap();
+    if (weight.size()!=0) 
+      objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
+    vector<uint> nearby_objects;
+
+    for (int i =0; i < objdata.size(); i++) {
+      // old coordinates derived from new pixel index i
+      int axis0 = xmax-xmin+1;
+      int x = i%axis0 + xmin;
+      int y = i/axis0 + ymin;
+      uint j = Image<data_t>::getGrid().getPixel(x,y);
+
+      // if pixel is out of image region, fill noise from default values
+      // since we fill same noise into data and into bgrms
+      // the overall chi^2 (normalized by bg_rms) is unaffected by this region
+      if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
+	objdata(i) = gsl_ran_gaussian (r, bg_rms);
+	objSegMap(i) = 0;
+	if (weight.size()!=0) 
+	  objWeightMap(i) = 1./gsl_pow_2(bg_rms);
+	if (!subtractBG)
+	  objdata(i) += bg_mean;
+      } 
+      //now inside image region
+      else {
+	// mask other detected objects in the frame
+	if ((segMap(j) > 0 && segMap(j) != (*catiter).first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
+	  // if we have a weight map 
+	  if (weight.size()!=0)
+	    objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
+	  else
+	    objdata(i) = gsl_ran_gaussian (r, bg_rms);
+	  // this objects has to yet been found to be nearby
+	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
+	    O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
+	    nearby_objects.push_back(segMap(j));
+	  }
+	  if (!subtractBG)
+	    objdata(i) += bg_mean;
+	}
+	else {
+	  objdata(i) = data(j);
+	  if (subtractBG) 
+	    objdata(i) -= bg_mean;
+	}
+	objSegMap(i) = segMap(j);
+	if (weight.size()!=0) 
+	  objWeightMap(i) = weight(j);
+      }
+    }
+    
+    // Grid will be changed but not shifted (all pixels stay at their position)
+    O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
+
+    // Fill other quantities into Object
+    O.history << "# Segment:" << endl;
+    O.computeFluxCentroid();
+    O.setFlux((*catiter).second.FLUX);
+    Point2D centroid((*catiter).second.XCENTROID,(*catiter).second.YCENTROID);
+    O.setCentroid(centroid);
+    O.setDetectionFlags(std::bitset<8>((*catiter).second.FLAGS));
+    O.setClassifier((*catiter).second.CLASSIFIER);
+    O.setBaseFilename(Image<data_t>::getFilename());
+    data_t obj_bg_mean = 0;
+    if (!subtractBG)
+      obj_bg_mean = bg_mean;
+    O.setNoiseMeanRMS(obj_bg_mean,bg_rms);
+  }
+  else {
+    std::cerr << "# SExFrame: This Object does not exist!" << endl;
+    terminate();
+  }
 }
 
 void SExFrame::subtractBackground() {

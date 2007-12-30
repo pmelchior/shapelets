@@ -30,21 +30,15 @@
 class Object : public Image<data_t> {
  public:
   /// Argumented constructor.
-  /// The ID is the object ID determined during the segmentation process
-  Object(unsigned int id);
+  /// The \p id is  determined during the segmentation process.
+  Object(unsigned long id);
   /// Argumented constructor for loading an object from a Fits file.
   /// The Fits file shold have been created by Object::save().
   Object (std::string fitsfile);
-  /// Set the ID.
+  /// Set the \p id.
   void setID(unsigned long id);
-  /// Return the ID.
+  /// Return the \p id.
   unsigned long getID() const;
-  /// Set an object number.
-  /// This can but does not have to be identical to the <tt>ID</tt> of this object,
-  /// this number can thus carry an additional identifier or other information.
-  void setNumber(unsigned long num);
-  /// Get object number.
-  unsigned long getNumber() const;
   /// Get object classifier.
   /// This can be an arbitrary floating point number, e.g. <tt>CLASS_STAR</tt> from
   /// SExFrame.\n
@@ -122,7 +116,7 @@ class Object : public Image<data_t> {
 
   
  private:
-  unsigned long id, number;
+  unsigned long id;
   NumVector<data_t> weight;
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;

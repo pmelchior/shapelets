@@ -98,13 +98,9 @@ void Frame::findObjects() {
   // set up pixellist and objectsPixels
   list<uint> pixellist;
   list<uint>::iterator iter;
-  objectsPixels.push_back(pixellist); // since object numbers start with 1, add a empty list
-  
+
   // reset catalog and create dummy CatObject
-  CatObject co = {0,0,0,0,0,0,0,0,0,0};
-  // CatObject for object 0 (whole frame)
-  CatObject all = {0,0,Image<data_t>::getSize(0)-1,0,Image<data_t>::getSize(1)-1,0,0,0,0,0};
-  catalog.push_back(all);
+  CatObject co = {0,0,0,0,0,0,0,0,0};
 
   // look for all positive fluctuations with at least 1 pixel above
   // highThreshold and minPixels above significanceThreshold
@@ -116,9 +112,8 @@ void Frame::findObjects() {
       segMap.linkPixelsSetMap (pixellist,i,counter,ShapeLensConfig::MIN_THRESHOLD,noise_mean,noise_rms,1);
       if (pixellist.size() >= ShapeLensConfig::MIN_PIXELS) {
 	history << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<data_t>::getSize(0)) << "/" << i/(Image<data_t>::getSize(0)) << ")"  << std::endl;
-	objectsPixels.push_back(pixellist);
-	co.NUMBER = counter;
-	catalog.push_back(co);
+	objectsPixels[counter]= pixellist;
+	catalog[counter] = co;
       }
       else {
 	for(iter = pixellist.begin(); iter != pixellist.end(); iter++ )
@@ -149,14 +144,17 @@ void Frame::findObjects() {
 //   }
 }
 
-unsigned int Frame::getNumberOfObjects() {
-  return catalog.size()-1;
+unsigned long Frame::getNumberOfObjects() {
+  return catalog.size();
 }
 
 // cut the image to a small region around the object
 // and set all pixels to zero than are not related to the image
 void Frame::fillObject(Object& O) {
-  if (O.getID() > 0 && O.getID() <= getNumberOfObjects()) {
+  // check if object is in the catalog
+  // this will also provied us with the correct entry of catalog (if present)
+  Catalog::iterator catiter = catalog.find(O.getID());
+  if (catiter != catalog.end()) {
     // set up detection flags bitset
     std::bitset<8> flags(0);
 
@@ -169,7 +167,7 @@ void Frame::fillObject(Object& O) {
 
     // define the points (xmin/ymin) and (xmax/ymax) 
     // that enclose the object
-    list<uint>& pixellist = objectsPixels[O.getID()];
+    list<uint>& pixellist = objectsPixels[(*catiter).first];
     int axsize0, axsize1,xmin, xmax, ymin, ymax;
     xmin = axsize0 = Image<data_t>::getSize(0);
     xmax = 0;
@@ -185,8 +183,8 @@ void Frame::fillObject(Object& O) {
 	if (y > ymax) ymax = y;
     }
 
-    O.history << "# Extracting Object " << O.getID() << ", ";
-    O.history << "found in the area (" << xmin << "/" << ymin << ") to (";
+    O.history << "# Extracting Object " << (*catiter).first;
+    O.history << " found in the area (" << xmin << "/" << ymin << ") to (";
     O.history << xmax << "/" << ymax << ")" << endl;
     
     // check if outer sizes of the object are identical to the image
@@ -239,7 +237,7 @@ void Frame::fillObject(Object& O) {
       } 
       else {
 	// filter other objects in the frame
-	if ((segMap(j) > 0 && segMap(j) != O.getID()) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
+	if ((segMap(j) > 0 && segMap(j) != (*catiter).first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
 	  // if we have a weight map 
 	  if (weight.size()!=0)
 	    objdata(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
@@ -273,15 +271,15 @@ void Frame::fillObject(Object& O) {
     O.computeFluxCentroid();
 
     // Update catalog with object values
-    catalog[O.getID()].XMIN = xmin;
-    catalog[O.getID()].XMAX = xmax;
-    catalog[O.getID()].YMIN = ymin;
-    catalog[O.getID()].YMAX = ymax;
-    catalog[O.getID()].XCENTROID = O.getCentroid()(0);
-    catalog[O.getID()].YCENTROID = O.getCentroid()(1);
-    catalog[O.getID()].FLUX = O.getFlux();
-    catalog[O.getID()].FLAGS = (unsigned char) flags.to_ulong();
-    catalog[O.getID()].CLASSIFIER = 0;
+    (*catiter).second.XMIN = xmin;
+    (*catiter).second.XMAX = xmax;
+    (*catiter).second.YMIN = ymin;
+    (*catiter).second.YMAX = ymax;
+    (*catiter).second.XCENTROID = O.getCentroid()(0);
+    (*catiter).second.YCENTROID = O.getCentroid()(1);
+    (*catiter).second.FLUX = O.getFlux();
+    (*catiter).second.FLAGS = (unsigned char) flags.to_ulong();
+    (*catiter).second.CLASSIFIER = 0;
   } 
   // this is the whole frame
   else if (O.getID()==0) {
@@ -299,10 +297,9 @@ void Frame::fillObject(Object& O) {
   }
   O.setNoiseMeanRMS(noise_mean,noise_rms);
   O.setBaseFilename(Image<data_t>::getFilename());
-  O.setNumber(O.getID());
 }
 
-SegmentationMap& Frame::getSegmentationMap() {
+const SegmentationMap& Frame::getSegmentationMap() {
   return segMap;
 }
 
@@ -338,17 +335,11 @@ const History& Frame::getHistory () {
   return history;
 }
 
-const std::list<unsigned int>& Frame::getPixelList(unsigned int objectnr) {
-  if (objectnr>0 && objectnr <= getNumberOfObjects())
-    return objectsPixels[objectnr];
-  else {
-    std::cerr << "# Frame: This Object does not exist!" << std::endl;
-    terminate();  
-  }
-}
-std::list<unsigned int>& Frame::accessPixelList(unsigned int objectnr) {
-  if (objectnr>0 && objectnr <= getNumberOfObjects())
-    return objectsPixels[objectnr];
+const std::list<unsigned int>& Frame::getPixelList(unsigned long objectnr) {
+  std::map< unsigned long, std::list<unsigned int> >::iterator iter = 
+    objectsPixels.find(objectnr);
+  if (iter != objectsPixels.end())
+    return (*iter).second;
   else {
     std::cerr << "# Frame: This Object does not exist!" << std::endl;
     terminate();  

@@ -114,7 +114,7 @@ class Frame : public Image<data_t> {
   void findObjects();
   /// Return number of objects found during findObjects().
   /// If it returns 0, no objects have been found.
-  unsigned int getNumberOfObjects();
+  unsigned long getNumberOfObjects();
   /// Select the object to use for further analysis.
   /// Object 0 is the whole image, Objects 1 to N have to be found in findObjects().
   /// Object 1 is the brightest, all others are essentially unordered.\n
@@ -127,11 +127,9 @@ class Frame : public Image<data_t> {
   /// The convention is:
   /// - 0: noise
   /// - 1..N: objectID of an identified significant pixel group
-  SegmentationMap& getSegmentationMap();
+  const SegmentationMap& getSegmentationMap();
   /// Get list of pixels for the given <tt>objectnr</tt>.
-  const std::list<unsigned int>& getPixelList(unsigned int objectnr);
-  /// Access list of pixels for the given <tt>objectnr</tt>.
-  std::list<unsigned int>& accessPixelList(unsigned int objectnr);
+  const std::list<unsigned int>& getPixelList(unsigned long objectnr);
   /// Get Catalog of detected objects.
   /// After calling findObject(), only the CatObject.NUMBER is set; if the method
   /// fillObject(Object& obj) is called, all values of the catalog entry <tt>obj.getID()</tt>
@@ -150,7 +148,7 @@ class Frame : public Image<data_t> {
   data_t getThreshold(unsigned int pixel, data_t factor);
   SegmentationMap segMap;
   History& history;
-  std::vector< std::list<unsigned int> > objectsPixels;
+  std::map< unsigned long, std::list<unsigned int> > objectsPixels;
   bool subtractedBG, estimatedBG;
   Catalog catalog;
 };

@@ -58,7 +58,6 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   fits_write_record(outfptr,"        / Frame parameters     /",&status);
   updateFITSKeywordString(outfptr,"BASEFILE",sobj.getBaseFilename(),"originating data file");
   updateFITSKeyword(outfptr,"ID",sobj.getObjectID(),"object id in BASEFILE");
-  updateFITSKeyword(outfptr,"NR",sobj.getObjectNumber(),"object nr in BASEFILE");
   updateFITSKeyword(outfptr,"CLASSIFIER",sobj.getObjectClassifier(),"object classifier");
   updateFITSKeyword(outfptr,"NOISE_MEAN",sobj.getNoiseMean(),"mean of pixel noise");
   updateFITSKeyword(outfptr,"NOISE_RMS",sobj.getNoiseRMS(),"rms of pixel noise");
@@ -127,7 +126,6 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // read frame parameters
   status = readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
   status = readFITSKeyword(fptr,"ID",sobj.id);
-  status = readFITSKeyword(fptr,"NR",sobj.nr);
   status = readFITSKeyword(fptr,"CLASSIFIER",sobj.classifier);
   if (status != 0)
     sobj.classifier = 0;

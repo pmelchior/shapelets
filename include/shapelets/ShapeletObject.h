@@ -145,9 +145,6 @@ class ShapeletObject : public Composite2D {
   /// Get the object id assigned to this object.
   /// See Object::getID() for details.
   unsigned long getObjectID() const;
-  /// Get the object number assigned to this object.
-  /// See Object::getNumber() for details.
-  unsigned long getObjectNumber() const;
   /// Get the classifier assigned to this object.
   /// See Object::getClassifier() for details.
   data_t getObjectClassifier() const;
@@ -180,7 +177,7 @@ class ShapeletObject : public Composite2D {
   bool fits;
   History history;
   std::bitset<16> flags;
-  unsigned long id, nr;
+  unsigned long id;
   std::string basefilename, name;
   ShapeletObject* unreg;
 };

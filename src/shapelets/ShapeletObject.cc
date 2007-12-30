@@ -7,7 +7,7 @@ typedef complex<data_t> Complex;
 
 ShapeletObject::ShapeletObject() : 
 Composite2D(), coeffs(Composite2D::coeffs) {
-   tag = classifier = chisquare = R = noise_mean = noise_rms = nr = id = fits = 0;
+   tag = classifier = chisquare = R = noise_mean = noise_rms = id = fits = 0;
   flags.reset();
   name = basefilename = "";
   unreg = NULL;
@@ -32,7 +32,6 @@ ShapeletObject& ShapeletObject::operator=(const ShapeletObject& source) {
   R = source.R;
   noise_mean = source.noise_mean;
   noise_rms = source.noise_rms;
-  nr = source.nr;
   id = source.id;
   fits = source.fits;
   flags = source.flags;
@@ -63,7 +62,7 @@ Composite2D(), coeffs(Composite2D::coeffs) {
 
 ShapeletObject::ShapeletObject(const NumMatrix<data_t>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
 Composite2D(), coeffs(Composite2D::coeffs) {
-  tag = classifier = chisquare = R = noise_mean = noise_rms = nr = id = fits = 0;
+  tag = classifier = chisquare = R = noise_mean = noise_rms = id = fits = 0;
   flags.reset();
   name = basefilename = "";
   unreg = NULL;
@@ -80,7 +79,7 @@ Composite2D(), coeffs(Composite2D::coeffs) {
 
 ShapeletObject::ShapeletObject(const NumMatrix<Complex>& inpolarCoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
 Composite2D(), coeffs(Composite2D::coeffs) {
-  tag = classifier = chisquare = R = noise_mean = noise_rms = nr = id = fits = 0;
+  tag = classifier = chisquare = R = noise_mean = noise_rms = id = fits = 0;
   flags.reset();
   name = basefilename = "";
   unreg = NULL;
@@ -106,7 +105,6 @@ Composite2D(), coeffs(Composite2D::coeffs) {
   noise_mean = obj.getNoiseMean();
   noise_rms = obj.getNoiseRMS();
   id = obj.getID();
-  nr = obj.getNumber();
   classifier = obj.getClassifier();
   basefilename = obj.getBaseFilename();
   // decomposing with given constraits on shapelet decomposition parameters
@@ -380,10 +378,6 @@ std::string ShapeletObject::getBaseFilename() const {
 
 unsigned long ShapeletObject::getObjectID() const {
   return id;
-}
-
-unsigned long ShapeletObject::getObjectNumber() const {
-  return nr;
 }
 
 data_t ShapeletObject::getObjectClassifier() const {

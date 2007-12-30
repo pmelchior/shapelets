@@ -3,12 +3,11 @@
 #include <gsl/gsl_math.h>
 #include <fitsio.h>
 
-Object::Object(unsigned int inid) : Image<data_t>(), segMap(*this) {
+Object::Object(unsigned long inid) : Image<data_t>(), segMap(*this) {
   id = inid;
   flag = 0;
   classifier = 0;
   flux = centroid(0) = centroid(1) = 0;
-  number = 0;
 }
 
 Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
@@ -26,7 +25,6 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   // recover object information from header keywords
   status = readFITSKeywordString(fptr,"BASEFILE",basefilename);
   status = readFITSKeyword(fptr,"ID",id);
-  status = readFITSKeyword(fptr,"NUMBER",number);
   data_t xmin,xmax,ymin,ymax;
   status = readFITSKeyword(fptr,"XMIN",xmin);
   status = readFITSKeyword(fptr,"XMAX",xmax);
@@ -116,14 +114,6 @@ void Object::setID(unsigned long inid) {
 
 unsigned long Object::getID() const {
   return id;
-}
-
-void Object::setNumber(unsigned long num) {
-  number = num;
-}
-
-unsigned long Object::getNumber() const {
-  return number;
 }
 
 const NumVector<data_t>& Object::getWeightMap() const {
@@ -268,7 +258,6 @@ void Object::save(std::string filename) {
   // add object information to header
   status = updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
   status = updateFITSKeyword(outfptr,"ID",id,"object id");
-  status = updateFITSKeyword(outfptr,"NUMBER",number,"object number");
   status = updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
   status = updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
   status = updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
@@ -283,13 +272,13 @@ void Object::save(std::string filename) {
 
   // save segMap
   if (segMap.size() != 0) {
-    status = addFITSExtension(outfptr,"SEGMAP",grid,segMap.getData());
+    status = writeFITSImage(outfptr,grid,segMap.getData(),"SEGMAP");
     status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
   }
 
   //if weight map provided, save it too
   if (weight.size() != 0)
-    status = addFITSExtension(outfptr,"WEIGHT",grid,weight);
+    status = writeFITSImage(outfptr,grid,weight,"WEIGHT");
 
-  fits_close_file(outfptr, &status);
+  status = closeFITSFile(outfptr);
 }

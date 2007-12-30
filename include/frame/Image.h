@@ -66,6 +66,7 @@ class Image : public NumVector<T> {
     // if history is not empty, append history to FITS header
     if (!history.isEmpty())
       appendFITSHistory(fptr,history.str());
+    closeFITSFile(fptr);
   }
   ///  Get image history.
   const History& getHistory() const {
@@ -83,7 +84,7 @@ class Image : public NumVector<T> {
   void read() {
     fitsfile *fptr = openFITSFile(filename);
     int status = readFITSImage(fptr,grid,*this);
-    fits_close_file(fptr, &status);
+    status = closeFITSFile(fptr);
   }
 };
 

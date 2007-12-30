@@ -108,7 +108,7 @@ class SExFrame : public Image<data_t> {
   void fillObject(Object& obj);
   /// Return number of objects found by SExtractor.
   /// If it returns 0, the catalog file is either empty or its format is wrongly specified.
-  unsigned int getNumberOfObjects();
+  unsigned long getNumberOfObjects();
   /// Get the map of found objects.
   /// The object map defines for each pixel, if it is part of an object.
   /// The convention is:

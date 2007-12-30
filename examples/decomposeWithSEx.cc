@@ -28,11 +28,17 @@ int main(int argc, char *argv[]) {
   if (list.isSet())
     listfile.open(list.getValue().c_str(),std::ios::out);
   
-
-  // iterate through detected objects
-  for (int n = 1; n <= f.getNumberOfObjects(); n++) {
-    // create empty object container with ID = n
-    Object obj(n);
+  // run through all objects in the catalog
+  // this method ensures that only objects in the catalog are used
+  // every file generated will have the appendix "_id", with id being the
+  // object's running number
+  const Catalog& cat = f.getCatalog();
+  Catalog::const_iterator iter;
+  for(iter = cat.begin(); iter != cat.end(); iter++) {
+    // for clearity:
+    unsigned long id = (*iter).first;
+    // choose the actual object in the frame
+    Object obj(id);
     // cut out object in place it in obj
     f.fillObject(obj);
     // dismiss objects with flags[i] = 1 for i >= 3 because of serious trouble
@@ -43,7 +49,7 @@ int main(int argc, char *argv[]) {
       ShapeletObject sobj (obj);
       // save results
       std::ostringstream newname;
-      newname << prefix.getValue() << "_" << n << ".sif";
+      newname << prefix.getValue() << "_" << id << ".sif";
       sobj.save(newname.str());
       if (list.isSet())
 	listfile << newname.str() << std::endl;
@@ -52,7 +58,7 @@ int main(int argc, char *argv[]) {
       if (model.isSet()) {
 	// create FITS file with the original pixel data of the object...
 	newname.str("");
-	newname << prefix.getValue() << "_" << n << ".fits";
+	newname << prefix.getValue() << "_" << id << ".fits";
 	std::string fitsname = newname.str();
 	obj.save(fitsname);
 	// ... add shapelet model ...
