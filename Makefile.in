@@ -32,12 +32,12 @@ COMMONOBJECTS = $(COMMONSRC:$(SRCPATH)/%.cc=$(LIBPATH)/%.o)
 PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
 PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
-HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(NUMLAINCLPATH)/*.h)
+HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(NUMLAPATH)/*.h)
 
 CC = ???COMPILER???
-CFLAGS = ???CFLAGS??? -I$(NUMLAINCLPATH) -I$(INCLPATH) ???OTHERINCL???
+CFLAGS = ???CFLAGS??? -I$(NUMLAPATH) -I$(INCLPATH) ???OTHERINCL???
 CFLAG_LIBS = -L$(LIBPATH) ???OTHERLIB???
-LIBS = -l$(LIBNAME) -lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio
+LIBS = -l$(LIBNAME) ???LIBS???
 
 AR = ar
 ARFLAGS = -sr
