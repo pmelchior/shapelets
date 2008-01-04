@@ -234,3 +234,11 @@ if not os.path.isdir("lib/"+SUBDIR):
 if DOCUMENTATION == True and not os.path.isdir("docs"):
 	print "@@@ Creating directory docs @@@"
 	os.system("mkdir -p docs")
+
+# check environment variable PATH and LD_LIBRARY_PATH
+pwd = os.getcwd()
+if os.environ["PATH"].find(pwd +"/progs/" + SUBDIR) == -1:
+	print "CAUTION: "+ pwd +"/progs/" + SUBDIR + " not in $PATH"
+if SHARED== True and os.environ["LD_LIBRARY_PATH"].find(pwd +"/lib/" + SUBDIR) == -1:
+	print "CAUTION: "+ pwd +"/lib/" + SUBDIR + " not in $LD_LIBRARY_PATH"
+	print "\t Please set the environment variable LD_LIBRARY_PATH for using the shared library"
