@@ -181,8 +181,8 @@ data_t Composite2D::getShapeletFlux() const {
 
 // compute centroid position from shapelet coeffs
 // see Paper I, eq. 27
-void Composite2D::getShapeletCentroid(Point2D& xc) const {
-  xc = Point2D(0,0);
+Point2D Composite2D::getShapeletCentroid() const {
+  Point2D xc(0,0);
   for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) {
     for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1) {
       if (l0%2 == 1 && l1%2 ==0) {
@@ -203,13 +203,12 @@ void Composite2D::getShapeletCentroid(Point2D& xc) const {
   data_t beta = Shapelets2D::getBeta();
   xc(0) = M_SQRTPI*beta*beta*xc(0)/flux;
   xc(1) = M_SQRTPI*beta*beta*xc(1)/flux;
+  return xc;
 }
 
 // compute 2nd brightness moments from shapelet coeffs
-void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
-  if (Q.getRows() != 2 || Q.getColumns() != 2)
-    Q.resize(2,2);
-  Q.clear();
+NumMatrix<data_t> Composite2D::getShapelet2ndMoments() const {
+  NumMatrix<data_t> Q(2,2);
   data_t factor;
   for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++) {
     for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++) {
@@ -232,6 +231,7 @@ void Composite2D::getShapelet2ndMoments(NumMatrix<data_t>& Q) const {
   Q(0,1) *= M_SQRTPI * beta*beta*beta / flux;
   Q(1,1) *= M_SQRTPI * beta*beta*beta / flux;
   Q(1,0) = Q(0,1);
+  return Q;
 }
 
 // see Paper I, eq. (28)

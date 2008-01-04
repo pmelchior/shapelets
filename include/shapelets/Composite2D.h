@@ -60,12 +60,12 @@ class Composite2D : private Shapelets2D {
   /// Calculate the object flux from the coefficients.
   /// see Paper I, eq. 26
   data_t getShapeletFlux() const;
-  /// Calculate the object centroid from the coefficients.
+  /// Get the object centroid from the coefficients.
   /// see Paper I, eq. 27
-  void getShapeletCentroid(Point2D& xc) const;
-  /// Calculate 2nd brightness moments \f$Q_{ij}\f$.
-  void getShapelet2ndMoments(NumMatrix<data_t>& Q) const;
-  /// Calculate the object RMS radius from the coefficients.
+  Point2D getShapeletCentroid() const;
+  /// Get 2nd brightness moments \f$Q_{ij}\f$.
+  NumMatrix<data_t> getShapelet2ndMoments() const;
+  /// Get the object RMS radius from the coefficients.
   /// see Paper I, eq. 28
   data_t getShapeletRMSRadius() const;
 

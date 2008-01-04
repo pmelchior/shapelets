@@ -9,8 +9,7 @@ LensingEstimator::LensingEstimator() {
 }
 
 complex<data_t> LensingEstimator::getShearMoments(ShapeletObject& so) {
-  NumMatrix<data_t> Q;
-  so.getShapelet2ndMoments(Q);
+  NumMatrix<data_t> Q = so.getShapelet2ndMoments();
   return data_t(0.5)*getEllipticity(Q);
 }
 
@@ -61,7 +60,7 @@ complex<data_t> LensingEstimator::getNormShearUnweighted(ShapeletObjectList& ens
     for (int n = 0; n <= (*iter)->getNMax(); n+=2)
       norm += data_t(sqrt((data_t) n+1)) * f(n,mIndex(n,0));
     if ((*iter)->getNMax() >= 2) {
-      (*iter)->getShapelet2ndMoments(Q);
+      Q = (*iter)->getShapelet2ndMoments();
       counter++;
       // TODO: is this the complex ellipticity or its modulus?
       ellipticity2 += gsl_pow_2(abs(getEllipticity(Q)));

@@ -196,8 +196,8 @@ void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimi
 void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma);
 /// Add poissonian noise.
 /// The noise of the \f$i\f$th pixel is drawn from a gaussian distribution with
-/// \f$ \sigma_i = \sigma_n + \sqrt{data_i}\f$.
-void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma);
+/// \f$ \sigma_i = \sqrt{\mu_n + data_i}\f$.
+void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean);
 /// Convolve input with a 3x3 Gaussian.
 void convolveGaussian(const NumVector<data_t>& input, NumVector<data_t>& result, int width,int height);
 

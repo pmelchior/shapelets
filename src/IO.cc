@@ -121,7 +121,7 @@ void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesig
   gsl_rng_free (r);
 }
 
-void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma) {
+void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean) {
   const gsl_rng_type * T;
   gsl_rng * r;
   T = gsl_rng_mt19937;
@@ -134,7 +134,7 @@ void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean, data_t noises
   seeder += tp.millitm;
   gsl_rng_set(r,seeder);
   for (int i=0; i < data.size(); i++) {
-    data(i) += noisemean + gsl_ran_gaussian (r,noisesigma+sqrt(fabs(data(i))));
+    data(i) += noisemean + gsl_ran_gaussian (r,sqrt(fabs(noisemean+data(i))));
   }
   gsl_rng_free (r);
 }
