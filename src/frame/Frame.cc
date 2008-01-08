@@ -13,7 +13,7 @@ using namespace std;
 
 typedef unsigned int uint;
 
-Frame::Frame(string filename) : Image<data_t>(filename), weight(), segMap(*this, weight), history(segMap.accessHistory()) {
+Frame::Frame(string filename) : Image<data_t>(filename), weight(), segMap(*this), history(segMap.accessHistory()) {
   history << "# Reading FITS file " << filename << endl;
   history << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
   subtractedBG = estimatedBG = 0;

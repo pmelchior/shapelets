@@ -8,17 +8,24 @@ using namespace std;
 
 typedef unsigned int uint;
 
-SegmentationMap::SegmentationMap(const Image<data_t>& image) : Image<int>(), data(const_cast<NumVector<data_t>& >(image.getData())), weight() {
+SegmentationMap::SegmentationMap(const Image<data_t>& image) : 
+Image<int>(), data(const_cast<NumVector<data_t>& >(image.getData())), weight() {
   Image<int>::accessData().resize_clear(image.size());
   Image<int>::accessGrid() = image.getGrid();
 }
 
-SegmentationMap::SegmentationMap(const Image<data_t>& image, const Image<data_t>& weightmap) : Image<int>(), data(const_cast<NumVector<data_t>& >(image.getData())), weight(const_cast<NumVector<data_t>& >(weightmap.getData())) {
+SegmentationMap::SegmentationMap(const Image<data_t>& image, const Image<data_t>& weightmap) : 
+Image<int>(), data(const_cast<NumVector<data_t>& >(image.getData())), weight(const_cast<NumVector<data_t>& >(weightmap.getData())) {
   Image<int>::accessData().resize_clear(image.size());
   Image<int>::accessGrid() = image.getGrid();
 }
 
-SegmentationMap::SegmentationMap(string segMapFile, const Image<data_t>& image) : Image<int>(segMapFile), data(const_cast<NumVector<data_t>& >(image.getData())), weight() {
+SegmentationMap::SegmentationMap(string segMapFile, const Image<data_t>& image) : 
+Image<int>(segMapFile), data(const_cast<NumVector<data_t>& >(image.getData())), weight() {
+}
+
+SegmentationMap::SegmentationMap(string segMapFile, const Image<data_t>& image, const Image<data_t>& weightmap) :
+Image<int>(segMapFile), data(const_cast<NumVector<data_t>& >(image.getData())), weight(const_cast<NumVector<data_t>& >(weightmap.getData())) {
 }
 
 SegmentationMap::SegmentationMap(const SegmentationMap& segIn) : Image<int>(), data(segIn.data), weight(segIn.weight) {

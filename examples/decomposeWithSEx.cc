@@ -21,11 +21,9 @@ int main(int argc, char *argv[]) {
   // open fits file to be analyzed
   SExFrame* f;
   if (weightmap.isSet())
-    f = new SExFrame(input.getValue(),weightmap.getValue());
+    f = new SExFrame(input.getValue(),weightmap.getValue(),segmap.getValue(),catalog.getValue());
   else
-    f = new SExFrame(input.getValue());
-  f->readCatalog(catalog.getValue());
-  f->readSegmentationMap(segmap.getValue());
+    f = new SExFrame(input.getValue(),segmap.getValue(),catalog.getValue());
   f->subtractBackground();
 
   // if required: save a file which lists all stored SIF files
@@ -48,7 +46,7 @@ int main(int argc, char *argv[]) {
     f->fillObject(obj);
     // dismiss objects with flags[i] = 1 for i >= 3 because of serious trouble
     // during the detection/segmentation process
-    if (obj.getDetectionFlags().to_ulong() < 8) {
+    if ((*iter).second.FLAGS < 8) {
 
       // actual decomposition is done here
       ShapeletObject sobj (obj);

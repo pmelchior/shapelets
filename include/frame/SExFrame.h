@@ -66,30 +66,33 @@
 ///   ...
 /// }
 ///\endcode
+///
+///
+/// This Fits file can be produced by SExtractor by setting 
+/// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>\n
+/// The noise estimation step can be bypassed if the header keywords <tt>NOISE_MEAN</tt>
+/// and <tt>NOISE_RMS</tt> are set in this FITS file.
+
 
 class SExFrame : public Image<data_t> {
  public:
   /// Argumented constructor.
-  /// <tt>filename</tt> is the name of the Fits file.\n Extensions or other selections can be 
-  // passed in the standard cfitsio way: <tt>filename[extension]</tt>.
-  SExFrame(std::string filename);
-  /// Argemented constructor for including a weight map image.
-  /// <tt>data_file</tt> is the name of the Fits file containing the data, 
-  /// <tt>weight_file</tt> the one of the corresponding weight map.\n
-  /// Extensions or other selections can be 
-  /// passed in the standard cfitsio way: <tt>data_file[extension]</tt>.
-  SExFrame(std::string data_file, std::string weight_file);
+  /// \p datafile and \p segmapfile are the names of the data and segmenation map FITS files 
+  /// (Extensions or other selections can be passed in the standard cfitsio way:
+  /// <tt>filename[extension]</tt>).\n
+  /// \p catfile is the name of the SExtractor catalog file.
+  /// The format of this file has to be specified such that Catalog can fill all CatObject entries.
+  SExFrame(std::string datafile, std::string segmapfile, std::string catfile);
+  /// Argumented constructor for including a weight map image.
+  /// \p datafile, \p weightfile and \p segmapfile are the names of the data, weight map and 
+  /// segmenation map FITS files 
+  /// (Extensions or other selections can be passed in the standard cfitsio way:
+  /// <tt>filename[extension]</tt>).\n
+  /// \p catfile is the name of the SExtractor catalog file.
+  /// The format of this file has to be specified such that Catalog can fill all CatObject entries.
+  SExFrame(std::string datafile, std::string weightfile,  std::string segmapfile, std::string catfile);
   /// Destructor.
   ~SExFrame();
-  /// Read the SExtractor catalog file.
-  /// The format of this file has to be specified by setting the SExCatFormat properly.
-  void readCatalog(std::string catfile);
-  /// Read the segmentation map.
-  /// This Fits file can be produced by SExtractor by setting 
-  /// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>\n
-  /// The noise estimation step can be bypassed if the header keywords <tt>NOISE_MEAN</tt>
-  /// and <tt>NOISE_RMS</tt> are set in this FITS file.
-  void readSegmentationMap(std::string segmentfile);
   /// Return noise mean \f$\mu_n\f$.
   data_t getNoiseMean();
   /// Return noise RMS \f$\sigma_n\f$.
@@ -118,7 +121,7 @@ class SExFrame : public Image<data_t> {
   /// - -4: borderline of the segments
   /// - 0: noise
   /// - 1..N: objectID of an identified significant pixel group
-  const NumVector<int>& getObjectMap();
+  const SegmentationMap& getSegmentationMap();
   /// Return Catalog read by readCatalog().
   const Catalog& getCatalog();
 
@@ -127,7 +130,7 @@ class SExFrame : public Image<data_t> {
   void estimateNoise();
   Catalog catalog;
   bool segmapRead, catRead, subtractBG, estimatedBG;
-  NumVector<int> segMap;
+  SegmentationMap segMap;
   data_t bg_mean, bg_rms;
   unsigned int axsize0, axsize1;
   Image<data_t> weight;

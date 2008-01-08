@@ -15,8 +15,9 @@ using namespace boost;
 
 typedef unsigned int uint;
 
-SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile), weight() {
-  catRead = segmapRead = subtractBG = estimatedBG = 0;
+SExFrame::SExFrame (std::string datafile, std::string segmapfile, std::string catfile) : 
+Image<data_t>(datafile), weight(), segMap(segmapfile, *this) {
+  subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
   // axsizes of underlying Image copied since often used
   axsize0 = Image<data_t>::getSize(0);
@@ -27,40 +28,46 @@ SExFrame::SExFrame (std::string fitsfile) : Image<data_t>(fitsfile), weight() {
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
-}
 
-SExFrame::SExFrame (std::string fitsfile, std::string weightfile) : Image<data_t>(fitsfile), weight(weightfile) {
-  catRead = segmapRead = subtractBG = estimatedBG = 0;
-  bg_mean = bg_rms = 0;
-  // axsizes of underlying Image copied since often used
-  axsize0 = Image<data_t>::getSize(0);
-  axsize1 = Image<data_t>::getSize(1);
-
-  // for artificial noise
-  const gsl_rng_type * T;
-  gsl_rng_env_setup();
-  T = gsl_rng_default;
-  r = gsl_rng_alloc (T);
-}
-
-SExFrame::~SExFrame() {
-  gsl_rng_free (r);
-}
-
-void SExFrame::readCatalog(std::string catfile) {
+  // read catalog
   catalog = Catalog(catfile);
-  catRead = 1;
-}
 
-void SExFrame::readSegmentationMap(std::string segmapfile) {
-  segMap = SegmentationMap(segmapfile);
-  segmapRead = 1;
   // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
   fitsfile* fptr = openFITSFile(segmapfile);
   int status = readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
   status = readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
   if (status == 0)
     estimatedBG = 1;
+  closeFITSFile(fptr);
+}
+
+SExFrame::SExFrame (std::string datafile, std::string weightfile, std::string segmapfile, std::string catfile) : Image<data_t>(datafile), weight(weightfile), segMap(segmapfile, *this, weight) {
+  subtractBG = estimatedBG = 0;
+  bg_mean = bg_rms = 0;
+  // axsizes of underlying Image copied since often used
+  axsize0 = Image<data_t>::getSize(0);
+  axsize1 = Image<data_t>::getSize(1);
+
+  // for artificial noise
+  const gsl_rng_type * T;
+  gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+
+  // read catalog
+  catalog = Catalog(catfile);
+
+  // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
+  fitsfile* fptr = openFITSFile(segmapfile);
+  int status = readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
+  status = readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
+  if (status == 0)
+    estimatedBG = 1;
+  closeFITSFile(fptr);
+}
+
+SExFrame::~SExFrame() {
+  gsl_rng_free (r);
 }
 
 unsigned long SExFrame::getNumberOfObjects() {
@@ -226,7 +233,7 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
   ymax += yborder-1;
 }
 
-const NumVector<int>& SExFrame::getObjectMap() {
+const SegmentationMap& SExFrame::getSegmentationMap() {
   return segMap;
 }
 

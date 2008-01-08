@@ -25,6 +25,10 @@ class SegmentationMap : public Image<int> {
   /// The <tt>image</tt> has to be defined on the same Grid as the given  
   /// segmentation map.
   SegmentationMap(std::string segMapFile, const Image<data_t>& image);
+  /// Constructor from the existing segmentation FITS file <tt>segMapFile</tt>.
+  /// The <tt>image</tt> has to be defined on the same Grid as the given  
+  /// segmentation map.
+  SegmentationMap(std::string segMapFile, const Image<data_t>& image, const Image<data_t>& weight);
   /// Copy constructor
   SegmentationMap(const SegmentationMap& segMap);
   /// Copy operator
