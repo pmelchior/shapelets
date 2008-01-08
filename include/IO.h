@@ -79,6 +79,10 @@ template <class T>
 fitsfile* openFITSFile(std::string filename, bool write=0);
 fitsfile* createFITSFile(std::string filename);
 int closeFITSFile(fitsfile* fptr);
+int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
+int appendFITSHistory(fitsfile *outfptr, std::string history);
+int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val);
+int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
 
 template <class T>
 int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data, std::string extname="") {
@@ -115,10 +119,6 @@ int updateFITSKeyword(fitsfile *outfptr, std::string keyword, T value, std::stri
   fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), &value, const_cast<char *>(comment.c_str()), &status);
   return status;
 }
-
-int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
-int appendFITSHistory(fitsfile *outfptr, std::string history);
-
 
 template <class T>
 int readFITSImage(fitsfile *fptr, NumMatrix<T>& M) {
@@ -166,8 +166,6 @@ int readFITSKeyword(fitsfile *fptr, std::string key, T& val) {
   return status;
 }
 
-int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val);
-int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
 
 /// Write PPM file from data on the given grid.
 /// Colorscheme is one of the following:

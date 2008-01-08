@@ -51,7 +51,7 @@ SHAREDFLAGS = -shared -fPIC
 
 clean:
 	rm -f $(LIBPATH)/*
-	rm -f $(PROGSOBJECTS)
+	rm -f $(PROGPATH)/*
 
 cleanlib:
 	rm -f $(LIBPATH)/*
@@ -80,7 +80,7 @@ cleancommon:
 	rm -f $(LIBPATH)/lib$(LIBNAME).so
 
 cleanprogs:
-	rm -f $(PROGSOBJECTS)
+	rm -f $(PROGPATH)/*
 
 lib: $(LIBPATH)/lib$(LIBNAME).a
 
