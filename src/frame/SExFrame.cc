@@ -71,10 +71,7 @@ SExFrame::~SExFrame() {
 }
 
 unsigned long SExFrame::getNumberOfObjects() {
-  if (catRead)
-    return catalog.size();
-  else
-    return 0;
+  return catalog.size();
 }
 
 const Catalog& SExFrame::getCatalog() {
@@ -240,10 +237,6 @@ const SegmentationMap& SExFrame::getSegmentationMap() {
 
 // estimate noise by iterative sigma clipping
 void SExFrame::estimateNoise() {
-  if (!segmapRead) {
-    std::cerr << "SExFrame: provide segmentation map before calling subtractNoise()!" << std::endl;
-    std::terminate();
-  }
   // set noise estimates
   // since the position of the object is known from segMap, we can compute the
   // noise now on all pixels not in pixellist

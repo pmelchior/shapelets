@@ -129,7 +129,7 @@ class SExFrame : public Image<data_t> {
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
   void estimateNoise();
   Catalog catalog;
-  bool segmapRead, catRead, subtractBG, estimatedBG;
+  bool subtractBG, estimatedBG;
   SegmentationMap segMap;
   data_t bg_mean, bg_rms;
   unsigned int axsize0, axsize1;
