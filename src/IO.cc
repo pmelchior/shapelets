@@ -6,13 +6,27 @@
 #include <time.h>
 #include <sys/timeb.h>
 #include <boost/tokenizer.hpp>
+#include <fstream>
 
 namespace ublas = boost::numeric::ublas;
 
 fitsfile* openFITSFile(std::string filename, bool write) {
+  // check if file alredy exists
+  // if not: call createFITSFile()
+  bool exists = 0;
+  std::ifstream fin;
+  fin.open(filename.c_str());
+  if(fin.is_open())
+    exists = 1;
+  fin.close();
+  
   int status = 0;
-  fitsfile *outfptr;
-  fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
+  fitsfile* outfptr;
+  if (exists) {
+    fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
+  } 
+  else if (write)
+    outfptr = createFITSFile(filename);
   return outfptr;
 }
 
