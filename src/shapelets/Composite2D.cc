@@ -110,14 +110,13 @@ data_t Composite2D::evalGridPoint(const Point2D& x) {
 }
 
 void Composite2D::evalGrid() {
-  if ((coeffs.getRows() - 1 != coeffs.getColumns() - 1) || (coeffs(coeffs.getRows() - 1-1,coeffs.getColumns() - 1-1)!=0)) {
+  if (coeffs.getRows() != coeffs.getColumns() || (coeffs.getColumns() > 1 && coeffs(coeffs.getRows() - 1,1) !=0 )) {
     if (model.size() != grid.size())
       model.resize(grid.size());
     for (int j = 0; j < grid.size(); j +=1)
       model(j) = evalGridPoint(grid(j));
   } else {
     // this approach only works for square, upper triangular coeff matrices
-    // which is assumed for this ansatz here.
     CoefficientVector<data_t> coeffVector(coeffs);
     const IndexVector& nVector = coeffVector.getIndexVector();
     NumMatrix<data_t> M(grid.size(),nVector.getNCoeffs());
