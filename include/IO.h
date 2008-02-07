@@ -102,7 +102,8 @@ int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data
   long firstpix[2] = {1,1};
   fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(data.c_array()), &status);
   // insert creator and extname keywords
-  status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
+  if (extname != "")
+    status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
   status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
   return status;
 }

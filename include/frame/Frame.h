@@ -2,7 +2,8 @@
 #define FRAME_H
 
 #include <vector>
-#include <list>
+#include <set>
+#include <tree.hh>
 #include <NumVector.h>
 #include <Typedef.h>
 #include <History.h>
@@ -19,37 +20,32 @@
 /// The image processing includes:
 /// - background noise estimation
 /// - detection of objects in the frame
+/// - detection of blended substructure within objects
 /// - segmentation of the frame into segments with one object each
 /// - cleaning of the segments from overlapping objects.
 ///
 /// It thus allows the automatic processing of all significant objects in the image.
-/// Two typical scenarios are presented here:
+/// A typical scenario is presented here:
 /// \code
 /// Frame* f = new Frame(fitsfile);
 /// f->subtractBackground();
-/// NumVector<data_t>& data = f->getData();
-/// Grid& grid = f->getGrid();
-/// \endcode
-/// This reads the extension of a FITS file, estimates the noise statistics
-/// subtracts the global background noise level. The data of the whole frame
-/// and an adequate grid are returned.\n\n
-/// \code
-/// Frame* f = new Frame(fitsfile);
-/// f->subtractBackground();
-/// f->findObjects(50,1.5,5);
-/// for(int n = 1; n <= f->getNumberOfObjects(); n++) {
-///   Object* obj = new Object(i);
+/// f->findObjects();
+/// const Catalog& cat = f->getCatalog();
+/// Catalog::const_iterator iter;
+/// for(iter = cat.begin(); iter != cat.end(); iter++) {
+///   unsigned long id = (*iter).first;
+///   Object obj(id);
 ///   f->fillObject(obj);
-///   if (obj.getDetectionFlag() < 3) {
-///     NumVector<data_t>& data = obj->getData();
-///     Grid& grid = obj->getGrid();
+///   if ((*iter).second.FLAGS == 0) {
+///     // do something useful with obj ...
 ///   }
 /// }
 ///\endcode
 /// This reads the extension from the FITS file, subtracts the global noise background level
-/// and searches for signifcant objects inside the image.\n
-/// Then it iterates through the object list, filling the necessary information in the Object
-/// \p obj; \p data and \p grid now contain only the segmented frame of the selected object.\n\n
+/// and searches for signifcant objects inside the image. The minum number of pixels or the 
+/// detection threshold etc. are obtained from ShapeLensConfig settings.\n
+/// Then it iterates through the Catalog entries. If no problems with this object have been found 
+/// (<tt>FLAGS == 0</tt>), it fills the necessary information in the Object container \p obj.
 ///
 /// The Object entities will have these features:
 /// - The frames will be quadratic such that the area within the object was located 
@@ -58,20 +54,21 @@
 /// - If subtractBackground() has been called, the global background level
 /// is subtracted from the object pixels.
 /// - \p detectionFlags(i) are set according to the following scheme, which is similar to 
-/// those of SExtractor.
+/// the one of SExtractor.
 ///  - <tt>i = 0</tt>: another object nearby, but not overlapping
+///  - <tt>i = 1</tt>: object blended
 ///  - <tt>i = 2</tt>: object close to the image boundary, frame extended with noise, possible cut-off
 ///  - <tt>i = 3</tt>: object cut-off at the image boundary
 /// - If a weight map is not given, <tt>noiseModel="GAUSSIAN"</tt>, otherwise 
 ///   <tt>noisemodel="WEIGHT"</tt>
-/// - \p StarGalaxyProbability and \p BlendingProbability are not set.
+/// - \p StarGalaxyProbability is not set.
 /// - Its segmentation map is an appropriate cutout of the full segmentation map.
 /// - If provided, its weight map is an appropriate cutout of the full weight map.
 ///
-/// The full SegmentationMap of the Image can be obtained from 
-/// getSegmentationMap() after calling findObjects().\n\n
-/// If detection of blended objects or stars is neccessary, use SExFrame instead.
-/// 
+/// The full SegmentationMap of the Image can be obtained from getSegmentationMap() after 
+/// calling findObjects(); a Catalog of the objects therein is also produced at that time, but
+/// quantities like centroid positions are only valid after calling fillObject() for the appropriate
+/// Object.
 
 class Frame : public Image<data_t> {
  public:
@@ -129,7 +126,7 @@ class Frame : public Image<data_t> {
   /// - 1..N: objectID of an identified significant pixel group
   const SegmentationMap& getSegmentationMap();
   /// Get list of pixels for the given <tt>objectnr</tt>.
-  const std::list<unsigned int>& getPixelList(unsigned long objectnr);
+  const std::set<unsigned long>& getPixelSet(unsigned long objectnr);
   /// Get Catalog of detected objects.
   /// After calling findObject(), only the CatObject.NUMBER is set; if the method
   /// fillObject(Object& obj) is called, all values of the catalog entry <tt>obj.getID()</tt>
@@ -145,10 +142,14 @@ class Frame : public Image<data_t> {
   void estimateNoise();
   void reset();
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
-  data_t getThreshold(unsigned int pixel, data_t factor);
+  data_t getThreshold(unsigned long pixel, data_t factor);
+  void linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& max_threshold, unsigned long startpixel);
+  bool detectBlending(const std::set<unsigned long>& all, data_t max, data_t max_threshold);
+  void insertNodesAboveThreshold(tree<std::set<unsigned long> >& tree, tree<std::set<unsigned long> >::iterator_base& diter, data_t threshold);
+  data_t getTotalFlux(const std::set<unsigned long>& pixels);
   SegmentationMap segMap;
   History& history;
-  std::map< unsigned long, std::list<unsigned int> > objectsPixels;
+  std::map< unsigned long, std::set<unsigned long> > objectsPixels;
   bool subtractedBG, estimatedBG;
   Catalog catalog;
 };

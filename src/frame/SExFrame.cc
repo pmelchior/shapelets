@@ -16,12 +16,12 @@ using namespace boost;
 typedef unsigned int uint;
 
 SExFrame::SExFrame (std::string datafile, std::string segmapfile, std::string catfile) : 
-Image<data_t>(datafile), weight(), segMap(segmapfile, *this) {
+Image<data_t>(datafile), weight(), segMap(segmapfile) {
   subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
   // axsizes of underlying Image copied since often used
-  axsize0 = Image<data_t>::getSize(0);
-  axsize1 = Image<data_t>::getSize(1);
+  axsize0 = SExFrame::getSize(0);
+  axsize1 = SExFrame::getSize(1);
 
   // for artificial noise
   const gsl_rng_type * T;
@@ -41,12 +41,13 @@ Image<data_t>(datafile), weight(), segMap(segmapfile, *this) {
   closeFITSFile(fptr);
 }
 
-SExFrame::SExFrame (std::string datafile, std::string weightfile, std::string segmapfile, std::string catfile) : Image<data_t>(datafile), weight(weightfile), segMap(segmapfile, *this, weight) {
+SExFrame::SExFrame (std::string datafile, std::string weightfile, std::string segmapfile, std::string catfile) : 
+Image<data_t>(datafile), weight(weightfile), segMap(segmapfile) {
   subtractBG = estimatedBG = 0;
   bg_mean = bg_rms = 0;
   // axsizes of underlying Image copied since often used
-  axsize0 = Image<data_t>::getSize(0);
-  axsize1 = Image<data_t>::getSize(1);
+  axsize0 = SExFrame::getSize(0);
+  axsize1 = SExFrame::getSize(1);
 
   // for artificial noise
   const gsl_rng_type * T;
@@ -119,7 +120,7 @@ void SExFrame::fillObject(Object& O) {
     // than 4 pixels and set their pixelmap flag to -2
     // in the end only object data into new vector of smaller size, the rest will
     // filled up with artificial noise
-    const NumVector<data_t>& data = Image<data_t>::getData();
+    const NumVector<data_t>& data = SExFrame::getData();
     NumVector<data_t>& objdata = O.accessData();
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     SegmentationMap& objSegMap = O.accessSegmentationMap();
@@ -134,7 +135,7 @@ void SExFrame::fillObject(Object& O) {
       int axis0 = xmax-xmin+1;
       int x = i%axis0 + xmin;
       int y = i/axis0 + ymin;
-      uint j = Image<data_t>::getGrid().getPixel(x,y);
+      uint j = SExFrame::getGrid().getPixel(x,y);
 
       // if pixel is out of image region, fill noise from default values
       // since we fill same noise into data and into bgrms
@@ -186,7 +187,7 @@ void SExFrame::fillObject(Object& O) {
     O.setCentroid(centroid);
     O.setDetectionFlags(std::bitset<8>((*catiter).second.FLAGS));
     O.setClassifier((*catiter).second.CLASSIFIER);
-    O.setBaseFilename(Image<data_t>::getFilename());
+    O.setBaseFilename(SExFrame::getFilename());
     data_t obj_bg_mean = 0;
     if (!subtractBG)
       obj_bg_mean = bg_mean;
@@ -243,7 +244,7 @@ void SExFrame::estimateNoise() {
   // 1) set mask(i)=1, when segMap(i) != 0
   // 2) create NumVectorMasked from objdata and mask
   // 3) compute std from that
-  const NumVector<data_t>& data = Image<data_t>::getData();
+  const NumVector<data_t>& data = SExFrame::getData();
   NumVector<bool> mask(data.size());
   for(int i =0; i < data.size(); i++)
     if (segMap(i) != 0) 

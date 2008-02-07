@@ -39,6 +39,7 @@ int main(int argc, char *argv[]) {
     f = new Frame(input.getValue(),weightmap.getValue());
   else
     f = new Frame(input.getValue());
+
   // measure noise background and subtract it by iterative sigma-clipping
   f->subtractBackground();
 
@@ -71,9 +72,8 @@ int main(int argc, char *argv[]) {
     Object obj(id);
     // "cut out" the object from whole frame and put it into Object obj
     f->fillObject(obj);
-    // dismiss objects with flags[i] = 1 for i >= 3 because of serious trouble
-    // during the detection/segmentation process
-    if (obj.getDetectionFlags().to_ulong() < 8) {
+    // dismiss objects with a flag set from detection/segmentation process
+    if ((*iter).second.FLAGS == 0) {
 
       // actual decomposition is done here
       ShapeletObject sobj (obj);

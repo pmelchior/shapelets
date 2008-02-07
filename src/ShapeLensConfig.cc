@@ -21,6 +21,9 @@ unsigned int ShapeLensConfig::MIN_PIXELS = 20;
 data_t ShapeLensConfig::MIN_THRESHOLD = 1.25;
 data_t ShapeLensConfig::DETECT_THRESHOLD = 3.;
 std::string ShapeLensConfig::NOISEMODEL = "GAUSSIAN";
+bool ShapeLensConfig::BLENDING = 1;
+data_t ShapeLensConfig::BLEND_MINCONT = 0.01;
+unsigned int ShapeLensConfig::BLEND_NTHRESH = 16;
 
 ShapeLensConfig::ShapeLensConfig() {
 }

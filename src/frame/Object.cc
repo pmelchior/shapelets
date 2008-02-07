@@ -3,19 +3,19 @@
 #include <gsl/gsl_math.h>
 #include <fitsio.h>
 
-Object::Object(unsigned long inid) : Image<data_t>(), segMap(*this) {
+Object::Object(unsigned long inid) : Image<data_t>(), segMap() {
   id = inid;
   flag = 0;
   classifier = 0;
   flux = centroid(0) = centroid(1) = 0;
 }
 
-Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
+Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   fitsfile *fptr;
   int status, nkeys, keypos, hdutype;
   char card[FLEN_CARD];
   char comment[FLEN_CARD];
-  status = 0; 
+  status = 0;
 
   history << "# Loading object from Fits file " << objfile << ":" << std::endl;
   fits_open_file(&fptr, objfile.c_str(), READONLY, &status);
@@ -90,6 +90,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap(*this) {
   int vali;
   imageformat = getFITSImageFormat(vali);
   datatype = getFITSDataType(vali);
+  segMap.resize(npixels);
   fits_read_pix(fptr, datatype, firstpix, npixels, NULL,segMap.c_array(), NULL, &status);
   segMap.accessGrid() = Image<data_t>::getGrid();
 

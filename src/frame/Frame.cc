@@ -8,25 +8,35 @@
 #include <gsl/gsl_histogram.h>
 #include <algorithm>
 #include <bitset>
+#include <list>
 
 using namespace std;
 
 typedef unsigned int uint;
+typedef unsigned long ulong;
 
-Frame::Frame(string filename) : Image<data_t>(filename), weight(), segMap(*this), history(segMap.accessHistory()) {
+Frame::Frame(string filename) : 
+Image<data_t>(filename), segMap(), weight(), history(segMap.accessHistory()) {
   history << "# Reading FITS file " << filename << endl;
-  history << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
+  history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl;
+  segMap.resize(Frame::getSize(0)*Frame::getSize(1));
+  segMap.clear();
+  segMap.accessGrid() = Frame::getGrid();
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
   catalog.clear();
 }
 
-Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weight(weightfile), segMap(*this, weight), history(segMap.accessHistory()) {
+Frame::Frame(string datafile, string weightfile) : 
+Image<data_t>(datafile), weight(weightfile), segMap(), history(segMap.accessHistory()) {
   history << "# Reading data from " << datafile << " and weights from " << weightfile << endl;
-  history << "# Image properties: size = "<< Image<data_t>::getSize(0) << "/" << Image<data_t>::getSize(1) << endl; 
-  //weight = Image<data_t>(weightfile);
+  history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl; 
+  segMap.resize(Frame::getSize(0)*Frame::getSize(1));
+  segMap.clear();
+  segMap.accessGrid() = Frame::getGrid();
   if (weight.size() != (*this).size()) {
     history << "Frame: weight map has different layout than data!" << endl;
+    cerr << "Frame: weight map has different layout than data!" << endl;
     terminate();
   } 
   subtractedBG = estimatedBG = 0;
@@ -36,7 +46,7 @@ Frame::Frame(string datafile, string weightfile) : Image<data_t>(datafile), weig
 
 // estimate noise by iterative sigma clipping
 void Frame::estimateNoise() {
-  Image<data_t>::getData().kappa_sigma_clip(noise_mean,noise_rms);
+  Frame::kappa_sigma_clip(noise_mean,noise_rms);
   history << "# Background estimation: mean = " << noise_mean;
   history << ", sigma = " << noise_rms << std::endl;
   estimatedBG = 1;
@@ -62,8 +72,8 @@ void Frame::setNoiseMeanRMS(data_t mean, data_t rms) {
 void Frame::subtractBackground() {
   if (!estimatedBG) estimateNoise();
   if (!subtractedBG) {
-    for (int i=0; i < Image<data_t>::size(); i++) {
-      (Image<data_t>::accessData())(i) -= noise_mean;
+    for (int i=0; i < Frame::size(); i++) {
+      (Frame::accessData())(i) -= noise_mean;
     }
     subtractedBG = 1;
     history << "# Background subtraction: noise level = " << noise_mean << std::endl;
@@ -73,7 +83,7 @@ void Frame::subtractBackground() {
 
 // return threshold for findObject
 // if weight map is provided, uses rms from this
-data_t Frame::getThreshold(unsigned int pixel, data_t factor) {
+data_t Frame::getThreshold(unsigned long pixel, data_t factor) {
   if (weight.size()==0) {
     if (!estimatedBG) estimateNoise();
     return noise_mean + factor*noise_rms;
@@ -83,65 +93,218 @@ data_t Frame::getThreshold(unsigned int pixel, data_t factor) {
 }
 
 void Frame::findObjects() {
-  const NumVector<data_t>& data = Image<data_t>::getData();
+  const NumVector<data_t>& data = Frame::getData();
   unsigned long counter = 0;
-  unsigned int npixels = Image<data_t>::size();
-
+  unsigned int npixels = Frame::size();
+  
   // clean stuff from previous runs of this function
   if (getNumberOfObjects() > 0) {
     objectsPixels.clear();
     catalog.clear();
-    for (int i=0; i<npixels; i++)
-      segMap(i) = 0;
+    segMap.clear();
   }  
 
   // set up pixellist and objectsPixels
-  list<uint> pixellist;
-  list<uint>::iterator iter;
+  set<ulong> pixelset;
+  set<ulong>::iterator iter;
 
   // reset catalog and create dummy CatObject
   CatObject co = {0,0,0,0,0,0,0,0,0};
 
   // look for all positive fluctuations with at least 1 pixel above
   // highThreshold and minPixels above significanceThreshold
-  data_t highThreshold;
+  data_t highThreshold, max, max_threshold;
+  uint blending = 0;
   for (int i =0; i < npixels; i++) {
     highThreshold = getThreshold(i,ShapeLensConfig::DETECT_THRESHOLD);
     if (data(i) > highThreshold && segMap(i) == 0) {
       counter++;
-      segMap.linkPixelsSetMap (pixellist,i,counter,ShapeLensConfig::MIN_THRESHOLD,noise_mean,noise_rms,1);
-      if (pixellist.size() >= ShapeLensConfig::MIN_PIXELS) {
-	history << "# Object " << counter << " detected with " << pixellist.size() << " significant pixels at (" << i%(Image<data_t>::getSize(0)) << "/" << i/(Image<data_t>::getSize(0)) << ")"  << std::endl;
-	objectsPixels[counter]= pixellist;
+      linkPixels(pixelset,max, max_threshold, i);
+      if (ShapeLensConfig::BLENDING)
+	blending = detectBlending(pixelset, max, max_threshold);
+      if (pixelset.size() >= ShapeLensConfig::MIN_PIXELS) {
+	history << "# Object " << counter << " detected with " << pixelset.size() << " significant pixels at (" << i%(Frame::getSize(0)) << "/" << i/(Frame::getSize(0)) << ")"  << std::endl;
+	for(iter = pixelset.begin(); iter != pixelset.end(); iter++ )
+	  segMap(*iter) = counter;
+	objectsPixels[counter]= pixelset;
 	catalog[counter] = co;
+	catalog[counter].FLAGS = 2*blending;
       }
       else {
-	for(iter = pixellist.begin(); iter != pixellist.end(); iter++ )
-	  segMap(*iter) = 0;
 	counter--;
+	for(iter = pixelset.begin(); iter != pixelset.end(); iter++ )
+	  segMap(*iter) = 0;
       }
     }
   }
+}
 
-//   // improve noise estimates (when weight map is not given)
-//   // since the position of all object is known now, we can compute the
-//   // noise now on all pixels not associated to an object
-//   // 1) set mask(i)=1, when i is in one of the pixellists
-//   // 2) create NumVectorMasked from data and mask
-//   // 3) compute std from that
-//   if (weight.size()==0) {
-//     NumVector<bool> mask(data.size());
-//     for (int i=0; i<numberofObjects; i++) {
-//       list<uint>& pixellist = objectsPixels[i];
-//       for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ )
-// 	mask(*iter) = 1;
-//     }
-//     NumVectorMasked<data_t> masked(data,mask);
-//     masked.kappa_sigma_clip(noise_mean,noise_rms);
-//     history << "# Improved background estimation (objects masked):";
-//     history << " mean = " << noise_mean << ", sigma = " << noise_rms << endl;
-//     history.append(history);
-//   }
+// Find a list of connected pixels which have values above threshold.
+// This is a Friend-of-Friend algorithm with a linking length of 1 pixel.
+// It starts by putting startpixel into the pixelset if data > noise_rms * threshold and if
+// it was not in the set yet
+// Then it performs these steps for all neighbors of pixels in the set until no
+// new pixels are found.
+void Frame::linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& max_threshold, unsigned long startpixel) {
+  pixelset.clear();
+  pixelset.insert(startpixel);
+  // the list is necessary for the algorithm below (using an iterator)
+  // the set will be used to check whether a pixels is already there
+  // in principle this could also be done with the segMap but does not have advantages
+  list<ulong> pixellist;
+  pixellist.push_back(startpixel);
+
+  list<ulong>::iterator iter = pixellist.begin();
+  uint pixelnumber = 0;
+  max = noise_mean;
+  max_threshold = noise_mean;
+  const NumVector<data_t>& data = *this;
+  while (pixelnumber < pixellist.size()) {
+    ulong pixel = *iter;
+    // loop over all direct neighbors and check if they are above/below threshold
+    for (uint dir = 1; dir <= 8 ; dir++) {
+      long neighbor = Frame::getGrid().getNeighborPixel(pixel,dir);
+      if (neighbor != -1) {
+	data_t threshold_neighbor = getThreshold(neighbor, ShapeLensConfig::MIN_THRESHOLD);
+	if (data(neighbor) > threshold_neighbor) {
+	  // if (segMap(neighbor == 0) {
+	  if (pixelset.find(neighbor) == pixelset.end()) {
+	    pixellist.push_back(neighbor);
+	    pixelset.insert(neighbor);
+	    //segMap(neighbor) = tag;
+	    if (data(neighbor) > max)
+	      max = data(neighbor);
+	    if (threshold_neighbor > max_threshold)
+	      max_threshold = threshold_neighbor;
+	  }
+	}
+      }
+    }
+    iter++;
+    pixelnumber++;
+  }
+}
+
+bool Frame::detectBlending(const set<ulong>& all, data_t max, data_t max_threshold) {
+  // compute N thresholds between min_threshold an max
+  uint N = ShapeLensConfig::BLEND_NTHRESH;
+  NumVector<data_t> threshold(N);
+  for (uint i=1; i <= N; i++)
+    threshold(i-1) = i*(max - max_threshold)/(N+1);
+  
+  tree<set<ulong> > Tree;
+  tree<set<ulong> >::iterator top;
+  tree<set<ulong> >::fixed_depth_iterator diter;
+  tree<set<ulong> >::sibling_iterator sib;
+  
+  // initialize tree with all
+  top = Tree.begin();
+  top = Tree.insert(top, all);
+  // search for children of all
+  insertNodesAboveThreshold(Tree,top, threshold(0));
+
+  // go through all depth levels
+  for (int i=1; i < N; i++) {
+    if (Tree.max_depth(top) >= i) {
+      diter = Tree.begin_fixed(top, i-1);
+      for (uint j=0; j < diter.number_of_children(); j++) {
+	sib = Tree.child(diter,j);
+	insertNodesAboveThreshold(Tree, sib, threshold(i));
+      }
+    }
+  }
+  
+  // now go thru all nodes from top to leafs
+  // for nodes with more than a single child, check if
+  // - the number of pixels are larger than ShapeLensConfig::MIN_PIXELS
+  // - the flux of thos pixels is larger than a certain fraction of the total flux
+  // for at least two children
+  // otherwise remove all children apart from the biggest/brightest
+  bool blending = 0;
+  data_t allFlux = getTotalFlux(all);
+  for(tree<set<ulong> >::breadth_first_iterator biter = Tree.begin_breadth_first(); biter != Tree.end_breadth_first(); biter++) {
+    //sib = Tree.begin(biter);
+    if (biter.number_of_children() > 1) {
+      uint found = 0;
+      for(sib = Tree.begin(biter); sib != Tree.end(biter); sib++)
+	if ((*sib).size() > ShapeLensConfig::MIN_PIXELS)
+	  if (getTotalFlux(*sib) > ShapeLensConfig::BLEND_MINCONT*allFlux)
+	    found++;
+      if (found >= 2)
+	blending = 1;
+    }
+    if (blending)
+      break;
+  }
+  return blending;
+}
+
+data_t Frame::getTotalFlux(const set<ulong>& pixels) {
+  data_t flux = 0;
+  const NumVector<data_t>& data = *this;
+  for(set<ulong>::const_iterator iter = pixels.begin(); iter != pixels.end(); iter++)
+    flux += data(*iter);
+  return flux;
+}
+
+void Frame::insertNodesAboveThreshold(tree<set<ulong> >& Tree, tree<set<ulong> >::iterator_base& titer, data_t threshold) {
+  set<ulong> above;
+  set<ulong>& parent = *titer;
+  const NumVector<data_t>& data = *this;
+  // first find all pixels from parent that are above threshold
+  for (set<ulong>::const_iterator iter = parent.begin(); iter != parent.end(); iter++)
+    if (data(*iter) > threshold)
+      above.insert(*iter);
+
+  // iterate thru all above pixels, link the neighbors into first child
+  // start a new child set when above pixel is not in a prior child
+  set<ulong>::const_iterator aboveiter;
+  tree<set<ulong> >::sibling_iterator sib;
+  set<ulong> child;
+  list<ulong> childlist;
+  for (aboveiter = above.begin(); aboveiter != above.end(); aboveiter++) {
+    ulong startpixel = *aboveiter;
+    // check whether startpixel is already in one of the children
+    bool found = 0;
+    for (sib = Tree.begin(titer); sib != Tree.end(titer); sib++) {
+      if ((*sib).find(startpixel) != (*sib).end()) {
+	found = 1;
+	break;
+      }
+   }
+    // if it is not yet found, it belongs to a new child
+    // thus, search all pixels of the new child
+    if (!found) {
+      child.clear();
+      childlist.clear();
+      childlist.push_back(startpixel);
+      child.insert(startpixel);
+      uint pixelnumber = 0;
+      list<ulong>::iterator iter = childlist.begin();
+      while (pixelnumber < childlist.size()) {
+	ulong pixel = *iter;
+	// loop over all direct neighbors
+	for (uint dir = 1; dir <= 8 ; dir++) {
+	  long neighbor = Frame::getGrid().getNeighborPixel(pixel,dir);
+	  // neighbor is within the image
+	  if (neighbor > 0)  {
+	    // neighbor is not already in child
+	    if (child.find(neighbor) == child.end()) {
+	      // neighbor also in above set
+	      if (above.find(neighbor) != above.end()) {
+		childlist.push_back(neighbor);
+		child.insert(neighbor);
+	      }
+	    }
+	  }
+	}
+	iter++;
+	pixelnumber++;	
+      }
+      // insert child into map of nodes and automatically increase key by using size()
+      Tree.append_child(titer, child);
+    }
+  }
 }
 
 unsigned long Frame::getNumberOfObjects() {
@@ -155,8 +318,8 @@ void Frame::fillObject(Object& O) {
   // this will also provied us with the correct entry of catalog (if present)
   Catalog::iterator catiter = catalog.find(O.getID());
   if (catiter != catalog.end()) {
-    // set up detection flags bitset
-    std::bitset<8> flags(0);
+    // set up detection flags bitset, use existing ones as starting value
+    std::bitset<8> flags((*catiter).second.FLAGS);
 
     // for artificial noise for area contaminated by different object
     const gsl_rng_type * T;
@@ -167,14 +330,14 @@ void Frame::fillObject(Object& O) {
 
     // define the points (xmin/ymin) and (xmax/ymax) 
     // that enclose the object
-    list<uint>& pixellist = objectsPixels[(*catiter).first];
+    set<ulong>& pixelset = objectsPixels[(*catiter).first];
     int axsize0, axsize1,xmin, xmax, ymin, ymax;
-    xmin = axsize0 = Image<data_t>::getSize(0);
+    xmin = axsize0 = Frame::getSize(0);
     xmax = 0;
-    ymin = axsize1 = Image<data_t>::getSize(1);
+    ymin = axsize1 = Frame::getSize(1);
     ymax = 0;
     // loop over all pixels of current object
-    for(list<uint>::iterator iter = pixellist.begin(); iter != pixellist.end(); iter++ ) {
+    for(set<ulong>::iterator iter = pixelset.begin(); iter != pixelset.end(); iter++ ) {
 	uint x = (*iter)%axsize0;
 	uint y = (*iter)/axsize0;
 	if (x < xmin) xmin = x;
@@ -206,7 +369,7 @@ void Frame::fillObject(Object& O) {
     }
 
     // fill the object pixel data
-    const NumVector<data_t>& data = Image<data_t>::getData();
+    const NumVector<data_t>& data = Frame::getData();
     NumVector<data_t>& objdata = O.accessData();
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     SegmentationMap& objSegMap = O.accessSegmentationMap();
@@ -226,7 +389,7 @@ void Frame::fillObject(Object& O) {
       int axis0 = xmax-xmin+1;
       int x = i%axis0 + xmin;
       int y = i/axis0 + ymin;
-      uint j = Image<data_t>::getGrid().getPixel(x,y);
+      uint j = Frame::getGrid().getPixel(x,y);
 
       // if pixel is out of image region, fill noise
       if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
@@ -285,8 +448,8 @@ void Frame::fillObject(Object& O) {
   else if (O.getID()==0) {
     O.history.clear();
     O.history << "# Extracting Object 0 (whole Fits image)." << endl;
-    O.accessData() = Image<data_t>::getData();
-    O.accessGrid() = Image<data_t>::getGrid();
+    O.accessData() = Frame::getData();
+    O.accessGrid() = Frame::getGrid();
     O.accessSegmentationMap() = segMap;
     if (weight.size()!=0)
       O.accessWeightMap() = weight;
@@ -296,7 +459,7 @@ void Frame::fillObject(Object& O) {
     terminate();
   }
   O.setNoiseMeanRMS(noise_mean,noise_rms);
-  O.setBaseFilename(Image<data_t>::getFilename());
+  O.setBaseFilename(Frame::getFilename());
 }
 
 const SegmentationMap& Frame::getSegmentationMap() {
@@ -335,8 +498,8 @@ const History& Frame::getHistory () {
   return history;
 }
 
-const std::list<unsigned int>& Frame::getPixelList(unsigned long objectnr) {
-  std::map< unsigned long, std::list<unsigned int> >::iterator iter = 
+const std::set<unsigned long>& Frame::getPixelSet(unsigned long objectnr) {
+  std::map< unsigned long, std::set<unsigned long> >::iterator iter = 
     objectsPixels.find(objectnr);
   if (iter != objectsPixels.end())
     return (*iter).second;
@@ -349,3 +512,5 @@ const std::list<unsigned int>& Frame::getPixelList(unsigned long objectnr) {
 const Catalog& Frame::getCatalog() {
   return catalog;
 }
+
+
