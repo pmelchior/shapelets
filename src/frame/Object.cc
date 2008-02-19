@@ -38,7 +38,9 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   status = readFITSKeyword(fptr,"FLUX",flux);
   status = readFITSKeyword(fptr,"BG_MEAN",noise_mean);
   status = readFITSKeyword(fptr,"BG_RMS",noise_rms);
-  status = readFITSKeyword(fptr,"FLAG",flag);
+  unsigned long flags;
+  status = readFITSKeyword(fptr,"FLAG",flags);
+  flag = std::bitset<8>(flags);
   status = readFITSKeyword(fptr,"CLASSIFIER",classifier);
   
   // read history
@@ -127,7 +129,7 @@ void Object::save(std::string filename) {
   status = updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
   status = updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
   status = updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
-  status = updateFITSKeyword(outfptr,"FLAG",flag,"extraction flag");
+  status = updateFITSKeyword(outfptr,"FLAG",flag.to_ulong(),"extraction flag");
   status = updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
   status = appendFITSHistory(outfptr,history.str());
 
