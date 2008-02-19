@@ -319,7 +319,7 @@ void Frame::fillObject(Object& O) {
   Catalog::iterator catiter = catalog.find(O.getID());
   if (catiter != catalog.end()) {
     // set up detection flags bitset, use existing ones as starting value
-    std::bitset<8> flags((*catiter).second.FLAGS);
+    std::bitset<8> flags(catiter->second.FLAGS);
 
     // for artificial noise for area contaminated by different object
     const gsl_rng_type * T;
@@ -330,7 +330,7 @@ void Frame::fillObject(Object& O) {
 
     // define the points (xmin/ymin) and (xmax/ymax) 
     // that enclose the object
-    set<ulong>& pixelset = objectsPixels[(*catiter).first];
+    set<ulong>& pixelset = objectsPixels[catiter->first];
     int axsize0, axsize1,xmin, xmax, ymin, ymax;
     xmin = axsize0 = Frame::getSize(0);
     xmax = 0;
@@ -346,7 +346,7 @@ void Frame::fillObject(Object& O) {
 	if (y > ymax) ymax = y;
     }
 
-    O.history << "# Extracting Object " << (*catiter).first;
+    O.history << "# Extracting Object " << catiter->first;
     O.history << " found in the area (" << xmin << "/" << ymin << ") to (";
     O.history << xmax << "/" << ymax << ")" << endl;
     
@@ -370,15 +370,15 @@ void Frame::fillObject(Object& O) {
 
     // fill the object pixel data
     const NumVector<data_t>& data = Frame::getData();
-    NumVector<data_t>& objdata = O.accessData();
+    NumVector<data_t>& objdata = O;
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
-    SegmentationMap& objSegMap = O.accessSegmentationMap();
+    SegmentationMap& objSegMap = O.segMap;
     History& objSegMapHistory = objSegMap.accessHistory();
     objSegMapHistory.setSilent();
     objSegMapHistory << history.str();
     objSegMapHistory.unsetSilent();
     objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
-    NumVector<data_t>& objWeightMap = O.accessWeightMap();
+    NumVector<data_t>& objWeightMap = O.weight;
     if (weight.size()!=0) 
       objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
     vector<uint> nearby_objects;
@@ -400,7 +400,7 @@ void Frame::fillObject(Object& O) {
       } 
       else {
 	// filter other objects in the frame
-	if ((segMap(j) > 0 && segMap(j) != (*catiter).first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
+	if ((segMap(j) > 0 && segMap(j) != catiter->first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
 	  // if we have a weight map 
 	  if (weight.size()!=0)
 	    objdata(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
@@ -429,20 +429,20 @@ void Frame::fillObject(Object& O) {
     O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
 
     // Fill other quantities into Object
-    O.setDetectionFlags(flags);
+    O.flag = flags;
     O.history << "# Segment:" << endl;
     O.computeFluxCentroid();
 
     // Update catalog with object values
-    (*catiter).second.XMIN = xmin;
-    (*catiter).second.XMAX = xmax;
-    (*catiter).second.YMIN = ymin;
-    (*catiter).second.YMAX = ymax;
-    (*catiter).second.XCENTROID = O.getCentroid()(0);
-    (*catiter).second.YCENTROID = O.getCentroid()(1);
-    (*catiter).second.FLUX = O.getFlux();
-    (*catiter).second.FLAGS = (unsigned char) flags.to_ulong();
-    (*catiter).second.CLASSIFIER = 0;
+    catiter->second.XMIN = xmin;
+    catiter->second.XMAX = xmax;
+    catiter->second.YMIN = ymin;
+    catiter->second.YMAX = ymax;
+    catiter->second.XCENTROID = O.centroid(0);
+    catiter->second.YCENTROID = O.centroid(1);
+    catiter->second.FLUX = O.flux;
+    catiter->second.FLAGS = (unsigned char) flags.to_ulong();
+    catiter->second.CLASSIFIER = 0;
   } 
   // this is the whole frame
   else if (O.getID()==0) {
@@ -450,16 +450,16 @@ void Frame::fillObject(Object& O) {
     O.history << "# Extracting Object 0 (whole Fits image)." << endl;
     O.accessData() = Frame::getData();
     O.accessGrid() = Frame::getGrid();
-    O.accessSegmentationMap() = segMap;
+    O.segMap = segMap;
     if (weight.size()!=0)
-      O.accessWeightMap() = weight;
+      O.weight = weight;
     O.computeFluxCentroid();
   } else {
     std::cerr << "# Frame: This Object does not exist!" << endl;
     terminate();
   }
   O.setNoiseMeanRMS(noise_mean,noise_rms);
-  O.setBaseFilename(Frame::getFilename());
+  O.basefilename = getFilename();
 }
 
 const SegmentationMap& Frame::getSegmentationMap() {
@@ -469,29 +469,31 @@ const SegmentationMap& Frame::getSegmentationMap() {
 // now extend to region around the object by
 // typically objectsize/4, minimum 8 pixels
 void Frame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
-  int xrange, yrange, xborder, yborder;
-  xrange = xmax - xmin;
-  yrange = ymax - ymin;
-  switch(xrange%2) {
-  case 1: xmax++; break;
+  if (factor > 0) {
+    int xrange, yrange, xborder, yborder;
+    xrange = xmax - xmin;
+    yrange = ymax - ymin;
+    switch(xrange%2) {
+    case 1: xmax++; break;
+    }
+    switch(yrange%2) {
+    case 1: ymax++; break;
+    }
+    xrange = xmax - xmin;
+    yrange = ymax - ymin;
+    // make the object frame square, because of const beta in both directions
+    if (xrange < yrange) {
+      yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);
+      xborder = yborder + (yrange - xrange)/2;
+    } else {
+      xborder = GSL_MAX_INT((int)floor(xrange*factor), 12);
+      yborder = xborder + (xrange - yrange)/2;
+    }
+    xmin -= xborder;
+    xmax += xborder-1;
+    ymin -= yborder;
+    ymax += yborder-1;
   }
-  switch(yrange%2) {
-  case 1: ymax++; break;
-  }
-  xrange = xmax - xmin;
-  yrange = ymax - ymin;
-  // make the object frame square, because of const beta in both directions
-  if (xrange < yrange) {
-    yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);
-    xborder = yborder + (yrange - xrange)/2;
-  } else {
-    xborder = GSL_MAX_INT((int)floor(xrange*factor), 12);
-    yborder = xborder + (xrange - yrange)/2;
-  }
-  xmin -= xborder;
-  xmax += xborder-1;
-  ymin -= yborder;
-  ymax += yborder-1;
 }
 
 const History& Frame::getHistory () {

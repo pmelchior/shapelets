@@ -87,10 +87,10 @@ void SExFrame::fillObject(Object& O) {
   Catalog::iterator catiter = catalog.find(O.getID());
   if (catiter != catalog.end()) {
     int xmin, xmax, ymin, ymax;
-    xmin = (*catiter).second.XMIN;
-    xmax = (*catiter).second.XMAX;
-    ymin = (*catiter).second.YMIN;
-    ymax = (*catiter).second.YMAX;
+    xmin = catiter->second.XMIN;
+    xmax = catiter->second.XMAX;
+    ymin = catiter->second.YMIN;
+    ymax = catiter->second.YMAX;
 
     O.history << "# Extracting Object " << (*catiter).first;
     O.history << " found in the area (" << xmin << "/" << ymin << ") to (";
@@ -121,11 +121,11 @@ void SExFrame::fillObject(Object& O) {
     // in the end only object data into new vector of smaller size, the rest will
     // filled up with artificial noise
     const NumVector<data_t>& data = SExFrame::getData();
-    NumVector<data_t>& objdata = O.accessData();
+    NumVector<data_t>& objdata = O;
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
-    SegmentationMap& objSegMap = O.accessSegmentationMap();
+    SegmentationMap& objSegMap = O.segMap;
     objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
-    NumVector<data_t>& objWeightMap = O.accessWeightMap();
+    NumVector<data_t>& objWeightMap = O.weight;
     if (weight.size()!=0) 
       objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
     vector<uint> nearby_objects;
@@ -151,7 +151,7 @@ void SExFrame::fillObject(Object& O) {
       //now inside image region
       else {
 	// mask other detected objects in the frame
-	if ((segMap(j) > 0 && segMap(j) != (*catiter).first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
+	if ((segMap(j) > 0 && segMap(j) != catiter->first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
 	  // if we have a weight map 
 	  if (weight.size()!=0)
 	    objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
@@ -181,17 +181,16 @@ void SExFrame::fillObject(Object& O) {
 
     // Fill other quantities into Object
     O.history << "# Segment:" << endl;
-    O.computeFluxCentroid();
-    O.setFlux((*catiter).second.FLUX);
-    Point2D centroid((*catiter).second.XCENTROID,(*catiter).second.YCENTROID);
-    O.setCentroid(centroid);
-    O.setDetectionFlags(std::bitset<8>((*catiter).second.FLAGS));
-    O.setClassifier((*catiter).second.CLASSIFIER);
-    O.setBaseFilename(SExFrame::getFilename());
-    data_t obj_bg_mean = 0;
-    if (!subtractBG)
-      obj_bg_mean = bg_mean;
-    O.setNoiseMeanRMS(obj_bg_mean,bg_rms);
+    O.flux = catiter->second.FLUX;
+    O.centroid = Point2D(catiter->second.XCENTROID,catiter->second.YCENTROID);
+    O.history << "# Flux = " << O.flux << ", Centroid = ("<< O.centroid(0) << "/" << O.centroid(1) << ")" << std::endl; 
+    O.flag = std::bitset<8>(catiter->second.FLAGS);
+    O.classifier = catiter->second.CLASSIFIER;
+    O.basefilename = SExFrame::getFilename();
+    if (subtractBG)
+      O.setNoiseMeanRMS(0,bg_rms);
+    else
+      O.setNoiseMeanRMS(bg_mean,bg_rms);
   }
   else {
     std::cerr << "# SExFrame: This Object does not exist!" << endl;
@@ -245,12 +244,13 @@ void SExFrame::estimateNoise() {
   // 2) create NumVectorMasked from objdata and mask
   // 3) compute std from that
   const NumVector<data_t>& data = SExFrame::getData();
-  NumVector<bool> mask(data.size());
-  for(int i =0; i < data.size(); i++)
-    if (segMap(i) != 0) 
-      mask(i) = 1;
-  NumVectorMasked<data_t> masked(data,mask);
-  masked.kappa_sigma_clip(bg_mean,bg_rms);
+  // NumVector<bool> mask(data.size());
+//   for(int i =0; i < data.size(); i++)
+//     if (segMap(i) != 0) 
+//       mask(i) = 1;
+//   NumVectorMasked<data_t> masked(data,mask);
+//   masked.kappa_sigma_clip(bg_mean,bg_rms);
+  data.kappa_sigma_clip(bg_mean,bg_rms);
   estimatedBG = 1;
 }
 

@@ -35,6 +35,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   status = readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
   centroid(1) = imag(xc);
+  status = readFITSKeyword(fptr,"FLUX",flux);
   status = readFITSKeyword(fptr,"BG_MEAN",noise_mean);
   status = readFITSKeyword(fptr,"BG_RMS",noise_rms);
   status = readFITSKeyword(fptr,"FLAG",flag);
@@ -75,7 +76,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
     std::terminate();
   }
   
-  history << "# Reading object's pixel data" << std::endl;
+  history << "# Reading object's pixel data";
   Image<data_t>::resize(npixels);
   long firstpix[2] = {1,1};
   data_t vald;
@@ -104,9 +105,43 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   }
   history << std::endl;
   fits_close_file(fptr, &status);
+}
 
-  // since the grid is change, the centroid has to be recomputed
-  computeFluxCentroid();
+void Object::save(std::string filename) {
+  // write pixel data
+  const NumVector<data_t>& data = Image<data_t>::getData();
+  const Grid& grid = Image<data_t>::getGrid();
+  int status = 0;
+  fitsfile *outfptr = createFITSFile(filename);
+  status = writeFITSImage(outfptr,grid,data);
+
+  // add object information to header
+  status = updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
+  status = updateFITSKeyword(outfptr,"ID",id,"object id");
+  status = updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
+  status = updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
+  status = updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
+  status = updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
+  status = updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
+  complex<data_t> xc(centroid(0),centroid(1));
+  status = updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
+  status = updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
+  status = updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
+  status = updateFITSKeyword(outfptr,"FLAG",flag,"extraction flag");
+  status = updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
+  status = appendFITSHistory(outfptr,history.str());
+
+  // save segMap
+  if (segMap.size() != 0) {
+    status = writeFITSImage(outfptr,grid,segMap.getData(),"SEGMAP");
+    status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
+  }
+
+  //if weight map provided, save it too
+  if (weight.size() != 0)
+    status = writeFITSImage(outfptr,grid,weight,"WEIGHT");
+
+  status = closeFITSFile(outfptr);
 }
 
 void Object::setID(unsigned long inid) {
@@ -147,15 +182,34 @@ NumMatrix<data_t> Object::get2ndBrightnessMoments() {
   const NumVector<data_t>& data = Image<data_t>::getData();
   const Grid& grid = Image<data_t>::getGrid();
   NumMatrix<data_t> Q(2,2);
+  
+  // check if weights are available: if yes, use them
+  bool weights = false;
+  if (weight.size() != 0)
+    weights = true;
+  
+  data_t datapoint, unnormed_flux = 0;
   for (int i=0; i< grid.size(); i++) {
-    Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i);
-    Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
-    Q(1,1) += gsl_pow_2(grid(i,1)-centroid(1)) * data(i);
+    if (weights) {
+      if (weight(i) != 0)
+	datapoint = data(i) * sqrt(weight(i));
+      else
+	datapoint = 0;
+    }
+    else
+      datapoint = data(i);
+    
+    unnormed_flux += datapoint;
+    Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * datapoint;
+    Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * datapoint;
+    Q(1,1) += gsl_pow_2(grid(i,1)-centroid(1)) * datapoint;
   }
-  Q(0,0) /= flux;
-  Q(0,1) /= flux;
+  
+  // since unnormed_flux and Qs have same normalization, so it drops out
+  Q(0,0) /= unnormed_flux;
+  Q(0,1) /= unnormed_flux;
   Q(1,0) = Q(0,1);
-  Q(1,1) /= flux;
+  Q(1,1) /= unnormed_flux;
   return Q;
 }
 
@@ -174,18 +228,39 @@ complex<data_t> Object::getEllipticity() {
 void Object::computeFluxCentroid() {
   const NumVector<data_t>& data = Image<data_t>::getData();
   const Grid& grid = Image<data_t>::getGrid();
+
+  // check if weights are available: if yes, use them
+  bool weights = false;
+  if (weight.size() != 0)
+    weights = true;
+  
   flux = 0;
   centroid(0) = centroid(1) = 0;
+  data_t datapoint, sum_weights = 0;
+  unsigned long sum_pixels = 0;
   for (int i=0; i< grid.size(); i++) {
-    flux += data(i);
-    centroid(0) += grid(i,0) * data(i);
-    centroid(1) += grid(i,1) * data(i);
+    if (weights) {
+      if (weight(i) != 0) {
+	datapoint = data(i) * sqrt(weight(i));
+	sum_weights += sqrt(weight(i));
+	sum_pixels++;
+      } else
+	datapoint = 0;
+    }
+    else
+      datapoint = data(i);
+    flux += datapoint;
+    centroid(0) += grid(i,0) * datapoint;
+    centroid(1) += grid(i,1) * datapoint;
   }
+  
+  // even for weighted centroid: sum_weights drops out
   centroid(0) /= flux;
   centroid(1) /= flux;
+  if (weights)
+    flux /= sum_weights/sum_pixels;
   
-  history << "# Flux = " << flux << ", Centroid = ("<< centroid(0) << "/" << centroid(1);
-  history <<  ")." <<std::endl;
+  history << "# Flux = " << flux << ", Centroid = ("<< centroid(0) << "/" << centroid(1) << ")" << std::endl;
 }
 
 std::bitset<8> Object::getDetectionFlags() const {
@@ -248,38 +323,7 @@ CorrelationFunction& Object::accessCorrelationFunction() {
   return xi;
 }
 
-void Object::save(std::string filename) {
-  // write pixel data
-  const NumVector<data_t>& data = Image<data_t>::getData();
-  const Grid& grid = Image<data_t>::getGrid();
-  int status = 0;
-  fitsfile *outfptr = createFITSFile(filename);
-  status = writeFITSImage(outfptr,grid,data);
-
-  // add object information to header
-  status = updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
-  status = updateFITSKeyword(outfptr,"ID",id,"object id");
-  status = updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
-  status = updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
-  status = updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
-  status = updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
-  complex<data_t> xc(centroid(0),centroid(1));
-  status = updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
-  status = updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
-  status = updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
-  status = updateFITSKeyword(outfptr,"FLAG",flag,"extraction flag");
-  status = updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
-  status = appendFITSHistory(outfptr,history.str());
-
-  // save segMap
-  if (segMap.size() != 0) {
-    status = writeFITSImage(outfptr,grid,segMap.getData(),"SEGMAP");
-    status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
-  }
-
-  //if weight map provided, save it too
-  if (weight.size() != 0)
-    status = writeFITSImage(outfptr,grid,weight,"WEIGHT");
-
-  status = closeFITSFile(outfptr);
+std::string Object::getHistory() const {
+  return history.str();
 }
+

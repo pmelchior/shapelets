@@ -117,8 +117,8 @@ Composite2D(), coeffs(Composite2D::coeffs) {
     optimalDecomp.getShapeletErrors(errors);
     chisquare = optimalDecomp.getOptimalChiSquare();
     history.setSilent();
-    history << obj.history.str();
-    history << optimalDecomp.getHistory().str();
+    history << obj.getHistory();
+    history << optimalDecomp.getHistory();
     history.unsetSilent();
     // joing detection and decomposition flags to form a 16 bit set
     const bitset<8>& fitsFlags = obj.getDetectionFlags();
@@ -149,8 +149,8 @@ Composite2D(), coeffs(Composite2D::coeffs) {
   chisquare = optimalDecomp.getOptimalChiSquare();
   history.clear();
   history.setSilent();
-  history << obj.history.str();
-  history << optimalDecomp.getHistory().str();
+  history << obj.getHistory();
+  history << optimalDecomp.getHistory();
   history.unsetSilent();
   // joing detection and decomposition flags to form a 16 bit set
   flags.reset();

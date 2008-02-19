@@ -81,7 +81,7 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// - <tt>i = 7</tt>: \f$\chi^2(\beta) \bigl|_{n_{max}=2}\f$ does not have a useful minimum.
   const std::bitset<8>& getDecompositionFlags();
   /// Get the decomposition History.
-  const History& getHistory();
+  std::string getHistory();
 
 private:
   const Object& obj;

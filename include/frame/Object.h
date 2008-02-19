@@ -109,11 +109,13 @@ class Object : public Image<data_t> {
   /// All other information goes to the pHDU header.
   /// If a weight map is provided, these will be stored in the 2nd extHDU.
   void save(std::string fitsfile);
-  /// History of the object
-  History history;
+  /// Get History of the object.
+  std::string getHistory() const;
   /// Computes the flux and the position of the centroid of the object from pixel data.
   void computeFluxCentroid();
 
+  friend class Frame;
+  friend class SExFrame;
   
  private:
   unsigned long id;
@@ -125,6 +127,7 @@ class Object : public Image<data_t> {
   data_t flux, noise_mean, noise_rms, classifier;
   std::bitset<8> flag;
   std::string basefilename;
+  History history;
 };
 
 #endif

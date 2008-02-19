@@ -23,7 +23,7 @@ Decomposite2D(2,(O.getSize(0) + O.getSize(1))/(2*8),O), obj(O) {
   betaLow = GSL_MIN_DBL(inbetaLow, inbetaHigh);
   betaHigh = GSL_MAX_DBL(inbetaLow,inbetaHigh);
 
-  // estimators for beta from FitsImage
+  // estimators for beta
   beta = (obj.getSize(0) + obj.getSize(1))/(2*8);
 
   // take the minimum of the axis sizes to get a limit for theta_max
@@ -385,7 +385,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     // thus b higher
     switch (step) {
     case 1: a = 0.5*sqrt(3.); b = 2*beta; accuracy = 0.02*beta; break;
-    case 2: beta *=0.75; a = 0.66*beta; b = 1.5*beta; accuracy = 0.02*beta; break;
+    case 2: beta *=0.75; a = 0.66*beta; b = 2*beta; accuracy = 0.02*beta; break;
     case 3: a = 0.8*beta; b = 1.1*beta; accuracy = 0.02*beta; break;
     case 6: a = 0.9*beta; b= 1.2*beta; accuracy = 0.02*beta; break;
     case 7: a = 0.9*beta; b= 1.2*beta; accuracy = 0.02*beta; break;
@@ -490,7 +490,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
       }
     } else {
       // fa == fb here: this object has a flat chi2 function
-      history << "# chi^2 is flat; detection of minimum failed!" << endl;
+      std::cerr << "# chi^2 is flat; detection of minimum failed!" << endl;
       std::terminate();
     }
 
@@ -1040,6 +1040,6 @@ data_t OptimalDecomposite2D::regularize(data_t wantedR) {
   return R;
 }
 
-const History& OptimalDecomposite2D::getHistory() {
-  return history;
+std::string OptimalDecomposite2D::getHistory() {
+  return history.str();
 }
