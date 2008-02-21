@@ -33,18 +33,24 @@ class Image : public NumVector<T> {
   }
   /// Acess operator using pixel index.
   T& operator()(unsigned long i) {
-    return Image::operator()(i);
+    return NumVector<T>::operator()(i);
   }
   const T& operator()(unsigned long i) const {
-    return Image::operator()(i);
+    return NumVector<T>::operator()(i);
   }
   /// Access operator using pixel coordinates.
   T& operator()(unsigned long x, unsigned long y) {
-    return Image::operator()(y*Image::getSize(0) + x);
+    return NumVector<T>::operator()(y*Image::getSize(0) + x);
   }
   /// const Acess operator using pixel coordinates.
   const T& operator()(unsigned long x, unsigned long y) const {
-    return Image::operator()(y*Image::getSize(0) + x);
+    return NumVector<T>::operator()(y*Image::getSize(0) + x);
+  }
+  NumVector<T>& accessData() {
+    return *this;
+  }
+  const NumVector<T>& getData() const {
+    return *this;
   }
   /// Get axis size of the whole image in given direction.
   unsigned int getSize(bool direction) const {
