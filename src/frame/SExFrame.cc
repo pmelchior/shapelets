@@ -33,12 +33,12 @@ Image<data_t>(datafile), weight(), segMap(segmapfile) {
   catalog = Catalog(catfile);
 
   // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
-  fitsfile* fptr = openFITSFile(segmapfile);
-  int status = readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
-  status = readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
+  fitsfile* fptr = IO::openFITSFile(segmapfile);
+  int status = IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
+  status = IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
   if (status == 0)
     estimatedBG = 1;
-  closeFITSFile(fptr);
+  IO::closeFITSFile(fptr);
 }
 
 SExFrame::SExFrame (std::string datafile, std::string weightfile, std::string segmapfile, std::string catfile) : 
@@ -59,12 +59,12 @@ Image<data_t>(datafile), weight(weightfile), segMap(segmapfile) {
   catalog = Catalog(catfile);
 
   // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
-  fitsfile* fptr = openFITSFile(segmapfile);
-  int status = readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
-  status = readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
+  fitsfile* fptr = IO::openFITSFile(segmapfile);
+  int status = IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
+  status = IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
   if (status == 0)
     estimatedBG = 1;
-  closeFITSFile(fptr);
+  IO::closeFITSFile(fptr);
 }
 
 SExFrame::~SExFrame() {

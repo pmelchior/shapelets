@@ -10,7 +10,7 @@
 
 namespace ublas = boost::numeric::ublas;
 
-fitsfile* openFITSFile(std::string filename, bool write) {
+fitsfile* IO::openFITSFile(std::string filename, bool write) {
   // check if file alredy exists
   // if not: call createFITSFile()
   bool exists = 0;
@@ -30,7 +30,7 @@ fitsfile* openFITSFile(std::string filename, bool write) {
   return outfptr;
 }
 
-fitsfile* createFITSFile(std::string filename) {
+fitsfile* IO::createFITSFile(std::string filename) {
   int status = 0;
   fitsfile *outfptr;
   filename = "!"+filename; // overwrite existing file if necessary
@@ -39,19 +39,19 @@ fitsfile* createFITSFile(std::string filename) {
   return outfptr;
 }
 
-int closeFITSFile(fitsfile* fptr) {
+int IO::closeFITSFile(fitsfile* fptr) {
   int status = 0;
   fits_close_file(fptr, &status);
   return status;
 }
 
-int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment) {
+int IO::updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment) {
   int status = 0;
   fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
   return status;
 }
 
-int appendFITSHistory(fitsfile *outfptr, std::string history) {
+int IO::appendFITSHistory(fitsfile *outfptr, std::string history) {
   // since it is too long the be saved in one shot
   // split it line by line
   // and for each line insert a HISTORY line in the header
@@ -73,7 +73,7 @@ int appendFITSHistory(fitsfile *outfptr, std::string history) {
   return status;
 }
 
-int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val) {
+int IO::readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val) {
   int status = 0;
   char* comment = NULL;
   char value[FLEN_CARD];
@@ -82,7 +82,7 @@ int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val) {
   return status;
 }
 
-int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
+int IO::readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
   int status = 0, nkeys, keylen=0;
   char* comment = NULL;
   char card[FLEN_CARD], keyword[FLEN_KEYWORD];
@@ -100,7 +100,7 @@ int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
 }
 
 
-void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit) {
+void IO::addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit) {
   const gsl_rng_type * T;
   gsl_rng * r;
   T = gsl_rng_mt19937;
@@ -117,7 +117,7 @@ void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimi
   gsl_rng_free (r);
 }
 
-void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma) {
+void IO::addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma) {
   const gsl_rng_type * T;
   gsl_rng * r;
   T = gsl_rng_mt19937;
@@ -135,7 +135,7 @@ void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesig
   gsl_rng_free (r);
 }
 
-void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean) {
+void IO::addPoissonianNoise(NumVector<data_t>& data, data_t noisemean) {
   const gsl_rng_type * T;
   gsl_rng * r;
   T = gsl_rng_mt19937;
@@ -153,7 +153,7 @@ void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean) {
   gsl_rng_free (r);
 }
 
-void convolveGaussian(const NumVector<data_t>& image, NumVector<data_t>& result, int width,int height) {
+void IO::convolveGaussian(const NumVector<data_t>& image, NumVector<data_t>& result, int width,int height) {
   NumVector<data_t> temp = image;
         
   int i,x,y,k0,k;
@@ -220,7 +220,7 @@ void convolveGaussian(const NumVector<data_t>& image, NumVector<data_t>& result,
   }
 }
 
-int makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
+int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
   // convert colorscheme into appropriate parameters
   // default parameters are "SPECTRUM"
   char scheme = 0;
@@ -415,7 +415,7 @@ int makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
   return maxcolors;
 }
 
-unsigned int getScaledValue(data_t value, int maxcolors, data_t min, data_t max, char scaling) {
+unsigned int IO::getScaledValue(data_t value, int maxcolors, data_t min, data_t max, char scaling) {
   if (value < min) 
     value = min;
   else if (value > max)
@@ -436,7 +436,8 @@ unsigned int getScaledValue(data_t value, int maxcolors, data_t min, data_t max,
     break;
   }
 }
-void writePPMImage(std::string filename, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
+
+void IO::writePPMImage(std::string filename, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
   FILE *file;
   long x,y,k;
     
@@ -482,7 +483,7 @@ void writePPMImage(std::string filename, std::string colorscheme, std::string sc
   fclose(file);
 }
 
-void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
+void IO::makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
   unsigned int width = grid.getSize(0);
   unsigned int height= grid.getSize(1);
   
@@ -515,7 +516,7 @@ void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, st
   }
 }
 
-void writeRGB2PPMImage (std::string filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage) {
+void IO::writeRGB2PPMImage (std::string filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage) {
   FILE *file;
   unsigned int width = grid.getSize(0);
   unsigned int height= grid.getSize(1);

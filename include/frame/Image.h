@@ -5,7 +5,6 @@
 #include <string>
 #include <NumVector.h>
 #include <Typedef.h>
-#include <IO.h>
 #include <History.h>
 #include <frame/Grid.h>
 
@@ -71,12 +70,12 @@ class Image : public NumVector<T> {
   }
   /// Save as FITS file.
   void save(std::string filename) const {
-    fitsfile* fptr = createFITSFile(filename);
-    writeFITSImage(fptr,grid,*this);
+    fitsfile* fptr = IO::createFITSFile(filename);
+    IO::writeFITSImage(fptr,grid,*this);
     // if history is not empty, append history to FITS header
     if (!history.isEmpty())
-      appendFITSHistory(fptr,history.str());
-    closeFITSFile(fptr);
+      IO::appendFITSHistory(fptr,history.str());
+    IO::closeFITSFile(fptr);
   }
   ///  Get image history.
   const History& getHistory() const {
@@ -86,15 +85,16 @@ class Image : public NumVector<T> {
   History& accessHistory() {
     return history;
   }
+ friend class IO;
  protected:
   Grid grid;
  private:
   std::string filename;
   History history;
   void read() {
-    fitsfile *fptr = openFITSFile(filename);
-    int status = readFITSImage(fptr,grid,*this);
-    status = closeFITSFile(fptr);
+    fitsfile *fptr = IO::openFITSFile(filename);
+    int status = IO::readFITSImage(fptr,grid,*this);
+    status = IO::closeFITSFile(fptr);
   }
 };
 

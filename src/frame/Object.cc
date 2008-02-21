@@ -1,7 +1,7 @@
 #include <frame/Object.h>
 #include <sstream>
 #include <gsl/gsl_math.h>
-#include <fitsio.h>
+#include <IO.h>
 
 Object::Object(unsigned long inid) : Image<data_t>(), segMap() {
   id = inid;
@@ -15,102 +15,66 @@ Object::Object (const Image<data_t>& base) {
 }
 
 Object::Object(std::string objfile) : Image<data_t>(), segMap() {
-  fitsfile *fptr;
   int status, nkeys, keypos, hdutype;
   char card[FLEN_CARD];
   char comment[FLEN_CARD];
   status = 0;
 
   history << "# Loading object from Fits file " << objfile << ":" << std::endl;
-  fits_open_file(&fptr, objfile.c_str(), READONLY, &status);
+  fitsfile* fptr = IO::openFITSFile(objfile);
 
-  // open pHDU and read header
-  fits_movabs_hdu(fptr, 1, &hdutype, &status);
+  // reading objects pixel data
+  history << "# Reading object's pixel data";
+  IO::readFITSImage(fptr,Object::accessGrid(),Object::accessData());
+  
   // recover object information from header keywords
-  status = readFITSKeywordString(fptr,"BASEFILE",basefilename);
-  status = readFITSKeyword(fptr,"ID",id);
+  status = IO::readFITSKeywordString(fptr,"BASEFILE",basefilename);
+  status = IO::readFITSKeyword(fptr,"ID",id);
   data_t xmin,xmax,ymin,ymax;
-  status = readFITSKeyword(fptr,"XMIN",xmin);
-  status = readFITSKeyword(fptr,"XMAX",xmax);
-  status = readFITSKeyword(fptr,"YMIN",ymin);
-  status = readFITSKeyword(fptr,"YMAX",ymax);
-  Image<data_t>::accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
+  status = IO::readFITSKeyword(fptr,"XMIN",xmin);
+  status = IO::readFITSKeyword(fptr,"XMAX",xmax);
+  status = IO::readFITSKeyword(fptr,"YMIN",ymin);
+  status = IO::readFITSKeyword(fptr,"YMAX",ymax);
+  Object::accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
   complex<data_t> xc;
-  status = readFITSKeyword(fptr,"CENTROID",xc);
+  status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
   centroid(1) = imag(xc);
-  status = readFITSKeyword(fptr,"FLUX",flux);
-  status = readFITSKeyword(fptr,"BG_MEAN",noise_mean);
-  status = readFITSKeyword(fptr,"BG_RMS",noise_rms);
+  status = IO::readFITSKeyword(fptr,"FLUX",flux);
+  status = IO::readFITSKeyword(fptr,"BG_MEAN",noise_mean);
+  status = IO::readFITSKeyword(fptr,"BG_RMS",noise_rms);
   unsigned long flags;
-  status = readFITSKeyword(fptr,"FLAG",flags);
+  status = IO::readFITSKeyword(fptr,"FLAG",flags);
   flag = std::bitset<8>(flags);
-  status = readFITSKeyword(fptr,"CLASSIFIER",classifier);
+  status = IO::readFITSKeyword(fptr,"CLASSIFIER",classifier);
   
   // read history
   std::string hstr;
-  readFITSKeyCards(fptr,"HISTORY",hstr);
+  IO::readFITSKeyCards(fptr,"HISTORY",hstr);
   history.clear();
   bool verb = history.getVerbosity();
   history.setVerbosity(0);
   history << hstr;
   history.setVerbosity(verb);
 
-  // if status is not 0 we have faced an error
-  if (status != 0) {
-    std::cerr << "Object: header keywords erroneous!" << std::endl;
-    std::terminate();
-  }
-
-  int naxis;
-  fits_get_img_dim(fptr, &naxis, &status);
-  if (naxis!=2) {
-    std::cerr << "Object: naxis != 2. This is not a FITS image!" << std::endl;
-    std::terminate();
-  } 
-  // first obtain the size of the image array
-  long naxes[2] = {1,1};
-  fits_get_img_size(fptr, naxis, naxes, &status);
-  unsigned int axsize0, axsize1;
-  axsize0 = naxes[0];
-  axsize1 = naxes[1];
-  long npixels = axsize0*axsize1;
-  // grid is defined by XMIN..YMAX; this should have the same
-  // number of pixels as the actual image
-  if (npixels != Image<data_t>::getGrid().size()) {
+  // check whether grid has same size as object
+  if (Object::size() != Object::getGrid().size()) {
     std::cerr << "Object: Grid size from header keywords wrong" << std::endl;
     std::terminate();
   }
   
-  history << "# Reading object's pixel data";
-  Image<data_t>::resize(npixels);
-  long firstpix[2] = {1,1};
-  data_t vald;
-  int imageformat = getFITSImageFormat(vald);
-  int datatype = getFITSDataType(vald);
-  fits_read_pix(fptr, datatype, firstpix, npixels, NULL,Image<data_t>::c_array(), NULL, &status);
-  
   history << ", segmentation map";
   // move to 1st extHDU for the segmentation map
   fits_movabs_hdu(fptr, 2, &hdutype, &status);
-  segMap.resize(npixels);
-  int vali;
-  imageformat = getFITSImageFormat(vali);
-  datatype = getFITSDataType(vali);
-  segMap.resize(npixels);
-  fits_read_pix(fptr, datatype, firstpix, npixels, NULL,segMap.c_array(), NULL, &status);
-  segMap.accessGrid() = Image<data_t>::getGrid();
+  IO::readFITSImage(fptr, segMap.accessGrid(), segMap);
 
   // check if there is 2nd extHDU: the weight map
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
     history << " and weight map";
-    weight.resize(npixels);
-    imageformat = getFITSImageFormat(vald);
-    datatype = getFITSDataType(vald);
-    fits_read_pix(fptr, datatype, firstpix, npixels, NULL,weight.c_array(), NULL, &status);
+    IO::readFITSImage(fptr, Object::accessGrid(), weight);
   }
   history << std::endl;
-  fits_close_file(fptr, &status);
+  IO::closeFITSFile(fptr);
 }
 
 void Object::save(std::string filename) {
@@ -118,36 +82,36 @@ void Object::save(std::string filename) {
   const NumVector<data_t>& data = *this;
   const Grid& grid = Image<data_t>::getGrid();
   int status = 0;
-  fitsfile *outfptr = createFITSFile(filename);
-  status = writeFITSImage(outfptr,grid,data);
+  fitsfile *outfptr = IO::createFITSFile(filename);
+  status = IO::writeFITSImage(outfptr,grid,data);
 
   // add object information to header
-  status = updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
-  status = updateFITSKeyword(outfptr,"ID",id,"object id");
-  status = updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
-  status = updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
-  status = updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
-  status = updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
-  status = updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
+  status = IO::updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
+  status = IO::updateFITSKeyword(outfptr,"ID",id,"object id");
+  status = IO::updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
+  status = IO::updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
+  status = IO::updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
+  status = IO::updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
+  status = IO::updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
   complex<data_t> xc(centroid(0),centroid(1));
-  status = updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
-  status = updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
-  status = updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
-  status = updateFITSKeyword(outfptr,"FLAG",flag.to_ulong(),"extraction flag");
-  status = updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
-  status = appendFITSHistory(outfptr,history.str());
+  status = IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
+  status = IO::updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
+  status = IO::updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
+  status = IO::updateFITSKeyword(outfptr,"FLAG",flag.to_ulong(),"extraction flag");
+  status = IO::updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
+  status = IO::appendFITSHistory(outfptr,history.str());
 
   // save segMap
   if (segMap.size() != 0) {
-    status = writeFITSImage(outfptr,grid,segMap,"SEGMAP");
-    status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
+    status = IO::writeFITSImage(outfptr,grid,segMap,"SEGMAP");
+    status = IO::appendFITSHistory(outfptr,(segMap.getHistory()).str());
   }
 
   //if weight map provided, save it too
   if (weight.size() != 0)
-    status = writeFITSImage(outfptr,grid,weight,"WEIGHT");
+    status = IO::writeFITSImage(outfptr,grid,weight,"WEIGHT");
 
-  status = closeFITSFile(outfptr);
+  status = IO::closeFITSFile(outfptr);
 }
 
 void Object::setID(unsigned long inid) {
