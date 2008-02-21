@@ -65,14 +65,13 @@ int main(int argc, char *argv[]) {
 	std::string fitsname = newname.str();
 	obj.save(fitsname);
 	// ... add shapelet model ...
-	fitsfile* fptr = openFITSFile(fitsname,1);
-	writeFITSImage(fptr,obj.getGrid(),sobj.getModel(),"MODEL");
-	appendFITSHistory(fptr,sobj.getHistory());
-	// ... and residuals (data - model).
-	NumVector<data_t> residuals = obj;
-	residuals -= sobj.getModel();
-	writeFITSImage(fptr,obj.getGrid(),residuals,"RESIDUAL");
-	closeFITSFile(fptr);
+	fitsfile* fptr = IO::openFITSFile(fitsname,1);
+	IO::writeFITSImage(fptr,obj.getGrid(),sobj.getModel(),"MODEL");
+	IO::appendFITSHistory(fptr,sobj.getHistory());
+	// ... and residuals (obj - model).
+	obj -= sobj.getModel();
+	IO::writeFITSImage(fptr,obj,"RESIDUAL");
+	IO::closeFITSFile(fptr);
       }
     }
   }

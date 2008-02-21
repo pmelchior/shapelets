@@ -20,22 +20,22 @@ int main(int argc, char *argv[]) {
   // add noise
   if (rms.isSet() || mean.isSet()) {
     if (poisson.isSet())
-      addPoissonianNoise(data,mean.getValue());
+      IO::addPoissonianNoise(data,mean.getValue());
     else
-      addGaussianNoise(data,mean.getValue(),rms.getValue());
+      IO::addGaussianNoise(data,mean.getValue(),rms.getValue());
   }
 
-  fitsfile* fptr = createFITSFile(output.getValue());
-  writeFITSImage(fptr,grid,data,"MODEL");
+  fitsfile* fptr = IO::createFITSFile(output.getValue());
+  IO::writeFITSImage(fptr,grid,data,"MODEL");
   // append history
   if (history.isSet())
-    appendFITSHistory(fptr,sobj.getHistory());
+    IO::appendFITSHistory(fptr,sobj.getHistory());
   // save coeffs and errors...
   if (coeffs.isSet())
-    writeFITSImage(fptr,sobj.getCoeffs(),"COEFFS");
+    IO::writeFITSImage(fptr,sobj.getCoeffs(),"COEFFS");
   if (errors.isSet())
-    writeFITSImage(fptr,sobj.getDecompositionErrors(),"ERRORS");
-  closeFITSFile(fptr);
+    IO::writeFITSImage(fptr,sobj.getDecompositionErrors(),"ERRORS");
+  IO::closeFITSFile(fptr);
 }
   
 							

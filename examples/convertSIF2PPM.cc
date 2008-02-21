@@ -24,16 +24,16 @@ int main(int argc, char *argv[]) {
   // add noise
   if (rms.isSet() || mean.isSet()) {
     if (poisson.isSet())
-      addPoissonianNoise(data,mean.getValue());
+      IO::addPoissonianNoise(data,mean.getValue());
     else
-      addGaussianNoise(data,mean.getValue(),rms.getValue());
+      IO::addGaussianNoise(data,mean.getValue(),rms.getValue());
   }
 
   // write model to ppm file:
   // colormodel in {"RED", "BLUE", "GREEN", "GRAY", "WARM"}
   // data scaling in {"LINEAR", "SQUARE_ROOT", "LOGARITHMIC"} 
   // for the data range between min() and max()
-  writePPMImage(output.getValue(),"SPECTRUM","LINEAR",data.min(),data.max(),grid,data);
+  IO::writePPMImage(output.getValue(),"SPECTRUM","LINEAR",data.min(),data.max(),grid,data);
 }
   
 							
