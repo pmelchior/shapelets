@@ -120,7 +120,7 @@ void SExFrame::fillObject(Object& O) {
     // than 4 pixels and set their pixelmap flag to -2
     // in the end only object data into new vector of smaller size, the rest will
     // filled up with artificial noise
-    const NumVector<data_t>& data = SExFrame::getData();
+    const NumVector<data_t>& data = *this;
     NumVector<data_t>& objdata = O;
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     SegmentationMap& objSegMap = O.segMap;
@@ -183,7 +183,7 @@ void SExFrame::fillObject(Object& O) {
     O.history << "# Segment:" << endl;
     O.flux = catiter->second.FLUX;
     O.centroid = Point2D(catiter->second.XCENTROID,catiter->second.YCENTROID);
-    O.history << "# Flux = " << O.flux << ", Centroid = ("<< O.centroid(0) << "/" << O.centroid(1) << ")" << std::endl; 
+    O.history << "# Setting catalog values: Flux = " << O.flux << ", Centroid = ("<< O.centroid(0) << "/" << O.centroid(1) << ")" << std::endl; 
     O.flag = std::bitset<8>(catiter->second.FLAGS);
     O.classifier = catiter->second.CLASSIFIER;
     O.basefilename = SExFrame::getFilename();
@@ -243,14 +243,13 @@ void SExFrame::estimateNoise() {
   // 1) set mask(i)=1, when segMap(i) != 0
   // 2) create NumVectorMasked from objdata and mask
   // 3) compute std from that
-  const NumVector<data_t>& data = SExFrame::getData();
   // NumVector<bool> mask(data.size());
 //   for(int i =0; i < data.size(); i++)
 //     if (segMap(i) != 0) 
 //       mask(i) = 1;
 //   NumVectorMasked<data_t> masked(data,mask);
 //   masked.kappa_sigma_clip(bg_mean,bg_rms);
-  data.kappa_sigma_clip(bg_mean,bg_rms);
+  SExFrame::kappa_sigma_clip(bg_mean,bg_rms);
   estimatedBG = 1;
 }
 

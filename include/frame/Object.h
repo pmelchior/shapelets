@@ -35,6 +35,8 @@ class Object : public Image<data_t> {
   /// Argumented constructor for loading an object from a Fits file.
   /// The Fits file shold have been created by Object::save().
   Object (std::string fitsfile);
+  /// Copy constructor from base type.
+  Object (const Image<data_t>& base);
   /// Set the \p id.
   void setID(unsigned long id);
   /// Return the \p id.

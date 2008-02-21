@@ -16,7 +16,7 @@ Image<long>(segMapFile) {
 }
 
 unsigned long SegmentationMap::getNumberOfObjects() {
-  const NumVector<long>& segMap = SegmentationMap::getData();
+  const NumVector<long>& segMap = *this;
   set<long> objects;
   for (ulong i=0; i<segMap.size(); i++)
     // if pixel belongs to object
@@ -29,7 +29,7 @@ unsigned long SegmentationMap::getNumberOfObjects() {
 
 // find list of pixels due to given object from segmentation map 
 void SegmentationMap::findObjectPixels(std::set<ulong>& pixelset, ulong objectnr, long xmin, long xmax, long ymin, long ymax) {
-  const NumVector<long>& segMap = SegmentationMap::getData();
+  const NumVector<long>& segMap = *this;
   long axsize0 = SegmentationMap::getGrid().getSize(0), axsize1 = SegmentationMap::getGrid().getSize(1);
   pixelset.clear();
   for (long y = GSL_MAX_INT(ymin,0); y <= GSL_MIN_INT(ymax,axsize1-1); y++) {
@@ -43,7 +43,7 @@ void SegmentationMap::findObjectPixels(std::set<ulong>& pixelset, ulong objectnr
 
 // draws a rectangular frame with the given limits in the segmenation map
 void SegmentationMap::setSegmentBorder(int tag, long xmin, long xmax, long ymin, long ymax) {
-  NumVector<long>& segMap = SegmentationMap::accessData();
+  NumVector<long>& segMap = *this;
   long axsize0 = SegmentationMap::getGrid().getSize(0), axsize1 = SegmentationMap::getGrid().getSize(1);
   // check if corners are within frame
   if (xmin<0) xmin=0;
@@ -69,7 +69,7 @@ void SegmentationMap::setSegmentBorder(int tag, long xmin, long xmax, long ymin,
 }
 
 void SegmentationMap::cleanSegMapArea(long xmin, long xmax, long ymin, long ymax) {
-  NumVector<long>& segMap = SegmentationMap::accessData();
+  NumVector<long>& segMap = *this;
   long axsize0 = SegmentationMap::getSize(0), axsize1 = SegmentationMap::getSize(1);
   for (long y = GSL_MAX_INT(ymin,0); y <= GSL_MIN_INT(ymax,axsize1-1); y++) {
     for (long x = GSL_MAX_INT(xmin,0); x <= GSL_MIN_INT(xmax,axsize0-1); x++) {

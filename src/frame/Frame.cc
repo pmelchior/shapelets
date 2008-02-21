@@ -73,7 +73,7 @@ void Frame::subtractBackground() {
   if (!estimatedBG) estimateNoise();
   if (!subtractedBG) {
     for (int i=0; i < Frame::size(); i++) {
-      (Frame::accessData())(i) -= noise_mean;
+      Frame::operator()(i) -= noise_mean;
     }
     subtractedBG = 1;
     history << "# Background subtraction: noise level = " << noise_mean << std::endl;
@@ -93,7 +93,7 @@ data_t Frame::getThreshold(unsigned long pixel, data_t factor) {
 }
 
 void Frame::findObjects() {
-  const NumVector<data_t>& data = Frame::getData();
+  const NumVector<data_t>& data = *this;
   unsigned long counter = 0;
   unsigned int npixels = Frame::size();
   
@@ -369,7 +369,7 @@ void Frame::fillObject(Object& O) {
     }
 
     // fill the object pixel data
-    const NumVector<data_t>& data = Frame::getData();
+    const NumVector<data_t>& data = *this;
     NumVector<data_t>& objdata = O;
     objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
     SegmentationMap& objSegMap = O.segMap;
@@ -448,8 +448,8 @@ void Frame::fillObject(Object& O) {
   else if (O.getID()==0) {
     O.history.clear();
     O.history << "# Extracting Object 0 (whole Fits image)." << endl;
-    O.accessData() = Frame::getData();
-    O.accessGrid() = Frame::getGrid();
+    O = *this;
+    O.grid = Frame::getGrid();
     O.segMap = segMap;
     if (weight.size()!=0)
       O.weight = weight;

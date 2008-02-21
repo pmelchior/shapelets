@@ -31,20 +31,24 @@ class Image : public NumVector<T> {
     history.clear();
     read();
   }
+  /// Acess operator using pixel index.
+  T& operator()(unsigned long i) {
+    return Image::operator()(i);
+  }
+  const T& operator()(unsigned long i) const {
+    return Image::operator()(i);
+  }
+  /// Access operator using pixel coordinates.
+  T& operator()(unsigned long x, unsigned long y) {
+    return Image::operator()(y*Image::getSize(0) + x);
+  }
+  /// const Acess operator using pixel coordinates.
+  const T& operator()(unsigned long x, unsigned long y) const {
+    return Image::operator()(y*Image::getSize(0) + x);
+  }
   /// Get axis size of the whole image in given direction.
   unsigned int getSize(bool direction) const {
-    if (direction == 0) return grid.getSize(0);
-    else return grid.getSize(1);
-  }
-  /// Get contents of image as NumVector.
-  const NumVector<T>& getData() const {
-    //return data;
-    return *this;
-  }
-  /// Access contents of image.
-  NumVector<T>& accessData() {
-    //    return data;
-    return *this;
+    return grid.getSize(direction);
   }
   /// Get the Grid for the image.
   /// The grid is defined to range from 0 to getAxisSize(i)-1 in steps of 1.
@@ -76,9 +80,9 @@ class Image : public NumVector<T> {
   History& accessHistory() {
     return history;
   }
-
- private:
+ protected:
   Grid grid;
+ private:
   std::string filename;
   History history;
   void read() {

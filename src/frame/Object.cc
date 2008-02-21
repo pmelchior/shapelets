@@ -10,6 +10,10 @@ Object::Object(unsigned long inid) : Image<data_t>(), segMap() {
   flux = centroid(0) = centroid(1) = 0;
 }
 
+Object::Object (const Image<data_t>& base) {
+  *this = base;
+}
+
 Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   fitsfile *fptr;
   int status, nkeys, keypos, hdutype;
@@ -111,7 +115,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
 
 void Object::save(std::string filename) {
   // write pixel data
-  const NumVector<data_t>& data = Image<data_t>::getData();
+  const NumVector<data_t>& data = *this;
   const Grid& grid = Image<data_t>::getGrid();
   int status = 0;
   fitsfile *outfptr = createFITSFile(filename);
@@ -135,7 +139,7 @@ void Object::save(std::string filename) {
 
   // save segMap
   if (segMap.size() != 0) {
-    status = writeFITSImage(outfptr,grid,segMap.getData(),"SEGMAP");
+    status = writeFITSImage(outfptr,grid,segMap,"SEGMAP");
     status = appendFITSHistory(outfptr,(segMap.getHistory()).str());
   }
 
@@ -181,7 +185,7 @@ void Object::setFlux(data_t F) {
 }
 
 NumMatrix<data_t> Object::get2ndBrightnessMoments() {
-  const NumVector<data_t>& data = Image<data_t>::getData();
+  const NumVector<data_t>& data = *this;
   const Grid& grid = Image<data_t>::getGrid();
   NumMatrix<data_t> Q(2,2);
   
@@ -228,7 +232,7 @@ complex<data_t> Object::getEllipticity() {
 }
 
 void Object::computeFluxCentroid() {
-  const NumVector<data_t>& data = Image<data_t>::getData();
+  const NumVector<data_t>& data = *this;
   const Grid& grid = Image<data_t>::getGrid();
 
   // check if weights are available: if yes, use them

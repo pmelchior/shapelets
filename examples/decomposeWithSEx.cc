@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
 	writeFITSImage(fptr,obj.getGrid(),sobj.getModel(),"MODEL");
 	appendFITSHistory(fptr,sobj.getHistory());
 	// ... and residuals (data - model).
-	NumVector<data_t> residuals = obj.getData();
+	NumVector<data_t> residuals = obj;
 	residuals -= sobj.getModel();
 	writeFITSImage(fptr,obj.getGrid(),residuals,"RESIDUAL");
 	closeFITSFile(fptr);
