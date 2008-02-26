@@ -30,11 +30,11 @@ void SIFFile::save(ShapeletObjectList& sl) {
 }
 
 void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
-  int status = IO::writeFITSImage(outfptr,sobj.getCoeffs());
+  int status = IO::writeFITSImage(outfptr,sobj.getCoeffs().getCoeffMatrix());
 
   // when present, save errors also
   bool saveErrors = 0;
-  const NumMatrix<data_t>& errors = sobj.getDecompositionErrors();
+  const NumMatrix<data_t> errors = sobj.getErrors().getCoeffMatrix();
   if (errors.getRows() != 0 && errors.getColumns() != 0)
     saveErrors = 1;
   
@@ -46,8 +46,8 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   fits_write_record(outfptr,"",&status);
   fits_write_record(outfptr,"        / Shapelet parameters  /",&status);
   IO::updateFITSKeyword(outfptr,"BETA",sobj.getBeta(),"scale size in pixel units");
-  IO::updateFITSKeyword(outfptr,"DIM",sobj.getCoeffs().getRows(),"dimensions in shapelet space (nmax+1)");
-  IO::updateFITSKeyword(outfptr,"CHI2",sobj.getDecompositionChiSquare(),"decomposition quality");
+  IO::updateFITSKeyword(outfptr,"DIM",sobj.coeffs.getNMax()+1,"dimensions in shapelet space (nmax+1)");
+  IO::updateFITSKeyword(outfptr,"CHI2",sobj.getChiSquare(),"decomposition quality");
   IO::updateFITSKeyword(outfptr,"ERRORS",saveErrors,"whether coefficient errors are available");
   IO::updateFITSKeyword(outfptr,"R",sobj.getRegularizationR(),"negative flux / positive flux");
   IO::updateFITSKeyword(outfptr,"FLAGS",sobj.getFlags().to_ulong(),"extraction and decomposition flags");
@@ -99,7 +99,9 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   int status = 0;
   // read shapelet coeff from pHDU
   fitsfile *fptr = IO::openFITSFile(filename);
-  status = IO::readFITSImage(fptr,sobj.coeffs);
+  NumMatrix<data_t> coeffs;
+  status = IO::readFITSImage(fptr,coeffs);
+  sobj.coeffs.setCoeffs(coeffs);
 
   // read shapelet parameters
   // make use of friendship of Composite2D and ShapeletObject
@@ -171,7 +173,8 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // if errors have been saved, load it
   if (errors) {
     fits_movnam_hdu(fptr,IMAGE_HDU, "ERRORS",0, &status);
-    status = IO::readFITSImage(fptr,sobj.errors);
+    status = IO::readFITSImage(fptr,coeffs);
+    sobj.errors.setCoeffs(coeffs);
   }
 
   IO::closeFITSFile(fptr);

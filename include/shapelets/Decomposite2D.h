@@ -10,7 +10,7 @@
 #include <frame/Grid.h>
 #include <frame/Image.h>
 #include <frame/Object.h>
-#include <shapelets/IndexVector.h>
+#include <shapelets/CoefficientVector.h>
 
 /// 2D Decomposition class.
 /// Provides decomposition of a given 2D function
@@ -48,16 +48,16 @@ class Decomposite2D {
  public:
   /// Contructor for decomposing a Object into shapelets of maximum order \f$n_{max}\f$.
   Decomposite2D(int nmax, data_t beta, const Object& obj);
-  /// Get the decomposition shapelet coefficients as matrix.
-  const NumVector<data_t>& getCoeffs();
-  /// Access the decomposition shapelet coefficients as matrix.
-  NumVector<data_t>& accessCoeffs();
+  /// Get the decomposition shapelet coefficients.
+  const CoefficientVector<data_t>& getCoeffs();
+  /// Access the decomposition shapelet coefficients.
+  CoefficientVector<data_t>& accessCoeffs();
   /// Allows to update coeffs to best fit values w.r.t. \f$\chi^2\f$.
   /// Is set to 1 by default, but can be switched of in case the coefficients
   /// are given from outside.
   void updateCoeffs(bool update);
-  /// Get error matrix of the shapelet coefficients.
-  const NumVector<data_t>& getErrors();
+  /// Get errors of the shapelet coefficients.
+  CoefficientVector<data_t> getErrors();
   /// Get shapelet model.
   /// This is the model reconstructed from the coefficients provided by getCoeffs().
   const NumVector<data_t>& getModel();
@@ -99,11 +99,11 @@ class Decomposite2D {
   data_t beta, background_variance;
   int nmax,nCoeffs,npixels;
   char noise;
-  NumVector<data_t> coeffVector, errorVector, model, residual;
+  NumVector<data_t> model, residual;
+  CoefficientVector<data_t> coeffVector;
   const Object& obj;
   NumMatrixDiagonal<data_t> Weight;
   PixelCovarianceMatrix V_;
-  IndexVector nVector;
   bool change, updateC, updateModel, updateResiduals, gaussian;
 };
 

@@ -2,66 +2,13 @@
 #include <fstream.h>
 #include <string>
 #include <iostream>
+#include <fstream>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <list>
 #include <tclap/CmdLine.h>
 
 typedef complex<data_t> Complex;
-
-/// Computes the average coeffs and the standard deviation of the average
-// and beta from sif files listed in listfile
-void averageShapeletCoeffs(NumMatrix<data_t>& average, NumMatrix<data_t>& std_mean, data_t& beta, std::string listfile) {
-  //create new average and std_mean
-  average.clear();
-  std_mean.clear();
-
-  // set up list of coeff matrices
-  std::list<NumMatrix<data_t> > matrixList;
-  beta = 0;
-  int count = 0;
-  std::ifstream files;
-  std::string filename;
-  files.open(listfile.c_str());
-  while (1) {
-    files >> filename;
-     if (!files.good()) break;
-    
-    ShapeletObject* s = new ShapeletObject(filename);
-    const NumMatrix<data_t>& coeffs = s->getCoeffs();
-    matrixList.push_back(coeffs);
-    // if new coeff matrix is bigger than current average matrix
-    // expand average
-    if (average.getRows() < coeffs.getRows() || average.getColumns() < coeffs.getColumns()) {
-      average.resize_clear(coeffs.getRows(),coeffs.getColumns());
-      std_mean.resize_clear(coeffs.getRows(),coeffs.getColumns());
-    }
-    beta += s->getBeta();
-    count++;
-    delete s;
-  }
-  files.close();
-  
-  // compute average beta
-  beta /= count; // that's the number of considered images
-  
-  // now average over all coeffs and all matrices
-  NumVector<data_t> entries(count);
-  std::list<NumMatrix<data_t> >::iterator iter;
-  for (int i=0; i<average.getRows(); i++) {
-    for (int j=0; j<average.getColumns(); j++) {
-      entries.clear();
-      int n=0;
-      for(iter = matrixList.begin(); iter != matrixList.end(); iter++ ) {
-	if ((*iter).getRows() > i && (*iter).getColumns() > j) 
-	  entries(n) = (*iter)(i,j);
-	n++;
-      }
-      average(i,j) = entries.mean();
-      std_mean(i,j) = entries.std()/sqrt(1.*count);
-    }
-  }
-}
 
 /// Creates \f$N\f$ galaxy images in shapelet space.
 /// The output is stored as "shapelets_<i>.sif", where \f$0 \le i < N\f$
@@ -72,7 +19,7 @@ void averageShapeletCoeffs(NumMatrix<data_t>& average, NumMatrix<data_t>& std_me
 /// and beta derived from this sample of galaxies will be stored also in 
 /// the directory.\n
 /// Note: Don't forget the / at the end of the path.
-void createShapeletImages(NumMatrix<data_t>& averageCoeffs, NumMatrix<data_t>& sigmaCoeffs, data_t betamin, data_t betamax, std::string path, int N) {
+void createShapeletImages(CoefficientVector<data_t>& averageCoeffs, CoefficientVector<data_t>& sigmaCoeffs, data_t betamin, data_t betamax, std::string path, int N) {
   // create directory if it doesn't exist
   std::ostringstream dircall;
   dircall << "mkdir -p " << path << "&> /dev/null";
@@ -88,63 +35,60 @@ void createShapeletImages(NumMatrix<data_t>& averageCoeffs, NumMatrix<data_t>& s
   
   // build template shapelet
   Point2D xcentroid(0,0);
-  NumMatrix<data_t> coeffs(averageCoeffs.getRows(),averageCoeffs.getColumns());
+  CoefficientVector<data_t> coeffs(averageCoeffs.getNMax());
   data_t beta = 1;
-  ShapeletObject *s = new ShapeletObject(coeffs,beta,xcentroid);
+  ShapeletObject s (coeffs,beta,xcentroid);
   
    // now different galaxies, all normalized and with beta = 1
+  std::ostringstream sif_filename;
+  std::ofstream listfile("shapelets.ls");
   for (int n = 0; n < N; n++) {
     // add gaussian scatter on coeffs
-    for (int i=0; i<coeffs.getRows();i++)
-      for (int j=0; j<coeffs.getColumns();j++)
-	coeffs(i,j) = averageCoeffs(i,j) + gsl_ran_gaussian (r, sigmaCoeffs(i,j));
+    for (int i=0; i<coeffs.size(); i++)
+      coeffs(i) = averageCoeffs(i) + gsl_ran_gaussian (r, sigmaCoeffs(i));
 
-    s->setCoeffs(coeffs);
+    s.setCoeffs(coeffs);
 
     // beta: uniform between betamin and betamax
     beta =  betamin + gsl_rng_uniform(r)*(betamax-betamin);
-    s->setBeta(beta);
+    s.setBeta(beta);
     // set grid
     int range = GSL_MAX_INT((int)ceil(15*beta),40);
     if (range%2==1) range++;
     Grid grid = Grid(-range/2,range/2-1,1,-range/2,range/2-1,1);
-    s->setGrid(grid);
+    s.setGrid(grid);
         
     // since images are aligned along x axis
     // rotate them by any angle between 0 and 2 pi
-    s->rotate(2*M_PI*gsl_rng_uniform(r));
+    s.rotate(2*M_PI*gsl_rng_uniform(r));
 
     // normalize flux for comparability later
-    s->brighten(1./s->integrate());
-    s->brighten(beta*beta);
+    s.brighten(1./s.getShapeletFlux());
+    s.brighten(beta*beta);
 
     // save as sif file
-    std::ostringstream sif_filename;
+    sif_filename.str("");
     sif_filename << path << "shapelets_" << n << ".sif";
-    s->setHistory("");
-    s->save(sif_filename.str());
+    listfile << sif_filename.str() << std::endl;
+    s.setHistory("");
+    s.save(sif_filename.str());
   }
-  delete s;
   gsl_rng_free (r);
-
-  // create list of files
-  std::ostringstream job;
-  job << "find " << path << " -type f -name 'shapelets_*.sif' > " << path << "shapelets.ls";
-  std::system(job.str().c_str());
+  listfile.close();
 
   // create average sif file
-  NumMatrix<data_t> average, std_mean;
+  CoefficientVector<data_t> mean, std_mean;
   data_t averageBeta;
   std::ostringstream filename;
   filename << path << "shapelets.ls";
-  averageShapeletCoeffs(average,std_mean,averageBeta,filename.str());
-  ShapeletObject *a = new ShapeletObject(average,averageBeta,xcentroid);
-  a->setCoeffErrors(std_mean);
+  ShapeletObjectList sl(filename.str());
+  sl.average(mean, std_mean, averageBeta);
+  ShapeletObject a(mean,averageBeta,xcentroid);
+  a.setErrors(std_mean);
   
   filename.str("");
   filename << path << "average.sif";
-  a->save(filename.str());
-  delete a;
+  a.save(filename.str());
 }
 
 /// Creates shapelet image base on the dominant shapelet states
@@ -195,7 +139,8 @@ void createShapeletImagesPCA(data_t betamin, data_t betamax,std::string path, in
   sigma(2,5) = sigma(5,2) = 0.002;
   sigma(3,4) = sigma(4,3) = 0.001;
   sigma(3,5) = sigma(5,3) = 0.001;
-  createShapeletImages(coeffs,sigma,betamin,betamax,path,N);
+  CoefficientVector<data_t> mean(coeffs), std(sigma);
+  createShapeletImages(mean,std,betamin,betamax,path,N);
 }
 
 void createLensedShapeletImages(data_t dx, NumMatrix<data_t>& kappa, NumMatrix<Complex>& gamma, NumMatrix<Complex>& F, NumMatrix<Complex>& G, std::string listfilename, std::string writeDirectory, int NOBJ) {

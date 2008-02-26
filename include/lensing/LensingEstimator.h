@@ -6,6 +6,10 @@
 #include <shapelets/ShapeletObjectList.h>
 #include <complex>
 
+/// Class for passive lensing estimators.
+///
+/// \todo implement with CoefficientVector instead of matrices.
+
 class LensingEstimator {
  public:
   LensingEstimator();

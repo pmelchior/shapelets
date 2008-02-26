@@ -11,7 +11,7 @@
 #include <frame/Point2D.h>
 #include <frame/Grid.h>
 #include <shapelets/Shapelets2D.h>
-#include <shapelets/IndexVector.h>
+#include <shapelets/CoefficientVector.h>
 
 class Composite2D : private Shapelets2D {
  public:
@@ -26,14 +26,11 @@ class Composite2D : private Shapelets2D {
   /// Copy operator
   Composite2D & operator = (const Composite2D &source);
   /// Get cartesian shapelet coefficients.
-  const NumMatrix<data_t>& getCoeffs() const;
+  const CoefficientVector<data_t>& getCoeffs() const;
   /// Set cartesian shapelet coefficients.
-  void setCoeffs(const NumMatrix<data_t>& newCoeffs);
-  /// Get maximal order for composition in direction (0/1).
-  int getOrder(bool direction) const;
+  void setCoeffs(const CoefficientVector<data_t>& newCoeffs);
   /// Get \f$n_{max}\f$, the maximum order of the shapelet model.
-  /// This assumes that the orders in direction 0 and 1 are identical.
-  int getNMax() const;
+  unsigned int getNMax() const;
   /// Get \f$\beta\f$ from basis function.
   data_t getBeta() const;
   /// Set new \f$\beta\f$ for basis functions.
@@ -70,17 +67,18 @@ class Composite2D : private Shapelets2D {
   data_t getShapeletRMSRadius() const;
 
   friend class SIFFile;
-  friend class ShapeletObject;
 
- private:
+ protected:
   Grid grid;
-  NumMatrix<data_t> coeffs, M;
+  CoefficientVector<data_t> coeffs;
+  NumMatrix<data_t> M;
   NumVector<data_t> model;
   Point2D xcentroid;
   bool change;
-  data_t evalGridPoint(const Point2D& x);
+
+ private:
   void evalGrid();
-  void makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector);
+  void makeShapeletMatrix(NumMatrix<data_t>& M);
   NumVector<data_t>& accessModel();
   void updateOrders();
 };

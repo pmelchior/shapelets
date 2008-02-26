@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     // get shapelet parameters used in decomposition
     beta = (*iter)->getBeta();
     nmax = (*iter)->getNMax();
-    chi2 = (*iter)->getDecompositionChiSquare();
+    chi2 = (*iter)->getChiSquare();
 
     // get flux and centroid, 2nd moments and RMS radius
     flux = (*iter)->getShapeletFlux();

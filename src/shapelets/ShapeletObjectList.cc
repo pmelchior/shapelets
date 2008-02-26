@@ -42,33 +42,36 @@ void ShapeletObjectList::readListFile(string filename, bool (* selectionFunction
   }
 }
 
-void ShapeletObjectList::average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std_mean, data_t& beta) {
+void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta) {
   average(mean,std_mean,beta,&alwaysOne);
 }
 
-void ShapeletObjectList::average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&)) {
-  //clear average and std_mean
-  mean.clear();
-  std_mean.clear();
+void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&)) {
+  // set up two empty matrices for mean and std_mean
+  // as they are easier to resize
+  NumMatrix<data_t> meanMatrix, stdMatrix;
   beta = 0;
-  
   data_t sum_weights = 0, sum_weights2 = 0;
+  unsigned int nmax, n1, n2;
 
   // go through all ShapeletObjects
   for (ShapeletObjectList::iterator iter = ShapeletObjectList::begin(); iter != ShapeletObjectList::end(); iter++) {
-    const NumMatrix<data_t>& coeffs = (*iter)->getCoeffs();
+    const CoefficientVector<data_t>& coeffs = (*iter)->getCoeffs();
+    const IndexVector& nVector = coeffs.getIndexVector();
     data_t weight = (*weightFunction)(*(*iter));
-    // if new coeff matrix is bigger than current average matrix
-    // expand average
-    if (mean.getRows() < coeffs.getRows() || mean.getColumns() < coeffs.getColumns()) {
-      mean.resize_clear(coeffs.getRows(),coeffs.getColumns());
-      std_mean.resize_clear(coeffs.getRows(),coeffs.getColumns());
+    // if new coeff matrix is bigger than current matrices:
+    // expand them
+    if (coeffs.getNMax() > nmax) {
+      nmax = coeffs.getNMax();
+      meanMatrix.resize_clear(nmax+1, nmax+1);
+      stdMatrix.resize_clear(nmax+1,nmax+1);
     }
-    for (int i=0; i<coeffs.getRows(); i++) {
-      for (int j=0; j<coeffs.getColumns()-i; j++) {
-	mean(i,j) += weight*coeffs(i,j);
-	std_mean(i,j) += weight*coeffs(i,j)*coeffs(i,j);
-      }
+    // go thru all coeffs
+    for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
+      n1 = nVector.getN1(i);
+      n2 = nVector.getN2(i);
+      meanMatrix(n1,n2) += weight*coeffs(i);
+      stdMatrix(n1,n2) += weight*coeffs(i)*coeffs(i);
     }
     beta += weight*((*iter)->getBeta());
     sum_weights += weight;
@@ -77,25 +80,27 @@ void ShapeletObjectList::average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std
   // compute average of beta and all coeffs
   beta /= sum_weights;
   
-  for (int i=0; i<mean.getRows(); i++) {
-    for (int j=0; j<mean.getColumns()-i; j++) {
-      std_mean(i,j) = sqrt((std_mean(i,j)*sum_weights - mean(i,j)*mean(i,j)) /
-			   (sum_weights*sum_weights - sum_weights2));
-      mean(i,j) /= sum_weights;
-    }
+  // set up mean and std_mean with appropriate nmax
+  mean.setNMax(nmax);
+  std_mean.setNMax(nmax);
+  const IndexVector& nVector = mean.getIndexVector();
+  for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
+    n1 = nVector.getN1(i);
+    n2 = nVector.getN2(i);
+    std_mean(i) = sqrt((stdMatrix(n1,n2)*sum_weights - meanMatrix(n1,n2)*meanMatrix(n1,n2)) / (sum_weights*sum_weights - sum_weights2));
+    mean(i) = meanMatrix(n1,n2) / sum_weights;
   }
 }
 
 bool ShapeletObjectList::checkSIFFile(ShapeletObject& so, std::string siffile) {
   // check coeffs and beta for correctness
-  const NumMatrix<data_t>& coeffs = so.getCoeffs();
+  const CoefficientVector<data_t>& coeffs = so.getCoeffs();
+  const IndexVector& nVector = coeffs.getIndexVector();
   bool ok = 1;
-  for (int i=0; i<coeffs.getRows(); i++) {
-    for (int j=0; j<coeffs.getColumns(); j++) {
-      if (isinf(coeffs(i,j)) || isnan(coeffs(i,j)) || fabs(coeffs(i,j))> 1e20) {
-	ok = 0;
-	break;
-      }
+  for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
+    if (isinf(coeffs(i)) || isnan(coeffs(i)) || fabs(coeffs(i))> 1e20) {
+      ok = 0;
+      break;
     }
   }
   if (!ok)

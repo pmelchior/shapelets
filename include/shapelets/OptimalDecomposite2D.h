@@ -54,10 +54,10 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// \f$10^{-3}\f$), the minimization procedure
   /// must increase \f$n_{max}\f$ and can therefore take a considerable amount of time.
   data_t regularize(data_t wantedR);
-  /// Deliver best fit shapelet coefficients.
-  void getShapeletCoeffs(NumMatrix<data_t>& coeffs);
-   /// Deliver best fit shapelet coefficient errors.
-  void getShapeletErrors(NumMatrix<data_t>& errors);
+  /// Get best fit shapelet coefficients.
+  const CoefficientVector<data_t>& getCoeffs();
+   /// Get best fit shapelet coefficient errors.
+  CoefficientVector<data_t> getErrors();
   /// Get best fit residuals of the decomposition.
   const NumVector<data_t>& getResiduals();
   /// Get best fit shapelet model.
@@ -104,7 +104,7 @@ private:
   };
   int findOptimalBeta(unsigned char step);
   void findOptimalNMax(unsigned char step), optimize(), checkBeta();
-  void getCoeffErrorFromBeta(const NumVector<data_t>& coeffVector, NumVector<data_t>& errorVector);
+  void getCoeffErrorFromBeta(const CoefficientVector<data_t>& coeffVector, CoefficientVector<data_t>& errorVector);
   void getBetaTrafoMatrix(NumMatrix<data_t>& betaTrafo, data_t beta1, data_t beta2);
   void appendRegResults(std::vector<regResults>& results, int nmax, data_t f, data_t lambda, data_t beta, data_t chi2, data_t R, const NumVector<data_t>& coeffs);
   int findNMaxofBestF(std::vector<regResults>& results);

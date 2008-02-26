@@ -45,10 +45,10 @@ class Image : public NumVector<T> {
   const T& operator()(unsigned long x, unsigned long y) const {
     return NumVector<T>::operator()(y*Image::getSize(0) + x);
   }
-  NumVector<T>& accessData() {
+  NumVector<T>& accessNumVector() {
     return *this;
   }
-  const NumVector<T>& getData() const {
+  const NumVector<T>& getNumVector() const {
     return *this;
   }
   /// Get axis size of the whole image in given direction.
@@ -97,5 +97,4 @@ class Image : public NumVector<T> {
     status = IO::closeFITSFile(fptr);
   }
 };
-
 #endif

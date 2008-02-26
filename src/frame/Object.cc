@@ -25,7 +25,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
 
   // reading objects pixel data
   history << "# Reading object's pixel data";
-  IO::readFITSImage(fptr,Object::accessGrid(),Object::accessData());
+  IO::readFITSImage(fptr,Object::accessGrid(),Object::accessNumVector());
   
   // recover object information from header keywords
   status = IO::readFITSKeywordString(fptr,"BASEFILE",basefilename);

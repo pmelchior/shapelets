@@ -1,5 +1,4 @@
 #include <shapelets/Composite2D.h>
-#include <shapelets/CoefficientVector.h>
 // for factorial and other math functions
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
@@ -31,21 +30,16 @@ Composite2D & Composite2D::operator= (const Composite2D &source) {
   return *this;
 }
   
-int Composite2D::getOrder(bool direction) const{
-  if (direction==0) return coeffs.getRows()-1;
-  else return coeffs.getColumns()-1;
+unsigned int Composite2D::getNMax() const {
+  return coeffs.getNMax();
 }
 
-int Composite2D::getNMax() const {
-  return GSL_MAX_INT(coeffs.getRows()-1,coeffs.getColumns()-1);
-}
-
-void  Composite2D::setCoeffs(const NumMatrix<data_t>& newCoeffs ) {
+void  Composite2D::setCoeffs(const CoefficientVector<data_t>& newCoeffs ) {
   coeffs = newCoeffs;
   change = 1;
 }
 
-const NumMatrix<data_t>& Composite2D::getCoeffs() const {
+const CoefficientVector<data_t>& Composite2D::getCoeffs() const {
   return coeffs;
 }
 
@@ -81,49 +75,17 @@ data_t Composite2D::eval(const Point2D& x) {
   Point2D xdiff;
   xdiff(0) = x(0) - xcentroid(0);
   xdiff(1) = x(1) - xcentroid(1);
-  // result = sum over l0,l1 (coeff_(l0,l1) * B_(l0,l1)(x0,x1))
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++)
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++)
-      if (coeffs(l0,l1) != 0)
-	result += coeffs(l0,l1) * Shapelets2D::eval(l0,l1,xdiff);
-  // get rid of tiny values
-  if (fabs(result) < 1e-20) result = 0;
-  return result;
-}
-
-data_t Composite2D::evalGridPoint(const Point2D& x) {
-  data_t result = 0;
-  Point2D xdiff;
-  // shift to center of pixel
-  //xdiff(0) = x(0) + 0.5*stepsize0 - xcentroid(0);    
-  //xdiff(1) = x(1) + 0.5*stepsize 1 - xcentroid(1);
-  xdiff(0) = x(0) - xcentroid(0);    
-  xdiff(1) = x(1) - xcentroid(1);
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++)
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++)
-      if (coeffs(l0,l1) != 0)
-	result += coeffs(l0,l1) * Shapelets2D::eval(l0,l1,xdiff);
-
-  // get rid of tiny values
-  if (fabs(result) < 1e-20) result = 0;
+  // result = sum over all coeffs * basis function
+  const IndexVector& nVector = coeffs.getIndexVector();
+  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) 
+    result += coeffs(i) * Shapelets2D::eval(nVector.getN1(i), nVector.getN2(i), xdiff);
   return result;
 }
 
 void Composite2D::evalGrid() {
-  if (coeffs.getRows() != coeffs.getColumns() || (coeffs.getColumns() > 1 && coeffs(coeffs.getRows() - 1,1) !=0 )) {
-    if (model.size() != grid.size())
-      model.resize(grid.size());
-    for (int j = 0; j < grid.size(); j +=1)
-      model(j) = evalGridPoint(grid(j));
-  } else {
-    // this approach only works for square, upper triangular coeff matrices
-    CoefficientVector<data_t> coeffVector(coeffs);
-    const IndexVector& nVector = coeffVector.getIndexVector();
-    NumMatrix<data_t> M(grid.size(),nVector.getNCoeffs());
-    makeShapeletMatrix(M,nVector);
-    model = M * (NumVector<data_t>) coeffVector;
-    
-  }
+  NumMatrix<data_t> M(grid.size(),coeffs.getNCoeffs());
+  makeShapeletMatrix(M);
+  model = M * coeffs;
   change = 0;
 }  
 
@@ -139,26 +101,22 @@ NumVector<data_t>& Composite2D::accessModel() {
 
 data_t Composite2D::integrate() {
    data_t result = 0;
-  // result = sum over l0,l1 (coeff_(l0,l1) * Integral of B_(l0,l1))
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) 
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1)
-      if (coeffs(l0,l1) != 0)
-	result += coeffs(l0,l1) * Shapelets2D::integrate(l0,l1);
+  // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
+  const IndexVector& nVector = coeffs.getIndexVector();
+  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) 
+    result += coeffs(i) * Shapelets2D::integrate(nVector.getN1(i), nVector.getN2(i)); 
   return result;
 }
-data_t Composite2D::integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1max) {
-   data_t result = 0;
-   x0min -= xcentroid(0);
-   x0max -= xcentroid(0);
-   x1min -= xcentroid(1);
-   x1max -= xcentroid(1);
-  // result = sum over l0,l1 (coeff_(l0,l1) * Integral of B_(l0,l1))
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) 
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1)
-      if (coeffs(l0,l1) != 0)
-	result += coeffs(l0,l1)* Shapelets2D::integrate(l0,l1,x0min,x0max,x1min,x1max);
-  // get rid of tiny values
-  if (result < 1e-20) result = 0;
+data_t Composite2D::integrate(data_t xmin, data_t xmax, data_t ymin,data_t ymax) {
+  data_t result = 0;
+  xmin -= xcentroid(0);
+  xmax -= xcentroid(0);
+  ymin -= xcentroid(1);
+  ymax -= xcentroid(1);
+  // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
+  const IndexVector& nVector = coeffs.getIndexVector();
+  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) 
+    result += coeffs(i) * Shapelets2D::integrate(nVector.getN1(i), nVector.getN2(i), xmin, xmax, ymin, ymax); 
   return result;
 }
 
@@ -166,13 +124,15 @@ data_t Composite2D::integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1
 // see Paper I, eq. 26
 data_t Composite2D::getShapeletFlux() const {
   data_t result = 0;
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) {
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1) {
-      if (l0%2 == 0 && l1%2 ==0) {
-	//result += pow(2,0.5*(2-l0-l1))* sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
-	result += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
-	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * coeffs(l0,l1);
-      }
+  unsigned int n1, n2;
+  // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
+  const IndexVector& nVector = coeffs.getIndexVector();
+  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
+    n1 = nVector.getN1(i);
+    n2 = nVector.getN2(i);
+    if (n1%2 == 0 && n2%2 == 0) {
+      result += 2 * gsl_pow_int(2,-(n1+n2)/2) * sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) /
+	(gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * coeffs(i);
     }
   }
   return M_SQRTPI*Shapelets2D::getBeta()*result;
@@ -182,20 +142,22 @@ data_t Composite2D::getShapeletFlux() const {
 // see Paper I, eq. 27
 Point2D Composite2D::getShapeletCentroid() const {
   Point2D xc(0,0);
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0+=1) {
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1+=1) {
-      if (l0%2 == 1 && l1%2 ==0) {
-	xc(0) += sqrt((data_t)l0 + 1)*pow(2,0.5*(2-l0-l1)) *
-	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1)) /
-	  (gsl_sf_fact((l0+1)/2)*gsl_sf_fact(l1/2)) *
-	  coeffs(l0,l1);
-      }
-      if (l0%2 == 0 && l1%2 ==1) {
-	xc(1) += sqrt((data_t)l1 + 1)*pow(2,0.5*(2-l0-l1)) * 
-	  sqrt(gsl_sf_fact(l1+1)*gsl_sf_fact(l0)) /
-	  (gsl_sf_fact((l1+1)/2)*gsl_sf_fact(l0/2)) *
-	  coeffs(l0,l1);
-      }
+  unsigned int n1, n2;
+  const IndexVector& nVector = coeffs.getIndexVector();
+  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
+    n1 = nVector.getN1(i);
+    n2 = nVector.getN2(i);
+    if (n1%2 == 1 && n2%2 ==0) {
+      xc(0) += sqrt((data_t)n1 + 1)*pow(2,0.5*(2-n1-n2)) *
+	sqrt(gsl_sf_fact(n1+1)*gsl_sf_fact(n2)) /
+	(gsl_sf_fact((n1+1)/2)*gsl_sf_fact(n2/2)) *
+	coeffs(i);
+    }
+    if (n1%2 == 0 && n2%2 ==1) {
+      xc(1) += sqrt((data_t)n2 + 1)*pow(2,0.5*(2-n1-n2)) * 
+	sqrt(gsl_sf_fact(n2+1)*gsl_sf_fact(n1)) /
+	(gsl_sf_fact((n2+1)/2)*gsl_sf_fact(n1/2)) *
+	coeffs(i);
     }
   }
   data_t flux = getShapeletFlux();
@@ -209,19 +171,21 @@ Point2D Composite2D::getShapeletCentroid() const {
 NumMatrix<data_t> Composite2D::getShapelet2ndMoments() const {
   NumMatrix<data_t> Q(2,2);
   data_t factor;
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++) {
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++) {
-      if (l0%2 == 0 && l1%2 ==0) {
-	factor = 2 * gsl_pow_int(2,-(l0+l1)/2) * 
-	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) /
-	  (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * coeffs(l0,l1);
-	Q(0,0) += factor * (1+2*l0);
-	Q(1,1) += factor * (1+2*l1);
-      } else if (l0%2 == 1 && l1%2 == 1) {
-	Q(0,1) += 2 * gsl_pow_int(2,-(l0+l1)/2) * sqrt((data_t)(l0+1)*(l1+1)) *
-	  sqrt(gsl_sf_fact(l0+1)*gsl_sf_fact(l1+1)) /
-	  (gsl_sf_fact((l0+1)/2)*gsl_sf_fact((l1+1)/2)) * coeffs(l0,l1);
-      }
+  unsigned int n1, n2;
+  const IndexVector& nVector = coeffs.getIndexVector();
+  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
+    n1 = nVector.getN1(i);
+    n2 = nVector.getN2(i);
+    if (n1%2 == 0 && n2%2 ==0) {
+      factor = 2 * gsl_pow_int(2,-(n1+n2)/2) * 
+	sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) /
+	(gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * coeffs(i);
+      Q(0,0) += factor * (1+2*n1);
+      Q(1,1) += factor * (1+2*n2);
+    } else if (n1%2 == 1 && n2%2 == 1) {
+      Q(0,1) += 2 * gsl_pow_int(2,-(n1+n2)/2) * sqrt((data_t)(n1+1)*(n2+1)) *
+	sqrt(gsl_sf_fact(n1+1)*gsl_sf_fact(n2+1)) /
+	(gsl_sf_fact((n1+1)/2)*gsl_sf_fact((n2+1)/2)) * coeffs(i);
     }
   }
   data_t flux = getShapeletFlux();
@@ -236,13 +200,15 @@ NumMatrix<data_t> Composite2D::getShapelet2ndMoments() const {
 // see Paper I, eq. (28)
 data_t Composite2D::getShapeletRMSRadius() const {
   data_t rms = 0;
-  for (int l0 = 0; l0 <= coeffs.getRows() - 1; l0++) {
-    for (int l1 = 0; l1 <= coeffs.getColumns() - 1; l1++) {
-      if (l0%2 == 0 && l1%2 ==0) {
-	rms += 4 * gsl_pow_int(2,-(l0+l1)/2) * (1+l0+l1) *
-	  sqrt(gsl_sf_fact(l0)*gsl_sf_fact(l1)) / (gsl_sf_fact(l0/2)*gsl_sf_fact(l1/2)) * 
-	  coeffs(l0,l1); 
-      }
+  unsigned int n1, n2;
+  const IndexVector& nVector = coeffs.getIndexVector();
+  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
+    n1 = nVector.getN1(i);
+    n2 = nVector.getN2(i);
+    if (n1%2 == 0 && n2%2 ==0) {
+      rms += 4 * gsl_pow_int(2,-(n1+n2)/2) * (1+n1+n2) *
+	sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) / (gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * 
+	coeffs(i); 
     }
   }
   data_t flux = getShapeletFlux();
@@ -250,8 +216,9 @@ data_t Composite2D::getShapeletRMSRadius() const {
   return sqrt(rms * M_SQRTPI * beta*beta*beta / flux);
 }
 
-void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M, const IndexVector& nVector) {
-  int nmax = coeffs.getRows() - 1;
+void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M) {
+  const IndexVector& nVector = coeffs.getIndexVector();
+  int nmax = nVector.getNMax();
   int nCoeffs = nVector.getNCoeffs();
   int npixels = grid.size();
   NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);

@@ -32,9 +32,9 @@ int main(int argc, char *argv[]) {
     IO::appendFITSHistory(fptr,sobj.getHistory());
   // save coeffs and errors...
   if (coeffs.isSet())
-    IO::writeFITSImage(fptr,sobj.getCoeffs(),"COEFFS");
+    IO::writeFITSImage(fptr,sobj.getCoeffs().getCoeffMatrix(),"COEFFS");
   if (errors.isSet())
-    IO::writeFITSImage(fptr,sobj.getDecompositionErrors(),"ERRORS");
+    IO::writeFITSImage(fptr,sobj.getErrors().getCoeffMatrix(),"ERRORS");
   IO::closeFITSFile(fptr);
 }
   

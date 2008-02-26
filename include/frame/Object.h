@@ -131,5 +131,4 @@ class Object : public Image<data_t> {
   std::string basefilename;
   History history;
 };
-
 #endif

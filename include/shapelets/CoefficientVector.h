@@ -7,18 +7,14 @@
 #include <shapelets/IndexVector.h>
 
 /// Class for storing shapelet coefficients as vector.
-/// To perform linear transformation in shapelet sace, it is necessary to transform the coefficient 
-/// matrix into a vector. In principle, it is completely arbitrary how this should be done, but in practise
-/// some stroage scheme are more convenient than others.
+/// To perform linear transformation in shapelet space, it is necessary to
+///  transform the coefficient matrix into a vector. 
+/// In principle, it is completely arbitrary how this should be done, but 
+/// in practisesome storage scheme are more convenient than others.
 ///
-/// In this shapelet implementation the matrix storage scheme for cartesian and polar coefficient differs, 
-/// and so the mapping onto a coefficient vector (accomplished by IndexVector) also has to differ:
-/// - for cartesian coefficients:
-/// \f[ \begin{bmatrix} (0,0) & (0,1) & (0,2) & (0,3)\\ (1,0) & (1,1) & (1,2) & \\ (2,0) & (2,1) & & \\ (3,0) & & &  \end{bmatrix}  \longmapsto  \bigl[ (0,0), (0,1), (1,0), (0,2), (1,1), (2,0), (0,3), (1,2), (2,1), (3,0)\bigr]  \f]
-/// - for polar coefficients:
-/// \f[ \begin{bmatrix} (0,0) & & & \\ (1,-1) & (1,1) & & \\ (2,-2) & (2,0) & (2,2) & \\ (3,-3) & (3,-1) & (3,1) & (3,3) \end{bmatrix} \longmapsto \bigl[ (0,0), (1,-1), (1,1), (2,-2), (2,0), (2,2), (3,-3), (3,-1), (3,1), (3,3)\bigr] \f]
+/// The vector - matrix mapping is obtained from IndexVector.
 ///
-/// Usage is straightforward:
+/// Example:
 /// \code
 /// // transform coeffs into vector form
 ///  CoefficientVector<data_t> f(cartesianCoeffs);
@@ -32,30 +28,90 @@ template <class T>
 class CoefficientVector : public NumVector<T> {
  public:
   /// Default constructor.
-  CoefficientVector(): NumVector<T>() {
+  CoefficientVector(): NumVector<T>() {}
+
+  /// Constructor for CoefficientVector of given \f$n_{max}\f$.
+  CoefficientVector(unsigned int nmax): NumVector<T> () {
+    CoefficientVector<T>::setNMax(nmax);
   }
-  /// Constructor for CoefficientVector of given <tt>size</tt>.
-  CoefficientVector(unsigned int size): NumVector<T> (size) {
-    nVector = IndexVector(computeNMax(size));
-  }
+
   /// Argumented constructor from a NumMatrix.
   /// If the data types of <tt>coeffMatrix</tt> and <tt>*this</tt> differ, the input matrix decides
   /// on the mapping (<tt>data_t</tt> for cartesian, <tt>complex<data_t></tt> for polar coeffs), and
   /// a explicit typecast is performed.
   template <class R> 
     CoefficientVector(const NumMatrix<R>& coeffMatrix) : NumVector<T>() {
+    CoefficientVector<T>::setCoeffs(coeffMatrix);
+  }
+
+  /// Copy constructor.
+  template <class R>
+    CoefficientVector(const NumVector<R>& v) {
+    if (nVector.getNMax() != computeNMax(v.size()))
+      nVector.setNMax(computeNMax(v.size()));
+    NumVector<T>::operator=(v);
+  } 
+
+  /// Copy constructor.
+  template <class R>
+    CoefficientVector(const CoefficientVector<R>& cv) {
+    if (nVector.getNMax() != cv.nVector.getNMax())
+      nVector = cv.nVector;
+    NumVector<T>::operator=(cv.getVector());
+  }
+
+  const T& operator()(unsigned int i) const {
+    return NumVector<T>::operator()(i);
+  }
+  T& operator()(unsigned int i) {
+    return NumVector<T>::operator()(i);
+  }
+
+  /// const Matrix-like access operator.
+  const T& operator()(int i, int j) const {
+    T ownval;
+    data_t data_tval;
+    complex<data_t> complexval;
+    // cartesian coeffs
+    if (typeid(ownval) == typeid(data_tval))
+      return NumVector<T>::operator()(nVector.getCartesianIndex(i,j));
+    // polar coeffs
+    else if (typeid(ownval) == typeid(complexval))
+      return NumVector<T>::operator()(nVector.getPolarIndex(i,j));
+  }
+
+  /// Matrix-like access operator.
+  T& operator()(int i, int j) {
+    T ownval;
+    data_t data_tval;
+    complex<data_t> complexval;
+    // cartesian coeffs
+    if (typeid(ownval) == typeid(data_tval))
+      return NumVector<T>::operator()(nVector.getCartesianIndex(i,j));
+    // polar coeffs
+    else if (typeid(ownval) == typeid(complexval))
+      return NumVector<T>::operator()(nVector.getPolarIndex(i,j));
+  }
+
+  /// Set new coefficients in matrix form.
+  /// If \f$n_{max}\f$ of new coefficient matrix is different, 
+  /// CoefficientVector<T> will change accordingly.
+  template <class R>
+  void setCoeffs(const NumMatrix<R>& coeffMatrix) {
     // set up IndexVector
     int nmax = coeffMatrix.getRows() - 1;
-    nVector = IndexVector(nmax);
-    // resize storage contained
-    NumVector<T>::resize(nVector.getNCoeffs());
+    if (nVector.getNMax() != nmax) {
+      nVector.setNMax(nmax);
+      // resize storage contained
+      NumVector<T>::resize(nVector.getNCoeffs());
+    }
     // map matrix onto vector
     // since polar and cartesian coeffs are stored in a different fashion, check datatype first
     R testval;
     T ownval;
     data_t data_tval;
     complex<data_t> complexval;
-    // data_t cartesian coeffs
+    // cartesian coeffs
     if (typeid(testval) == typeid(data_tval)) {
       for (int n = 0; n < NumVector<T>::size(); n++) {
 	// no typecast required
@@ -78,18 +134,7 @@ class CoefficientVector : public NumVector<T> {
       }
     }
   }
-  /// Copy constructor.
-  template <class R>
-    CoefficientVector(const NumVector<R>& v) {
-    NumVector<T>::operator=(v);
-    nVector = IndexVector(computeNMax(v.size()));
-  } 
-  /// Copy constructor.
-  template <class R>
-    CoefficientVector(const CoefficientVector<T>& cv) {
-    NumVector<T>::operator=(cv);
-    nVector = cv.nVector;
-  }
+
   /// Reverse mapping onto a matrix.
   /// If the data types of <tt>coeffMatrix</tt> and <tt>*this</tt> differ, the input matrix decides
   /// on the mapping (<tt>data_t</tt> for cartesian, <tt>complex<data_t></tt> for polar coeffs), and
@@ -97,7 +142,7 @@ class CoefficientVector : public NumVector<T> {
   template <class R> 
     void fillCoeffMatrix(NumMatrix<R>& coeffMatrix) const {
     // resize matrix if necessary
-    int nmax = nVector.getOrder();
+    int nmax = nVector.getNMax();
     if (coeffMatrix.getRows() != nmax + 1 || coeffMatrix.getColumns() != nmax +1)
       coeffMatrix.resize_clear(nmax+1,nmax+1);
     // map vector onto matrix
@@ -129,9 +174,39 @@ class CoefficientVector : public NumVector<T> {
       }
     }
   }
+
+  /// Get NumMatrix from CoefficientVector.
+  /// Mapping is identical to fillCoeffMatrix().
+  NumMatrix<T> getCoeffMatrix() const {
+    NumMatrix<T> M;
+    CoefficientVector<T>::fillCoeffMatrix(M);
+    return M;
+  }
+
+  /// Set \f$n_{max}\f$.
+  void setNMax(unsigned int nmax) {
+    if (nVector.getNMax() != nmax) {
+      nVector.setNMax(nmax);
+      NumVector<T>::resize(nVector.getNCoeffs());
+      NumVector<T>::clear();
+    }
+  }
+
+  /// Get \f$n_{max}\f$.
+  unsigned int getNMax() const {
+    return nVector.getNMax();
+  }
+  /// Get \f$n_{coeffs}\f$.
+  unsigned int getNCoeffs() const {
+    return NumVector<T>::size();
+  }
+
   /// Get the IndexVector vector <-> matrix mapping.
   const IndexVector& getIndexVector() const {
     return nVector;
+  }
+  const NumVector<T>& getNumVector() const {
+    return *this;
   }
  private:
   IndexVector nVector;
@@ -140,4 +215,8 @@ class CoefficientVector : public NumVector<T> {
   }
 };
 
+template <class T>
+NumVector<T> operator*(const NumMatrix<T>& M, const CoefficientVector<T>& cv) {
+  return M*cv.getNumVector();
+}
 #endif

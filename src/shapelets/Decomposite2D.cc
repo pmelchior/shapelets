@@ -1,6 +1,5 @@
 #include <ShapeLensConfig.h>
 #include <shapelets/Decomposite2D.h>
-#include <shapelets/MatrixManipulations.h>
 #include <gsl/gsl_math.h>
 
 namespace ublas = boost::numeric::ublas;
@@ -8,8 +7,8 @@ namespace ublas = boost::numeric::ublas;
 Decomposite2D::Decomposite2D(int innmax, data_t inbeta, const Object& O) : 
 obj(O) {
   nmax = innmax;
-  nVector = IndexVector(nmax);
-  nCoeffs = nVector.getNCoeffs();
+  coeffVector.setNMax(nmax);
+  nCoeffs = coeffVector.getNCoeffs();
   beta = inbeta;
   npixels = obj.size();
   Mt.resize(nCoeffs,npixels);
@@ -45,6 +44,7 @@ obj(O) {
 void Decomposite2D::makeLSMatrix () {
   const Point2D& xcentroid = obj.getCentroid();
   const Grid& grid = obj.getGrid();
+  const IndexVector& nVector = coeffVector.getIndexVector();
   NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);
   // start with 0th and 1st order shapelets
   data_t x0_scaled, x1_scaled;
@@ -101,7 +101,7 @@ void Decomposite2D::computeCoeffs() {
   makeLSMatrix();
   // this is useful only for the regularization in OptimalDecomposite2D
   if (updateC) {
-    coeffVector = LS * (const NumVector<data_t>)obj;
+    coeffVector = LS * obj.getNumVector();
   }
   change = 0;
 }
@@ -128,21 +128,21 @@ void Decomposite2D::computeResiduals() {
   }
 }
 
-const NumVector<data_t>& Decomposite2D::getCoeffs() {
+const CoefficientVector<data_t>& Decomposite2D::getCoeffs() {
   // are shapelet coeffs still effective, otherwise compute new ones
   if (change) computeCoeffs();
   return coeffVector;
 }
 
-NumVector<data_t>& Decomposite2D::accessCoeffs() {
+CoefficientVector<data_t>& Decomposite2D::accessCoeffs() {
   // are shapelet coeffs still effective, otherwise compute new ones
   if (change) computeCoeffs();
   return coeffVector;
 }
 
-const NumVector<data_t>& Decomposite2D::getErrors() {
+CoefficientVector<data_t> Decomposite2D::getErrors() {
   if (change) computeCoeffs();
-  if (errorVector.size() != nCoeffs) errorVector = NumVector<data_t>(nCoeffs);
+  CoefficientVector<data_t> errorVector(nmax);
   NumMatrix<data_t> MtNoise_1;
   // since Mt here is in fact Mt*V_, we can compute the covariance matrix
   // of the coefficients simply by Mt*M
@@ -211,8 +211,8 @@ void Decomposite2D::setNMax(int innmax) {
   if (innmax != nmax) {
     nmax = innmax;
     change = updateModel = updateResiduals = 1;
-    nVector = IndexVector(nmax);
-    nCoeffs = nVector.getNCoeffs();
+    coeffVector.setNMax(nmax);
+    nCoeffs = coeffVector.getNCoeffs();
     Mt.resize(nCoeffs,npixels);
   }
 }

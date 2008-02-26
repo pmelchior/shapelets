@@ -18,7 +18,6 @@
 #include <shapelets/OptimalDecomposite2D.h>
 #include <shapelets/PolarTransformation.h>
 #include <shapelets/ImageTransformation.h>
-#include <shapelets/MatrixManipulations.h>
 #include <shapelets/CoefficientVector.h>
 
 /// Central class for 2D shapelet objects.
@@ -44,11 +43,11 @@ class ShapeletObject : public Composite2D {
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
-  ShapeletObject(const NumMatrix<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
+  ShapeletObject(const CoefficientVector<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const NumMatrix<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
+  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically.\n
@@ -63,22 +62,26 @@ class ShapeletObject : public Composite2D {
   /// Destructor.
   ~ShapeletObject();
 
-  /// Set new cartesian coefficients.
-  void setCoeffs(const NumMatrix<data_t>& cartesianCoeffs);
+  /// Set cartesian coefficients.
+  void setCoeffs(const CoefficientVector<data_t>& cartesianCoeffs);
   /// Set cartesian coefficient errors.
-  void setCoeffErrors(const NumMatrix<data_t>& errors);
-  /// Set new polar coeficients.
-  void setPolarCoeffs(const NumMatrix<complex<data_t> >& polarCoeffs);
-  /// Return polar coeficients.
-  const NumMatrix<complex<data_t> >& getPolarCoeffs() const;
+  void setErrors(const CoefficientVector<data_t>& errors);
+  /// Set polar coefficients.
+  void setPolarCoeffs(const CoefficientVector<complex<data_t> >& polarCoeffs);
+
+  /// Get polar coefficients.
+  CoefficientVector<complex<data_t> > getPolarCoeffs();
+  /// Get polar coefficients.
+  CoefficientVector<complex<data_t> > getPolarCoeffs() const;
 
   // methods depending on the decomposition
   /// Return best fit \f$\chi^2\f$ from decomposition.
   /// It will return 0, if ShapeletObject is not constructed from a Fits file.
-  data_t getDecompositionChiSquare() const;
-  /// Return error matrix of the cartesian shapelet coefficients.
-  /// It will return empty matrix if ShapeletObject is not constructed from a Fits file.
-  const NumMatrix<data_t>& getDecompositionErrors() const;
+  data_t getChiSquare() const;
+  /// Get errors of the cartesian shapelet coefficients.
+  /// If the ShapeletObject is not constructed from an Object,
+  /// the errors can be empty.
+  const CoefficientVector<data_t>& getErrors() const;
 
   // methods depending on ImageTransformations
   /// Rotate image counterclockwise by angle \f$\rho\f$.
@@ -107,10 +110,10 @@ class ShapeletObject : public Composite2D {
   void brighten(data_t factor);
   /// Convolve the image with another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void convolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel);
+  void convolve(const CoefficientVector<data_t>& KernelCoeffs, data_t beta_kernel);
   /// Deconvolve the image from another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void deconvolve(const NumMatrix<data_t>& KernelCoeffs, data_t beta_kernel);
+  void deconvolve(const CoefficientVector<data_t>& KernelCoeffs, data_t beta_kernel);
   /// Rescale the image.
   /// This changes the coefficients such, that they show the same object with
   /// the new scale size.\n
@@ -168,18 +171,65 @@ class ShapeletObject : public Composite2D {
   friend class SIFFile;
 
  private:
-  NumMatrix<data_t>& coeffs;
-  NumMatrix<data_t> errors;
-  NumMatrix<complex<data_t> > polarCoeffs;
+  CoefficientVector<data_t>& coeffs;
+  CoefficientVector<data_t> errors;
+  CoefficientVector<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
   data_t chisquare, R, noise_mean, noise_rms, classifier, tag;
-  bool fits;
+  bool fits, updatePolar;
   History history;
   std::bitset<16> flags;
   unsigned long id;
   std::string basefilename, name;
   ShapeletObject* unreg;
+
+  // Transform arbitrary matrix into triangular matrix of appropraite dimension.
+  // Copies entries from input matrix into lower left corner of the triangular matrix
+  // as long as there are entries unequal to 0 on the diagonal. 
+  template <class T>
+    CoefficientVector<T> triangularizeCoeffs(const NumMatrix<T>& input, data_t cutoff=0) {
+    int nmax = getMaxOrder(input,cutoff);
+    CoefficientVector<T> cv(nmax);
+    unsigned int n1, n2;
+    const IndexVector& nVector = cv.getIndexVector();
+    for (unsigned int i=0; i < cv.size(); i++) {
+      n1 = nVector.getN1(i);
+      n2 = nVector.getN2(i);
+      cv(i) = input(n1,n2);
+    }
+    return cv;
+  }
+
+  // Get maximal order to keep for the triangular matrix.
+  // Reads the matrix from top right to bottom left along the diagonals and returns
+  // the number of the diagonal where not all entries are 0.
+  template <class T>
+    int getMaxOrder(const NumMatrix<T>& matrix, data_t cutoff) {
+    int result;
+    // start in lower right corner and work back to top left corner
+    for (int diag = (matrix.getRows() + matrix.getColumns() -2); diag>=0; diag-- ) {
+      result = diag;
+      bool isempty = 1;
+      int startj, stopj;
+      if (diag >= matrix.getRows()-1) {
+	startj = diag - matrix.getRows() + 1;
+	stopj = matrix.getColumns() - 1;
+      } else {
+	startj = 0;
+	stopj = diag;
+      }
+      for (int j = startj; j <= stopj; j++) {
+	int i = diag -j;
+	if (abs(matrix(i,j)) > cutoff) {
+	  isempty = 0;
+	  break;
+	}
+      }
+      if (!isempty) break;
+    }
+    return result;
+  }
 };
 
 #endif

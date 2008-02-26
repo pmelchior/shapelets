@@ -604,32 +604,23 @@ void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals() {
   }
 }
  
-void OptimalDecomposite2D::getShapeletCoeffs(NumMatrix<data_t>& coeffs) {
+const CoefficientVector<data_t>& OptimalDecomposite2D::getCoeffs() {
   if (!optimized) optimize();
-  if (coeffs.getRows() != optimalNMax+1 || coeffs.getColumns() != optimalNMax+1)
-    coeffs = NumMatrix<data_t>(optimalNMax+1,optimalNMax+1);
-
-  // getting the active coeff vector
-  CoefficientVector<data_t> coeffVector = Decomposite2D::getCoeffs();
-  // putting it into matrix form
-  coeffVector.fillCoeffMatrix(coeffs);
+  return Decomposite2D::getCoeffs();
 }
 
-void OptimalDecomposite2D::getShapeletErrors(NumMatrix<data_t>& errors) {
-  if (!optimized) optimize();
-
+CoefficientVector<data_t> OptimalDecomposite2D::getErrors() {
+  // get bets fit coeffs
+  const CoefficientVector<data_t>& coeffVector = OptimalDecomposite2D::getCoeffs();
   // getting error vector from noise only
-  const NumVector<data_t>& noiseError = Decomposite2D::getErrors();
-  // now get error from uncertainty in beta
-  const NumVector<data_t>& coeffVector = Decomposite2D::getCoeffs();
-  CoefficientVector<data_t> errorVector(coeffVector.size());
+  CoefficientVector<data_t> noiseError = Decomposite2D::getErrors();
+  // now compute error from uncertainty in beta
+  CoefficientVector<data_t> errorVector(coeffVector.getNMax());
   getCoeffErrorFromBeta(coeffVector,errorVector);
-
   // combining the two by Gauss error propagation
   for (int i = 0; i < coeffVector.size(); i++)
     errorVector(i) = sqrt(errorVector(i)*errorVector(i) + noiseError(i)*noiseError(i));
-  // putting it into matrix form
-  errorVector.fillCoeffMatrix(errors);
+  return errorVector;
 }
 
 data_t OptimalDecomposite2D::getOptimalBeta() {
@@ -645,9 +636,9 @@ data_t OptimalDecomposite2D::getOptimalChiSquare() {
 // assume delta(beta) = 10% beta at maximum
 // to derive 3 sigma errors on coeffs
 // FIXME: find good assumptions on beta error?
-void OptimalDecomposite2D::getCoeffErrorFromBeta(const NumVector<data_t>& coeffVector, NumVector<data_t>& errorVector) {
+void OptimalDecomposite2D::getCoeffErrorFromBeta(const CoefficientVector<data_t>& coeffVector, CoefficientVector<data_t>& errorVector) {
   ImageTransformation trafo;
-  IndexVector nVector(optimalNMax);
+  const IndexVector& nVector = coeffVector.getIndexVector();
   int nCoeffs = nVector.getNCoeffs();
   NumMatrix<data_t> betaTrafo(nCoeffs,nCoeffs);
   trafo.makeRescalingMatrix(betaTrafo,beta*1.1,beta,nVector);

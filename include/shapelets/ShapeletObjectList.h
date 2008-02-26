@@ -62,7 +62,7 @@ class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> 
   ShapeletObjectList select(bool (* selectionFunction) (ShapeletObject&));
   /// Compute coefficient and scale size average of all SIFs in the list.
   /// <tt>std_mean</tt> is the standard deviation of the mean of the coefficient set.
-  void average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std_mean, data_t& beta);
+  void average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta);
   /// Compute coefficient and scale size average of all ShapeletObject entities in the list.
   /// <tt>std_mean</tt> is the standard deviation of the mean of the coefficient set.
   ///
@@ -71,7 +71,7 @@ class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> 
   /// data_t weight(ShapeletObject& sobj) {
   ///   return sobj.getShapeletFlux();
   /// }
-  /// NumMatrix<data_t> mean, std_mean;
+  /// CoefficientVector<data_t> mean, std_mean;
   /// data_t beta;
   /// sl.average(mean,std_mean,beta,&weight);
   /// \endcode
@@ -83,7 +83,7 @@ class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> 
   /// which is computed as 
   /// \f[s_{\langle x\rangle} = \frac{\sum_{i=1}^N{w_i {x_i}^2} \sum_{i=1}^N{w_i} - (\sum_{i=1}^N{w_i x_i})^2} {(\sum_{i=1}^N{w_i})^2 - \sum_{i=1}^N{{w_i}^2}}\f]
   /// where \f$N\f$ is <tt>sl.size()</tt> and \f$x\f$ is any available coefficient in <tt>sl</tt>.
-  void average(NumMatrix<data_t>& mean, NumMatrix<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&));
+  void average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&));
 
  private:
   void readListFile(std::string listfile, bool (* selectionFunction) (ShapeletObject&));
