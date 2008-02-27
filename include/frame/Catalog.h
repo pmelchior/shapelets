@@ -5,7 +5,7 @@
 #include <string>
 #include <bitset>
 #include <Typedef.h>
-#include <rtree.hh>
+//#include <rtree.hh>
 
 /// Structure to store information of Catalog objects.
 /// The names of the parameters are indentical or similar to those used by SExtractor.
@@ -158,14 +158,13 @@ class Catalog : public std::map<unsigned long, CatObject> {
     T min[2];
     T max[2];
   };
-  //template <class T>
-  void buildRTree(RTree<unsigned long, unsigned long, 2, data_t>& rtree, const Catalog& c) {
-    Catalog::Rectangle<unsigned long> rect;
-    for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++) {
-      rect.setCoords(iter->second.XMIN,iter->second.XMAX,iter->second.YMIN,iter->second.YMAX);
-      rtree.Insert(rect.getMin(),rect.getMax(),iter->first);
-    }
-  }
+  //void buildRTree(RTree<unsigned long, unsigned long, 2, data_t>& rtree, const Catalog& c) {
+  //  Catalog::Rectangle<unsigned long> rect;
+  //  for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++) {
+  //    rect.setCoords(iter->second.XMIN,iter->second.XMAX,iter->second.YMIN,iter->second.YMAX);
+  //    rtree.Insert(rect.getMin(),rect.getMax(),iter->first);
+  //  }
+  //}
 };
 
 #endif
