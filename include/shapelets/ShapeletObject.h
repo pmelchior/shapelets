@@ -194,8 +194,8 @@ class ShapeletObject : public Composite2D {
     unsigned int n1, n2;
     const IndexVector& nVector = cv.getIndexVector();
     for (unsigned int i=0; i < cv.size(); i++) {
-      n1 = nVector.getN1(i);
-      n2 = nVector.getN2(i);
+      n1 = nVector.getState1(i);
+      n2 = nVector.getState2(i);
       cv(i) = input(n1,n2);
     }
     return cv;

@@ -1,7 +1,10 @@
 #include <frame/Catalog.h>
+#include <frame/Point2D.h>
 #include <fstream>
 #include <iostream>
+#include <set>
 #include <boost/tokenizer.hpp>
+#include <gsl/gsl_math.h>
 
 using namespace std;
 
@@ -157,3 +160,83 @@ bool Catalog::checkFormat() {
   else
     formatChecked = 1;
 }
+
+Catalog Catalog::operator+ (const Catalog& c) {
+  Catalog newCat = *this;
+  for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++)
+    newCat[iter->first] = iter->second;
+}
+
+void Catalog::operator+= (const Catalog& c) {
+  for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++)
+    Catalog::operator[](iter->first) = iter->second;
+}
+
+Catalog Catalog::operator- (const Catalog& c) {
+  Catalog newCat = *this;
+  for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++) {
+    Catalog::iterator key = newCat.find(iter->first);
+    if (key != newCat.end())
+      newCat.erase(key);
+  }
+}
+
+void Catalog::operator-= (const Catalog& c) {
+  for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++) {
+    Catalog::iterator key = Catalog::find(iter->first);
+    if (key != Catalog::end())
+      Catalog::erase(key);
+  }
+}
+
+// struct matchProps {
+//   Point2D centroid;
+//   data_t flux;
+//   data_t offset;
+// };
+
+// struct matchBundle {
+//   const Point2D& refCentroid;
+//   const Catalog& cat;
+//   map<ulong, matchProps>& matches;
+// };
+
+// bool insertCatMatch(ulong id, void* params) {
+//   matchBundle* bundle = (matchBundle*) params;
+//   Catalog::const_iterator iter = bundle->cat.find(id);
+//   const Point2D& ref = bundle->refCentroid;
+//   matchProps props = { Point2D(iter->second.XCENTROID, iter->second.YCENTROID), iter->second.FLUX, 0};
+//   props.offset = sqrt(gsl_pow_2(props.centroid(0) - ref(0)) + gsl_pow_2(props.centroid(1) - ref(1)));
+//   bundle->matches[id] = props;
+//   return true;
+// }
+
+// Catalog Catalog::operator* (const Catalog& c) {
+//   RTree<unsigned long,unsigned long,2,data_t> thisTree, cTree;
+//   buildRTree(thisTree,*this);
+//   buildRTree(cTree,c);
+  
+//   // set up structures
+//   multimap<ulong, ulong> mapping;
+//   map<ulong, matchProps> matchesC, matchesThis;
+//   int foundC, foundThis;
+//   Point2D refCentroidC, refCentroidThis;
+//   matchBundle mbC { refCentroidThis, c, matchesC};
+//   matchBundle mbThis { refCentroidThis, *this, matchesThis};
+
+//   // iterate through objects of the smaller catalog
+//   Catalog::Rectangle<ulong> searchRectC, searchRectThis;
+//   if (Catalog::size() < c.size()) {
+//     for (Catalog::const_iterator iter = Catalog::begin(); iter != Catalog::end(); iter++) {
+//       refCentroidThis(0) = iter->second.XCENTROID;
+//       refCentroidThis(1) = iter->second.YCENTROID;
+//       matchesC.clear();
+//       searchRectThis.setCoords(iter);
+//       foundC = cTree.Search(searchRectThis.getMin(), searchRectThis.getMax(), &insertCatMatch, &matchesC);
+//     }
+//   } else {
+//     for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++) {
+//     }
+//   }
+// }
+

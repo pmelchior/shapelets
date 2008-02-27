@@ -68,8 +68,8 @@ void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVec
     }
     // go thru all coeffs
     for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
-      n1 = nVector.getN1(i);
-      n2 = nVector.getN2(i);
+      n1 = nVector.getState1(i);
+      n2 = nVector.getState2(i);
       meanMatrix(n1,n2) += weight*coeffs(i);
       stdMatrix(n1,n2) += weight*coeffs(i)*coeffs(i);
     }
@@ -85,8 +85,8 @@ void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVec
   std_mean.setNMax(nmax);
   const IndexVector& nVector = mean.getIndexVector();
   for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
-    n1 = nVector.getN1(i);
-    n2 = nVector.getN2(i);
+    n1 = nVector.getState1(i);
+    n2 = nVector.getState2(i);
     std_mean(i) = sqrt((stdMatrix(n1,n2)*sum_weights - meanMatrix(n1,n2)*meanMatrix(n1,n2)) / (sum_weights*sum_weights - sum_weights2));
     mean(i) = meanMatrix(n1,n2) / sum_weights;
   }

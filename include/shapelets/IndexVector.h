@@ -20,35 +20,25 @@
 
 class IndexVector {
  public:
-  /// Default constructor.
-  IndexVector();
-  /// Argumented constructor.
-  IndexVector (int nmax);
-  /// Set \f$n_{max}\f$ of the associated coefficient matrix.
-  void setNMax(int nmax);
-  /// Set \f$n_{max}\f$ of the associated coefficient matrix.
-  int getNMax() const;
-  /// Get the number of shapelet coefficients.
-  int getNCoeffs() const;
-  /// Get the index \f$n_1\f$ of the associated cartesian coefficient matrix from the vector index.
-  int getN1(unsigned int index) const;
-  /// Get the index \f$n_2\f$ of the associated cartesian coefficient matrix from the vector index.
-  int getN2(unsigned int index) const;
-  /// Get the index \f$n\f$ of the associated polar coefficient matrix from the vector index.
-  int getN(unsigned int index) const;
-  /// Get the index \f$m\f$ of the associated polar coefficient matrix from the vector index.
-  int getM(unsigned int index) const;
-  /// Get the vector index from the cartesian eigenstates numbers.
-  unsigned int getCartesianIndex(unsigned int n1, unsigned int n2) const;
-  /// Get the vector index from the polar eigenstate numbers.
-  unsigned int getPolarIndex(unsigned int n, int m) const;
+  virtual ~IndexVector() {};
+  /// Set \f$n_{max}\f$.
+  virtual void setNMax(int nmax) = 0;
+  /// Get \f$n_{max}\f$.
+  virtual unsigned int getNMax() const = 0;
+  /// Get \f$n_{coeffs}\f$.
+  virtual unsigned int getNCoeffs() const = 0;
+  /// Get the first eigenstate number from the vector index.
+  virtual int getState1(unsigned int index) const = 0;
+  /// Get the second eigenstate number from the vector index.
+  virtual int getState2(unsigned int index) const = 0;
+  /// Get the first matrix index from vector index.
+  virtual unsigned int getIndex1(unsigned int index) const = 0;
+  /// Get the second matrix index from vector index.
+  virtual unsigned int getIndex2(unsigned int index) const = 0;
+  /// Get the vector index from the eigenstate numbers.
+  virtual unsigned int getIndex(int i, int j) const = 0;
  private:
-  void computeIndexMaps();
   unsigned int nmax;
-  std::map<unsigned int, std::pair<unsigned int, unsigned int> > cartesian;
-  std::map<unsigned int, std::pair<unsigned int, int> > polar;
-  NumMatrix<unsigned int> cMatrix;
-  NumMatrix<unsigned int> pMatrix;
-  int mIndex(unsigned int n, int m) const;
 };
+
 #endif

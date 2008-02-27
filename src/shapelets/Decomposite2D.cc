@@ -72,8 +72,8 @@ void Decomposite2D::makeLSMatrix () {
   // now build tensor product of M0 and M1
   int n0, n1;
   for (int l = 0; l < nCoeffs; l++) {
-    n0 = nVector.getN1(l);
-    n1 = nVector.getN2(l);
+    n0 = nVector.getState1(l);
+    n1 = nVector.getState2(l);
     for (int i=0; i<npixels; i++) 
       Mt(l,i) = M0(n0,i)*M1(n1,i);
   }

@@ -9,7 +9,7 @@ Composite2D::Composite2D() : Shapelets2D() {
   change = 1;
 }
 
-Composite2D::Composite2D(data_t beta, Point2D& inxcentroid, const NumMatrix<data_t>& Coeffs) : Shapelets2D() {  
+Composite2D::Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D& inxcentroid) : Shapelets2D() {  
   coeffs = Coeffs;
   xcentroid = inxcentroid;
   Shapelets2D::setBeta(beta);
@@ -78,7 +78,7 @@ data_t Composite2D::eval(const Point2D& x) {
   // result = sum over all coeffs * basis function
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) 
-    result += coeffs(i) * Shapelets2D::eval(nVector.getN1(i), nVector.getN2(i), xdiff);
+    result += coeffs(i) * Shapelets2D::eval(nVector.getState1(i), nVector.getState2(i), xdiff);
   return result;
 }
 
@@ -104,7 +104,7 @@ data_t Composite2D::integrate() {
   // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) 
-    result += coeffs(i) * Shapelets2D::integrate(nVector.getN1(i), nVector.getN2(i)); 
+    result += coeffs(i) * Shapelets2D::integrate(nVector.getState1(i), nVector.getState2(i)); 
   return result;
 }
 data_t Composite2D::integrate(data_t xmin, data_t xmax, data_t ymin,data_t ymax) {
@@ -116,7 +116,7 @@ data_t Composite2D::integrate(data_t xmin, data_t xmax, data_t ymin,data_t ymax)
   // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) 
-    result += coeffs(i) * Shapelets2D::integrate(nVector.getN1(i), nVector.getN2(i), xmin, xmax, ymin, ymax); 
+    result += coeffs(i) * Shapelets2D::integrate(nVector.getState1(i), nVector.getState2(i), xmin, xmax, ymin, ymax); 
   return result;
 }
 
@@ -128,8 +128,8 @@ data_t Composite2D::getShapeletFlux() const {
   // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
-    n1 = nVector.getN1(i);
-    n2 = nVector.getN2(i);
+    n1 = nVector.getState1(i);
+    n2 = nVector.getState2(i);
     if (n1%2 == 0 && n2%2 == 0) {
       result += 2 * gsl_pow_int(2,-(n1+n2)/2) * sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) /
 	(gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * coeffs(i);
@@ -145,8 +145,8 @@ Point2D Composite2D::getShapeletCentroid() const {
   unsigned int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
-    n1 = nVector.getN1(i);
-    n2 = nVector.getN2(i);
+    n1 = nVector.getState1(i);
+    n2 = nVector.getState2(i);
     if (n1%2 == 1 && n2%2 ==0) {
       xc(0) += sqrt((data_t)n1 + 1)*pow(2,0.5*(2-n1-n2)) *
 	sqrt(gsl_sf_fact(n1+1)*gsl_sf_fact(n2)) /
@@ -174,8 +174,8 @@ NumMatrix<data_t> Composite2D::getShapelet2ndMoments() const {
   unsigned int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
-    n1 = nVector.getN1(i);
-    n2 = nVector.getN2(i);
+    n1 = nVector.getState1(i);
+    n2 = nVector.getState2(i);
     if (n1%2 == 0 && n2%2 ==0) {
       factor = 2 * gsl_pow_int(2,-(n1+n2)/2) * 
 	sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) /
@@ -203,8 +203,9 @@ data_t Composite2D::getShapeletRMSRadius() const {
   unsigned int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
-    n1 = nVector.getN1(i);
-    n2 = nVector.getN2(i);
+    n1 = nVector.getState1(i);
+    n2 = nVector.getState2(i);
+    std::cout << i << "\t" << n1 << "\t" << n2 << "\t" << coeffs(i) << std::endl;
     if (n1%2 == 0 && n2%2 ==0) {
       rms += 4 * gsl_pow_int(2,-(n1+n2)/2) * (1+n1+n2) *
 	sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) / (gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * 
@@ -249,8 +250,8 @@ void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M) {
   // now build tensor product of M0 and M1
   int n0, n1;
   for (int l = 0; l < nCoeffs; l++) {
-    n0 = nVector.getN1(l);
-    n1 = nVector.getN2(l);
+    n0 = nVector.getState1(l);
+    n1 = nVector.getState2(l);
     for (int i=0; i<npixels; i++)
       // this access scheme is probably slow but we come around the matrix Mt
       M(i,l) = M0(n0,i)*M1(n1,i);

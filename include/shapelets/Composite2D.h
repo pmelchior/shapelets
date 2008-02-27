@@ -19,8 +19,7 @@ class Composite2D : private Shapelets2D {
   /// Don't use it for explicit composition.
   Composite2D();
   /// Argumented constructor.
-  /// Different shapelet orders are allowed by giving matrix of appropriate dimensions.
-  Composite2D(data_t beta, Point2D& xcentroid, const NumMatrix<data_t>& Coeffs);
+  Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D& xcentroid);
   /// Copy constructor.
   Composite2D(const Composite2D &source);
   /// Copy operator

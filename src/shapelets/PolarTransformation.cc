@@ -41,8 +41,8 @@ void PolarTransformation::buildTransformationMatrix(const IndexVector& nVector) 
     for(int i = 0; i < nCoeffs; i++) {     // polar vector index
       for (int j = 0; j < nCoeffs; j++) {  // cartesian vector index
 	// determine n,m,n1,n2 from i,j
-	int nr = nVector.getN1(i), nl = nVector.getN2(i);
-	int n1 = nVector.getN1(j), n2 = nVector.getN2(j);
+	int nr = nVector.getState1(i), nl = nVector.getState2(i);
+	int n1 = nVector.getState1(j), n2 = nVector.getState2(j);
 	// the prefactor
 	prefactor = data_t(pow(2,-data_t(nr+nl)/2))*pow(I,nr-nl);
 	// only orders with n1+n2 <= nmax are evaluated
