@@ -35,7 +35,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   status = IO::readFITSKeyword(fptr,"XMAX",xmax);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
   status = IO::readFITSKeyword(fptr,"YMAX",ymax);
-  Object::accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
+  grid = Grid(xmin,xmax,1,ymin,ymax,1);
   complex<data_t> xc;
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
@@ -71,7 +71,8 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   // check if there is 2nd extHDU: the weight map
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
     history << " and weight map";
-    IO::readFITSImage(fptr, Object::accessGrid(), weight);
+    Grid weightgrid;
+    IO::readFITSImage(fptr, weightgrid, weight);
   }
   history << std::endl;
   IO::closeFITSFile(fptr);

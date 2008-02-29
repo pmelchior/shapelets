@@ -133,7 +133,7 @@ void Frame::findObjects() {
       else {
 	counter--;
 	for(iter = pixelset.begin(); iter != pixelset.end(); iter++ )
-	  segMap(*iter) = 0;
+	  segMap(*iter) = -1;
       }
     }
   }
