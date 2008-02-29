@@ -2,15 +2,17 @@
 
 using namespace std;
 
-IndexVectorPolar::IndexVectorPolar () {
-  nmax = 0;
+IndexVectorPolar::IndexVectorPolar () :
+  nmax(0), pMatrix(1,1) {
+  computeIndexMaps();
 }
 
-IndexVectorPolar::IndexVectorPolar (unsigned int nmax) {
-  setNMax(nmax);
+IndexVectorPolar::IndexVectorPolar (unsigned int innmax) :
+  nmax(innmax), pMatrix(innmax+1, innmax+1) {
+  computeIndexMaps();
 }
 
-void IndexVectorPolar::setNMax(int innmax) {
+void IndexVectorPolar::setNMax(unsigned int innmax) {
   if (innmax != nmax) {
     nmax = innmax;
     polar.clear();
@@ -47,12 +49,20 @@ int IndexVectorPolar::getState1(unsigned int i) const {
   std::map<unsigned int, std::pair<unsigned int, int> >::const_iterator pIter = polar.find(i);
   if (pIter != polar.end())
     return pIter->second.first;
+  else {
+    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::terminate();
+  }
 }
 
 int IndexVectorPolar::getState2(unsigned int i) const {
   std::map<unsigned int, std::pair<unsigned int, int> >::const_iterator pIter = polar.find(i);
   if (pIter != polar.end())
     return pIter->second.second;
+  else {
+    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::terminate();
+  }
 }
 
 unsigned int IndexVectorPolar::getIndex1(unsigned int i) const {
@@ -63,9 +73,18 @@ unsigned int IndexVectorPolar::getIndex2(unsigned int i) const {
   std::map<unsigned int, std::pair<unsigned int, int> >::const_iterator pIter = polar.find(i);
   if (pIter != polar.end())
     return mIndex(pIter->second.first,pIter->second.second);
+  else {
+    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::terminate();
+  }
 }
 
 unsigned int IndexVectorPolar::getIndex(int n, int m) const {
-  return pMatrix(n,mIndex(n,m));
+  if (n <= nmax && abs(m) <= n)
+    return pMatrix(n,mIndex(n,m));
+  else {
+    std::cerr << "IndexVector: eigenstate combination illegal" << std::endl;
+    std::terminate();
+  }
 }
 

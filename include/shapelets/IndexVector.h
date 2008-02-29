@@ -22,7 +22,7 @@ class IndexVector {
  public:
   virtual ~IndexVector() {};
   /// Set \f$n_{max}\f$.
-  virtual void setNMax(int nmax) = 0;
+  virtual void setNMax(unsigned int nmax) = 0;
   /// Get \f$n_{max}\f$.
   virtual unsigned int getNMax() const = 0;
   /// Get \f$n_{coeffs}\f$.
@@ -37,8 +37,6 @@ class IndexVector {
   virtual unsigned int getIndex2(unsigned int index) const = 0;
   /// Get the vector index from the eigenstate numbers.
   virtual unsigned int getIndex(int i, int j) const = 0;
- private:
-  unsigned int nmax;
 };
 
 #endif

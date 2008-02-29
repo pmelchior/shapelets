@@ -12,7 +12,7 @@ class IndexVectorPolar : public IndexVector {
   virtual ~IndexVectorPolar() {};
   virtual unsigned int getNMax() const;
   virtual unsigned int getNCoeffs() const;
-  virtual void setNMax(int nmax);
+  virtual void setNMax(unsigned int nmax);
   virtual int getState1(unsigned int index) const;
   virtual int getState2(unsigned int index) const;
   virtual unsigned int getIndex1(unsigned int index) const;

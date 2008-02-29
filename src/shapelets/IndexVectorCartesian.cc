@@ -2,15 +2,17 @@
 
 using namespace std;
 
-IndexVectorCartesian::IndexVectorCartesian () {
-  nmax = 0;
+IndexVectorCartesian::IndexVectorCartesian () :
+  nmax(0), cMatrix(1,1) {
+  computeIndexMaps();
 }
 
-IndexVectorCartesian::IndexVectorCartesian (unsigned int nmax) {
-  setNMax(nmax);
+IndexVectorCartesian::IndexVectorCartesian (unsigned int innmax) :
+  nmax(innmax), cMatrix(innmax+1, innmax+1) {
+  computeIndexMaps();
 }
 
-void IndexVectorCartesian::setNMax(int innmax) {
+void IndexVectorCartesian::setNMax(unsigned int innmax) {
   if (innmax != nmax) {
     nmax = innmax;
     cartesian.clear();
@@ -43,12 +45,20 @@ int IndexVectorCartesian::getState1(unsigned int i) const {
   std::map<unsigned int, std::pair<unsigned int, unsigned int> >::const_iterator cIter = cartesian.find(i);
   if (cIter != cartesian.end())
     return cIter->second.first;
+  else {
+    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::terminate();
+  }
 }
 
 int IndexVectorCartesian::getState2(unsigned int i) const {
   std::map<unsigned int, std::pair<unsigned int, unsigned int> >::const_iterator cIter = cartesian.find(i);
   if (cIter != cartesian.end())
     return cIter->second.second;
+  else {
+    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::terminate();
+  }
 }
 
 unsigned int IndexVectorCartesian::getIndex1(unsigned int i) const {
@@ -60,5 +70,10 @@ unsigned int IndexVectorCartesian::getIndex2(unsigned int i) const {
 }
 
 unsigned int IndexVectorCartesian::getIndex(int n1, int n2) const {
-  return cMatrix(n1,n2);
+  if (n1 + n2 <= nmax)
+    return cMatrix(n1,n2);
+  else {
+    std::cerr << "IndexVector: eigenstate combination illegal!" << std::endl;
+    std::terminate();
+  }
 }

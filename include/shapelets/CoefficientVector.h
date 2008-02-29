@@ -80,15 +80,13 @@ class CoefficientVector : public NumVector<T> {
   
   /// Copy operator.
   void operator= (const NumVector<T>& v) {
-    if (computeNMax(v.size()) != nVector->getNMax())
-      nVector->setNMax(computeNMax(v.size()));
+    nVector->setNMax(computeNMax(v.size()));
     NumVector<T>::operator=(v);
   }
 
   /// Copy operator.
   void operator= (const CoefficientVector<T>& cv) {
-    if (cv.nVector->getNMax() != nVector->getNMax())
-      nVector->setNMax(cv.nVector->getNMax());
+    nVector->setNMax(cv.nVector->getNMax());
     NumVector<T>::operator=(cv.getNumVector());
   } 
 
@@ -115,11 +113,10 @@ class CoefficientVector : public NumVector<T> {
   void setCoeffs(const NumMatrix<T>& coeffMatrix) {
     // set up IndexVector
     int nmax = coeffMatrix.getRows() - 1;
-    if (nVector->getNMax() != nmax) {
-      nVector->setNMax(nmax);
-      // resize storage contained
+    nVector->setNMax(nmax);
+    // resize coeff vector
+    if (NumVector<T>::size() != nVector->getNCoeffs())
       NumVector<T>::resize(nVector->getNCoeffs());
-    }
     for (int n = 0; n < NumVector<T>::size(); n++)
       NumVector<T>::operator()(n) = coeffMatrix(nVector->getIndex1(n),nVector->getIndex2(n));
   }
@@ -145,8 +142,8 @@ class CoefficientVector : public NumVector<T> {
 
   /// Set \f$n_{max}\f$.
   void setNMax(unsigned int nmax) {
-    if (nVector->getNMax() != nmax) {
-      nVector->setNMax(nmax);
+    nVector->setNMax(nmax);
+    if (NumVector<T>::size() != nVector->getNCoeffs()) {
       NumVector<T>::resize(nVector->getNCoeffs());
       NumVector<T>::clear();
     }
