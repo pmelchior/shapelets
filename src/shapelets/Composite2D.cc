@@ -124,17 +124,19 @@ data_t Composite2D::integrate(data_t xmin, data_t xmax, data_t ymin,data_t ymax)
 // see Paper I, eq. 26
 data_t Composite2D::getShapeletFlux() const {
   data_t result = 0;
-  unsigned int n1, n2;
+  int n1, n2;
   // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
     n2 = nVector.getState2(i);
+    std::cout << i << "\t" << n1 << "\t" << n2 << "\t" << coeffs(i) << std::endl;
     if (n1%2 == 0 && n2%2 == 0) {
       result += 2 * gsl_pow_int(2,-(n1+n2)/2) * sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) /
 	(gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * coeffs(i);
     }
   }
+  std::cout << "FLUX = " << result  << std::endl;
   return M_SQRTPI*Shapelets2D::getBeta()*result;
 }
 
@@ -142,7 +144,7 @@ data_t Composite2D::getShapeletFlux() const {
 // see Paper I, eq. 27
 Point2D Composite2D::getShapeletCentroid() const {
   Point2D xc(0,0);
-  unsigned int n1, n2;
+  int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
@@ -171,7 +173,7 @@ Point2D Composite2D::getShapeletCentroid() const {
 NumMatrix<data_t> Composite2D::getShapelet2ndMoments() const {
   NumMatrix<data_t> Q(2,2);
   data_t factor;
-  unsigned int n1, n2;
+  int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
@@ -200,7 +202,7 @@ NumMatrix<data_t> Composite2D::getShapelet2ndMoments() const {
 // see Paper I, eq. (28)
 data_t Composite2D::getShapeletRMSRadius() const {
   data_t rms = 0;
-  unsigned int n1, n2;
+  int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
