@@ -130,13 +130,11 @@ data_t Composite2D::getShapeletFlux() const {
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
     n2 = nVector.getState2(i);
-    std::cout << i << "\t" << n1 << "\t" << n2 << "\t" << coeffs(i) << std::endl;
     if (n1%2 == 0 && n2%2 == 0) {
       result += 2 * gsl_pow_int(2,-(n1+n2)/2) * sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) /
 	(gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * coeffs(i);
     }
   }
-  std::cout << "FLUX = " << result  << std::endl;
   return M_SQRTPI*Shapelets2D::getBeta()*result;
 }
 
@@ -207,7 +205,6 @@ data_t Composite2D::getShapeletRMSRadius() const {
   for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
     n2 = nVector.getState2(i);
-    std::cout << i << "\t" << n1 << "\t" << n2 << "\t" << coeffs(i) << std::endl;
     if (n1%2 == 0 && n2%2 ==0) {
       rms += 4 * gsl_pow_int(2,-(n1+n2)/2) * (1+n1+n2) *
 	sqrt(gsl_sf_fact(n1)*gsl_sf_fact(n2)) / (gsl_sf_fact(n1/2)*gsl_sf_fact(n2/2)) * 
