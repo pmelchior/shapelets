@@ -9,6 +9,7 @@
 using namespace std;
 
 Catalog::Catalog() : map<unsigned long, CatObject>() {
+  present.set();
 }
 
 Catalog::Catalog(string catfile) : map<unsigned long, CatObject>() {
@@ -66,6 +67,10 @@ void Catalog::read(string catfile) {
 	so.CLASSIFIER = (data_t) atof(column[format.CLASSIFIER].c_str());
       else
 	so.CLASSIFIER = (data_t) 0;
+      if (present.test(10))
+	so.PARENT = (unsigned long) atoi(column[format.PARENT].c_str());
+      else
+	so.PARENT = (unsigned long)0;
       // then store it in map
       Catalog::operator[](id) = so;
     }
@@ -87,20 +92,28 @@ void Catalog::save(string catfile) const {
   catalog << "#  9 FLAGS" << endl;
   if (present.test(9))
     catalog << "# 10 CLASSIFIER" << endl;
+  if (present.test(10)) {
+    if (present.test(9))
+      catalog << "# 11 PARENT" << endl;
+    else
+      catalog << "# 10 PARENT" << endl;
+  }
   // now all objects in Catalog
   Catalog::const_iterator iter;
   for (iter = Catalog::begin(); iter != Catalog::end(); iter++) {
-    catalog << (*iter).first << " ";
-    catalog << (*iter).second.XMIN + 1 << " ";
-    catalog << (*iter).second.XMAX + 1 << " ";
-    catalog << (*iter).second.YMIN + 1 << " ";
-    catalog << (*iter).second.YMAX + 1 << " ";
-    catalog << (*iter).second.XCENTROID + 1 << " ";
-    catalog << (*iter).second.YCENTROID + 1 << " ";
-    catalog << (*iter).second.FLUX << " ";
-    catalog << (unsigned int) (*iter).second.FLAGS << " ";
+    catalog << iter->first << " ";
+    catalog << iter->second.XMIN + 1 << " ";
+    catalog << iter->second.XMAX + 1 << " ";
+    catalog << iter->second.YMIN + 1 << " ";
+    catalog << iter->second.YMAX + 1 << " ";
+    catalog << iter->second.XCENTROID + 1 << " ";
+    catalog << iter->second.YCENTROID + 1 << " ";
+    catalog << iter->second.FLUX << " ";
+    catalog << (unsigned int) iter->second.FLAGS << " ";
     if (present.test(9))
-      catalog << (*iter).second.CLASSIFIER << " ";
+      catalog << iter->second.CLASSIFIER << " ";
+    if (present.test(10))
+      catalog << iter->second.PARENT << " ";
     catalog << endl;
   }
 }
@@ -146,14 +159,18 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
     format.CLASSIFIER = colnr - 1;
     present[9] = 1;
   }
+  else if (type == "PARENT" || type == "VECTOR_ASSOC") {
+    format.PARENT = colnr - 1;
+    present[10] = 1;
+  }
 }
 
 bool Catalog::checkFormat() {
   // test if all but 9th bit are set
   // this means that CLASSIFIER is optional
-  bitset<10> mask(0);
-  mask[9] = 1;
-  if ((present | mask).count() < 10) {
+  bitset<11> mask(0);
+  mask[9] = mask[10] = 1;
+  if ((present | mask).count() < 11) {
     cerr << "Catalog: mandatory catalog parameters are missing!" << endl;
     terminate();
   }

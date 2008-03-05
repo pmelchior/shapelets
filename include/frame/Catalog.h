@@ -34,6 +34,8 @@ struct CatObject {
   unsigned char FLAGS;
   /// Optional classifier of the Object (alternatives: <tt>CLASS_STAR</tt>).
   data_t CLASSIFIER;
+  /// Optional parent id (alternative: <tt>VECTOR_ASSOC</tt>).
+  unsigned long PARENT;
 };
 
 /// Class for reading and storing catalogs of objects.
@@ -121,9 +123,10 @@ class Catalog : public std::map<unsigned long, CatObject> {
     unsigned short FLUX;
     unsigned short FLAGS;
     unsigned short CLASSIFIER;
+    unsigned short PARENT;
   };
   CatFormat format;
-  std::bitset<10> present;
+  std::bitset<11> present;
   bool formatChecked;
   bool checkFormat();
   void setFormatField(std::string name, unsigned short colnr);
