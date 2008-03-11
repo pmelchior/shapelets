@@ -50,7 +50,7 @@ int IndexVectorPolar::getState1(unsigned int i) const {
   if (pIter != polar.end())
     return pIter->second.first;
   else {
-    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::cerr << "IndexVector: index " << i << " does not exist" << std::endl;
     std::terminate();
   }
 }
@@ -60,7 +60,7 @@ int IndexVectorPolar::getState2(unsigned int i) const {
   if (pIter != polar.end())
     return pIter->second.second;
   else {
-    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::cerr << "IndexVector: index " << i << " does not exist" << std::endl;
     std::terminate();
   }
 }
@@ -74,7 +74,7 @@ unsigned int IndexVectorPolar::getIndex2(unsigned int i) const {
   if (pIter != polar.end())
     return mIndex(pIter->second.first,pIter->second.second);
   else {
-    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::cerr << "IndexVector: index " << i << " does not exist" << std::endl;
     std::terminate();
   }
 }
@@ -83,7 +83,7 @@ unsigned int IndexVectorPolar::getIndex(int n, int m) const {
   if (n <= nmax && abs(m) <= n)
     return pMatrix(n,mIndex(n,m));
   else {
-    std::cerr << "IndexVector: eigenstate combination illegal" << std::endl;
+    std::cerr << "IndexVector: eigenstate combination " << n << "/" << m << " illegal!" << std::endl;
     std::terminate();
   }
 }

@@ -46,7 +46,7 @@ int IndexVectorCartesian::getState1(unsigned int i) const {
   if (cIter != cartesian.end())
     return cIter->second.first;
   else {
-    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::cerr << "IndexVector: index " << i << " does not exist" << std::endl;
     std::terminate();
   }
 }
@@ -56,7 +56,7 @@ int IndexVectorCartesian::getState2(unsigned int i) const {
   if (cIter != cartesian.end())
     return cIter->second.second;
   else {
-    std::cerr << "IndexVector: index does not exist" << std::endl;
+    std::cerr << "IndexVector: index " << i << " does not exist" << std::endl;
     std::terminate();
   }
 }
@@ -73,7 +73,7 @@ unsigned int IndexVectorCartesian::getIndex(int n1, int n2) const {
   if (n1 + n2 <= nmax)
     return cMatrix(n1,n2);
   else {
-    std::cerr << "IndexVector: eigenstate combination illegal!" << std::endl;
+    std::cerr << "IndexVector: eigenstate combination " << n1 << "/" << n2 << " illegal!" << std::endl;
     std::terminate();
   }
 }

@@ -37,9 +37,9 @@ void ImageTransformation::converge(CoefficientVector<Complex>& polarCoeffs, data
     n = nVector.getState1(i);
     m = nVector.getState2(i);
     polarCoeffs(i) = (1+kappa) * tmp(n,m);
-    if (n >= 2) 
+    if (n >= 2 && abs(m) <= n-2) 
       polarCoeffs(i) += kappa/2 * sqrt((data_t)(n-m)*(n+m)) * tmp(n-2,m);
-    if (n < nVector.getNMax() - 1)
+    if (n < nVector.getNMax() - 1 && abs(m) <= n+2)
       polarCoeffs(i) -= kappa/2 * sqrt((data_t)(n-m+2)*(n+m+2)) * tmp(n+2,m);
   }
 }
@@ -48,7 +48,7 @@ void ImageTransformation::converge(CoefficientVector<Complex>& polarCoeffs, data
 // see Paper III, eq. 41
 void ImageTransformation::shear(CoefficientVector<Complex>& polarCoeffs, Complex gamma, History& history) {
   history << "# Shearing image by gamma = " << gamma << endl;
-  NumMatrix<Complex> tmp = polarCoeffs.getCoeffMatrix();
+  CoefficientVector<Complex> tmp = polarCoeffs;
   Complex factor = data_t(0.25)*gamma;
   const IndexVector& nVector = polarCoeffs.getIndexVector();
   int n,m;
@@ -56,18 +56,18 @@ void ImageTransformation::shear(CoefficientVector<Complex>& polarCoeffs, Complex
     n = nVector.getState1(i);
     m = nVector.getState2(i);
     if (n >= 2) {
-      if(m >= -n+2) {
+      if(abs(m-2) <= n-2) {
 	polarCoeffs(i) += factor * sqrt((data_t)(n+m)*(n+m-2)) * tmp(n-2,m-2);
       }
-      if(m <= n-2) {
+      if(abs(m+2) <= n-2) {
 	polarCoeffs(i) += conj(factor) * sqrt((data_t)(n-m)*(n-m-2)) * tmp(n-2,m+2);
       }
     }
     if (n < nVector.getNMax() - 1) { 
-      if(m >= -n+2) {
+      if(abs(m-2) <= n+2) {
 	polarCoeffs(i) -= factor * sqrt((data_t)(n-m+2)*(n-m+4)) * tmp(n+2,m-2);
       }
-      if(m <= n-2) {
+      if(abs(m+2) <= n+2) {
 	polarCoeffs(i) -= conj(factor) * sqrt((data_t)(n+m+2)*(n+m+4)) * tmp(n+2,m+2);
       }
     }
@@ -93,7 +93,6 @@ void ImageTransformation::shear(CoefficientVector<Complex>& polarCoeffs, Complex
 //       conv += sqrt((data_t)(n1+1)*(n1+2)) * tmp(n1+2,n2);
 //     if (n2 < nVector.getNMax() - 1)
 //       conv += sqrt((data_t)(n2+1)*(n2+2)) * tmp(n1,n2+2);
-//     cartesianCoeffs(i) *= 1+kappa;
 //     cartesianCoeffs(i) += 0.5*kappa*conv;
 //   }
 // }
@@ -117,15 +116,17 @@ void ImageTransformation::shear(CoefficientVector<Complex>& polarCoeffs, Complex
 //       sheared1 += sqrt((data_t)(n1+1)*(n1+2)) * tmp(n1+2,n2);
 //     if (n2 < nVector.getNMax() - 1)
 //       sheared1 -= sqrt((data_t)(n2+1)*(n2+2)) * tmp(n1,n2+2);
-//     sheared1 *= 0.5*real(gamma);
 //     // gamma(1) * S2
 //     if (n1 >= 1 && n2 >= 1)
-//       sheared2 += sqrt((data_t)n1*n2) * tmp(n1-1,n2-1);
+//       sheared2 -= sqrt((data_t)n1*n2) * tmp(n1-1,n2-1);
+//     if (n1 >= 1 && n2 < nVector.getNMax())
+//       sheared2 += sqrt((data_t)n1*(n2+1)) * tmp(n1-1,n2+1);
+//     if (n1 < nVector.getNMax() && n2 >= 1)
+//       sheared2 -= sqrt((data_t)(n1+1)*n2) * tmp(n1+1,n2-1);
 //     if (n1 < nVector.getNMax() && n2 < nVector.getNMax())
 //       sheared2 += sqrt((data_t)(n1+1)*(n2+1)) * tmp(n1+1,n2+1);
-//     sheared2 *= imag(gamma);
 //     // add to cartesianCoeff
-//     cartesianCoeffs(i) += sheared1 + sheared2;
+//     cartesianCoeffs(i) += 0.5*real(gamma)*sheared1 + imag(gamma)*sheared2;
 //   }
 // }
 
@@ -250,17 +251,16 @@ void ImageTransformation::brighten(CoefficientVector<data_t>& cartesianCoeffs, d
   }
 }
 
-void ImageTransformation::convolve(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, const CoefficientVector<data_t>& KernelCoeffs, data_t beta_kernel, History& history) {
-  history << "# Convolving image with kernel of order " << KernelCoeffs.getNMax() << ", beta = " << beta_kernel << endl;
-  int nmax_orig = cartesianCoeffs.getNMax();
+void ImageTransformation::convolve(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel, History& history) {
+  history << "# Convolving image with kernel of order " << kernelCoeffs.getNMax() << ", beta = " << beta_kernel << endl;
 
   // natural choice for convolved beta
   data_t beta_convolved = sqrt(beta*beta + beta_kernel*beta_kernel);
-  int nmax_convolved = nmax_orig;
+  // theoretical nmax after convolution
+  int nmax_convolved = cartesianCoeffs.getNMax() + kernelCoeffs.getNMax();
 
-  // construct covolution matrix
-  NumMatrix<data_t> P;
-  makeConvolutionMatrix(P,KernelCoeffs,beta,beta_kernel,beta_convolved,nmax_orig,nmax_convolved);
+  // construct convolution matrix
+  NumMatrix<data_t> P = makeConvolutionMatrix(cartesianCoeffs,kernelCoeffs,beta,beta_kernel,beta_convolved,nmax_convolved);
   // perform the convolution
   cartesianCoeffs = P*cartesianCoeffs;
   beta = beta_convolved;
@@ -278,8 +278,7 @@ void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs,
     beta_orig = beta_convolved;
   int nmax_orig = nmax_convolved;
 
-  NumMatrix<data_t> P;
-  makeConvolutionMatrix(P,KernelCoeffs,beta_orig,beta_kernel,beta_convolved,nmax_orig,nmax_convolved);
+  NumMatrix<data_t> P = makeConvolutionMatrix(cartesianCoeffs,KernelCoeffs,beta_orig,beta_kernel,beta_convolved,nmax_convolved);
   // since matrix could be singular, use SVD for inversion
   NumMatrix<data_t> P_1 = P.svd_invert();
   // deconvolve
@@ -288,9 +287,10 @@ void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs,
   beta = beta_orig;
 }
 
-void ImageTransformation::makeConvolutionMatrix(NumMatrix<data_t>& P, const CoefficientVector<data_t>& KernelCoeffs, data_t beta_orig, data_t beta_kernel, data_t beta_convolved, unsigned int nmax_orig, unsigned int nmax_convolved) {
-  unsigned int nmax = GSL_MAX_INT(nmax_orig,nmax_convolved);
+NumMatrix<data_t> ImageTransformation::makeConvolutionMatrix(const CoefficientVector<data_t>& cartesianCoeffs, const CoefficientVector<data_t>& KernelCoeffs, data_t beta_orig, data_t beta_kernel, data_t beta_convolved, unsigned int nmax_convolved) {
   unsigned int nmax_kernel = KernelCoeffs.getNMax();
+  unsigned int nmax_orig = cartesianCoeffs.getNMax();
+  unsigned int nmax = GSL_MAX_INT(nmax_orig,nmax_convolved);
   nmax = GSL_MAX_INT(nmax_kernel,nmax);
   boost::multi_array<data_t,3> bt(boost::extents[nmax+1][nmax+1][nmax+1]);
   data_t alpha = beta_orig;
@@ -308,8 +308,9 @@ void ImageTransformation::makeConvolutionMatrix(NumMatrix<data_t>& P, const Coef
   
   // the 2D convolution tensor C_nml
   // the matrix->vector projection
-  IndexVectorCartesian  nVector_orig(nmax_orig), nVector_convolved(nmax_convolved);
+  IndexVectorCartesian  nVector_convolved(nmax_convolved);
   const IndexVector& nVector_kernel = KernelCoeffs.getIndexVector();
+  const IndexVector& nVector_orig = cartesianCoeffs.getIndexVector();
   int nCoeffs_orig = nVector_orig.getNCoeffs();
   int nCoeffs_kernel = nVector_kernel.getNCoeffs();
   int nCoeffs_convolved = nVector_convolved.getNCoeffs();
@@ -322,11 +323,12 @@ void ImageTransformation::makeConvolutionMatrix(NumMatrix<data_t>& P, const Coef
 	  c1[nVector_convolved.getState2(n)][nVector_orig.getState2(m)][nVector_kernel.getState2(l)];
   
   // now the 2D convolution matrix P_nm
-  P = NumMatrix<data_t>(nCoeffs_convolved,nCoeffs_orig);
+  NumMatrix<data_t> P (nCoeffs_convolved,nCoeffs_orig);
   for (int n=0; n < nCoeffs_convolved; n++)
     for (int m=0; m < nCoeffs_orig; m++)
       for (int l=0; l < nCoeffs_kernel; l++)
 	P(n,m) += c2[n][m][l] * KernelCoeffs(l);
+  return P;
 }
 
 // this is a direct conversion from the shapelets IDL code
