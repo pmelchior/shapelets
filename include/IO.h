@@ -7,7 +7,10 @@
 #include <map>
 #include <NumMatrix.h>
 #include <Typedef.h>
-#include <frame/Image.h>
+#include <frame/Grid.h>
+
+template <class T>
+class Image;
 
 /// Functions for reading and writing into several formats
 class IO {

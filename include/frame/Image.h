@@ -6,6 +6,7 @@
 #include <NumVector.h>
 #include <Typedef.h>
 #include <History.h>
+#include <IO.h>
 #include <frame/Grid.h>
 
 /// Class for image data.
@@ -85,7 +86,7 @@ class Image : public NumVector<T> {
   History& accessHistory() {
     return history;
   }
- friend class IO;
+  //friend class IO;
  protected:
   Grid grid;
  private:

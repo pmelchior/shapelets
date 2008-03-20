@@ -79,7 +79,7 @@ class Catalog : public std::map<unsigned long, CatObject> {
   Catalog operator+ (const Catalog& c);
   /// Add catalog to \p *this.
   /// Behaves identical to operator+.
-  void Catalog::operator+= (const Catalog& c);
+  void operator+= (const Catalog& c);
   /// Substracts a catalog from another.
   /// Entries are identified by map index.
   Catalog operator- (const Catalog& c);
