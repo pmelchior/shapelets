@@ -49,10 +49,10 @@ void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVec
 void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&)) {
   // set up two empty matrices for mean and std_mean
   // as they are easier to resize
-  NumMatrix<data_t> meanMatrix, stdMatrix;
+  NumMatrix<data_t> meanMatrix(1,1), stdMatrix(1,1);
   beta = 0;
   data_t sum_weights = 0, sum_weights2 = 0;
-  unsigned int nmax, n1, n2;
+  int nmax=0, n1, n2;
 
   // go through all ShapeletObjects
   for (ShapeletObjectList::iterator iter = ShapeletObjectList::begin(); iter != ShapeletObjectList::end(); iter++) {
