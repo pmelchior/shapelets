@@ -1,8 +1,11 @@
 #include <ShapeLensConfig.h>
 #include <shapelets/Decomposite2D.h>
 #include <gsl/gsl_math.h>
+#include <boost/numeric/bindings/traits/ublas_symmetric.hpp>
+#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
 
 namespace ublas = boost::numeric::ublas;
+namespace atlas = boost::numeric::bindings::atlas;
 
 Decomposite2D::Decomposite2D(int innmax, data_t inbeta, const Object& O) : 
 obj(O) {
@@ -77,31 +80,44 @@ void Decomposite2D::makeLSMatrix () {
     for (int i=0; i<npixels; i++) 
       Mt(l,i) = M0(n0,i)*M1(n1,i);
   }
-  M = Mt.transpose();
   
-  if (noise == 0)
-    Mt /= background_variance;
-  else if (noise == 1 || noise == 3)
-    Mt = Mt*Weight;
-  else if (noise == 2)
-    Mt = Mt*V_;
-   
-  LS = Mt*M;
-  LS = LS.invert();
-  LS = LS*Mt;
-  
-
-  // SVD method 
-  //LS = M.svd_invert(); 
-  // overlapping integrals
-  //LS = M.transpose();
+  // for gaussian noise and within reasonable bounds on nmax and beta
+  // the coefficient covariance matrix is VERY close to the identity matrix.
+  // We can therefore skip the whole computation of (Mt*M).invert().
+  // Even when shapelet basis becomes non-orthonormal, we can restrict ourselves
+  // to the following code:
+  // if (noise == 0) {
+    //if (LS.getRows() != nCoeffs) {
+    //  LS.resize(nCoeffs,nCoeffs);
+    //  LS.clear();
+    //}
+    // use explicitly multiplication with tranpose of Mt
+    //atlas::gemm(CblasNoTrans,CblasTrans,1.0,Mt.getMatrix(),Mt.getMatrix(),0.0,LS.getMatrix());
+  // }
+  if (noise==0);
+  else {
+    M = Mt.transpose();
+    if (noise == 1 || noise == 3)
+      Mt = Mt*Weight;
+    if (noise == 2)
+      Mt = Mt*V_;
+    LS = Mt*M;
+  }
 }
 
 void Decomposite2D::computeCoeffs() {
   makeLSMatrix();
   // this is useful only for the regularization in OptimalDecomposite2D
   if (updateC) {
-    coeffVector = LS * obj.getNumVector();
+    // for gaussian noise (assuming a orthonormal shapelet basis)
+    // we can neglect the coeff covariance matrix and perform a direct
+    // projection on shapelet states.
+    if (noise == 0)
+      coeffVector = Mt * obj.getNumVector();
+    // otherwise can invert the Least-Squares matrix LS
+    // a Cholesky decomposition might be faster here
+    else
+      coeffVector = LS.invert() * (Mt * obj.getNumVector());
   }
   change = 0;
 }
@@ -114,7 +130,14 @@ void Decomposite2D::computeModel() {
   if (updateModel) {
     if (change)
       computeCoeffs();
-    model = M * coeffVector;
+    // for gaussian noise model: M is not computed, so use transpose of Mt here
+    if (noise == 0) {
+      if (model.size() != Mt.getColumns())
+	model.resize(Mt.getColumns());
+      atlas::gemv(CblasTrans,1.0,Mt.getMatrix(),coeffVector,0.0,model);
+    }
+    else 
+      model = M * coeffVector;
     updateModel = 0;
   }
 }
@@ -140,20 +163,17 @@ CoefficientVector<data_t>& Decomposite2D::accessCoeffs() {
   return coeffVector;
 }
 
-CoefficientVector<data_t> Decomposite2D::getErrors() {
+NumMatrix<data_t> Decomposite2D::getCovarianceMatrix() {
   if (change) computeCoeffs();
-  CoefficientVector<data_t> errorVector(nmax);
-  NumMatrix<data_t> MtNoise_1;
-  // since Mt here is in fact Mt*V_, we can compute the covariance matrix
-  // of the coefficients simply by Mt*M
-  MtNoise_1 = (Mt*M).invert();
-  
-  // the errors here should be very close to background_rms
-  // otherwise orthogonality is spoiled
-  for (int i=0; i<errorVector.size(); i++) {
-    errorVector(i) = sqrt(MtNoise_1(i,i));
+  if (noise==0) {
+    NumMatrix<data_t> identity(nCoeffs,nCoeffs);
+    ublas::matrix_vector_range<ublas::matrix<data_t> > mvr (identity, ublas::range (0, nCoeffs-1), ublas::range (0, nCoeffs-1)); 
+    for (unsigned int i=0; i < nCoeffs; i++)
+      mvr(i) = 1;
+    return identity;
   }
-  return errorVector;
+  else
+    return LS.invert();
 }
 
 const NumVector<data_t>& Decomposite2D::getModel() {

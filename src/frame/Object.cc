@@ -35,7 +35,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   status = IO::readFITSKeyword(fptr,"XMAX",xmax);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
   status = IO::readFITSKeyword(fptr,"YMAX",ymax);
-  grid = Grid(xmin,xmax,1,ymin,ymax,1);
+  grid = Grid(xmin,ymin,(int) floor(xmax-xmin),(int) floor(ymax-ymin));
   complex<data_t> xc;
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);

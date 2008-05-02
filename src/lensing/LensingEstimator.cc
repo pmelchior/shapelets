@@ -21,7 +21,7 @@ complex<data_t> LensingEstimator::getEllipticity(NumMatrix<data_t>& Q) {
 
 complex<data_t> LensingEstimator::getShearOrder(ShapeletObject& so, unsigned int n, complex<data_t> norm) {
   const CoefficientVector<Complex>& f = so.getPolarCoeffs();
-  if (so.getNMax() >= n + 2)
+  if (n%2 ==0 && so.getNMax() >= n)
     return data_t(4./sqrt(data_t(n*(n+2)))) * f(n,2) / norm;
   else 
     return Complex(0,0);
@@ -32,7 +32,7 @@ complex<data_t> LensingEstimator::getNormShearOrder(ShapeletObjectList& ensemble
   int counter = 0;
   for (iter = ensemble.begin(); iter != ensemble.end(); iter++) {
     const CoefficientVector<Complex>& f = (*iter)->getPolarCoeffs();
-    if (n >= 2 && (*iter)->getNMax() >= n+2) {
+    if (n%2==0 && n >= 2 && (*iter)->getNMax() >= n+2) {
       norm += f(n-2,0) - f(n+2,0);
       counter++;
     }
@@ -43,44 +43,39 @@ complex<data_t> LensingEstimator::getNormShearOrder(ShapeletObjectList& ensemble
 
 complex<data_t> LensingEstimator::getShearUnweighted(ShapeletObject& so, complex<data_t> norm) {
   const CoefficientVector<Complex>& f = so.getPolarCoeffs();
-  Complex estimate(0,0);
-  for (int n = 2; n <= (int) so.getNMax() - 2; n+=2)
-    estimate += data_t(sqrt(data_t(n*(n+2)))) * f(n,2);
-  return estimate / norm;
+  Complex num(0,0),denom(0,0);
+  for (int n = 0; n <= so.getNMax(); n+=2) {
+    denom += data_t(sqrt((data_t) n+1)) * f(n,0);
+    if (n>=2)
+      num += data_t(sqrt(data_t(n*(n+2)))) * f(n,2);
+  }
+  return num / (norm * denom);
 }
 
 complex<data_t> LensingEstimator::getNormShearUnweighted(ShapeletObjectList& ensemble) {
-  Complex norm(0,0);
-  data_t ellipticity2 = 0;
+  Complex norm(0,0), epsilon;
   int counter = 0;
-  NumMatrix<data_t> Q(2,2);
+  NumMatrix<data_t> Q;
   for (iter = ensemble.begin(); iter != ensemble.end(); iter++) {
-    const CoefficientVector<Complex>& f = (*iter)->getPolarCoeffs();
-    for (int n = 0; n <= (*iter)->getNMax(); n+=2)
-      norm += data_t(sqrt((data_t) n+1)) * f(n,0);
     if ((*iter)->getNMax() >= 2) {
       Q = (*iter)->getShapelet2ndMoments();
+      epsilon = getEllipticity(Q);
+      norm += epsilon*epsilon;
       counter++;
-      // TODO: is this the complex ellipticity or its modulus?
-      ellipticity2 += gsl_pow_2(abs(getEllipticity(Q)));
     }
   }
   // ellipticity dispersion
-  ellipticity2 /= counter;
-  // mean of norm
   norm /= counter;
-  // including factor 2 and shear responsivity
-  norm *= (2-ellipticity2);
+  // forming shear responsivity
+  norm = Complex(2,0) - norm;
   return norm;
 }
 
 complex<data_t> LensingEstimator::getShearProfile(ShapeletObject& so, complex<data_t> norm) {
   Complex estimate(0,0);
   const CoefficientVector<Complex>& f = so.getPolarCoeffs();
-  for (int n = 2; n <= (int) so.getNMax() - 2; n+=2) {
-    Complex summand = f(n-2,0) - f(n+2,0);
-    estimate += data_t(sqrt((data_t)n*(n+2))) * summand * f(n,2);
-  }
+  for (int n = 2; n <= (int) so.getNMax() - 2; n+=2)
+    estimate += data_t(sqrt((data_t)n*(n+2))) * (f(n-2,0) - f(n+2,0))  * f(n,2);
   return data_t(4) * estimate / norm;
 }
 

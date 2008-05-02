@@ -371,22 +371,22 @@ void Frame::fillObject(Object& O) {
     // fill the object pixel data
     const NumVector<data_t>& data = *this;
     NumVector<data_t>& objdata = O;
-    objdata.resize((xmax-xmin+1)*(ymax-ymin+1));
+    objdata.resize((xmax-xmin)*(ymax-ymin));
     SegmentationMap& objSegMap = O.segMap;
     History& objSegMapHistory = objSegMap.accessHistory();
     objSegMapHistory.setSilent();
     objSegMapHistory << history.str();
     objSegMapHistory.unsetSilent();
-    objSegMap.resize((xmax-xmin+1)*(ymax-ymin+1));
+    objSegMap.resize((xmax-xmin)*(ymax-ymin));
     NumVector<data_t>& objWeightMap = O.weight;
     if (weight.size()!=0) 
-      objWeightMap.resize((xmax-xmin+1)*(ymax-ymin+1));
+      objWeightMap.resize((xmax-xmin)*(ymax-ymin));
     vector<uint> nearby_objects;
 
     // lop over all object pixels
     for (int i =0; i < objdata.size(); i++) {
       // old coordinates derived from new pixel index i
-      int axis0 = xmax-xmin+1;
+      int axis0 = xmax-xmin;
       int x = i%axis0 + xmin;
       int y = i/axis0 + ymin;
       uint j = Frame::getGrid().getPixel(x,y);
@@ -426,7 +426,7 @@ void Frame::fillObject(Object& O) {
     gsl_rng_free (r);
 
     // Grid will be changed but not shifted (all pixels stay at their position)
-    O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,xmax,1,ymin,ymax,1);
+    O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
 
     // Fill other quantities into Object
     O.flag = flags;

@@ -22,7 +22,7 @@ Decomposite2D(2,(O.getSize(0) + O.getSize(1))/(2*8),O), obj(O) {
   nmaxHigh = GSL_MAX_INT(innmaxLow,innmaxHigh);
   betaLow = GSL_MIN_DBL(inbetaLow, inbetaHigh);
   betaHigh = GSL_MAX_DBL(inbetaLow,inbetaHigh);
-
+  
   // estimators for beta
   beta = (obj.getSize(0) + obj.getSize(1))/(2*8);
 
@@ -324,7 +324,7 @@ bool OptimalDecomposite2D::testBetaLowerLimit(data_t& beta) {
   // undersampling is minimum beta to avoid 2*theta_min < 1
   // see Paper IV, eq. (13)
   data_t undersampling = 0.5*sqrt(Decomposite2D::getNMax()+1.);
-  if (beta < GSL_MAX(undersampling,betaLow)) {
+  if (beta <= GSL_MAX(undersampling,betaLow)) {
     beta = GSL_MAX(undersampling,betaLow);
     return 0;
   } else
@@ -334,7 +334,7 @@ bool OptimalDecomposite2D::testBetaLowerLimit(data_t& beta) {
 bool OptimalDecomposite2D::testBetaUpperLimit(data_t& beta) {
   // geometric is maximum beta to avoid theta_max > image_dimension
   data_t geometric = 0.5*image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
-  if (beta > GSL_MIN(geometric, betaHigh)) {
+  if (beta >= GSL_MIN(geometric, betaHigh)) {
     beta = GSL_MIN(geometric, betaHigh);
     return 0;
   } else
@@ -609,18 +609,9 @@ const CoefficientVector<data_t>& OptimalDecomposite2D::getCoeffs() {
   return Decomposite2D::getCoeffs();
 }
 
-CoefficientVector<data_t> OptimalDecomposite2D::getErrors() {
-  // get bets fit coeffs
-  const CoefficientVector<data_t>& coeffVector = OptimalDecomposite2D::getCoeffs();
-  // getting error vector from noise only
-  CoefficientVector<data_t> noiseError = Decomposite2D::getErrors();
-  // now compute error from uncertainty in beta
-  CoefficientVector<data_t> errorVector(coeffVector.getNMax());
-  getCoeffErrorFromBeta(coeffVector,errorVector);
-  // combining the two by Gauss error propagation
-  for (int i = 0; i < coeffVector.size(); i++)
-    errorVector(i) = sqrt(errorVector(i)*errorVector(i) + noiseError(i)*noiseError(i));
-  return errorVector;
+NumMatrix<data_t> OptimalDecomposite2D::getCovarianceMatrix() {
+  if (!optimized) optimize();
+  return Decomposite2D::getCovarianceMatrix();
 }
 
 data_t OptimalDecomposite2D::getOptimalBeta() {
@@ -630,26 +621,6 @@ data_t OptimalDecomposite2D::getOptimalBeta() {
 data_t OptimalDecomposite2D::getOptimalChiSquare() {
   if (!optimized) optimize();
   return optimalChiSquare;
-}
-
-// compute the error on the coeffs coming from uncertainty in beta
-// assume delta(beta) = 10% beta at maximum
-// to derive 3 sigma errors on coeffs
-// FIXME: find good assumptions on beta error?
-void OptimalDecomposite2D::getCoeffErrorFromBeta(const CoefficientVector<data_t>& coeffVector, CoefficientVector<data_t>& errorVector) {
-  ImageTransformation trafo;
-  const IndexVector& nVector = coeffVector.getIndexVector();
-  int nCoeffs = nVector.getNCoeffs();
-  NumMatrix<data_t> betaTrafo(nCoeffs,nCoeffs);
-  trafo.makeRescalingMatrix(betaTrafo,beta*1.1,beta,nVector);
-  errorVector = betaTrafo*coeffVector;
-  trafo.makeRescalingMatrix(betaTrafo,beta*0.9,beta,nVector);
-  NumVector<data_t> lowerCoeffs;
-  lowerCoeffs = betaTrafo*coeffVector;
-  // subtract them to get difference
-  errorVector -= lowerCoeffs;
-  for (int i=0; i < nCoeffs; i++)
-    errorVector(i) = fabs(errorVector(i))/3; // assume the error to be 3 sigma
 }
 
 const bitset<8>& OptimalDecomposite2D::getDecompositionFlags() {

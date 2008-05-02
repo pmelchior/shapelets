@@ -34,8 +34,8 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
 
   // when present, save errors also
   bool saveErrors = 0;
-  const NumMatrix<data_t> errors = sobj.getErrors().getCoeffMatrix();
-  if (errors.getRows() != 0 && errors.getColumns() != 0)
+  const NumMatrix<data_t>& cov = sobj.getCovarianceMatrix();
+  if (cov.getRows() != 0 && cov.getColumns() != 0)
     saveErrors = 1;
   
 
@@ -91,7 +91,7 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   IO::appendFITSHistory(outfptr,sobj.getHistory());
   
   if (saveErrors)
-    IO::writeFITSImage(outfptr,errors,sobj.getName()+"ERRORS");
+    IO::writeFITSImage(outfptr,cov,sobj.getName()+"ERRORS");
 
 }
 
@@ -137,7 +137,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   status = IO::readFITSKeyword(fptr,"XMAX",xmax);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
   status = IO::readFITSKeyword(fptr,"YMAX",ymax);
-  sobj.grid = Grid(xmin,xmax,1,ymin,ymax,1);
+  sobj.grid = Grid(xmin,ymin,(int) floor(xmax-xmin),(int) floor(ymax-ymin));
   complex<data_t> xc;
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   sobj.xcentroid(0) = real(xc);
@@ -172,10 +172,15 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
 
   // if errors have been saved, load it
   if (errors) {
-    fits_movnam_hdu(fptr,IMAGE_HDU, "ERRORS",0, &status);
-    status = IO::readFITSImage(fptr,coeffs);
-    sobj.errors.setCoeffs(coeffs);
+    fits_movrel_hdu(fptr,1,IMAGE_HDU,&status);
+    status = IO::readFITSImage(fptr,sobj.cov);
+    // legacy mode: if errors are coefficient errors instead of full cov. matrix:
+    // set them on diagonal of cov
+    if (sobj.cov.getRows() == sobj.coeffs.getNMax() + 1) {
+      status = IO::readFITSImage(fptr,coeffs);
+      CoefficientVector<data_t> errors(coeffs);
+      sobj.setErrors(errors);
+    }
   }
-
   IO::closeFITSFile(fptr);
 }

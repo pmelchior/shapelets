@@ -13,7 +13,7 @@ CONFIGFILE = "PATHS"
 # choose the appropriate values for the compiler and flags
 COMPILER = "g++"
 FLAGS = "-ansi -g -DNDEBUG -Wno-deprecated -O3 -march=pentium4"
-LIBS = "-lgsl -llapack_atlas -lcblas -latlas -llapack -lg2c -lcfitsio"
+LIBS = "-lgsl -llapack_atlas -latlas -llapack -lg2c -lcfitsio"
 
 # create shared library
 SHARED = True

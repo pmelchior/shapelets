@@ -43,11 +43,11 @@ class ShapeletObject : public Composite2D {
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
-  ShapeletObject(const CoefficientVector<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
+  ShapeletObject(const CoefficientVector<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,-25,50,50));
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,24,1,-25,24,1));
+  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,-25,50,50));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically.\n
@@ -64,10 +64,12 @@ class ShapeletObject : public Composite2D {
 
   /// Set cartesian coefficients.
   void setCoeffs(const CoefficientVector<data_t>& cartesianCoeffs);
-  /// Set cartesian coefficient errors.
-  void setErrors(const CoefficientVector<data_t>& errors);
   /// Set polar coefficients.
   void setPolarCoeffs(const CoefficientVector<complex<data_t> >& polarCoeffs);
+  /// Set errors of the cartesian coefficients.
+  /// The given coefficient errors will populate the diagonal elements of 
+  /// the coefficient covariance matrix.
+  void setErrors(const CoefficientVector<data_t>& errors);
 
   /// Get polar coefficients.
   CoefficientVector<complex<data_t> > getPolarCoeffs();
@@ -78,10 +80,11 @@ class ShapeletObject : public Composite2D {
   /// Return best fit \f$\chi^2\f$ from decomposition.
   /// It will return 0, if ShapeletObject is not constructed from a Fits file.
   data_t getChiSquare() const;
-  /// Get errors of the cartesian shapelet coefficients.
-  /// If the ShapeletObject is not constructed from an Object,
-  /// the errors can be empty.
-  const CoefficientVector<data_t>& getErrors() const;
+  /// Get the cartesian coefficient errors.
+  /// The coefficient errors are computed from the covariance matrix 
+  /// (cf. getCovarianceMatrix()) by quadratic summation:
+  /// \f[ \Delta I_{n_1,n_2} = \sqrt{\sum_{n_1,n_2} cov(n_1,n_2)}\f]
+  CoefficientVector<data_t> getErrors() const;
 
   // methods depending on ImageTransformations
   /// Rotate image counterclockwise by angle \f$\rho\f$.
@@ -172,7 +175,7 @@ class ShapeletObject : public Composite2D {
 
  private:
   CoefficientVector<data_t>& coeffs;
-  CoefficientVector<data_t> errors;
+  NumMatrix<data_t>& cov;
   CoefficientVector<complex<data_t> > polarCoeffs;
   PolarTransformation c2p;
   ImageTransformation trafo;
@@ -183,7 +186,7 @@ class ShapeletObject : public Composite2D {
   unsigned long id;
   std::string basefilename, name;
   ShapeletObject* unreg;
-
+  void correctCovarianceMatrix();
   // Transform arbitrary matrix into triangular matrix of appropraite dimension.
   // Copies entries from input matrix into lower left corner of the triangular matrix
   // as long as there are entries unequal to 0 on the diagonal. 

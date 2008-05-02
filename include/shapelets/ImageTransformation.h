@@ -45,12 +45,11 @@ class ImageTransformation {
   /// Change the scale size of the image by using rescaling relation.
   /// see Paper I, appendix A.
   void rescale(CoefficientVector<data_t>& cartesianCoeffs, data_t beta, data_t newbeta, History& history);
-  void makeRescalingMatrix(NumMatrix<data_t>& betaTrafo, data_t beta1, data_t beta2, const IndexVector& nVector);
-
+  NumMatrix<data_t> makeRescalingMatrix(data_t beta1, data_t beta2, const IndexVector& nVector);
   NumMatrix<data_t> makeConvolutionMatrix(const CoefficientVector<data_t>& cartesianCoeffs, const CoefficientVector<data_t>& KernelCoeffs, data_t beta_orig, data_t beta_kernel, data_t beta_convolved, unsigned int nmax_convolved);
  private:
   void makeBTensor(boost::multi_array<data_t,3>& bt, data_t alpha_1, data_t beta_1, data_t gamma_1, int nmax);
-  void make1DRescalingMatrix(NumMatrix<data_t>& M1D, data_t beta1, data_t beta2, int nmax);
+  NumMatrix<data_t> make1DRescalingMatrix(data_t beta1, data_t beta2, int nmax);
 };
 
 #endif

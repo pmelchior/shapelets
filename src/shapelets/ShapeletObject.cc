@@ -1,12 +1,15 @@
 #include <shapelets/ShapeletObject.h>
 #include <shapelets/SIFFile.h>
 #include <stdio.h>
+#include <vector>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 using namespace std;
 typedef complex<data_t> Complex;
 
 ShapeletObject::ShapeletObject() : 
-Composite2D(), coeffs(Composite2D::coeffs) {
+Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   tag = classifier = chisquare = R = noise_mean = noise_rms = id = 0;
   fits = false;
   updatePolar = true;
@@ -16,7 +19,7 @@ Composite2D(), coeffs(Composite2D::coeffs) {
 }
 
 ShapeletObject::ShapeletObject(const ShapeletObject& source) : 
-Composite2D(), coeffs(Composite2D::coeffs) {
+Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   ShapeletObject::operator=(source);
 }
 
@@ -24,7 +27,6 @@ ShapeletObject& ShapeletObject::operator=(const ShapeletObject& source) {
   Composite2D::operator=(source);
   // copy every variable of this class
   // base class copy constructor already called
-  errors = source.errors;
   polarCoeffs = source.polarCoeffs;
   c2p = source.c2p;
   trafo = source.trafo;
@@ -52,7 +54,7 @@ ShapeletObject::~ShapeletObject() {
 }
 
 ShapeletObject::ShapeletObject(string sifFile, bool preserve_config) : 
-Composite2D(), coeffs(Composite2D::coeffs) {
+Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   unreg = NULL;
   // get infos from file
   load(sifFile,preserve_config);
@@ -61,7 +63,7 @@ Composite2D(), coeffs(Composite2D::coeffs) {
 }
 
 ShapeletObject::ShapeletObject(const CoefficientVector<data_t>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
-Composite2D(), coeffs(Composite2D::coeffs) {
+Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   tag = classifier = chisquare = R = noise_mean = noise_rms = id = 0;
   fits = false;
   updatePolar = true;
@@ -74,8 +76,8 @@ Composite2D(), coeffs(Composite2D::coeffs) {
   Composite2D::setGrid(grid);
 }
 
-ShapeletObject::ShapeletObject(const CoefficientVector<Complex>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
-Composite2D(), coeffs(Composite2D::coeffs) {
+ShapeletObject::ShapeletObject(const CoefficientVector<Complex>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid):
+Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov)  {
   tag = classifier = chisquare = R = noise_mean = noise_rms = id = 0 ;
   fits = false;
   updatePolar = false;
@@ -90,7 +92,7 @@ Composite2D(), coeffs(Composite2D::coeffs) {
 }
 
 ShapeletObject::ShapeletObject(const Object& obj) : 
-Composite2D(), coeffs(Composite2D::coeffs) {
+Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   fits = true;
   updatePolar = true;
   tag = R = 0;
@@ -109,8 +111,12 @@ Composite2D(), coeffs(Composite2D::coeffs) {
   // if set, save the unregularized model to sif file with given name
   if (ShapeLensConfig::REGULARIZE && ShapeLensConfig::SAVE_UNREG) {
     // first get all necessary data for model
+    Composite2D::setBeta(optimalDecomp.getOptimalBeta());
+    Composite2D::setCentroid(xcentroid);
+    Composite2D::setGrid(FitsGrid);
     coeffs = optimalDecomp.getCoeffs();
-    errors = optimalDecomp.getErrors();
+    cov = optimalDecomp.getCovarianceMatrix();
+    ShapeletObject::correctCovarianceMatrix();
     chisquare = optimalDecomp.getOptimalChiSquare();
     history.setSilent();
     history << obj.getHistory();
@@ -123,9 +129,6 @@ Composite2D(), coeffs(Composite2D::coeffs) {
       flags[i] = fitsFlags[i];
       flags[8+i] = decompFlags[i];
     }
-    Composite2D::setBeta(optimalDecomp.getOptimalBeta());
-    Composite2D::setCentroid(xcentroid);
-    Composite2D::setGrid(FitsGrid);
     // create copy of *this as new ShapeletObject entity
     name = "UNREG";
     unreg = new ShapeletObject(*this);
@@ -136,8 +139,14 @@ Composite2D(), coeffs(Composite2D::coeffs) {
   if (ShapeLensConfig::REGULARIZE)
     R = optimalDecomp.regularize(ShapeLensConfig::REG_LIMIT);
 
+
+  Composite2D::setBeta(optimalDecomp.getOptimalBeta());
+  Composite2D::setCentroid(xcentroid);
+  Composite2D::setGrid(FitsGrid);
+  Composite2D::model = optimalDecomp.getModel();
   coeffs = optimalDecomp.getCoeffs();
-  errors = optimalDecomp.getErrors();
+  cov = optimalDecomp.getCovarianceMatrix();
+  ShapeletObject::correctCovarianceMatrix();
   chisquare = optimalDecomp.getOptimalChiSquare();
   history.clear();
   history.setSilent();
@@ -152,11 +161,6 @@ Composite2D(), coeffs(Composite2D::coeffs) {
     flags[i] = fitsFlags[i];
     flags[8+i] = decompFlags[i];
   }
-
-  Composite2D::setBeta(optimalDecomp.getOptimalBeta());
-  Composite2D::setCentroid(xcentroid);
-  Composite2D::setGrid(FitsGrid);
-  Composite2D::model = optimalDecomp.getModel();
 }  
 
 
@@ -166,22 +170,26 @@ void ShapeletObject::setCoeffs(const CoefficientVector<data_t>& incoeffs) {
   updatePolar = true;
 }
 
-void ShapeletObject::setErrors(const CoefficientVector<data_t>& newerrors) {
-  if (coeffs.size() == newerrors.size())
-    errors = newerrors;
-  else {
-    std::cerr << "ShapeletObject: errors given do not have correct dimensions!" << std::endl;
-    std::terminate();
-  }
-}
-
 void ShapeletObject::setPolarCoeffs(const CoefficientVector<Complex>& newpolarCoeffs) {
   polarCoeffs = newpolarCoeffs;
   c2p.getCartesianCoeffs(polarCoeffs,coeffs);
   Composite2D::change = 1;
   updatePolar = false;
 }
-  
+ 
+void ShapeletObject::setErrors(const CoefficientVector<data_t>& errors) {
+  if (errors.size() != coeffs.getNCoeffs()) {
+    std::cerr << "ShapeletObject: coefficient errors do not have correct dimension!" << std::endl;
+    std::terminate();
+  } else {
+    if (cov.getRows() != coeffs.getNCoeffs() || cov.getColumns() != coeffs.getNCoeffs())
+      cov.resize(coeffs.getNCoeffs(),coeffs.getNCoeffs());
+    cov.clear();
+    for (unsigned int i=0; i < errors.getNCoeffs(); i++)
+      cov(i,i) = errors(i)*errors(i);
+  }
+}
+
 CoefficientVector<Complex> ShapeletObject::getPolarCoeffs() {
   if (updatePolar) {
     c2p.getPolarCoeffs(coeffs,polarCoeffs);
@@ -201,8 +209,55 @@ CoefficientVector<Complex> ShapeletObject::getPolarCoeffs() const {
     return polarCoeffs;
 }
 
-const CoefficientVector<data_t>& ShapeletObject::getErrors() const {
-  return errors;
+void ShapeletObject::correctCovarianceMatrix() {
+  std::vector<NumVector<data_t> > lc;
+  lc.push_back(coeffs.getNumVector());
+  // 100 slightly modified versions of this
+  // changes of the centroid: gaussian, rms of deviation 0.5 pixels
+  // changes in beta: gaussian, FWHM of 0.02*beta
+  data_t beta  = Composite2D::getBeta();
+  const gsl_rng_type * T;
+  gsl_rng * r;
+  gsl_rng_env_setup();
+  T = gsl_rng_default;
+  r = gsl_rng_alloc (T);
+  History dummyhist; // the trafo statements should not show up in this' history
+  dummyhist.setSilent();
+  for (unsigned int i=0; i< 100; i++) {
+    trafo.translate(coeffs,beta,gsl_ran_gaussian(r,M_SQRT1_2*0.5), gsl_ran_gaussian(r,M_SQRT1_2*0.5), dummyhist);
+    trafo.rescale(coeffs,beta,beta + gsl_ran_gaussian(r,0.02*beta/2.35),dummyhist);
+    lc.push_back(coeffs.getNumVector());
+    coeffs = lc[0];
+  }
+  gsl_rng_free (r);
+
+  // build cov matrix from beta/centroid uncertainty:
+  // <(lc[i] - av)*(lc[i]-av)^T>
+  // use optimal coeffs (=lc[0]) as fiducial value (av)
+  NumMatrix<data_t> covU (coeffs.getNCoeffs(),coeffs.getNCoeffs());
+  for (unsigned int c=1; c < lc.size(); c++) {
+    for (unsigned int i=0; i < coeffs.getNCoeffs(); i++) { 
+      for (unsigned int j=0; j < coeffs.getNCoeffs(); j++) {
+	covU(i,j) +=  ((lc[c])(i)-lc[0](i)) * ((lc[c])(j)-lc[0](j));
+      }
+    }
+  }
+  covU /= lc.size()-1;
+  
+  // quadratically add pixel noise contribution from OptimalDecomposite2D
+  for (unsigned int i=0; i < cov.getRows(); i++)
+    for (unsigned int j=0; j < cov.getColumns(); j++)
+      cov(i,j) = sqrt(covU(i,j)*covU(i,j) + cov(i,j)*cov(i,j));
+}
+
+CoefficientVector<data_t> ShapeletObject::getErrors() const {
+  CoefficientVector<data_t> deltaC(coeffs.getNMax());
+  for (unsigned int i=0; i < deltaC.getNCoeffs(); i++) {
+    for (unsigned int j=0; j < cov.getColumns(); j++)
+      deltaC(i) += cov(i,j);
+    deltaC(i) = sqrt(deltaC(i));
+  }
+  return deltaC;
 }
 
 data_t ShapeletObject::getChiSquare() const {
@@ -217,6 +272,10 @@ void ShapeletObject::converge(data_t kappa) {
   c2p.getCartesianCoeffs(polarCoeffs,coeffs);
   Composite2D::change = 1;
   updatePolar = false;
+
+//   trafo.converge(coeffs,kappa,history);
+//   Composite2D::change = 1;
+//   updatePolar = true;
 }
 
 void ShapeletObject::shear(Complex gamma) {
@@ -227,6 +286,10 @@ void ShapeletObject::shear(Complex gamma) {
   c2p.getCartesianCoeffs(polarCoeffs,coeffs);
   Composite2D::change = 1;
   updatePolar = false;
+
+//   trafo.shear(coeffs,gamma,history);
+//   Composite2D::change = 1;
+//   updatePolar = true;
 }
 
 void ShapeletObject::flex(const NumMatrix<data_t>& Dgamma) {

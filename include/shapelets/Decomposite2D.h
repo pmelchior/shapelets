@@ -56,8 +56,8 @@ class Decomposite2D {
   /// Is set to 1 by default, but can be switched of in case the coefficients
   /// are given from outside.
   void updateCoeffs(bool update);
-  /// Get errors of the shapelet coefficients.
-  CoefficientVector<data_t> getErrors();
+  /// Get covariance matrix of the shapelet coefficients.
+  NumMatrix<data_t> getCovarianceMatrix();
   /// Get shapelet model.
   /// This is the model reconstructed from the coefficients provided by getCoeffs().
   const NumVector<data_t>& getModel();
@@ -94,8 +94,6 @@ class Decomposite2D {
   void computeResiduals();
   void makeLSMatrix ();
   NumMatrix<data_t> M, Mt, LS;
-  //Grid grid;
-  //Point2D xcentroid;
   data_t beta, background_variance;
   int nmax,nCoeffs,npixels;
   char noise;

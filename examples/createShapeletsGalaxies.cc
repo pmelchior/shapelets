@@ -55,7 +55,7 @@ void createShapeletImages(CoefficientVector<data_t>& averageCoeffs, CoefficientV
     // set grid
     int range = GSL_MAX_INT((int)ceil(15*beta),40);
     if (range%2==1) range++;
-    Grid grid = Grid(-range/2,range/2-1,1,-range/2,range/2-1,1);
+    Grid grid = Grid(-range/2,-range/2,range,range);
     s.setGrid(grid);
         
     // since images are aligned along x axis

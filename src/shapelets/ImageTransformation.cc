@@ -204,11 +204,11 @@ void ImageTransformation::flex(CoefficientVector<data_t>& cartesianCoeffs, const
 void ImageTransformation::translate(CoefficientVector<data_t>& cartesianCoeffs, data_t beta, data_t dx1, data_t dx2, History& history) {
   history << "# Translating image by " << dx1 << "/" << dx2 << endl;
   // rescale dx1 and dx2 to be in units of beta, 
-  // change sign because eq. in paper gives invers transformation
-  dx1 *= -1./beta;
-  dx2 *= -1./beta;
+  dx1 *= 1./beta;
+  dx2 *= 1./beta;
   // copy coeffs and calculate new coeffs according to eq. (32) in shapelets I.
   NumMatrix<data_t> tmp = cartesianCoeffs.getCoeffMatrix();
+  //std::cout << tmp << std::endl;
   const IndexVector& nVector = cartesianCoeffs.getIndexVector();
   int n1,n2;
   for (unsigned int i=0; i<cartesianCoeffs.size(); i++) {
@@ -389,20 +389,19 @@ void ImageTransformation::rescale(CoefficientVector<data_t>& cartesianCoeffs, da
   history << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
   const IndexVector& nVector = cartesianCoeffs.getIndexVector();
   int nCoeffs = nVector.getNCoeffs();
-  NumMatrix<data_t> R(nCoeffs,nCoeffs);
-  makeRescalingMatrix(R,newbeta,beta,nVector);
+  NumMatrix<data_t> R = makeRescalingMatrix(newbeta,beta,nVector);
   cartesianCoeffs = R * cartesianCoeffs;
 }
  
 // the 2D rescaling matrix is obtained by a tensor multiplications of
 // the 1D rescaling matrix with itself.
-void ImageTransformation::makeRescalingMatrix(NumMatrix<data_t>& M2D, data_t beta2, data_t beta1, const IndexVector& nVector) {
+NumMatrix<data_t> ImageTransformation::makeRescalingMatrix(data_t beta2, data_t beta1, const IndexVector& nVector) {
   int nmax = nVector.getNMax();
   int nCoeffs = nVector.getNCoeffs();
-  // compute 1D rescaling matrix according to my own calculations
-  NumMatrix<data_t>M1D(nmax+1,nmax+1);
-  make1DRescalingMatrix(M1D,beta2,beta1,nmax);
+  // compute 1D rescaling matrix
+  NumMatrix<data_t> M1D = make1DRescalingMatrix(beta2,beta1,nmax);
   // now build tensor product of 1D matrix to give 2D rescaling matrix
+  NumMatrix<data_t> M2D(nCoeffs,nCoeffs);
   int i1,i2,j1,j2;
   for (int l = 0; l < nCoeffs; l++) {
     i1 = nVector.getState1(l);
@@ -414,15 +413,17 @@ void ImageTransformation::makeRescalingMatrix(NumMatrix<data_t>& M2D, data_t bet
        M2D(l,i) = M1D(i1,j1)*M1D(i2,j2);
     }
   }
+  return M2D;
 }
 
 // this does not look alike, but is effectively identical to eq. (A3) in Paper I,
 // but obtained by myself. This formulation contains less factorials and powers
 // and is therefore somewhat faster for large matrices than the original formulation.
-void ImageTransformation::make1DRescalingMatrix(NumMatrix<data_t>& M1D, data_t beta2, data_t beta1, int nmax) {
+NumMatrix<data_t> ImageTransformation::make1DRescalingMatrix(data_t beta2, data_t beta1, int nmax) {
   data_t b1 = (beta1*beta1 - beta2*beta2)/(beta1*beta1 + beta2*beta2);
   data_t b2 = 2*beta1*beta2/(beta1*beta1 + beta2*beta2);
   // loop over all entries i,j
+  NumMatrix<data_t> M1D(nmax+1,nmax+1);
   for (int i=0; i<= nmax; i++) {
     for (int j=0; j<= nmax; j++) {
       M1D(i,j) = 0;
@@ -441,4 +442,5 @@ void ImageTransformation::make1DRescalingMatrix(NumMatrix<data_t>& M1D, data_t b
       M1D(i,j) *= sqrt(b2*gsl_sf_fact(i)*gsl_sf_fact(j)/(gsl_pow_int(2.,i)*gsl_pow_int(2.,j)));
     }
   }
+  return M1D;
 }

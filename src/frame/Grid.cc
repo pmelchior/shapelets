@@ -1,36 +1,32 @@
 #include <frame/Grid.h>
 
-Grid::Grid() {
+Grid::Grid() :
+  N0(0),
+  N1(0)
+{
 }
 
-Grid::Grid(data_t start0, data_t stop0, data_t stepsize0) {
-  start = Point2D(start0,data_t(0));
-  stop = Point2D(stop0,data_t(0));
-  stepsize = Point2D(stepsize0,data_t(0));
-  axsize0 = computeSize(0);
-  axsize1 = 1;
-}
-
-Grid::Grid(data_t start0, data_t stop0, data_t stepsize0, data_t start1, data_t stop1, data_t stepsize1) {
-  start = Point2D(start0,start1);
-  stop = Point2D(stop0,stop1);
-  stepsize = Point2D(stepsize0,stepsize1);
-  axsize0 = computeSize(0);
-  axsize1 = computeSize(1);
+Grid::Grid(data_t start0, data_t start1, int N0, int N1) : //, data_t stepsize0, data_t stepsize1) :
+  start(start0,start1),
+  stepsize(1,1),
+  N0(N0),
+  N1(N1),
+  //stop(start0 + N0*stepsize0, start1 + N1*stepsize1)
+  stop(start0 + N0 - 1, start1 + N1 - 1)
+{
 }
 
 data_t Grid::operator() (unsigned int index, bool direction) const {
-  uint offset;
+  int offset;
   if (direction)
-    offset = index/axsize0;
+    offset = index/N0;
   else
-    offset = index%axsize0;
+    offset = index%N0;
   return start(direction) + offset*stepsize(direction);
 }
 
 Point2D Grid::operator() (unsigned int i) const {
-  Point2D point(operator()(i,0),operator()(i,1));
-  return point;
+  return Point2D(operator()(i,0),operator()(i,1));
 }
 
   
@@ -48,70 +44,64 @@ data_t Grid::getStopPosition(bool direction) const {
 
 unsigned int Grid::getSize(bool direction) const {
   if (direction)
-    return axsize1;
+    return N1;
   else
-    return axsize0;
+    return N0;
 }
 
 unsigned int Grid::size() const {
-  return axsize0*axsize1;
-}
-
-unsigned int Grid::computeSize(bool direction) const {
-  return (int) ceil((stop(direction)-start(direction))/stepsize(direction))+1;
+  return N0*N1;
 }
 
 void Grid::getCoords(unsigned int pixel, unsigned int& x, unsigned int& y) const {
-  x = pixel%getSize(0);
-  y = pixel/getSize(0);
+  x = pixel%N0;
+  y = pixel/N0;
 }
 
 unsigned int Grid::getPixel(unsigned int x, unsigned int y) const {
-  return (unsigned int) x + y*getSize(0);
+  return (unsigned int) x + y*N0;
 }
 
 int Grid::getNeighborPixel(unsigned int pixel, unsigned int x, unsigned int y, unsigned int direction) const {
   int index;
-  unsigned int axsize0 = getSize(0), axsize1= getSize(1);
   switch(direction) {
   case 0: 
     // the pixel itself
     index = pixel;
     break;
   case 1: 
-    if (y<axsize1-1) index = (y+1)*axsize0 + x ;  // top
+    if (y<N1-1) index = (y+1)*N0 + x ;  // top
     else index = -1;
     break;
   case 2:
-    if (y<axsize1-1 && x<axsize0-1) index = (y+1)*axsize0 + x + 1;  // top right
+    if (y<N1-1 && x<N0-1) index = (y+1)*N0 + x + 1;  // top right
     else index = -1;
     break;
   case 3:
-    if (x<axsize0-1) index = y*axsize0 + x + 1;  // right neighbour
+    if (x<N0-1) index = y*N0 + x + 1;  // right neighbour
     else index = -1;
     break;
   case 4: 
-    if (y>0 && x<axsize0-1) index = (y-1)*axsize0 + x + 1;  // bottom right
+    if (y>0 && x<N0-1) index = (y-1)*N0 + x + 1;  // bottom right
     else index = -1;
     break;  
   case 5: 
-    if (y>0) index = (y-1)*axsize0 + x;  // bottom
+    if (y>0) index = (y-1)*N0 + x;  // bottom
     else index = -1;
     break;
   case 6: 
-    if (y>0 && x>0) index = (y-1)*axsize0 + x - 1;  // bottom left
+    if (y>0 && x>0) index = (y-1)*N0 + x - 1;  // bottom left
     else index = -1;
     break;   
   case 7: 
-    if (x>0) index = y*axsize0 + x - 1; // left
+    if (x>0) index = y*N0 + x - 1; // left
     else index = -1;
     break;
   case 8: 
-    if (y<axsize1-1 && x>0) index = (y+1)*axsize0 + x - 1;  // top left
+    if (y<N1-1 && x>0) index = (y+1)*N0 + x - 1;  // top left
     else index = -1;
     break;  
   }
-
   return index;
 }
 

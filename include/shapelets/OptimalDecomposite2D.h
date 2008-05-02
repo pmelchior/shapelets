@@ -56,8 +56,8 @@ class OptimalDecomposite2D : private Decomposite2D {
   data_t regularize(data_t wantedR);
   /// Get best fit shapelet coefficients.
   const CoefficientVector<data_t>& getCoeffs();
-   /// Get best fit shapelet coefficient errors.
-  CoefficientVector<data_t> getErrors();
+   /// Get covariance matrix of the best fit shapelet coefficients.
+  NumMatrix<data_t> getCovarianceMatrix();
   /// Get best fit residuals of the decomposition.
   const NumVector<data_t>& getResiduals();
   /// Get best fit shapelet model.
@@ -104,7 +104,6 @@ private:
   };
   int findOptimalBeta(unsigned char step);
   void findOptimalNMax(unsigned char step), optimize(), checkBeta();
-  void getCoeffErrorFromBeta(const CoefficientVector<data_t>& coeffVector, CoefficientVector<data_t>& errorVector);
   void getBetaTrafoMatrix(NumMatrix<data_t>& betaTrafo, data_t beta1, data_t beta2);
   void appendRegResults(std::vector<regResults>& results, int nmax, data_t f, data_t lambda, data_t beta, data_t chi2, data_t R, const NumVector<data_t>& coeffs);
   int findNMaxofBestF(std::vector<regResults>& results);

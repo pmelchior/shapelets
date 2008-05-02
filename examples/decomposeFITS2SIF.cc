@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     // "cut out" the object from whole frame and put it into Object obj
     f->fillObject(obj);
     // dismiss objects with a flag set from detection/segmentation process
-    if ((*iter).second.FLAGS == 0) {
+    //if ((*iter).second.FLAGS == 0) {
 
       // actual decomposition is done here
       ShapeletObject sobj (obj);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[]) {
 	IO::writeFITSImage(fptr,obj,"RESIDUAL");
 	IO::closeFITSFile(fptr);
       }
-    }
+      //}
   }
   // save catalog when demanded
   if (catalog.isSet())

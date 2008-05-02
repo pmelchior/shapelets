@@ -2,8 +2,23 @@
 #define COMPOSITE2D_H
 
 /// 2D Composition class.
-/// Provides values of a 2D composite shapelet function 
-/// \f$f(x0,x1) = \sum_{n0,n1}^{n_{max}} f_{n0,n1} \cdot B_{n0,n1}(x0,x1;\beta)\f$.\n
+/// Provides methods associated with a 2D shapelet model, 
+/// \f[f(x_1,x_2) = \sum_{n_1,n_2}^{n_1 + n_2 = n_{max}} f_{n_1,n_2}\ B_{n_1,n_2}(x_1,x_2;\beta)\f]
+///
+/// Among them are methods to
+/// - evaluate a model an a given Grid or at a single point,
+/// - integrate the model over the whole 2D plane or within a finite region,
+/// - measure lowest order moments of the model (flux, centroid, quadrupole).
+///
+/// At each evaluation, a covariance matrix of the result can be obtained:
+/// \code
+/// Composite2D model ...;
+/// data_t integral = model.integrate();
+/// NumMatrix<data_t> cov_quad;
+/// NumMatrix<data_t> Q = model.getShapelet2ndMoments(&cov_quad);
+/// \endcode
+/// The example calculates the integral \f$\int\ dx\ f(x)\f$ without and the quadrupole 
+/// moment \f$Q\f$ with the respective covariance matrix.
 
 #include <NumMatrix.h>
 #include <NumVector.h>
@@ -28,6 +43,10 @@ class Composite2D : private Shapelets2D {
   const CoefficientVector<data_t>& getCoeffs() const;
   /// Set cartesian shapelet coefficients.
   void setCoeffs(const CoefficientVector<data_t>& newCoeffs);
+  /// Get the coviariance matrix of the shapelet coefficients.
+  const NumMatrix<data_t>& getCovarianceMatrix() const;
+  /// Set coefficient covariance matrix.
+  void setCovarianceMatrix(const NumMatrix<data_t>& cov);
   /// Get \f$n_{max}\f$, the maximum order of the shapelet model.
   unsigned int getNMax() const;
   /// Get \f$\beta\f$ from basis function.
@@ -44,33 +63,43 @@ class Composite2D : private Shapelets2D {
   /// This changes the default Grid and therefore also the behavior of evalGrid(),
   /// which depends on the stepsize between the grid points.
   void setGrid(const Grid& ingrid);
-  /// Evaluate \f$f(x)\f$.
-  data_t eval(const Point2D& x);
   /// Get the shapelet model.
-  /// This evaluates \f$f(x)\f$ on the whole grid.
+  /// This evaluates \f$f\f$ on the whole grid.
   const NumVector<data_t>& getModel();
+  /// Evaluate \f$f(x)\f$.
+  /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$f(x)\f$.
+  data_t eval(const Point2D& x, NumMatrix<data_t>* cov = NULL);
   /// Integrate \f$f(x)\f$.
-  data_t integrate();
-  /// Integrate \f$f(x)\f$ in the range (x0min,x1min) .. (x0max,x1max).
-  data_t integrate(data_t x0min, data_t x0max, data_t x1min,data_t x1max);
-  /// Calculate the object flux from the coefficients.
-  /// see Paper I, eq. 26
-  data_t getShapeletFlux() const;
-  /// Get the object centroid from the coefficients.
-  /// see Paper I, eq. 27
-  Point2D getShapeletCentroid() const;
+  /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
+  /// \f$\int\ dx\ f(x)\f$.
+  data_t integrate(NumMatrix<data_t>* cov = NULL);
+  /// Integrate \f$f(x)\f$ in the area bounded by \f$(x_1^{min},x_2^{min})..(x_1^{max},x_2^{max})\f$.
+  /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
+  /// \f$\int_{x_1^{min},x_2^{min}}^{x_1^{max},x_2^{max}}\ dx_1\ dx_2\ f(x)\f$
+  data_t integrate(data_t x1min, data_t x1max, data_t x2min,data_t x2max, NumMatrix<data_t>* cov = NULL);
+  /// Calculate the object flux \f$F\f$ from the coefficients.
+  /// cf. Paper I, eq. 26.\n
+  /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$F\f$
+  data_t getShapeletFlux(NumMatrix<data_t>* cov = NULL) const;
+  /// Get the object centroid \f$\vec{x}_c\f$ from the coefficients.
+  /// cf. Paper I, eq. 27\n
+  /// When given, \p cov will be the (2,2) covariance matrix of \f$\vec{x}_c\f$.
+  Point2D getShapeletCentroid(NumMatrix<data_t>* cov = NULL) const;
   /// Get 2nd brightness moments \f$Q_{ij}\f$.
-  NumMatrix<data_t> getShapelet2ndMoments() const;
-  /// Get the object RMS radius from the coefficients.
-  /// see Paper I, eq. 28
-  data_t getShapeletRMSRadius() const;
+  /// When given, \p cov will be the (3,3) covariance matrix of \f$Q_{ij}\f$, ordered as
+  /// \f$Q_{11},\ Q_{12},\ Q_{22}\f$.
+  NumMatrix<data_t> getShapelet2ndMoments(NumMatrix<data_t>* cov = NULL) const;
+  /// Get the object RMS radius \f$r\f$ from the coefficients.
+  /// cf. Paper I, eq. 28\n
+  /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$r\f$.
+  data_t getShapeletRMSRadius(NumMatrix<data_t>* cov = NULL) const;
 
   friend class SIFFile;
 
  protected:
   Grid grid;
   CoefficientVector<data_t> coeffs;
-  NumMatrix<data_t> M;
+  NumMatrix<data_t> M, cov;
   NumVector<data_t> model;
   Point2D xcentroid;
   bool change;

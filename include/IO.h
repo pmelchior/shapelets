@@ -88,8 +88,8 @@ class IO {
 
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data, std::string extname="") {
-    int dim0 = (int) ceil ((grid.getStopPosition(0) - grid.getStartPosition(0))/grid.getStepsize(0))+1;
-    int dim1 = (int) ceil ((grid.getStopPosition(1) - grid.getStartPosition(1))/grid.getStepsize(1))+1;
+    int dim0 = grid.getSize(0);
+    int dim1 = grid.getSize(1);
     long naxis = 2;      
     long naxes[2] = { dim0, dim1 };
     long npixels = dim0*dim1;
@@ -117,7 +117,7 @@ class IO {
 
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
-    Grid grid(0,M.getRows()-1,1, 0, M.getColumns()-1, 1);
+    Grid grid(0,0,M.getRows(),M.getColumns());
     return writeFITSImage(outfptr,grid,M.vectorize(1),extname);
   }
 
@@ -157,7 +157,7 @@ class IO {
     }
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
-    grid = Grid(0,naxes[0]-1,1,0,naxes[1]-1,1);
+    grid = Grid(0,0,naxes[0],naxes[1]);
     v.resize(grid.size());
     long firstpix[2] = {1,1};
     T val;
