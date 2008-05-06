@@ -142,7 +142,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   sobj.xcentroid(0) = real(xc);
   sobj.xcentroid(1) = imag(xc);
-  
+ 
   // shapelensconfig parameters
   // set them only if preserve_config == 0
   if (!preserve_config) {

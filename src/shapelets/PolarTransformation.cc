@@ -7,16 +7,21 @@ const Complex I = Complex(0,1);
 PolarTransformation::PolarTransformation() {
 }
 
-void PolarTransformation::getPolarCoeffs(const CoefficientVector<data_t>& cartesianCoeffs, CoefficientVector<Complex>& polarCoeffs) {
+void PolarTransformation::getPolarCoeffs(const CoefficientVector<data_t>& cartesianCoeffs, CoefficientVector<Complex>& polarCoeffs, NumMatrix<data_t>* cov, NumMatrix<complex<data_t> >* polarCov) {
   // set up c2p; automatically adjusts to order of input coeffs
   buildTransformationMatrix(cartesianCoeffs.getIndexVector());
-  // intermediate step: c2p is complex
+  // intermediate step: as c2p is complex, we need complex factors
   NumVector<Complex> cartV = cartesianCoeffs.getNumVector();
-  // the actual transformation in coeff space
+  // the actual transformation in shapelet space
   polarCoeffs = c2p*cartV;
+  // apply transformation to covariance matrices
+  if (cov != NULL && polarCov != NULL) {
+    NumMatrix<Complex> covM = *cov;
+    *polarCov = (c2p*covM)*c2p.transpose();
+  }
 }
 
-void PolarTransformation::getCartesianCoeffs(const CoefficientVector<Complex>& polarCoeffs, CoefficientVector<data_t>& cartesianCoeffs){
+void PolarTransformation::getCartesianCoeffs(const CoefficientVector<Complex>& polarCoeffs, CoefficientVector<data_t>& cartesianCoeffs, NumMatrix<complex<data_t> >* polarCov, NumMatrix<data_t>* cov){
   // set up p2c; automatically adjusts to order of input coeffs
   buildTransformationMatrix(polarCoeffs.getIndexVector());
   // intermediate step necessary since p2c is complex
@@ -25,6 +30,12 @@ void PolarTransformation::getCartesianCoeffs(const CoefficientVector<Complex>& p
   // imaginary part of cartesianVector should be small
   for (unsigned int i=0; i<cartesianCoeffs.size(); i++)
     cartesianCoeffs(i) = std::real(cartV(i));
+  if (cov != NULL && polarCov != NULL) {
+    NumMatrix<Complex> covM = (p2c*(*polarCov))*p2c.transpose();
+    for (unsigned int i=0; i<covM.getRows(); i++)
+      for (unsigned int j=0; j<covM.getColumns(); j++)
+	(*cov)(i,j) = std::real(covM(i,j));
+  }
 }
 
 

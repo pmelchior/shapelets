@@ -221,11 +221,9 @@ void ShapeletObject::correctCovarianceMatrix() {
   gsl_rng_env_setup();
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
-  History dummyhist; // the trafo statements should not show up in this' history
-  dummyhist.setSilent();
   for (unsigned int i=0; i< 100; i++) {
-    trafo.translate(coeffs,beta,gsl_ran_gaussian(r,M_SQRT1_2*0.5), gsl_ran_gaussian(r,M_SQRT1_2*0.5), dummyhist);
-    trafo.rescale(coeffs,beta,beta + gsl_ran_gaussian(r,0.02*beta/2.35),dummyhist);
+    trafo.translate(coeffs,beta,gsl_ran_gaussian(r,M_SQRT1_2*0.5), gsl_ran_gaussian(r,M_SQRT1_2*0.5));
+    trafo.rescale(coeffs,beta,beta + gsl_ran_gaussian(r,0.02*beta/2.35));
     lc.push_back(coeffs.getNumVector());
     coeffs = lc[0];
   }
@@ -265,36 +263,19 @@ data_t ShapeletObject::getChiSquare() const {
 }
 
 void ShapeletObject::converge(data_t kappa) {
-  // CHECK: need + 2 order since convergence mixes them?
-  if (updatePolar)
-    c2p.getPolarCoeffs(coeffs,polarCoeffs);
-  trafo.converge(polarCoeffs,kappa,history);
-  c2p.getCartesianCoeffs(polarCoeffs,coeffs);
+  trafo.converge(coeffs,kappa,&cov,&history);
   Composite2D::change = 1;
-  updatePolar = false;
-
-//   trafo.converge(coeffs,kappa,history);
-//   Composite2D::change = 1;
-//   updatePolar = true;
+  updatePolar = true;
 }
 
 void ShapeletObject::shear(Complex gamma) {
-  // CHECK: need + 2 order since convergence mixes them?
-  if (updatePolar)
-    c2p.getPolarCoeffs(coeffs,polarCoeffs);
-  trafo.shear(polarCoeffs,gamma,history);
-  c2p.getCartesianCoeffs(polarCoeffs,coeffs);
+  trafo.shear(coeffs,gamma,&cov,&history);
   Composite2D::change = 1;
-  updatePolar = false;
-
-//   trafo.shear(coeffs,gamma,history);
-//   Composite2D::change = 1;
-//   updatePolar = true;
+  updatePolar = true;
 }
 
-void ShapeletObject::flex(const NumMatrix<data_t>& Dgamma) {
-  // CHECK: need +3 orders since flexion mixes them?
-  trafo.flex(coeffs,Dgamma,history);
+void ShapeletObject::flex(Complex F, Complex G) {
+  trafo.flex(coeffs,F,G,&cov,&history);
   Composite2D::change = 1;
   updatePolar = true;
 }
@@ -319,12 +300,7 @@ void ShapeletObject::lens(data_t kappa, Complex gamma, Complex F, Complex G) {
   Composite2D::setCoeffs(oldCoeffs);
 
   // apply flexion
-  NumMatrix<data_t> dGamma(2,2);
-  dGamma(0,0) = 0.5*(real(F) + real(G));
-  dGamma(0,1) = 0.5*(imag(G) - imag(F));
-  dGamma(1,0) = 0.5*(imag(F) + imag(G));
-  dGamma(1,1) = 0.5*(real(F) - real(G));
-  flex(dGamma);
+  flex(F,G);
   flexed = coeffs;
 
   // sum all up
@@ -340,62 +316,62 @@ void ShapeletObject::lens(data_t kappa, Complex gamma, Complex F, Complex G) {
 } 
   
 void ShapeletObject::translate(data_t dx0, data_t dx1) {
-  trafo.translate(coeffs,Composite2D::getBeta(),dx0,dx1,history);
+  trafo.translate(coeffs,Composite2D::getBeta(),dx0,dx1,&cov,&history);
   Composite2D::change = 1;
   updatePolar = true;
 }
 
 void ShapeletObject::rotate(data_t rho) {
   if (updatePolar)
-    c2p.getPolarCoeffs(coeffs,polarCoeffs);
-  trafo.rotate(polarCoeffs,rho,history);
-  c2p.getCartesianCoeffs(polarCoeffs,coeffs);
+    c2p.getPolarCoeffs(coeffs,polarCoeffs,&cov,&polarCov);
+  trafo.rotate(polarCoeffs,rho,&polarCov,&history);
+  c2p.getCartesianCoeffs(polarCoeffs,coeffs,&polarCov,&cov);
   Composite2D::change = 1;
   updatePolar = false;
 }
 
 void ShapeletObject::circularize() {
   if (updatePolar)
-    c2p.getPolarCoeffs(coeffs,polarCoeffs);
-  trafo.circularize(polarCoeffs,history);
-  c2p.getCartesianCoeffs(polarCoeffs,coeffs);
+    c2p.getPolarCoeffs(coeffs,polarCoeffs,&cov,&polarCov);
+  trafo.circularize(polarCoeffs,&polarCov,&history);
+  c2p.getCartesianCoeffs(polarCoeffs,coeffs,&polarCov,&cov);
   Composite2D::change = 1;
   updatePolar = false;
 }
 
 void ShapeletObject::flipX() {
   if (updatePolar)
-    c2p.getPolarCoeffs(coeffs,polarCoeffs);
-  trafo.flipX(polarCoeffs,history);
-  c2p.getCartesianCoeffs(polarCoeffs,coeffs);
+    c2p.getPolarCoeffs(coeffs,polarCoeffs,&cov,&polarCov);
+  trafo.flipX(polarCoeffs,&polarCov,&history);
+  c2p.getCartesianCoeffs(polarCoeffs,coeffs,&polarCov,&cov);
   Composite2D::change = 1;
   updatePolar = false;
 }
 
 void ShapeletObject::brighten(data_t factor) {
-  trafo.brighten(coeffs,factor,history);
+  trafo.brighten(coeffs,factor,&cov,&history);
   Composite2D::change = 1;
   updatePolar = true;
 }
 
-void ShapeletObject::convolve(const CoefficientVector<data_t>& KernelCoeffs, data_t beta_kernel) {
+void ShapeletObject::convolve(const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel) {
   data_t beta = Composite2D::getBeta();
-  trafo.convolve(coeffs,beta,KernelCoeffs,beta_kernel,history);
+  trafo.convolve(coeffs,beta,kernelCoeffs,beta_kernel,&cov,&history);
   Composite2D::setBeta(beta);
   Composite2D::change = 1;
   updatePolar = true;
 }
 
-void ShapeletObject::deconvolve(const CoefficientVector<data_t>& KernelCoeffs, data_t beta_kernel) {
+void ShapeletObject::deconvolve(const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel) {
   data_t beta = Composite2D::getBeta();
-  trafo.deconvolve(coeffs,beta,KernelCoeffs,beta_kernel,history);
+  trafo.deconvolve(coeffs,beta,kernelCoeffs,beta_kernel,&cov,&history);
   Composite2D::setBeta(beta);
   Composite2D::change = 1;
   updatePolar = true;
 }
 
 void ShapeletObject::rescale(data_t newBeta) {
-  trafo.rescale(coeffs,Composite2D::getBeta(),newBeta,history);
+  trafo.rescale(coeffs,Composite2D::getBeta(),newBeta,&cov,&history);
   Composite2D::change = 1;
   updatePolar = true;
 }

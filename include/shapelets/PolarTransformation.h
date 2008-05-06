@@ -19,14 +19,18 @@ class PolarTransformation {
  public:
   /// Default constructor.
   PolarTransformation();
-  /// Return polar coeffs for external transformations.
+  /// Compute \p polarCoeffs from \p cartesianCoeffs.
   /// The transformaition automatically adapts to the order of
-  /// \p cartesianCoeffs.
-  void getPolarCoeffs(const CoefficientVector<data_t>& cartesianCoeffs, CoefficientVector<complex<data_t> >& polarCoeffs);
-  /// Return cartesian coeffs for external transformations.
+  /// \p cartesianCoeffs.\n
+  /// If \p covariance and \p polarCovariance are given, the transformation is also 
+  /// applied to the covariance matrices.
+  void getPolarCoeffs(const CoefficientVector<data_t>& cartesianCoeffs, CoefficientVector<complex<data_t> >& polarCoeffs, NumMatrix<data_t>* covariance = NULL, NumMatrix<complex<data_t> >* polarCovariance = NULL);
+  /// Compute \p cartesianCoeffs from \p polarCoeffs.
   /// The transformaition automatically adapts to the order of
   /// \p polarCoeffs.
-  void getCartesianCoeffs(const CoefficientVector<complex<data_t> >& polarCoeffs, CoefficientVector<data_t>& cartesianCoeffs);
+  /// If \p covariance and \p polarCovariance are given, the transformation is also 
+  /// applied to the covariance matrices.
+  void getCartesianCoeffs(const CoefficientVector<complex<data_t> >& polarCoeffs, CoefficientVector<data_t>& cartesianCoeffs, NumMatrix<complex<data_t> >* polarCovariance = NULL, NumMatrix<data_t>* covariance = NULL);
  private:
   unsigned int nmax;
   NumMatrix<complex<data_t> > c2p,p2c;

@@ -96,7 +96,7 @@ class ShapeletObject : public Composite2D {
   void shear(complex<data_t> gamma);
   /// Apply flexion to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
-  void flex(const NumMatrix<data_t>& Dgamma);
+  void flex(complex<data_t> F, complex<data_t> G);
   /// Apply lensing operations converge, shear and flex to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
   void lens(data_t kappa, complex<data_t> gamma, complex<data_t> F, complex<data_t> G);
@@ -113,10 +113,10 @@ class ShapeletObject : public Composite2D {
   void brighten(data_t factor);
   /// Convolve the image with another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void convolve(const CoefficientVector<data_t>& KernelCoeffs, data_t beta_kernel);
+  void convolve(const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel);
   /// Deconvolve the image from another image.
   /// The convolution kernel is given by it's cartesian coefficients and it's beta.
-  void deconvolve(const CoefficientVector<data_t>& KernelCoeffs, data_t beta_kernel);
+  void deconvolve(const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel);
   /// Rescale the image.
   /// This changes the coefficients such, that they show the same object with
   /// the new scale size.\n
@@ -177,6 +177,7 @@ class ShapeletObject : public Composite2D {
   CoefficientVector<data_t>& coeffs;
   NumMatrix<data_t>& cov;
   CoefficientVector<complex<data_t> > polarCoeffs;
+  NumMatrix<complex<data_t> > polarCov;
   PolarTransformation c2p;
   ImageTransformation trafo;
   data_t chisquare, R, noise_mean, noise_rms, classifier, tag;
