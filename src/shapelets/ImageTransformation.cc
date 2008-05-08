@@ -52,7 +52,7 @@ void ImageTransformation::translate(CoefficientVector<data_t>& cartesianCoeffs, 
   NumMatrix<data_t> M = getTranslationMatrix(beta,dx1,dx2,cartesianCoeffs.getIndexVector());
   // perform transformation
   cartesianCoeffs = M*cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M * (*cov)) * M.transpose();
 }
 
@@ -61,7 +61,7 @@ void ImageTransformation::translate(CoefficientVector<data_t>& cartesianCoeffs, 
     (*history) << "# Translating image via given transformation matrix" << endl;
   // perform transformation
   cartesianCoeffs = M*cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M * (*cov)) * M.transpose();
 }
 
@@ -83,7 +83,7 @@ void ImageTransformation::rotate(CoefficientVector<Complex>& polarCoeffs, data_t
   NumMatrix<Complex> M = getRotationMatrix(rho,polarCoeffs.getIndexVector());
   // perform transformation
   polarCoeffs = M*polarCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == polarCoeffs.getNCoeffs())
     *cov =(M * (*cov)) * M.transpose();
 }
 
@@ -92,7 +92,7 @@ void ImageTransformation::rotate(CoefficientVector<Complex>& polarCoeffs, const 
     (*history) << "# Rotating image via given transformation matrix" << endl;
   // perform transformation
   polarCoeffs = M*polarCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == polarCoeffs.getNCoeffs())
     *cov = (M * (*cov)) * M.transpose();
 }
 
@@ -115,8 +115,8 @@ void ImageTransformation::circularize(CoefficientVector<Complex>& polarCoeffs, N
   polarCoeffs = M*polarCoeffs.getNumVector();
   // as M is diagonal use a simpler form of M*cov*M^T
   if (cov != NULL) {
-    for (unsigned int i=0; i<polarCoeffs.getNCoeffs(); i++)
-      for (unsigned int j=0; j<polarCoeffs.getNCoeffs(); j++)
+    for (unsigned int i=0; i<cov->getRows(); i++)
+      for (unsigned int j=0; j<cov->getColumns(); j++)
 	(*cov)(i,j) *= M(i)*M(j);
   }
 }
@@ -127,8 +127,8 @@ void ImageTransformation::circularize(CoefficientVector<Complex>& polarCoeffs, c
   polarCoeffs = M*polarCoeffs.getNumVector();
   // as M is diagonal use a simpler form of M*cov*M^T
   if (cov != NULL) {
-    for (unsigned int i=0; i<polarCoeffs.getNCoeffs(); i++)
-      for (unsigned int j=0; j<polarCoeffs.getNCoeffs(); j++)
+    for (unsigned int i=0; i<cov->getRows(); i++)
+      for (unsigned int j=0; j<cov->getColumns(); j++)
 	(*cov)(i,j) *= M(i)*M(j);
   }
 }
@@ -147,8 +147,8 @@ void ImageTransformation::flipX(CoefficientVector<Complex>& polarCoeffs,  NumMat
   // perform transformation
   polarCoeffs = M*polarCoeffs.getNumVector();
   if (cov != NULL) {
-    for (unsigned int i=0; i<polarCoeffs.getNCoeffs(); i++)
-      for (unsigned int j=0; j<polarCoeffs.getNCoeffs(); j++)
+    for (unsigned int i=0; i<cov->getRows(); i++)
+      for (unsigned int j=0; j<cov->getColumns(); j++)	
 	(*cov)(i,j) *= M(i)*M(j);
   }
 }
@@ -159,8 +159,8 @@ void ImageTransformation::flipX(CoefficientVector<Complex>& polarCoeffs,  const 
   // perform transformation
   polarCoeffs = M*polarCoeffs.getNumVector();
   if (cov != NULL) {
-    for (unsigned int i=0; i<polarCoeffs.getNCoeffs(); i++)
-      for (unsigned int j=0; j<polarCoeffs.getNCoeffs(); j++)
+    for (unsigned int i=0; i<cov->getRows(); i++)
+      for (unsigned int j=0; j<cov->getColumns(); j++)	
 	(*cov)(i,j) *= M(i)*M(j);
   }
 }
@@ -168,10 +168,12 @@ void ImageTransformation::flipX(CoefficientVector<Complex>& polarCoeffs,  const 
 void ImageTransformation::brighten(CoefficientVector<data_t>& cartesianCoeffs, data_t factor, NumMatrix<data_t>* cov, History* history) {
   if (history != NULL)
     (*history) << "# Changing image brightness by the factor " << factor << endl;
-  for (unsigned int i=0; i < cartesianCoeffs.size(); i++) {
+  for (unsigned int i=0; i < cartesianCoeffs.size(); i++)
     cartesianCoeffs(i) *= factor;
-    for (unsigned int j=0; j < cartesianCoeffs.size(); j++)
-      (*cov)(i,j) *= factor*factor;
+  if (cov != NULL) {
+    for (unsigned int i=0; i<cov->getRows(); i++)
+      for (unsigned int j=0; j<cov->getColumns(); j++)	
+	(*cov)(i,j) *= factor*factor;
   }
 }
 
@@ -232,7 +234,7 @@ void ImageTransformation::convolve(CoefficientVector<data_t>& cartesianCoeffs, d
   NumMatrix<data_t> P = getConvolutionMatrix(cartesianCoeffs,kernelCoeffs,beta,beta_kernel,beta_convolved,nmax_convolved);
   // perform the convolution
   cartesianCoeffs = P*cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (P*(*cov))*P.transpose();
   beta = beta_convolved;
 }
@@ -242,7 +244,7 @@ void ImageTransformation::convolve(CoefficientVector<data_t>& cartesianCoeffs, d
     (*history) << "# Convolving image with kernel via given convolution matrix, beta = " << beta_kernel << endl;
   // perform the convolution
   cartesianCoeffs = P*cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (P*(*cov))*P.transpose();
   beta = sqrt(beta*beta + beta_kernel*beta_kernel);
 } 
@@ -265,7 +267,7 @@ void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs,
   NumMatrix<data_t> P_1 = getDeconvolutionMatrix(cartesianCoeffs,kernelCoeffs,beta,beta_kernel,beta_orig);
   // perform the deconvolution
   cartesianCoeffs = P_1*cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (P_1*(*cov))*P_1.transpose();
   beta = beta_orig;
 }
@@ -281,7 +283,7 @@ void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs,
     beta_orig = 0.1;
   // perform the deconvolution
   cartesianCoeffs = P_1*cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (P_1*(*cov))*P_1.transpose();
   beta = beta_orig;
 }
@@ -314,7 +316,7 @@ void ImageTransformation::rescale(CoefficientVector<data_t>& cartesianCoeffs, da
     (*history) << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
   NumMatrix<data_t> R = getRescalingMatrix(newbeta,beta,cartesianCoeffs.getIndexVector());
   cartesianCoeffs = R * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (R*(*cov))*R.transpose();
 }
  
@@ -322,10 +324,11 @@ void ImageTransformation::rescale(CoefficientVector<data_t>& cartesianCoeffs, co
   if (history != NULL)
     (*history) << "# Rescaling image via given rescaling matrix" << endl;
   cartesianCoeffs = R * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (R*(*cov))*R.transpose();
 }
 
+// ***************** lensing transformations ***************** //
 
 NumMatrix<data_t> ImageTransformation::getConvergenceMatrix(data_t kappa, const IndexVector& nVector) {
   data_t factor = -0.5*kappa; // minus sign as we want to have the inverse transformation
@@ -359,7 +362,7 @@ void ImageTransformation::converge(CoefficientVector<data_t>& cartesianCoeffs, d
     (*history) << "# Applying convergence kappa = " << kappa << endl;
   NumMatrix<data_t> M = getConvergenceMatrix(kappa,cartesianCoeffs.getIndexVector());
   cartesianCoeffs = M * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M*(*cov)*M.transpose());
 }
 
@@ -367,7 +370,7 @@ void ImageTransformation::converge(CoefficientVector<data_t>& cartesianCoeffs, c
   if (history != NULL)
     (*history) << "# Applying convergence via given transformation matrix" << endl;
   cartesianCoeffs = M * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M*(*cov)*M.transpose());
 }
 
@@ -414,7 +417,7 @@ void ImageTransformation::shear(CoefficientVector<data_t>& cartesianCoeffs, Comp
     (*history) << "# Applying shear gamma = " << gamma << endl;
   NumMatrix<data_t> M = getShearMatrix(gamma,cartesianCoeffs.getIndexVector());
   cartesianCoeffs = M * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M*(*cov)*M.transpose());
 }
 
@@ -422,7 +425,7 @@ void ImageTransformation::shear(CoefficientVector<data_t>& cartesianCoeffs, cons
   if (history != NULL)
     (*history) << "# Applying shear gamma = " << gamma << endl;
   cartesianCoeffs = M * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M*(*cov)*M.transpose());
 }
 
@@ -543,7 +546,7 @@ void ImageTransformation::flex(CoefficientVector<data_t>& cartesianCoeffs, Compl
     (*history) << "# Applying flexion to the image, F = " << F << ", G = " << G << endl;
   NumMatrix<data_t> M = getFlexionMatrix(F,G,cartesianCoeffs.getIndexVector());
   cartesianCoeffs = M * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M*(*cov)*M.transpose());
 }
 
@@ -551,7 +554,7 @@ void ImageTransformation::flex(CoefficientVector<data_t>& cartesianCoeffs, const
   if (history != NULL)
     (*history) << "# Applying flexion to the image via given transformation matrix" << endl;
   cartesianCoeffs = M * cartesianCoeffs;
-  if (cov != NULL)
+  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M*(*cov)*M.transpose());
 }
 

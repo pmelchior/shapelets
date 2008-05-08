@@ -135,8 +135,6 @@ class ImageTransformation {
   void converge(CoefficientVector<data_t>& cartesianCoeffs, const NumMatrix<data_t>& convergenceMatrix, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Compute convergence matrix.
   /// cf. Paper I, eq. (32).
-  // \b CAVEAT: There is a typo in the equation, it must read
-  // \f$\hat{K} = \frac{1}{2} \bigl(\hat{a}^{\dagger 2}_1 + \hat{a}^{\dagger 2}_2 - \hat{a}^2_1-\hat{a}^2_2 \bigr)\f$.
   NumMatrix<data_t> getConvergenceMatrix(data_t kappa, const IndexVector& nVector);
 
   /// Apply shear to the image.
