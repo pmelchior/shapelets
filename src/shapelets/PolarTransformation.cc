@@ -15,7 +15,7 @@ void PolarTransformation::getPolarCoeffs(const CoefficientVector<data_t>& cartes
   // the actual transformation in shapelet space
   polarCoeffs = c2p*cartV;
   // apply transformation to covariance matrices
-  if (cov != NULL && polarCov != NULL) {
+  if (cov != NULL && polarCov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs()) {
     NumMatrix<Complex> covM = *cov;
     *polarCov = (c2p*covM)*c2p.transpose();
   }
@@ -30,7 +30,7 @@ void PolarTransformation::getCartesianCoeffs(const CoefficientVector<Complex>& p
   // imaginary part of cartesianVector should be small
   for (unsigned int i=0; i<cartesianCoeffs.size(); i++)
     cartesianCoeffs(i) = std::real(cartV(i));
-  if (cov != NULL && polarCov != NULL) {
+  if (cov != NULL && polarCov != NULL && polarCov->getColumns() == polarCoeffs.getNCoeffs()) {
     NumMatrix<Complex> covM = (p2c*(*polarCov))*p2c.transpose();
     for (unsigned int i=0; i<covM.getRows(); i++)
       for (unsigned int j=0; j<covM.getColumns(); j++)
