@@ -162,7 +162,7 @@ data_t Composite2D::getShapeletFlux(NumMatrix<data_t>* cov_est) const {
 
   if (cov_est != NULL) {
     cov_est->operator=((Flux * cov) * Flux.transpose());
-    cov_est->operator*=(factor);
+    cov_est->operator*=(factor*factor);
   }
 
   return result(0) * factor;
@@ -198,7 +198,7 @@ Point2D Composite2D::getShapeletCentroid(NumMatrix<data_t>* cov_est) const {
 
   if (cov_est != NULL) {
     cov_est->operator=((Centroid * cov) * Centroid.transpose());
-    cov_est->operator*=(factor);
+    cov_est->operator*=(factor*factor);
   }
 
   return xc;
@@ -236,7 +236,7 @@ NumMatrix<data_t> Composite2D::getShapelet2ndMoments(NumMatrix<data_t>* cov_est)
   Q(1,0) = Q(0,1);
   if (cov_est != NULL) {
     cov_est->operator=((Moment * cov) * Moment.transpose());
-    cov_est->operator*=(factor);
+    cov_est->operator*=(factor*factor);
   }
   return Q;
 }
@@ -261,7 +261,7 @@ data_t Composite2D::getShapeletRMSRadius(NumMatrix<data_t>* cov_est) const {
   result(0) *= factor;
   if (cov_est != NULL) {
     cov_est->operator=((RMS2 * cov) * RMS2.transpose());
-    cov_est->operator*=(factor);
+    cov_est->operator*=(factor*factor);
     cov_est->operator()(0,0)=sqrt(cov_est->operator()(0,0));
   }
 
