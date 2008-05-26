@@ -22,11 +22,11 @@ void IndexVectorCartesian::setNMax(unsigned int innmax) {
   }
 }  
 
-unsigned int IndexVectorCartesian::getNMax() const {
+int IndexVectorCartesian::getNMax() const {
   return nmax;
 }
 
-unsigned int IndexVectorCartesian::getNCoeffs() const {
+int IndexVectorCartesian::getNCoeffs() const {
   return (nmax+1)*(nmax+2)/2;
 }
 
@@ -61,15 +61,15 @@ int IndexVectorCartesian::getState2(unsigned int i) const {
   }
 }
 
-unsigned int IndexVectorCartesian::getIndex1(unsigned int i) const {
+int IndexVectorCartesian::getIndex1(unsigned int i) const {
   return IndexVectorCartesian::getState1(i);
 }
 
-unsigned int IndexVectorCartesian::getIndex2(unsigned int i) const {
+int IndexVectorCartesian::getIndex2(unsigned int i) const {
   return IndexVectorCartesian::getState2(i);
 }
 
-unsigned int IndexVectorCartesian::getIndex(int n1, int n2) const {
+int IndexVectorCartesian::getIndex(int n1, int n2) const {
   if (n1 + n2 <= nmax)
     return cMatrix(n1,n2);
   else {

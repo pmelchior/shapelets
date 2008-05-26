@@ -225,9 +225,9 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
     yborder = xborder + (xrange - yrange)/2;
   }
   xmin -= xborder;
-  xmax += xborder-1;
+  xmax += xborder;
   ymin -= yborder;
-  ymax += yborder-1;
+  ymax += yborder;
 }
 
 const SegmentationMap& SExFrame::getSegmentationMap() {

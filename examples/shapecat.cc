@@ -22,7 +22,7 @@ void ellipticity(const NumMatrix<data_t>& Q, data_t& e1, data_t& e2, data_t& e, 
 }
 
 int main(int argc, char *argv[]) {
-  TCLAP::CmdLine cmd("Compute various shape statistic based on shapelet coefficients", ' ', "0.2");
+  TCLAP::CmdLine cmd("Compute various shape statistic based on shapelet coefficients", ' ', "0.3");
   TCLAP::ValueArg<std::string> listArg("l","list","File that lists the SIF files",true,"","string", cmd);
   TCLAP::ValueArg<std::string> outputArg("o","output","Name of output file for shape catalog",false,"","string", cmd);
   cmd.parse( argc, argv );
@@ -57,9 +57,9 @@ int main(int argc, char *argv[]) {
 
     // output statistics
     if (outputArg.isSet())
-      output << beta << " " << nmax << " " << chi2 << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS  << " " << (*iter)->getFlags().to_ulong() << std::endl;
+      output << (*iter)->getObjectID() << " " << beta << " " << nmax << " " << chi2 << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS  << " " << (*iter)->getFlags().to_string<char,std::char_traits<char>,std::allocator<char> >() << std::endl;
     else
-      std::cout << beta << " " << nmax << " " << chi2 << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS << " " << (*iter)->getFlags().to_ulong() << std::endl;
+      std::cout << (*iter)->getObjectID() << " " << beta << " " << nmax << " " << chi2 << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS << " " << (*iter)->getFlags().to_string<char,std::char_traits<char>,std::allocator<char> >() << std::endl;
     
   }
   if (outputArg.isSet())

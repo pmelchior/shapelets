@@ -107,6 +107,11 @@ class CoefficientVector : public NumVector<T> {
     return NumVector<T>::operator()(nVector->getIndex(i,j));
   }
 
+  /// Multiplication operator.
+  T operator*(const CoefficientVector<T>& v) const {
+    return NumVector<T>::operator*(v);
+  }
+
   /// Set new coefficients in matrix form.
   /// If \f$n_{max}\f$ of new coefficient matrix is different, 
   /// CoefficientVector<T> will change accordingly.

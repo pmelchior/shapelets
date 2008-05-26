@@ -24,19 +24,19 @@ class IndexVector {
   /// Set \f$n_{max}\f$.
   virtual void setNMax(unsigned int nmax) = 0;
   /// Get \f$n_{max}\f$.
-  virtual unsigned int getNMax() const = 0;
+  virtual int getNMax() const = 0;
   /// Get \f$n_{coeffs}\f$.
-  virtual unsigned int getNCoeffs() const = 0;
+  virtual int getNCoeffs() const = 0;
   /// Get the first eigenstate number from the vector index.
   virtual int getState1(unsigned int index) const = 0;
   /// Get the second eigenstate number from the vector index.
   virtual int getState2(unsigned int index) const = 0;
   /// Get the first matrix index from vector index.
-  virtual unsigned int getIndex1(unsigned int index) const = 0;
+  virtual int getIndex1(unsigned int index) const = 0;
   /// Get the second matrix index from vector index.
-  virtual unsigned int getIndex2(unsigned int index) const = 0;
+  virtual int getIndex2(unsigned int index) const = 0;
   /// Get the vector index from the eigenstate numbers.
-  virtual unsigned int getIndex(int i, int j) const = 0;
+  virtual int getIndex(int i, int j) const = 0;
 };
 
 #endif

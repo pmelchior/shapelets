@@ -22,11 +22,11 @@ void IndexVectorPolar::setNMax(unsigned int innmax) {
   }
 }  
 
-unsigned int IndexVectorPolar::getNMax() const {
+int IndexVectorPolar::getNMax() const {
   return nmax;
 }
 
-unsigned int IndexVectorPolar::getNCoeffs() const {
+int IndexVectorPolar::getNCoeffs() const {
   return (nmax+1)*(nmax+2)/2;
 }
 
@@ -65,11 +65,11 @@ int IndexVectorPolar::getState2(unsigned int i) const {
   }
 }
 
-unsigned int IndexVectorPolar::getIndex1(unsigned int i) const {
+int IndexVectorPolar::getIndex1(unsigned int i) const {
   return IndexVectorPolar::getState1(i);
 }
 
-unsigned int IndexVectorPolar::getIndex2(unsigned int i) const {
+int IndexVectorPolar::getIndex2(unsigned int i) const {
   std::map<unsigned int, std::pair<unsigned int, int> >::const_iterator pIter = polar.find(i);
   if (pIter != polar.end())
     return mIndex(pIter->second.first,pIter->second.second);
@@ -79,7 +79,7 @@ unsigned int IndexVectorPolar::getIndex2(unsigned int i) const {
   }
 }
 
-unsigned int IndexVectorPolar::getIndex(int n, int m) const {
+int IndexVectorPolar::getIndex(int n, int m) const {
   if (n <= nmax && abs(m) <= n)
     return pMatrix(n,mIndex(n,m));
   else {

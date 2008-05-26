@@ -20,8 +20,7 @@ NumMatrix<data_t> ImageTransformation::getTranslationMatrix(data_t beta, data_t 
   dx2 *= M_SQRT1_2/beta;
   // set up translation matrix for this IndexVector
   NumMatrix<data_t> M(nVector.getNCoeffs(), nVector.getNCoeffs());
-  int n1,n2;
-  unsigned int j;
+  int n1,n2,j;
   for (unsigned int i=0; i<nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
     n2 = nVector.getState2(i);
@@ -34,11 +33,9 @@ NumMatrix<data_t> ImageTransformation::getTranslationMatrix(data_t beta, data_t 
       j = nVector.getIndex(n1,n2-1);
       M(i,j) += dx2*sqrt((data_t)n2);
     }
-    if (n1+n2 <= nVector.getNMax() - 1) {
+    if (n1+n2 <= -1 + nVector.getNMax()) {
       j = nVector.getIndex(n1+1,n2);
       M(i,j) -= dx1*sqrt((data_t)n1+1);
-    }
-    if (n1+n2<= nVector.getNMax() - 1) {
       j = nVector.getIndex(n1,n2+1);
       M(i,j) -= dx2*sqrt((data_t)n2+1);
     }
@@ -334,8 +331,7 @@ NumMatrix<data_t> ImageTransformation::getConvergenceMatrix(data_t kappa, const 
   data_t factor = -0.5*kappa; // minus sign as we want to have the inverse transformation
   // set up matrix
   NumMatrix<data_t> M(nVector.getNCoeffs(), nVector.getNCoeffs());
-  int n1,n2;
-  unsigned int j;
+  int n1,n2,j;
   for (unsigned int i=0; i<nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
     n2 = nVector.getState2(i);
@@ -378,8 +374,7 @@ NumMatrix<data_t> ImageTransformation::getShearMatrix(Complex gamma, const Index
   data_t gamma_1 = -0.5*real(gamma), gamma_2 = -imag(gamma); // minus signs = inverse trafo!
   // set up matrix
   NumMatrix<data_t> M(nVector.getNCoeffs(), nVector.getNCoeffs());
-  int n1, n2;
-  unsigned int j;
+  int n1, n2,j;
   for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
     n2 = nVector.getState2(i);
@@ -438,8 +433,7 @@ NumMatrix<data_t> ImageTransformation::getFlexionMatrix(Complex F, Complex G, co
   dGamma(1,1) = -0.5*(real(F) - real(G));  
   // set up flexion matrix
   NumMatrix<data_t> M(nVector.getNCoeffs(), nVector.getNCoeffs());
-  int n1, n2;
-  unsigned int j;
+  int n1, n2,j;
   for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
     n1 = nVector.getState1(i);
     n2 = nVector.getState2(i);

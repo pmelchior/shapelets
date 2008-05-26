@@ -210,42 +210,44 @@ CoefficientVector<Complex> ShapeletObject::getPolarCoeffs() const {
 }
 
 void ShapeletObject::correctCovarianceMatrix() {
-  std::vector<NumVector<data_t> > lc;
-  lc.push_back(coeffs.getNumVector());
-  // 100 slightly modified versions of this
-  // changes of the centroid: gaussian, rms of deviation 0.5 pixels
-  // changes in beta: gaussian, FWHM of 0.02*beta
-  data_t beta  = Composite2D::getBeta();
-  const gsl_rng_type * T;
-  gsl_rng * r;
-  gsl_rng_env_setup();
-  T = gsl_rng_default;
-  r = gsl_rng_alloc (T);
-  for (unsigned int i=0; i< 100; i++) {
-    trafo.translate(coeffs,beta,gsl_ran_gaussian(r,M_SQRT1_2*0.5), gsl_ran_gaussian(r,M_SQRT1_2*0.5));
-    trafo.rescale(coeffs,beta,beta + gsl_ran_gaussian(r,0.02*beta/2.35));
+  if (Composite2D::getNMax() > 0) {
+    std::vector<NumVector<data_t> > lc;
     lc.push_back(coeffs.getNumVector());
-    coeffs = lc[0];
-  }
-  gsl_rng_free (r);
+    // 100 slightly modified versions of this
+    // changes of the centroid: gaussian, rms of deviation 0.5 pixels
+    // changes in beta: gaussian, FWHM of 0.02*beta
+    data_t beta  = Composite2D::getBeta();
+    const gsl_rng_type * T;
+    gsl_rng * r;
+    gsl_rng_env_setup();
+    T = gsl_rng_default;
+    r = gsl_rng_alloc (T);
+    for (unsigned int i=0; i< 100; i++) {
+      trafo.translate(coeffs,beta,gsl_ran_gaussian(r,M_SQRT1_2*0.5), gsl_ran_gaussian(r,M_SQRT1_2*0.5));
+      trafo.rescale(coeffs,beta,beta + gsl_ran_gaussian(r,0.02*beta/2.35));
+      lc.push_back(coeffs.getNumVector());
+      coeffs = lc[0];
+    }
+    gsl_rng_free (r);
 
-  // build cov matrix from beta/centroid uncertainty:
-  // <(lc[i] - av)*(lc[i]-av)^T>
-  // use optimal coeffs (=lc[0]) as fiducial value (av)
-  NumMatrix<data_t> covU (coeffs.getNCoeffs(),coeffs.getNCoeffs());
-  for (unsigned int c=1; c < lc.size(); c++) {
-    for (unsigned int i=0; i < coeffs.getNCoeffs(); i++) { 
-      for (unsigned int j=0; j < coeffs.getNCoeffs(); j++) {
-	covU(i,j) +=  ((lc[c])(i)-lc[0](i)) * ((lc[c])(j)-lc[0](j));
+    // build cov matrix from beta/centroid uncertainty:
+    // <(lc[i] - av)*(lc[i]-av)^T>
+    // use optimal coeffs (=lc[0]) as fiducial value (av)
+    NumMatrix<data_t> covU (coeffs.getNCoeffs(),coeffs.getNCoeffs());
+    for (unsigned int c=1; c < lc.size(); c++) {
+      for (unsigned int i=0; i < coeffs.getNCoeffs(); i++) { 
+	for (unsigned int j=0; j < coeffs.getNCoeffs(); j++) {
+	  covU(i,j) +=  ((lc[c])(i)-lc[0](i)) * ((lc[c])(j)-lc[0](j));
+	}
       }
     }
-  }
-  covU /= lc.size()-1;
+    covU /= lc.size()-1;
   
-  // quadratically add pixel noise contribution from OptimalDecomposite2D
-  for (unsigned int i=0; i < cov.getRows(); i++)
-    for (unsigned int j=0; j < cov.getColumns(); j++)
-      cov(i,j) = sqrt(covU(i,j)*covU(i,j) + cov(i,j)*cov(i,j));
+    // quadratically add pixel noise contribution from OptimalDecomposite2D
+    for (unsigned int i=0; i < cov.getRows(); i++)
+      for (unsigned int j=0; j < cov.getColumns(); j++)
+	cov(i,j) = sqrt(covU(i,j)*covU(i,j) + cov(i,j)*cov(i,j));
+  }
 }
 
 CoefficientVector<data_t> ShapeletObject::getErrors() const {

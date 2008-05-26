@@ -12,7 +12,7 @@ Grid::Grid(data_t start0, data_t start1, int N0, int N1) : //, data_t stepsize0,
   N0(N0),
   N1(N1),
   //stop(start0 + N0*stepsize0, start1 + N1*stepsize1)
-  stop(start0 + N0 - 1, start1 + N1 - 1)
+  stop(start0 + N0, start1 + N1)
 {
 }
 
@@ -70,19 +70,19 @@ int Grid::getNeighborPixel(unsigned int pixel, unsigned int x, unsigned int y, u
     index = pixel;
     break;
   case 1: 
-    if (y<N1-1) index = (y+1)*N0 + x ;  // top
+    if (y<N1) index = (y+1)*N0 + x ;  // top
     else index = -1;
     break;
   case 2:
-    if (y<N1-1 && x<N0-1) index = (y+1)*N0 + x + 1;  // top right
+    if (y<N1 && x<N0) index = (y+1)*N0 + x + 1;  // top right
     else index = -1;
     break;
   case 3:
-    if (x<N0-1) index = y*N0 + x + 1;  // right neighbour
+    if (x<N0) index = y*N0 + x + 1;  // right neighbour
     else index = -1;
     break;
   case 4: 
-    if (y>0 && x<N0-1) index = (y-1)*N0 + x + 1;  // bottom right
+    if (y>0 && x<N0) index = (y-1)*N0 + x + 1;  // bottom right
     else index = -1;
     break;  
   case 5: 
@@ -98,7 +98,7 @@ int Grid::getNeighborPixel(unsigned int pixel, unsigned int x, unsigned int y, u
     else index = -1;
     break;
   case 8: 
-    if (y<N1-1 && x>0) index = (y+1)*N0 + x - 1;  // top left
+    if (y<N1 && x>0) index = (y+1)*N0 + x - 1;  // top left
     else index = -1;
     break;  
   }
