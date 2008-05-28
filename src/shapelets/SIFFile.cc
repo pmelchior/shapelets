@@ -2,6 +2,7 @@
 #include <IO.h>
 #include <ShapeLensConfig.h>
 #include <bitset>
+#include <fstream>
 
 using namespace std;
 
@@ -97,6 +98,16 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
 
 void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   int status = 0;
+  // check whether filename exists
+  ifstream siffile;
+  siffile.open(filename.c_str());
+  if( !siffile ) {
+    cerr << "SIFFile: error opening " + filename << endl;
+    siffile.close();
+    terminate();
+  }
+  siffile.close();
+  
   // read shapelet coeff from pHDU
   fitsfile *fptr = IO::openFITSFile(filename);
   NumMatrix<data_t> coeffs;

@@ -169,7 +169,7 @@ NumMatrix<data_t> Decomposite2D::getCovarianceMatrix() {
     NumMatrix<data_t> identity(nCoeffs,nCoeffs);
     ublas::matrix_vector_range<ublas::matrix<data_t> > mvr (identity, ublas::range (0, nCoeffs-1), ublas::range (0, nCoeffs-1)); 
     for (unsigned int i=0; i < nCoeffs; i++)
-      mvr(i) = 1;
+      mvr(i) = background_variance;
     return identity;
   }
   else
