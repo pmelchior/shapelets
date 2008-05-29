@@ -11,6 +11,7 @@ unsigned int ShapeLensConfig::NMAX_LOW = 0;
 unsigned int ShapeLensConfig::NMAX_HIGH = 100;
 data_t ShapeLensConfig::BETA_LOW = 0;
 data_t ShapeLensConfig::BETA_HIGH = numeric_limits<data_t>::infinity();
+data_t ShapeLensConfig::DELTA_BETA = 0.02;
 bool ShapeLensConfig::REGULARIZE = 0;
 data_t ShapeLensConfig::REG_LIMIT = 1e-5;
 bool ShapeLensConfig::SAVE_UNREG = 1;
@@ -60,6 +61,8 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
 	BETA_LOW = (data_t) atof (column[1].c_str());
       if (column[0] == "BETA_HIGH")
 	BETA_HIGH = (data_t) atof (column[1].c_str());
+      if (column[0] == "DELTA_BETA")
+	DELTA_BETA = (data_t) atof (column[1].c_str());
       if (column[0] == "REGULARIZE")
 	REGULARIZE = (bool) atoi (column[1].c_str());
       if (column[0] == "REG_LIMIT")
@@ -81,6 +84,17 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
       if (column[0] == "NOISEMODEL")
 	NOISEMODEL = column[1];
     }
+  }
+  // check if limits on beta and nmax make sense
+  if (BETA_HIGH < BETA_LOW) {
+    data_t tmp = BETA_LOW;
+    BETA_LOW = BETA_HIGH;
+    BETA_HIGH = tmp;
+  }
+  if (NMAX_HIGH < NMAX_LOW) {
+    unsigned int tmp = NMAX_LOW;
+    NMAX_LOW = NMAX_HIGH;
+    NMAX_HIGH = tmp;
   }
 }
 

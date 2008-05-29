@@ -33,9 +33,9 @@ int main(int argc, char *argv[]) {
   std::ofstream output;
   if (outputArg.isSet()) {
     output.open(outputArg.getValue().c_str(),std::ios::out);
-    output << "# BETA NMAX CHI2 FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
+    output << "# ID BETA NMAX CHI2 FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
   } else
-    std::cout << "# BETA NMAX CHI2 FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
+    std::cout << "# ID BETA NMAX CHI2 FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
   
   int nmax;
   data_t beta, chi2, flux, e1,e2,e,theta, RMS;

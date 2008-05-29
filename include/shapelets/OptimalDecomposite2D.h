@@ -42,10 +42,14 @@
 class OptimalDecomposite2D : private Decomposite2D {
  public:
   /// Constructor for decomposing an Object.
-  /// nmaxLimit is the Limit for the maximum order of the decompososition.
-  /// Estimators for \f$\beta\f$ and image centroid  \f$x_c\f$
-  /// are obtained from Object, also the noisemodel.
-  OptimalDecomposite2D(const Object& obj, int nmaxLow, int nmaxHigh, data_t betaLow, data_t betaHigh);
+  /// The optimization is constrained by the parameters
+  /// - ShapeLensConfig::ALLOW_FLATTENING
+  /// - ShapeLensConfig::BETA_LOW 
+  /// - ShapeLensConfig::BETA_HIGH
+  /// - ShapeLensConfig::DELTA_BETA
+  /// - ShapeLensConfig::NMAX_LOW 
+  /// - ShapeLensConfig::NMAX_HIGH
+  OptimalDecomposite2D(const Object& obj);
   /// Employs a regularization to lower the negative flux.
   /// The minimization ends, whenever \f$R=- F^-/F^+ < \text{wanted}R\f$, where \f$F^{\pm}\f$
   /// is the positive or negative flux of the shapelet reconstruction. 
@@ -72,10 +76,12 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// - <tt>i = 1</tt>: optimization stopped due to either 
   ///   <tt>ShapeLensConfig::ALLOW_FLATTENING = 1</tt> or the correlation function of
   ///   residuals becoming lower than the one of the noise (only if 
-  ///   <tt>ShapeLensConfig::NOISEMODEL = COVARIANCE</tt>.
+  ///   <tt>ShapeLensConfig::NOISEMODEL = COVARIANCE</tt>).
   /// - <tt>i = 2</tt>: \f$n_{max}\f$ limited by <tt>ShapeLensConfig::NMAX_HIGH</tt>
   /// - <tt>i = 3</tt>: \f$n_{max}\f$ limited due to \f$2\ \theta_{min}<1\f$
   /// - <tt>i = 4</tt>: \f$n_{max}\f$ limited due to \f$n_{pixels} \leq n_{coeffs}\f$
+  /// - <tt>i = 5</tt>: \f$\chi^2\f$ was not optimized because constraints from ShapeLensConfig::BETA_LOW
+  ///   or ShapeLensConfig::BETA_HIGH were too severe.
   /// - <tt>i = 6</tt>: \f$\chi^2\f$ became worse during optimization and did not improve
   ///    anymore.
   /// - <tt>i = 7</tt>: \f$\chi^2(\beta) \bigl|_{n_{max}=2}\f$ does not have a useful minimum.
@@ -85,8 +91,8 @@ class OptimalDecomposite2D : private Decomposite2D {
 
 private:
   const Object& obj;
-  int npixels, optimalNMax, nmaxLow, nmaxHigh;
-  data_t beta,optimalBeta,optimalChiSquare,bestChiSquare,image_dimension, betaHigh, betaLow;
+  int npixels, optimalNMax;
+  data_t beta,optimalBeta,optimalChiSquare,bestChiSquare,image_dimension;
   bool optimized, nmaxTrouble, noise_correlated;
   char comp_corr;
   std::bitset<8> flags;
@@ -109,8 +115,8 @@ private:
   int findNMaxofBestF(std::vector<regResults>& results);
   int findSuboptimalResultIndex(std::vector<regResults>& result);
   void checkCorrelationFunctionFromResiduals();
-  bool testBetaLowerLimit(data_t& beta);
-  bool testBetaUpperLimit(data_t& beta);
+  data_t getBetaLimit(bool upper);
+
 };
 
 #endif

@@ -106,7 +106,7 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   classifier = obj.getClassifier();
   basefilename = obj.getBaseFilename();
   // decomposing with given constraits on shapelet decomposition parameters
-  OptimalDecomposite2D optimalDecomp(obj, ShapeLensConfig::NMAX_LOW,ShapeLensConfig::NMAX_HIGH,ShapeLensConfig::BETA_LOW,ShapeLensConfig::BETA_HIGH);
+  OptimalDecomposite2D optimalDecomp(obj);
 
   // if set, save the unregularized model to sif file with given name
   if (ShapeLensConfig::REGULARIZE && ShapeLensConfig::SAVE_UNREG) {

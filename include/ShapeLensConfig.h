@@ -70,6 +70,8 @@ class ShapeLensConfig {
   static data_t BETA_LOW;
   /// Upper bound for \f$\beta\f$, default = INFINITY.
   static data_t BETA_HIGH;
+  /// Relative uncertainty on \f$\beta\f$during optimization, default 0.02.
+  static data_t DELTA_BETA;
   /// Whether a regularization (see OptimalDecomposite2D::regularize()) should 
   /// be employed, default = 0.
   static bool REGULARIZE;
