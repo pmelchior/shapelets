@@ -95,19 +95,30 @@ class Composite2D : private Shapelets2D {
   data_t getShapeletRMSRadius(NumMatrix<data_t>* cov = NULL) const;
 
   friend class SIFFile;
+  friend class Decomposite2D;
 
  protected:
+  /// The spatial Grid on which the shapelet model is defined.
   Grid grid;
+  /// The shapelet coefficients.
   CoefficientVector<data_t> coeffs;
-  NumMatrix<data_t> M, cov;
+  /// The shapelet design matrix.
+  NumMatrix<data_t> M;
+  /// The coefficient covariance matrix.
+  NumMatrix<data_t> cov;
+  /// The shapelet model.
   NumVector<data_t> model;
+  /// The centroid position.
   Point2D xcentroid;
-  bool change;
+  /// Whether M must be updated.
+  bool changeM;
+  /// Wheter model must be updated.
+  bool changeModel;
 
  private:
   void evalGrid();
-  void makeShapeletMatrix(NumMatrix<data_t>& M);
-  NumVector<data_t>& accessModel();
+  void makeShapeletMatrix();
+  //NumVector<data_t>& accessModel();
   void updateOrders();
 };
 

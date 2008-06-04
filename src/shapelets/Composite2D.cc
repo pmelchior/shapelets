@@ -6,7 +6,7 @@
 using namespace std;
 
 Composite2D::Composite2D() : Shapelets2D() {
-  change = 1;
+  changeM = changeModel = 1;
 }
 
 Composite2D::Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D& inxcentroid) : Shapelets2D() {  
@@ -14,7 +14,7 @@ Composite2D::Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, P
   xcentroid = inxcentroid;
   Shapelets2D::setBeta(beta);
   // grid has to be redefined before evaluation
-  change = 1;
+  changeM = changeModel = 1;
 }
 
 Composite2D::Composite2D(const Composite2D& source) {
@@ -28,6 +28,8 @@ Composite2D & Composite2D::operator= (const Composite2D &source) {
   grid = source.grid;
   xcentroid(0) = source.xcentroid(0);
   xcentroid(1) = source.xcentroid(1);
+  changeM = source.changeM;
+  changeModel = source.changeModel;
   return *this;
 }
   
@@ -36,8 +38,10 @@ unsigned int Composite2D::getNMax() const {
 }
 
 void Composite2D::setCoeffs(const CoefficientVector<data_t>& newCoeffs ) {
+  if (coeffs.size() != newCoeffs.size())
+    changeM = 1;
   coeffs = newCoeffs;
-  change = 1;
+  changeModel = 1;
 }
 
 const CoefficientVector<data_t>& Composite2D::getCoeffs() const {
@@ -45,7 +49,6 @@ const CoefficientVector<data_t>& Composite2D::getCoeffs() const {
 }
 
 void Composite2D::setCovarianceMatrix(const NumMatrix<data_t>& newCov) {
-  cov = newCov;
   if (coeffs.getNCoeffs() == newCov.getRows() && coeffs.getNCoeffs() == newCov.getColumns())
     cov = newCov;
   else {
@@ -63,8 +66,10 @@ data_t Composite2D::getBeta() const {
 }
 
 void Composite2D::setBeta(data_t beta) {
-  Shapelets2D::setBeta(beta);
-  change = 1;
+  if (Shapelets2D::getBeta() != beta) {
+    Shapelets2D::setBeta(beta);
+    changeM = changeModel = 1;
+  }
 }
 
 const Point2D& Composite2D::getCentroid() const {
@@ -73,7 +78,7 @@ const Point2D& Composite2D::getCentroid() const {
 
 void Composite2D::setCentroid(const Point2D& inxcentroid) {
   xcentroid = inxcentroid;
-  change = 1;
+  changeM = changeModel = 1;
 }
 
 const Grid& Composite2D::getGrid() const {
@@ -82,26 +87,27 @@ const Grid& Composite2D::getGrid() const {
 
 void Composite2D::setGrid(const Grid& ingrid) {
   grid = ingrid;
-  change = 1;
+  changeM = changeModel = 1;
 }
 
 
 void Composite2D::evalGrid() {
-  NumMatrix<data_t> M(grid.size(),coeffs.getNCoeffs());
-  makeShapeletMatrix(M);
-  model = M * coeffs;
-  change = 0;
+  makeShapeletMatrix();
+  if (changeModel) {
+    model = M * coeffs;
+    changeModel = 0;
+  }
 }  
 
 const NumVector<data_t>& Composite2D::getModel() {
-  if (change) evalGrid();
+  if (changeModel) evalGrid();
   return model;
 }
 
-NumVector<data_t>& Composite2D::accessModel() {
-  change = 0;
-  return model;
-}
+// NumVector<data_t>& Composite2D::accessModel() {
+//   change = 0;
+//   return model;
+// }
 
 data_t Composite2D::eval(const Point2D& x, NumMatrix<data_t>* cov_est) {
   Point2D xdiff(x(0) - xcentroid(0), x(1) - xcentroid(1));
@@ -268,43 +274,49 @@ data_t Composite2D::getShapeletRMSRadius(NumMatrix<data_t>* cov_est) const {
   return sqrt(result(0));
 }
 
-void Composite2D::makeShapeletMatrix(NumMatrix<data_t>& M) {
-  const IndexVector& nVector = coeffs.getIndexVector();
-  int nmax = nVector.getNMax();
-  int nCoeffs = nVector.getNCoeffs();
-  int npixels = grid.size();
-  NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);
-  // start with 0th and 1st order shapelets
-  data_t x0_scaled, x1_scaled;
-  data_t beta = Shapelets2D::getBeta();
-  data_t factor0 = 1./sqrt(M_SQRTPI*beta);
-  for (int i=0; i<npixels; i++) {
-    x0_scaled = (grid(i,0) - xcentroid(0))/beta;
-    x1_scaled = (grid(i,1) - xcentroid(1))/beta;
-    M0(0,i) = factor0*exp(-x0_scaled*x0_scaled/2);
-    M1(0,i) = factor0*exp(-x1_scaled*x1_scaled/2);
-    if (nmax > 0) {
-      M0(1,i) = M_SQRT2*x0_scaled*M0(0,i);
-      M1(1,i) = M_SQRT2*x1_scaled*M1(0,i);
-    }
-  }
-  // use recurrance relation to compute higher orders
-  for (int n=2;n<=nmax;n++) {
-    data_t factor1 = sqrt(1./(2*n)), factor2 =sqrt((n-1.)/n); 
+void Composite2D::makeShapeletMatrix() {
+  if (changeM) {
+    if (M.getRows() != grid.size() || M.getColumns() != coeffs.size())
+      M.resize(grid.size(),coeffs.getNCoeffs());
+
+    const IndexVector& nVector = coeffs.getIndexVector();
+    int nmax = nVector.getNMax();
+    int nCoeffs = nVector.getNCoeffs();
+    int npixels = grid.size();
+    NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);
+    // start with 0th and 1st order shapelets
+    data_t x0_scaled, x1_scaled;
+    data_t beta = Shapelets2D::getBeta();
+    data_t factor0 = 1./sqrt(M_SQRTPI*beta);
     for (int i=0; i<npixels; i++) {
-      M0(n,i) = 2*(grid(i,0) - xcentroid(0))/beta*factor1*M0(n-1,i) 
-	- factor2*M0(n-2,i);
-      M1(n,i) = 2*(grid(i,1) - xcentroid(1))/beta*factor1*M1(n-1,i) 
-	- factor2*M1(n-2,i);
+      x0_scaled = (grid(i,0) - xcentroid(0))/beta;
+      x1_scaled = (grid(i,1) - xcentroid(1))/beta;
+      M0(0,i) = factor0*exp(-x0_scaled*x0_scaled/2);
+      M1(0,i) = factor0*exp(-x1_scaled*x1_scaled/2);
+      if (nmax > 0) {
+	M0(1,i) = M_SQRT2*x0_scaled*M0(0,i);
+	M1(1,i) = M_SQRT2*x1_scaled*M1(0,i);
+      }
+    }
+    // use recurrance relation to compute higher orders
+    for (int n=2;n<=nmax;n++) {
+      data_t factor1 = sqrt(1./(2*n)), factor2 =sqrt((n-1.)/n); 
+      for (int i=0; i<npixels; i++) {
+	M0(n,i) = 2*(grid(i,0) - xcentroid(0))/beta*factor1*M0(n-1,i) 
+	  - factor2*M0(n-2,i);
+	M1(n,i) = 2*(grid(i,1) - xcentroid(1))/beta*factor1*M1(n-1,i) 
+	  - factor2*M1(n-2,i);
+      }
+    }
+    // now build tensor product of M0 and M1
+    int n0, n1;
+    for (int l = 0; l < nCoeffs; l++) {
+      n0 = nVector.getState1(l);
+      n1 = nVector.getState2(l);
+      for (int i=0; i<npixels; i++)
+	// this access scheme is probably slow but we come around the matrix Mt
+	M(i,l) = M0(n0,i)*M1(n1,i);
     }
   }
-  // now build tensor product of M0 and M1
-  int n0, n1;
-  for (int l = 0; l < nCoeffs; l++) {
-    n0 = nVector.getState1(l);
-    n1 = nVector.getState2(l);
-    for (int i=0; i<npixels; i++)
-      // this access scheme is probably slow but we come around the matrix Mt
-      M(i,l) = M0(n0,i)*M1(n1,i);
-  }
+  changeM = 0;
 }

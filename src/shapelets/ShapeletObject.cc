@@ -98,62 +98,49 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   tag = R = 0;
   name = "";
   unreg = NULL;
-  const Grid& FitsGrid = obj.getGrid();
-  const Point2D& xcentroid = obj.getCentroid();
   noise_mean = obj.getNoiseMean();
   noise_rms = obj.getNoiseRMS();
   id = obj.getID();
   classifier = obj.getClassifier();
   basefilename = obj.getBaseFilename();
-  // decomposing with given constraits on shapelet decomposition parameters
-  OptimalDecomposite2D optimalDecomp(obj);
 
-  // if set, save the unregularized model to sif file with given name
-  if (ShapeLensConfig::REGULARIZE && ShapeLensConfig::SAVE_UNREG) {
-    // first get all necessary data for model
-    Composite2D::setBeta(optimalDecomp.getOptimalBeta());
-    Composite2D::setCentroid(xcentroid);
-    Composite2D::setGrid(FitsGrid);
-    coeffs = optimalDecomp.getCoeffs();
-    cov = optimalDecomp.getCovarianceMatrix();
-    ShapeletObject::correctCovarianceMatrix();
-    chisquare = optimalDecomp.getOptimalChiSquare();
-    history.setSilent();
-    history << obj.getHistory();
-    history << optimalDecomp.getHistory();
-    history.unsetSilent();
-    // joing detection and decomposition flags to form a 16 bit set
-    const bitset<8>& fitsFlags = obj.getDetectionFlags();
-    const bitset<8>& decompFlags = optimalDecomp.getDecompositionFlags();
-    for (int i = 0; i < 8; i++) {
-      flags[i] = fitsFlags[i];
-      flags[8+i] = decompFlags[i];
-    }
-    // create copy of *this as new ShapeletObject entity
-    name = "UNREG";
-    unreg = new ShapeletObject(*this);
-    name = "";
-  }
+  // optimized decomposition
+  // transforms obj into Composite2D *this
+  OptimalDecomposite2D optimalDecomp(obj,*this);
 
-  // use regularization if specified
-  if (ShapeLensConfig::REGULARIZE)
-    R = optimalDecomp.regularize(ShapeLensConfig::REG_LIMIT);
+//   // if set, save the unregularized model to sif file with given name
+//   if (ShapeLensConfig::REGULARIZE && ShapeLensConfig::SAVE_UNREG) {
+//     chisquare = optimalDecomp.getOptimalChiSquare();
+//     ShapeletObject::correctCovarianceMatrix();
+//     history.setSilent();
+//     history << obj.getHistory();
+//     history << optimalDecomp.getHistory();
+//     history.unsetSilent();
+//     // joint detection and decomposition flags to form a 16 bit set
+//     const bitset<8>& fitsFlags = obj.getDetectionFlags();
+//     const bitset<8>& decompFlags = optimalDecomp.getDecompositionFlags();
+//     for (int i = 0; i < 8; i++) {
+//       flags[i] = fitsFlags[i];
+//       flags[8+i] = decompFlags[i];
+//     }
+//     // create copy of *this as new ShapeletObject entity
+//     name = "UNREG";
+//     unreg = new ShapeletObject(*this);
+//     name = "";
+//   }
 
+//   // use regularization if specified
+//   if (ShapeLensConfig::REGULARIZE)
+//     R = optimalDecomp.regularize(ShapeLensConfig::REG_LIMIT);
 
-  Composite2D::setBeta(optimalDecomp.getOptimalBeta());
-  Composite2D::setCentroid(xcentroid);
-  Composite2D::setGrid(FitsGrid);
-  Composite2D::model = optimalDecomp.getModel();
-  coeffs = optimalDecomp.getCoeffs();
-  cov = optimalDecomp.getCovarianceMatrix();
-  ShapeletObject::correctCovarianceMatrix();
   chisquare = optimalDecomp.getOptimalChiSquare();
+  ShapeletObject::correctCovarianceMatrix();
   history.clear();
   history.setSilent();
   history << obj.getHistory();
   history << optimalDecomp.getHistory();
   history.unsetSilent();
-  // joing detection and decomposition flags to form a 16 bit set
+  // joint detection and decomposition flags to form a 16 bit set
   flags.reset();
   const bitset<8>& fitsFlags = obj.getDetectionFlags();
   const bitset<8>& decompFlags = optimalDecomp.getDecompositionFlags();
@@ -165,15 +152,14 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
 
 
 void ShapeletObject::setCoeffs(const CoefficientVector<data_t>& incoeffs) {
-  coeffs = incoeffs;
-  Composite2D::change = 1;
+  Composite2D::setCoeffs(incoeffs);
   updatePolar = true;
 }
 
 void ShapeletObject::setPolarCoeffs(const CoefficientVector<Complex>& newpolarCoeffs) {
   polarCoeffs = newpolarCoeffs;
   c2p.getCartesianCoeffs(polarCoeffs,coeffs);
-  Composite2D::change = 1;
+  Composite2D::changeM = Composite2D::changeModel = true;
   updatePolar = false;
 }
  
@@ -266,19 +252,19 @@ data_t ShapeletObject::getChiSquare() const {
 
 void ShapeletObject::converge(data_t kappa) {
   trafo.converge(coeffs,kappa,&cov,&history);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 
 void ShapeletObject::shear(Complex gamma) {
   trafo.shear(coeffs,gamma,&cov,&history);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 
 void ShapeletObject::flex(Complex F, Complex G) {
   trafo.flex(coeffs,F,G,&cov,&history);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 
@@ -313,13 +299,13 @@ void ShapeletObject::lens(data_t kappa, Complex gamma, Complex F, Complex G) {
   flexed += sheared;
   flexed -= oldCoeffs;
   Composite2D::setCoeffs(flexed);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 } 
   
 void ShapeletObject::translate(data_t dx0, data_t dx1) {
   trafo.translate(coeffs,Composite2D::getBeta(),dx0,dx1,&cov,&history);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 
@@ -328,7 +314,7 @@ void ShapeletObject::rotate(data_t rho) {
     c2p.getPolarCoeffs(coeffs,polarCoeffs,&cov,&polarCov);
   trafo.rotate(polarCoeffs,rho,&polarCov,&history);
   c2p.getCartesianCoeffs(polarCoeffs,coeffs,&polarCov,&cov);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = false;
 }
 
@@ -337,7 +323,7 @@ void ShapeletObject::circularize() {
     c2p.getPolarCoeffs(coeffs,polarCoeffs,&cov,&polarCov);
   trafo.circularize(polarCoeffs,&polarCov,&history);
   c2p.getCartesianCoeffs(polarCoeffs,coeffs,&polarCov,&cov);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = false;
 }
 
@@ -346,13 +332,13 @@ void ShapeletObject::flipX() {
     c2p.getPolarCoeffs(coeffs,polarCoeffs,&cov,&polarCov);
   trafo.flipX(polarCoeffs,&polarCov,&history);
   c2p.getCartesianCoeffs(polarCoeffs,coeffs,&polarCov,&cov);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = false;
 }
 
 void ShapeletObject::brighten(data_t factor) {
   trafo.brighten(coeffs,factor,&cov,&history);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 
@@ -360,7 +346,7 @@ void ShapeletObject::convolve(const CoefficientVector<data_t>& kernelCoeffs, dat
   data_t beta = Composite2D::getBeta();
   trafo.convolve(coeffs,beta,kernelCoeffs,beta_kernel,&cov,&history);
   Composite2D::setBeta(beta);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 
@@ -368,13 +354,13 @@ void ShapeletObject::deconvolve(const CoefficientVector<data_t>& kernelCoeffs, d
   data_t beta = Composite2D::getBeta();
   trafo.deconvolve(coeffs,beta,kernelCoeffs,beta_kernel,&cov,&history);
   Composite2D::setBeta(beta);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 
 void ShapeletObject::rescale(data_t newBeta) {
   trafo.rescale(coeffs,Composite2D::getBeta(),newBeta,&cov,&history);
-  Composite2D::change = 1;
+  Composite2D::changeModel = true;
   updatePolar = true;
 }
 

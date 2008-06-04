@@ -116,7 +116,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
 
   // read shapelet parameters
   // make use of friendship of Composite2D and ShapeletObject
-  sobj.change = 1;
+  sobj.changeModel = sobj.changeM = true;
   data_t tmp;
   status = IO::readFITSKeyword(fptr,"BETA",tmp);
   sobj.setBeta(tmp);
