@@ -6,15 +6,14 @@
 using namespace std;
 
 Composite2D::Composite2D() : Shapelets2D() {
-  changeM = changeModel = 1;
+  changeM = changeModel = true;
 }
 
 Composite2D::Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D& inxcentroid) : Shapelets2D() {  
   coeffs = Coeffs;
   xcentroid = inxcentroid;
   Shapelets2D::setBeta(beta);
-  // grid has to be redefined before evaluation
-  changeM = changeModel = 1;
+  changeM = changeModel = true;
 }
 
 Composite2D::Composite2D(const Composite2D& source) {
@@ -39,9 +38,9 @@ unsigned int Composite2D::getNMax() const {
 
 void Composite2D::setCoeffs(const CoefficientVector<data_t>& newCoeffs ) {
   if (coeffs.size() != newCoeffs.size())
-    changeM = 1;
+    changeM = true;
   coeffs = newCoeffs;
-  changeModel = 1;
+  changeModel = true;
 }
 
 const CoefficientVector<data_t>& Composite2D::getCoeffs() const {
@@ -68,7 +67,7 @@ data_t Composite2D::getBeta() const {
 void Composite2D::setBeta(data_t beta) {
   if (Shapelets2D::getBeta() != beta) {
     Shapelets2D::setBeta(beta);
-    changeM = changeModel = 1;
+    changeM = changeModel = true;
   }
 }
 
@@ -78,7 +77,7 @@ const Point2D& Composite2D::getCentroid() const {
 
 void Composite2D::setCentroid(const Point2D& inxcentroid) {
   xcentroid = inxcentroid;
-  changeM = changeModel = 1;
+  changeM = changeModel = true;
 }
 
 const Grid& Composite2D::getGrid() const {
@@ -87,13 +86,13 @@ const Grid& Composite2D::getGrid() const {
 
 void Composite2D::setGrid(const Grid& ingrid) {
   grid = ingrid;
-  changeM = changeModel = 1;
+  changeM = changeModel = true;
 }
 
 
 void Composite2D::evalGrid() {
-  makeShapeletMatrix();
   if (changeModel) {
+    makeShapeletMatrix();
     model = M * coeffs;
     changeModel = 0;
   }
@@ -103,11 +102,6 @@ const NumVector<data_t>& Composite2D::getModel() {
   if (changeModel) evalGrid();
   return model;
 }
-
-// NumVector<data_t>& Composite2D::accessModel() {
-//   change = 0;
-//   return model;
-// }
 
 data_t Composite2D::eval(const Point2D& x, NumMatrix<data_t>* cov_est) {
   Point2D xdiff(x(0) - xcentroid(0), x(1) - xcentroid(1));

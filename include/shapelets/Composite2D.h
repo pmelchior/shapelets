@@ -1,7 +1,7 @@
 #ifndef COMPOSITE2D_H
 #define COMPOSITE2D_H
 
-/// 2D Composition class.
+/// Shapelet composition class.
 /// Provides methods associated with a 2D shapelet model, 
 /// \f[f(x_1,x_2) = \sum_{n_1,n_2}^{n_1 + n_2 = n_{max}} f_{n_1,n_2}\ B_{n_1,n_2}(x_1,x_2;\beta)\f]
 ///
@@ -17,7 +17,7 @@
 /// NumMatrix<data_t> cov_quad;
 /// NumMatrix<data_t> Q = model.getShapelet2ndMoments(&cov_quad);
 /// \endcode
-/// The example calculates the integral \f$\int\ dx\ f(x)\f$ without and the quadrupole 
+/// The example calculates the integral \f$\int dx\ f(x)\f$ without and the quadrupole 
 /// moment \f$Q\f$ with the respective covariance matrix.
 
 #include <NumMatrix.h>
@@ -118,7 +118,6 @@ class Composite2D : private Shapelets2D {
  private:
   void evalGrid();
   void makeShapeletMatrix();
-  //NumVector<data_t>& accessModel();
   void updateOrders();
 };
 

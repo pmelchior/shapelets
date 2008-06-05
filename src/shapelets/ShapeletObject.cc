@@ -134,7 +134,7 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
 //     R = optimalDecomp.regularize(ShapeLensConfig::REG_LIMIT);
 
   chisquare = optimalDecomp.getOptimalChiSquare();
-  ShapeletObject::correctCovarianceMatrix();
+  correctCovarianceMatrix();
   history.clear();
   history.setSilent();
   history << obj.getHistory();
@@ -148,6 +148,10 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
     flags[i] = fitsFlags[i];
     flags[8+i] = decompFlags[i];
   }
+  // since Composite2D::model ist correctly populated,
+  // we currently do not need Composite2D::M anymore, so we throw it away for saving space
+  Composite2D::M.resize(0,0);
+  Composite2D::changeM = true;
 }  
 
 
@@ -201,7 +205,7 @@ void ShapeletObject::correctCovarianceMatrix() {
     lc.push_back(coeffs.getNumVector());
     // 100 slightly modified versions of this
     // changes of the centroid: gaussian, rms of deviation 0.5 pixels
-    // changes in beta: gaussian, FWHM of 0.02*beta
+    // changes in beta: gaussian, std = ShapeLensConfig::DELTA_BETA*beta
     data_t beta  = Composite2D::getBeta();
     const gsl_rng_type * T;
     gsl_rng * r;
@@ -210,7 +214,7 @@ void ShapeletObject::correctCovarianceMatrix() {
     r = gsl_rng_alloc (T);
     for (unsigned int i=0; i< 100; i++) {
       trafo.translate(coeffs,beta,gsl_ran_gaussian(r,M_SQRT1_2*0.5), gsl_ran_gaussian(r,M_SQRT1_2*0.5));
-      trafo.rescale(coeffs,beta,beta + gsl_ran_gaussian(r,0.02*beta/2.35));
+      trafo.rescale(coeffs,beta,beta + gsl_ran_gaussian(r,ShapeLensConfig::DELTA_BETA*beta));
       lc.push_back(coeffs.getNumVector());
       coeffs = lc[0];
     }
