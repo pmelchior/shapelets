@@ -50,7 +50,6 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   IO::updateFITSKeyword(outfptr,"DIM",sobj.coeffs.getNMax()+1,"dimensions in shapelet space (nmax+1)");
   IO::updateFITSKeyword(outfptr,"CHI2",sobj.getChiSquare(),"decomposition quality");
   IO::updateFITSKeyword(outfptr,"ERRORS",saveErrors,"whether coefficient errors are available");
-  IO::updateFITSKeyword(outfptr,"R",sobj.getRegularizationR(),"negative flux / positive flux");
   IO::updateFITSKeyword(outfptr,"FLAGS",sobj.getFlags().to_ulong(),"extraction and decomposition flags");
   IO::updateFITSKeywordString(outfptr, "EXTNAME", sobj.getName(), "shapelet object name");
   IO::updateFITSKeyword(outfptr, "TAG", sobj.getTag(), "shapelet object tag");
@@ -60,8 +59,6 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   IO::updateFITSKeywordString(outfptr,"BASEFILE",sobj.getBaseFilename(),"originating data file");
   IO::updateFITSKeyword(outfptr,"ID",sobj.getObjectID(),"object id in BASEFILE");
   IO::updateFITSKeyword(outfptr,"CLASSIFIER",sobj.getObjectClassifier(),"object classifier");
-  IO::updateFITSKeyword(outfptr,"NOISE_MEAN",sobj.getNoiseMean(),"mean of pixel noise");
-  IO::updateFITSKeyword(outfptr,"NOISE_RMS",sobj.getNoiseRMS(),"rms of pixel noise");
   const Grid& grid = sobj.getGrid();
   IO::updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
   IO::updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
@@ -78,9 +75,6 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   IO::updateFITSKeyword(outfptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH,"upper bound for n_max");
   IO::updateFITSKeyword(outfptr," BETA_LOW",ShapeLensConfig::BETA_LOW,"lower bound for beta");
   IO::updateFITSKeyword(outfptr,"BETA_HIGH",ShapeLensConfig::BETA_HIGH,"upper bound for beta");
-  IO::updateFITSKeyword(outfptr,"REGULARIZE",ShapeLensConfig::REGULARIZE,"whether regularization has been employed");
-  IO::updateFITSKeyword(outfptr,"REG_LIMIT",ShapeLensConfig::REG_LIMIT,"demanded upper limit for R");
-  IO::updateFITSKeyword(outfptr,"SAVE_UNREG",ShapeLensConfig::SAVE_UNREG,"whether unregularized model is saved");
   IO::updateFITSKeyword(outfptr,"ALLOW_FLATTENING",ShapeLensConfig::ALLOW_FLATTENING,"whether flattening of chi^2 is allowed");
   IO::updateFITSKeyword(outfptr,"FILTER_SPURIOUS",ShapeLensConfig::FILTER_SPURIOUS,"whether spurious detection are removed");
   IO::updateFITSKeyword(outfptr,"ADD_BORDER",ShapeLensConfig::ADD_BORDER,"amount of border around detected objects");
@@ -123,7 +117,6 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   status = IO::readFITSKeyword(fptr,"CHI2",sobj.chisquare);
   bool errors;
   status = IO::readFITSKeyword(fptr,"ERRORS",errors);
-  status = IO::readFITSKeyword(fptr,"R",sobj.R);
   unsigned long flags;
   status = IO::readFITSKeyword(fptr,"FLAGS",flags);
   sobj.flags = std::bitset<16>(flags);
@@ -141,8 +134,6 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   if (status != 0)
     sobj.classifier = 0;
 
-  status = IO::readFITSKeyword(fptr,"NOISE_MEAN",sobj.noise_mean);
-  status = IO::readFITSKeyword(fptr,"NOISE_RMS",sobj.noise_rms);
   data_t xmin,xmax,ymin,ymax;
   status = IO::readFITSKeyword(fptr,"XMIN",xmin);
   status = IO::readFITSKeyword(fptr,"XMAX",xmax);
@@ -162,9 +153,6 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
     status = IO::readFITSKeyword(fptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH);
     status = IO::readFITSKeyword(fptr," BETA_LOW",ShapeLensConfig::BETA_LOW);
     status = IO::readFITSKeyword(fptr,"BETA_HIGH",ShapeLensConfig::BETA_HIGH);
-    status = IO::readFITSKeyword(fptr,"REGULARIZE",ShapeLensConfig::REGULARIZE);
-    status = IO::readFITSKeyword(fptr,"REG_LIMIT",ShapeLensConfig::REG_LIMIT);
-    status = IO::readFITSKeyword(fptr,"SAVE_UNREG",ShapeLensConfig::SAVE_UNREG);
     status = IO::readFITSKeyword(fptr,"ALLOW_FLATTENING",ShapeLensConfig::ALLOW_FLATTENING);
     status = IO::readFITSKeyword(fptr,"FILTER_SPURIOUS",ShapeLensConfig::FILTER_SPURIOUS);
     status = IO::readFITSKeyword(fptr,"ADD_BORDER",ShapeLensConfig::ADD_BORDER);

@@ -25,7 +25,7 @@
 ///   close to the object and the decomposition will therefore be aborted. 
 /// - Increase \f$n_{max}\f$ in steps of 2 until 
 ///  - \f$\chi^2 < 1 + \sigma(\chi^2)\f$ or 
-///  - \f$\chi^2\f$ flattens out (if ShapeLensConfig::ALLOW_FLATTENING is set) or 
+///  - \f$\chi^2\f$ flattens out (if \p ShapeLensConfig::ALLOW_FLATTENING is set) or 
 ///  - correlation function of the residuals becomes lower than the one of the noise
 ///    (if <tt>ShapeLensConfig::NOISEMODEL == COVARIANCE</tt>)
 /// - If \f$n_{max} = 6\f$ or \f$n_{max} \ mod\ 12 = 0\f$, do an intermediate search 
@@ -38,12 +38,12 @@
 ///   we have had already better values.
 ///
 /// Apart from that, the optimization is constrained by these configuration parameters
-/// - ShapeLensConfig::ALLOW_FLATTENING
-/// - ShapeLensConfig::BETA_LOW 
-/// - ShapeLensConfig::BETA_HIGH
-/// - ShapeLensConfig::DELTA_BETA
-/// - ShapeLensConfig::NMAX_LOW 
-/// - ShapeLensConfig::NMAX_HIGH
+/// - \p ShapeLensConfig::ALLOW_FLATTENING
+/// - \p ShapeLensConfig::BETA_LOW 
+/// - \p ShapeLensConfig::BETA_HIGH
+/// - \p ShapeLensConfig::DELTA_BETA
+/// - \p ShapeLensConfig::NMAX_LOW 
+/// - \p ShapeLensConfig::NMAX_HIGH
 ///
 /// and additionally bound by \f$2 \theta_{min}> 1\f$ and \f$\theta_{max}<\frac{D}{2}\f$ with \f$D\f$
 /// being the minimum sidelength of the image frame.
@@ -54,14 +54,6 @@ class OptimalDecomposite2D : private Decomposite2D {
  public:
   /// Constructor for decomposing an Object.
   OptimalDecomposite2D(const Object& obj, Composite2D& model);
-/*   /// Employs a regularization to lower the negative flux. */
-/*   /// The minimization ends, whenever \f$R=- F^-/F^+ < \text{wanted}R\f$, where \f$F^{\pm}\f$ */
-/*   /// is the positive or negative flux of the shapelet reconstruction.  */
-/*   /// The return value is the actual \f$R\f$.\n */
-/*   /// If \p wantedR is chosen too low (e.g. \f$10^{-6}\f$, in some cases already  */
-/*   /// \f$10^{-3}\f$), the minimization procedure */
-/*   /// must increase \f$n_{max}\f$ and can therefore take a considerable amount of time. */
-/*   data_t regularize(data_t wantedR); */
   /// Return best fit  \f$\beta\f$
   data_t getOptimalBeta();
   /// Return best fit \f$\chi^2\f$.
@@ -76,8 +68,8 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// - <tt>i = 2</tt>: \f$n_{max}\f$ limited by <tt>ShapeLensConfig::NMAX_HIGH</tt>
   /// - <tt>i = 3</tt>: \f$n_{max}\f$ limited due to \f$2\ \theta_{min}<1\f$
   /// - <tt>i = 4</tt>: \f$n_{max}\f$ limited due to \f$n_{pixels} \leq n_{coeffs}\f$
-  /// - <tt>i = 5</tt>: \f$\chi^2\f$ was not optimized because constraints from ShapeLensConfig::BETA_LOW
-  ///   or ShapeLensConfig::BETA_HIGH were too severe.
+  /// - <tt>i = 5</tt>: \f$\chi^2\f$ was not optimized because constraints from 
+  ///   \p ShapeLensConfig::BETA_LOW or \p ShapeLensConfig::BETA_HIGH were too severe.
   /// - <tt>i = 6</tt>: \f$\chi^2\f$ became worse during optimization and did not improve
   ///    anymore.
   /// - <tt>i = 7</tt>: \f$\chi^2(\beta) \bigl|_{n_{max}=2}\f$ does not have a useful minimum.
@@ -94,21 +86,9 @@ private:
   History history;
   std::string comp_corr_string;
   std::map<int, data_t> bestBeta, bestChi2;
-  struct regResults {
-    int nmax;
-    data_t f;
-    data_t lambda;
-    data_t beta;
-    data_t chi2;
-    data_t R;
-    CoefficientVector<data_t> coeffs;
-  };
   int findOptimalBeta(unsigned char step);
   void findOptimalNMax(unsigned char step), optimize(), checkBeta();
   void getBetaTrafoMatrix(NumMatrix<data_t>& betaTrafo, data_t beta1, data_t beta2);
-  void appendRegResults(std::vector<regResults>& results, int nmax, data_t f, data_t lambda, data_t beta, data_t chi2, data_t R, const CoefficientVector<data_t>& coeffs);
-  int findNMaxofBestF(std::vector<regResults>& results);
-  int findSuboptimalResultIndex(std::vector<regResults>& result);
   void checkCorrelationFunctionFromResiduals();
   data_t getBetaLimit(bool upper);
 

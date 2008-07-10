@@ -68,7 +68,6 @@ int main(int argc, char *argv[]) {
   for(iter = cat.begin(); iter != cat.end(); iter++) {
     // for clearity:
     unsigned long id = (*iter).first;
-    std::cout << "extracting obj " << id << std::endl;
     // choose the actual object in the frame
     Object obj(id);
     // "cut out" the object from whole frame and put it into Object obj

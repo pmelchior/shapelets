@@ -50,17 +50,13 @@ class ShapeletObject : public Composite2D {
   ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,-25,50,50));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
-  /// The decomposition will find the optimal shapelet parameters automatically.\n
-  /// As default, it uses extremely loose bounds on \f$n_{max}\f$ and \f$\beta\f$
-  /// (see ShapeLensConfig); a regularization (to avoid regions of negative flux) is not
-  /// employed.\n
-  /// If you want to change these settings, change them BEFORE calling this
-  /// constructor.
+  /// The decomposition will find the optimal shapelet parameters automatically,
+  /// within the bounds given by the ShapeLensConfig.\n\n
+  /// \b ATTENTION: If you want to change the configuration settings, you have to 
+  /// change them \e BEFORE calling this constructor.
   ShapeletObject(const Object& obj);
   ///Copy operator.
   ShapeletObject& operator=(const ShapeletObject&);
-  /// Destructor.
-  ~ShapeletObject();
 
   /// Set cartesian coefficients.
   void setCoeffs(const CoefficientVector<data_t>& cartesianCoeffs);
@@ -139,13 +135,6 @@ class ShapeletObject : public Composite2D {
   /// This can be used for erasing the history by using a empty string.
   void setHistory(std::string comment);
 
-  /// Get the value of the regularization parameter \f$R\f$.
-  /// See OptimalDecomposite2D::regularize() for details.
-  data_t getRegularizationR() const;
-  /// Get mean of pixel noise \f$\mu_n\f$ obtained from Frame or SExFrame.
-  data_t getNoiseMean() const;
-  /// Get RMS of pixel noise \f$\sigma_n\f$ obtained from Frame or SExFrame.
-  data_t getNoiseRMS() const;
   /// Get the filename from which this object originated.
   std::string getBaseFilename() const;
   /// Get the object id assigned to this object.
@@ -180,14 +169,14 @@ class ShapeletObject : public Composite2D {
   NumMatrix<complex<data_t> > polarCov;
   PolarTransformation c2p;
   ImageTransformation trafo;
-  data_t chisquare, R, noise_mean, noise_rms, classifier, tag;
+  data_t chisquare, classifier, tag;
   bool fits, updatePolar;
   History history;
   std::bitset<16> flags;
   unsigned long id;
   std::string basefilename, name;
-  ShapeletObject* unreg;
   void correctCovarianceMatrix();
+
   // Transform arbitrary matrix into triangular matrix of appropraite dimension.
   // Copies entries from input matrix into lower left corner of the triangular matrix
   // as long as there are entries unequal to 0 on the diagonal. 

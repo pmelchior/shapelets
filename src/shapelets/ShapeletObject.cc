@@ -10,12 +10,11 @@ typedef complex<data_t> Complex;
 
 ShapeletObject::ShapeletObject() : 
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
-  tag = classifier = chisquare = R = noise_mean = noise_rms = id = 0;
+  tag = classifier = chisquare = id = 0;
   fits = false;
   updatePolar = true;
   flags.reset();
   name = basefilename = "";
-  unreg = NULL;
 }
 
 ShapeletObject::ShapeletObject(const ShapeletObject& source) : 
@@ -33,9 +32,6 @@ ShapeletObject& ShapeletObject::operator=(const ShapeletObject& source) {
   tag = source.tag;
   classifier = source.classifier;
   chisquare = source.chisquare;
-  R = source.R;
-  noise_mean = source.noise_mean;
-  noise_rms = source.noise_rms;
   id = source.id;
   fits = source.fits;
   updatePolar = source.updatePolar;
@@ -43,19 +39,11 @@ ShapeletObject& ShapeletObject::operator=(const ShapeletObject& source) {
   name = source.name;
   basefilename = source.basefilename;
   history = source.history;
-  // important: to avoid double deletion, unreg must not be copied!
-  unreg = NULL;
   return *this;
-}
-
-ShapeletObject::~ShapeletObject() {
-  if (unreg != NULL) 
-    delete unreg;
 }
 
 ShapeletObject::ShapeletObject(string sifFile, bool preserve_config) : 
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
-  unreg = NULL;
   // get infos from file
   load(sifFile,preserve_config);
   updatePolar = true;
@@ -64,12 +52,11 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
 
 ShapeletObject::ShapeletObject(const CoefficientVector<data_t>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
-  tag = classifier = chisquare = R = noise_mean = noise_rms = id = 0;
+  tag = classifier = chisquare = id = 0;
   fits = false;
   updatePolar = true;
   flags.reset();
   name = basefilename = "";
-  unreg = NULL;
   coeffs = incoeffs;
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
@@ -78,12 +65,11 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
 
 ShapeletObject::ShapeletObject(const CoefficientVector<Complex>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid):
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov)  {
-  tag = classifier = chisquare = R = noise_mean = noise_rms = id = 0 ;
+  tag = classifier = chisquare = id = 0 ;
   fits = false;
   updatePolar = false;
   flags.reset();
   name = basefilename = "";
-  unreg = NULL;
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
   Composite2D::setGrid(grid);
@@ -95,11 +81,8 @@ ShapeletObject::ShapeletObject(const Object& obj) :
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   fits = true;
   updatePolar = true;
-  tag = R = 0;
+  tag = 0;
   name = "";
-  unreg = NULL;
-  noise_mean = obj.getNoiseMean();
-  noise_rms = obj.getNoiseRMS();
   id = obj.getID();
   classifier = obj.getClassifier();
   basefilename = obj.getBaseFilename();
@@ -107,34 +90,11 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   // optimized decomposition
   // transforms obj into Composite2D *this
   OptimalDecomposite2D optimalDecomp(obj,*this);
-
-//   // if set, save the unregularized model to sif file with given name
-//   if (ShapeLensConfig::REGULARIZE && ShapeLensConfig::SAVE_UNREG) {
-//     chisquare = optimalDecomp.getOptimalChiSquare();
-//     ShapeletObject::correctCovarianceMatrix();
-//     history.setSilent();
-//     history << obj.getHistory();
-//     history << optimalDecomp.getHistory();
-//     history.unsetSilent();
-//     // joint detection and decomposition flags to form a 16 bit set
-//     const bitset<8>& fitsFlags = obj.getDetectionFlags();
-//     const bitset<8>& decompFlags = optimalDecomp.getDecompositionFlags();
-//     for (int i = 0; i < 8; i++) {
-//       flags[i] = fitsFlags[i];
-//       flags[8+i] = decompFlags[i];
-//     }
-//     // create copy of *this as new ShapeletObject entity
-//     name = "UNREG";
-//     unreg = new ShapeletObject(*this);
-//     name = "";
-//   }
-
-//   // use regularization if specified
-//   if (ShapeLensConfig::REGULARIZE)
-//     R = optimalDecomp.regularize(ShapeLensConfig::REG_LIMIT);
-
   chisquare = optimalDecomp.getOptimalChiSquare();
-  correctCovarianceMatrix();
+  
+  // needs more testing before automatically used ...
+  // correctCovarianceMatrix();
+
   history.clear();
   history.setSilent();
   history << obj.getHistory();
@@ -149,7 +109,8 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
     flags[8+i] = decompFlags[i];
   }
   // since Composite2D::model ist correctly populated,
-  // we currently do not need Composite2D::M anymore, so we throw it away for saving space
+  // we currently do not need Composite2D::M anymore, 
+  // so we throw it away for saving space
   Composite2D::M.resize(0,0);
   Composite2D::changeM = true;
 }  
@@ -370,12 +331,7 @@ void ShapeletObject::rescale(data_t newBeta) {
 
 void ShapeletObject::save(string sifFile) const {
   SIFFile sfile(sifFile);
-  // only store actual ShapeletObject.
-  if (unreg == NULL)
-    sfile.save(*this);
-  // since there is also the unregularized object and we have to save it, too
-  else
-    sfile.save(*this, *unreg);
+  sfile.save(*this);
 }
 
 void ShapeletObject::load(string sifFile, bool preserve_config) {
@@ -392,9 +348,6 @@ void ShapeletObject::setHistory(std::string comment) {
   history << comment;
 }
 
-data_t ShapeletObject::getRegularizationR() const {
-  return R;
-}
 std::string ShapeletObject::getBaseFilename() const {
   return basefilename;
 }
@@ -409,14 +362,6 @@ data_t ShapeletObject::getObjectClassifier() const {
 
 const std::bitset<16>& ShapeletObject::getFlags() const {
   return flags;
-}
-
-data_t ShapeletObject::getNoiseMean() const {
-  return noise_mean;
-}
-
-data_t ShapeletObject::getNoiseRMS() const {
-  return noise_rms;
 }
 
 void ShapeletObject::setName(std::string inname) {

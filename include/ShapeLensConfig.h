@@ -72,14 +72,6 @@ class ShapeLensConfig {
   static data_t BETA_HIGH;
   /// Relative uncertainty on \f$\beta\f$during optimization, default 0.02.
   static data_t DELTA_BETA;
-  /// Whether a regularization (see OptimalDecomposite2D::regularize()) should 
-  /// be employed, default = 0.
-  static bool REGULARIZE;
-  /// The upper limit for \f$R\f$ during regularizaton, default = 1e-5.
-  static data_t REG_LIMIT;
-  /// Whether the unregularized model is saved, before the regularization is performed,
-  /// default = 1.
-  static bool SAVE_UNREG;
   /// Whether flattening of \f$\chi^2\f$ is allowed as termination criterium
   /// for the optimization process, default = 0.
   static bool ALLOW_FLATTENING;

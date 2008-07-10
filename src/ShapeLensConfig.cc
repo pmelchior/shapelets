@@ -12,9 +12,6 @@ unsigned int ShapeLensConfig::NMAX_HIGH = 100;
 data_t ShapeLensConfig::BETA_LOW = 0;
 data_t ShapeLensConfig::BETA_HIGH = numeric_limits<data_t>::infinity();
 data_t ShapeLensConfig::DELTA_BETA = 0.02;
-bool ShapeLensConfig::REGULARIZE = 0;
-data_t ShapeLensConfig::REG_LIMIT = 1e-5;
-bool ShapeLensConfig::SAVE_UNREG = 1;
 bool ShapeLensConfig::ALLOW_FLATTENING = 0;
 bool ShapeLensConfig::FILTER_SPURIOUS = 0;
 data_t ShapeLensConfig::ADD_BORDER = 0.5;
@@ -63,12 +60,6 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
 	BETA_HIGH = (data_t) atof (column[1].c_str());
       if (column[0] == "DELTA_BETA")
 	DELTA_BETA = (data_t) atof (column[1].c_str());
-      if (column[0] == "REGULARIZE")
-	REGULARIZE = (bool) atoi (column[1].c_str());
-      if (column[0] == "REG_LIMIT")
-	REG_LIMIT = (data_t) atof (column[1].c_str());
-      if (column[0] == "SAVE_UNREG")
-	SAVE_UNREG = (bool) atoi(column[1].c_str());
       if (column[0] == "ALLOW_FLATTENING")
 	ALLOW_FLATTENING = (bool) atoi (column[1].c_str());
       if (column[0] == "FILTER_SPURIOUS")
