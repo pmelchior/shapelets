@@ -14,7 +14,7 @@ class Grid {
   /// Argumented constructor.
   /// Construct a Grid, starting at coordinates \f$(start_0,start_1)\f$ and traversing 
   /// \f$N_0\ (N_1)\f$ steps of given \p stepsize into positive direction.
-  Grid(data_t start0, data_t start1, int N0, int N1);//, data_t stepsize0 = 1, data_t stepsize1 = 1);
+  Grid(data_t start0, data_t start1, int N0, int N1, data_t stepsize0 = 1, data_t stepsize1 = 1);
   /// Index operator for const Grid.
   data_t operator() (unsigned int index, bool direction) const;
   /// Return the ith point as a Point2D.
@@ -45,7 +45,7 @@ class Grid {
 
  private:
   int N0,N1;
-  Point2D start,stop,stepsize;
+  Point2D start,stepsize;
 };
 
 #endif

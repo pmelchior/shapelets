@@ -13,7 +13,7 @@ CONFIGFILE = "PATHS"
 # choose the appropriate values for the compiler and flags
 COMPILER = "g++"
 FLAGS = "-ansi -g -DNDEBUG -Wno-deprecated -O3 -march=pentium4"
-LIBS = "-lgsl -llapack_atlas -latlas -llapack -lg2c -lcfitsio"
+LIBS = "-lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio"
 
 # create shared library
 SHARED = True
@@ -91,7 +91,6 @@ def createConfig(filename):
 	paths["GSLINCLPATH"] = ""
 	paths["GSLLIBPATH"] = ""
 	paths["BOOSTINCLPATH"] = ""
-	paths["BOOSTSANDBOXINCLPATH"] = ""
 	paths["ATLASINCLPATH"] = ""
 	paths["ATLASLIBPATH"] = ""
 	paths["CBLASLIBPATH"] = ""
@@ -107,7 +106,6 @@ def createConfig(filename):
 		paths["GSLINCLPATH"] = checkWithLocate(locate, ["gsl/gsl_math.h"], "GSL headers",1)
 		paths["GSLLIBPATH"] = checkWithLocate(locate, ["libgsl.so","libgsl.a"], "GSL library")
 		paths["BOOSTINCLPATH"] = checkWithLocate(locate, ["boost/config.hpp"],"Boost headers",1)
-		paths["BOOSTSANDBOXINCLPATH"] = checkWithLocate(locate, ["boost/numeric/bindings/traits/ublas_matrix.hpp"],"Boost sandbox headers",4)
 		paths["ATLASINCLPATH"] = checkWithLocate(locate, ["atlas_lapack.h"],"ATLAS headers")
 		paths["ATLASLIBPATH"] = checkWithLocate(locate, ["libatlas.a","libatlas.so"],"ATLAS library")
 		paths["CBLASLIBPATH"] = checkWithLocate(locate, ["libcblas.a","libcblasb.so"],"CBLAS library")
@@ -161,7 +159,7 @@ def openConfig(filename, numentries):
 
 # first of all: create/open the configuration file, which lists the include and lib directories
 if os.path.isfile(CONFIGFILE):
-	config = openConfig(CONFIGFILE,12)
+	config = openConfig(CONFIGFILE,11)
 else:
 	createConfig(CONFIGFILE)
 

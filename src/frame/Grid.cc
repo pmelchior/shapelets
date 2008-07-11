@@ -6,13 +6,11 @@ Grid::Grid() :
 {
 }
 
-Grid::Grid(data_t start0, data_t start1, int N0, int N1) : //, data_t stepsize0, data_t stepsize1) :
+Grid::Grid(data_t start0, data_t start1, int N0, int N1, data_t stepsize0, data_t stepsize1) :
   start(start0,start1),
-  stepsize(1,1),
+  stepsize(stepsize0,stepsize1),
   N0(N0),
-  N1(N1),
-  //stop(start0 + N0*stepsize0, start1 + N1*stepsize1)
-  stop(start0 + N0, start1 + N1)
+  N1(N1)
 {
 }
 
@@ -39,7 +37,10 @@ data_t Grid::getStartPosition(bool direction) const {
 }
 
 data_t Grid::getStopPosition(bool direction) const {
-  return stop(direction);
+  if (direction)
+    return start(direction) + N1*stepsize(direction);
+  else
+    return start(direction) + N0*stepsize(direction);
 }
 
 unsigned int Grid::getSize(bool direction) const {
