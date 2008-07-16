@@ -187,10 +187,12 @@ void SExFrame::fillObject(Object& O) {
     O.flag = std::bitset<8>(catiter->second.FLAGS);
     O.classifier = catiter->second.CLASSIFIER;
     O.basefilename = SExFrame::getFilename();
-    if (subtractBG)
-      O.setNoiseMeanRMS(0,bg_rms);
-    else
-      O.setNoiseMeanRMS(bg_mean,bg_rms);
+    if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
+      if (subtractBG)
+	O.setNoiseMeanRMS(0,bg_rms);
+      else
+	O.setNoiseMeanRMS(bg_mean,bg_rms);
+    }
   }
   else {
     std::cerr << "# SExFrame: This Object does not exist!" << endl;
@@ -208,14 +210,14 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
   int xrange, yrange, xborder, yborder;
   xrange = xmax - xmin;
   yrange = ymax - ymin;
-  switch(xrange%2) {
-  case 1: xmax++; break;
+  if (xrange%2 == 1) {
+    xmax++;
+    xrange++;
   }
-  switch(yrange%2) {
-  case 1: ymax++; break;
+  if (yrange%2 == 1) {
+    ymax++;
+    yrange++;
   }
-  xrange = xmax - xmin;
-  yrange = ymax - ymin;
   // make the object frame square, because of const beta in both directions
   if (xrange < yrange) {
     yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);

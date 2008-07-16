@@ -24,18 +24,17 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   fitsfile* fptr = IO::openFITSFile(objfile);
 
   // reading objects pixel data
+  Grid& grid = Object::accessGrid();
   history << "# Reading object's pixel data";
-  IO::readFITSImage(fptr,Object::accessGrid(),Object::accessNumVector());
+  IO::readFITSImage(fptr,grid,Object::accessNumVector());
   
   // recover object information from header keywords
   status = IO::readFITSKeywordString(fptr,"BASEFILE",basefilename);
   status = IO::readFITSKeyword(fptr,"ID",id);
-  data_t xmin,xmax,ymin,ymax;
+  grid_t xmin,ymin;
   status = IO::readFITSKeyword(fptr,"XMIN",xmin);
-  status = IO::readFITSKeyword(fptr,"XMAX",xmax);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
-  status = IO::readFITSKeyword(fptr,"YMAX",ymax);
-  grid = Grid(xmin,ymin,(int) floor(xmax-xmin),(int) floor(ymax-ymin));
+  grid = Grid(xmin,ymin,grid.getSize(0),grid.getSize(1));
   complex<data_t> xc;
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
@@ -51,11 +50,9 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   // read history
   std::string hstr;
   IO::readFITSKeyCards(fptr,"HISTORY",hstr);
-  history.clear();
-  bool verb = history.getVerbosity();
-  history.setVerbosity(0);
+  history.setSilent();
   history << hstr;
-  history.setVerbosity(verb);
+  history.unsetSilent();
 
   // check whether grid has same size as object
   if (Object::size() != Object::getGrid().size()) {
@@ -90,9 +87,7 @@ void Object::save(std::string filename) {
   status = IO::updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
   status = IO::updateFITSKeyword(outfptr,"ID",id,"object id");
   status = IO::updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
-  status = IO::updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
   status = IO::updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
-  status = IO::updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
   status = IO::updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
   complex<data_t> xc(centroid(0),centroid(1));
   status = IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");

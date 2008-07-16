@@ -458,7 +458,8 @@ void Frame::fillObject(Object& O) {
     std::cerr << "# Frame: This Object does not exist!" << endl;
     terminate();
   }
-  O.setNoiseMeanRMS(noise_mean,noise_rms);
+  if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN")
+    O.setNoiseMeanRMS(noise_mean,noise_rms);
   O.basefilename = getFilename();
 }
 
@@ -473,14 +474,14 @@ void Frame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& 
     int xrange, yrange, xborder, yborder;
     xrange = xmax - xmin;
     yrange = ymax - ymin;
-    switch(xrange%2) {
-    case 1: xmax++; break;
+    if (xrange%2 == 1) {
+      xmax++;
+      xrange++;
     }
-    switch(yrange%2) {
-    case 1: ymax++; break;
+    if (yrange%2 == 1) {
+      ymax++;
+      yrange++;
     }
-    xrange = xmax - xmin;
-    yrange = ymax - ymin;
     // make the object frame square, because of const beta in both directions
     if (xrange < yrange) {
       yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);

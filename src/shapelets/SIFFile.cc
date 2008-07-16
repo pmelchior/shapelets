@@ -134,7 +134,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   if (status != 0)
     sobj.classifier = 0;
 
-  data_t xmin,xmax,ymin,ymax;
+  grid_t xmin,xmax,ymin,ymax;
   status = IO::readFITSKeyword(fptr,"XMIN",xmin);
   status = IO::readFITSKeyword(fptr,"XMAX",xmax);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
