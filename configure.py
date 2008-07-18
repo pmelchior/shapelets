@@ -4,7 +4,7 @@ import os,sys
 # change this according to your machine and paths
 # compiled lib and progs will go into lib/$SUBDIR and progs/$SUBDIR
 INSTALLPATH = "."
-SUBDIR = "i686/develop"	
+SUBDIR = "i686/develop"
 
 # give the name of the file which lists the header and library directories
 # if this file does not exist, it will be created
@@ -12,8 +12,8 @@ CONFIGFILE = "PATHS"
 
 # choose the appropriate values for the compiler and flags
 COMPILER = "g++"
-FLAGS = "-ansi -g -DNDEBUG -Wno-deprecated -O3 -march=pentium4"
-LIBS = "-lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio"
+FLAGS = "-ansi -g -DNDEBUG -Wno-deprecated -O3 -march=pentium4 -I$(HOME)/include"
+LIBS = "-lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio -lmysqlclient"
 
 # create shared library
 SHARED = True
@@ -21,6 +21,10 @@ SHARED = True
 # set this to False if you don't want an automatically generated documentation
 # if set to True, doxygen should be installed on your machine.
 DOCUMENTATION = True
+
+# set this to MySQL if you want to have to MySQL backend compiled
+# otherwise set it to False
+SHAPELETDB = "MySQL"
 
 
 ##########################################
@@ -97,6 +101,9 @@ def createConfig(filename):
 	paths["G2CLIBPATH"] = ""
 	paths["CFITSIOINCLPATH"] = ""
 	paths["CFITSIOLIBPATH"] = ""
+	if SHAPELETDB != False:
+		paths["DBINCLPATH"] = ""
+		paths["DBLIBPATH"] = ""
 	# check for locate on the system
 	locate = os.popen("which locate").readlines()
 	if len(locate) == 1:
@@ -112,6 +119,9 @@ def createConfig(filename):
 		paths["G2CLIBPATH"] = checkWithLocate(locate, ["libg2c.a","libg2c.so"],"G2C library")
 		paths["CFITSIOINCLPATH"] = checkWithLocate(locate, ["fitsio.h"],"cfitsio headers")
 		paths["CFITSIOLIBPATH"] = checkWithLocate(locate, ["libcfitsio.a","libcfitsio.so"],"cfitsio library")
+		if SHAPELETDB == "MySQL":
+			paths["DBINCLPATH"] = checkWithLocate(locate,["mysql.h"],"MySQL headers")
+			paths["DBLIBPATH"] = checkWithLocate(locate,["libmysqlclient.so"],"MySQL client library")
 		print "\n\nPlease check the directories for headers and libraries in the file " + filename + "\n"
 	else:
 		print "\n\nLocate does not exist on this system."
@@ -159,7 +169,10 @@ def openConfig(filename, numentries):
 
 # first of all: create/open the configuration file, which lists the include and lib directories
 if os.path.isfile(CONFIGFILE):
-	config = openConfig(CONFIGFILE,11)
+	if SHAPELETDB == False:
+		config = openConfig(CONFIGFILE,11)
+	else:
+		config = openConfig(CONFIGFILE,13)
 else:
 	createConfig(CONFIGFILE)
 
@@ -178,6 +191,8 @@ if (DOCUMENTATION == True):
 	targets = targets + " docs"
 	doctarget = "docs: $(HEADERS)\n\tdoxygen Doxyfile"
 targets = targets + " progs"
+if (SHAPELETDB != False):
+	FLAGS = FLAGS + " -DBIG_JOINS=1 -DSHAPELETDB=" + SHAPELETDB
 
 # loop thru paths and append avery occurence of "LIBPATH" to otherlib (same for "INCLPATH")
 otherincl = []

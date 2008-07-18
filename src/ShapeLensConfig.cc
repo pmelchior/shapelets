@@ -30,7 +30,7 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
   // open config file
   ifstream configfile (filename.c_str());
   if (configfile.fail()) {
-    cout << "ShapeLensConfig: configuration file does not exists!" << endl;
+    cerr << "ShapeLensConfig: configuration file does not exists!" << endl;
     terminate();
   }
   // read in config file

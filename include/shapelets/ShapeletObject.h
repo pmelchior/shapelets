@@ -161,6 +161,7 @@ class ShapeletObject : public Composite2D {
   data_t getTag() const;
   
   friend class SIFFile;
+  friend class ShapeletObjectDB;
 
  private:
   CoefficientVector<data_t>& coeffs;
