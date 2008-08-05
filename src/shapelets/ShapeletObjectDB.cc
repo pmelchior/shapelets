@@ -138,9 +138,11 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   const CoefficientVector<data_t>& coeffs = sobj.getCoeffs();
   unsigned long nCoeffs = coeffs.getNCoeffs();
   unsigned long coefflen = nCoeffs * sizeof(data_t);
-  char coeffhex[2*coefflen + 1];
+  //char coeffhex[2*coefflen + 1];
+  char* coeffhex = (char*) malloc(2*coefflen + 1);
   mysql_hex_string(coeffhex,reinterpret_cast<const char*>(coeffs.c_array()),coefflen);
   query << "0x" << string(coeffhex) << ",";
+  free(coeffhex);
 
   // same for cov if not empty
   // only store the neccessary entries of the symmetric matrix
@@ -148,13 +150,14 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   const NumMatrix<data_t>& cov = sobj.getCovarianceMatrix();
   if (cov.getRows() > 0) {
     unsigned long covlen = ((nCoeffs + 1)*nCoeffs)/2 * sizeof(data_t);
-    char covhex[2*covlen + 1];
+    char* covhex = (char*) malloc(2*covlen + 1);
     int done = 0;
     for (unsigned int i = 0; i < nCoeffs; i++) {
       mysql_hex_string(covhex + 2*done*sizeof(data_t), reinterpret_cast<const char*>(cov.c_array() + i*(nCoeffs+1)),(nCoeffs-i)*sizeof(data_t));
       done += nCoeffs-i;
     }
     query << "0x" << string(covhex) << ")";
+    free(covhex);
   }
   else 
     query << "'')";

@@ -86,6 +86,7 @@ void OptimalDecomposite2D::optimize() {
      while (optimalChiSquare < 1) {
        int oldoptimalNMax = Decomposite2D::getNMax();
        int newNMAX = (int) floor(0.75*oldoptimalNMax) - 1;
+       if (newNMAX < 0) break;
        if (newNMAX < ShapeLensConfig::NMAX_LOW) newNMAX = ShapeLensConfig::NMAX_LOW;
        Decomposite2D::setNMax(newNMAX);
        history << "#" << endl << "# Checking for lower n_max: chi^2 < 1" << endl;
