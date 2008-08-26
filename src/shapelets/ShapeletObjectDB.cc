@@ -5,14 +5,15 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <fenv.h>
 
 using namespace std;
 
 #if SHAPELETDB==MySQL
 
-ShapeletObjectDB::ShapeletObjectDB(std::string connection_file) {
+ShapeletObjectDB::ShapeletObjectDB() {
   // open file
-  ifstream connfile (connection_file.c_str());
+  ifstream connfile (getenv("SHAPELENSDBCONF"));
   if (connfile.fail()) {
     cerr << "ShapeletObjectDB: connection file could not be opened!" << endl;
     terminate();
@@ -54,19 +55,6 @@ ShapeletObjectDB::ShapeletObjectDB(std::string connection_file) {
   exists = false;
 }
 
-ShapeletObjectDB::ShapeletObjectDB(std::string host, std::string user, std::string password, std::string database) :
-  table(table)
-{
-  checkConnectionDetails(host,user,password,database,table);
-  // Connect to database
-  conn = mysql_init(NULL);
-  if (!mysql_real_connect(conn, host.c_str(), user.c_str(), password.c_str(), database.c_str(), 0, NULL, 0)) {
-    cerr << mysql_error(conn) << endl;
-    terminate();
-  }
-  exists = false;
-}
-
 void ShapeletObjectDB::checkConnectionDetails(std::string host, std::string user, std::string password, std::string database, std::string table) {
   // all keywords (apart from password) must be specified
   if (host.size() == 0) {
@@ -75,10 +63,6 @@ void ShapeletObjectDB::checkConnectionDetails(std::string host, std::string user
   }
   if (user.size() == 0) {
     cerr << "ShapeletObjectDB: USER keyword not specified!";
-    terminate();
-  }
-  if (database.size() == 0) {
-    cerr << "ShapeletObjectDB: DATABASE keyword not specified!";
     terminate();
   }
 }

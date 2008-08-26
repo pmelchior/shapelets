@@ -50,9 +50,6 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   // read history
   std::string hstr;
   IO::readFITSKeyCards(fptr,"HISTORY",hstr);
-  history.setSilent();
-  history << hstr;
-  history.unsetSilent();
 
   // check whether grid has same size as object
   if (Object::size() != Object::getGrid().size()) {
@@ -72,6 +69,12 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
     IO::readFITSImage(fptr, weightgrid, weight);
   }
   history << std::endl;
+
+  // append pHDUs history
+  history.setSilent();
+  history << hstr;
+  history.unsetSilent();
+
   IO::closeFITSFile(fptr);
 }
 
@@ -293,3 +296,6 @@ std::string Object::getHistory() const {
   return history.str();
 }
 
+History& Object::accessHistory() {
+  return history;
+}

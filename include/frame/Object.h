@@ -113,6 +113,8 @@ class Object : public Image<data_t> {
   void save(std::string fitsfile);
   /// Get History of the object.
   std::string getHistory() const;
+  /// Access History of the object.
+  History& accessHistory();
   /// Computes the flux and the position of the centroid of the object from pixel data.
   void computeFluxCentroid();
 

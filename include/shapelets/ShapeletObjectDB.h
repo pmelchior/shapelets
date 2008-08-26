@@ -55,7 +55,9 @@
 
 class ShapeletObjectDB {
  public:
-  /// Constructor with connection details stored in a file.
+  /// Default constructor.
+  /// The required connection details are stored in a file whose
+  /// path has to be set in the environment variable \p SHAPELENSDBCONF.\n\n
   /// The file contains the following connection details
   /// and the appropriate values in format of ShapeLensConfig files 
   /// (one keyword/value pair per line, separated by one or more tab characters):
@@ -67,14 +69,13 @@ class ShapeletObjectDB {
   /// TABLE     tablename
   /// \endcode
   ///
-  /// As \p TABLE can be set later and \p PASSWORD is not always required, these
-  /// two keywords are optional, the others mandatory.\n\n
+  /// As \p DATABASE and \p TABLE can be set later
+  /// and \p PASSWORD is not always required, these
+  /// three keywords are optional, the others mandatory.\n\n
   /// \b CAUTION: If the password is written in this file, make sure to change 
   /// the file permissions such that \p username is the only user who can read 
   /// this file.  
-  ShapeletObjectDB(std::string connection_file);
-  /// Constructor with explicit connection details.
-  ShapeletObjectDB(std::string host, std::string user, std::string password, std::string database);
+  ShapeletObjectDB();
   /// Default destructor.
   ~ShapeletObjectDB();
   /// Change the table within the database.
