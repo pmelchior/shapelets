@@ -8,8 +8,10 @@ PolarTransformation::PolarTransformation() {
 }
 
 void PolarTransformation::getPolarCoeffs(const CoefficientVector<data_t>& cartesianCoeffs, CoefficientVector<Complex>& polarCoeffs, NumMatrix<data_t>* cov, NumMatrix<complex<data_t> >* polarCov) {
+  // set nmax of polarCoeffs to nmax of cartesianCoeffs
+  polarCoeffs.setNMax(cartesianCoeffs.getNMax());
   // set up c2p; automatically adjusts to order of input coeffs
-  buildTransformationMatrix(cartesianCoeffs.getIndexVector());
+  buildTransformationMatrix(cartesianCoeffs.getIndexVector(),polarCoeffs.getIndexVector());
   // intermediate step: as c2p is complex, we need complex factors
   NumVector<Complex> cartV = cartesianCoeffs.getNumVector();
   // the actual transformation in shapelet space
@@ -22,8 +24,10 @@ void PolarTransformation::getPolarCoeffs(const CoefficientVector<data_t>& cartes
 }
 
 void PolarTransformation::getCartesianCoeffs(const CoefficientVector<Complex>& polarCoeffs, CoefficientVector<data_t>& cartesianCoeffs, NumMatrix<complex<data_t> >* polarCov, NumMatrix<data_t>* cov){
+  // set nmax of polarCoeffs to nmax of cartesianCoeffs
+  cartesianCoeffs.setNMax(polarCoeffs.getNMax());
   // set up p2c; automatically adjusts to order of input coeffs
-  buildTransformationMatrix(polarCoeffs.getIndexVector());
+  buildTransformationMatrix(cartesianCoeffs.getIndexVector(),polarCoeffs.getIndexVector());
   // intermediate step necessary since p2c is complex
   NumVector<Complex> cartV = p2c*polarCoeffs;
   cartesianCoeffs.setNMax(polarCoeffs.getNMax());
@@ -40,20 +44,23 @@ void PolarTransformation::getCartesianCoeffs(const CoefficientVector<Complex>& p
 
 
 // see Paper III, eq. 14
-void PolarTransformation::buildTransformationMatrix(const IndexVector& nVector) {
+void PolarTransformation::buildTransformationMatrix(const IndexVector& nVector, const IndexVector& pnVector) {
   int nCoeffs = nVector.getNCoeffs();
   // only do something if orders do not match
   if (c2p.getRows() != nCoeffs) {
     c2p.resize(nCoeffs,nCoeffs);
+    c2p.clear();
  
     Complex prefactor, factorials, doublesum;
-    unsigned int n_;
-    int m_;
+    int n,n_,m,m_,n1,n2,nr,nl;
     for(int i = 0; i < nCoeffs; i++) {     // polar vector index
+      n = pnVector.getState1(i);
+      m = pnVector.getState2(i);
+      nr = (n+m)/2;
+      nl = (n-m)/2;
       for (int j = 0; j < nCoeffs; j++) {  // cartesian vector index
-	// determine n,m,n1,n2 from i,j
-	int nr = nVector.getState1(i), nl = nVector.getState2(i);
-	int n1 = nVector.getState1(j), n2 = nVector.getState2(j);
+	n1 = nVector.getState1(j);
+	n2 = nVector.getState2(j);
 	// the prefactor
 	prefactor = data_t(pow(2,-data_t(nr+nl)/2))*pow(I,nr-nl);
 	// only orders with n1+n2 <= nmax are evaluated

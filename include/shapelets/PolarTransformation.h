@@ -34,7 +34,7 @@ class PolarTransformation {
  private:
   unsigned int nmax;
   NumMatrix<complex<data_t> > c2p,p2c;
-  void buildTransformationMatrix(const IndexVector& );
+  void buildTransformationMatrix(const IndexVector& , const IndexVector& );
 };
 
 #endif

@@ -63,7 +63,7 @@ void ImageTransformation::translate(CoefficientVector<data_t>& cartesianCoeffs, 
 }
 
 NumMatrix<Complex> ImageTransformation::getRotationMatrix(data_t rho, const IndexVector& nVector) {
-  data_t rho_scaled = 2*M_PI*rho/360;
+  data_t rho_scaled = M_PI*rho/180;
   // set up rotation matrix for this IndexVector
   NumMatrix<Complex> M(nVector.getNCoeffs(), nVector.getNCoeffs());
   int m;
@@ -81,7 +81,7 @@ void ImageTransformation::rotate(CoefficientVector<Complex>& polarCoeffs, data_t
   // perform transformation
   polarCoeffs = M*polarCoeffs;
   if (cov != NULL && cov->getColumns() == polarCoeffs.getNCoeffs())
-    *cov =(M * (*cov)) * M.transpose();
+    *cov =(M * (*cov)) * M; // M is diagonal, no need to transpose
 }
 
 void ImageTransformation::rotate(CoefficientVector<Complex>& polarCoeffs, const NumMatrix<Complex>& M, NumMatrix<Complex>* cov, History* history) {
@@ -90,7 +90,7 @@ void ImageTransformation::rotate(CoefficientVector<Complex>& polarCoeffs, const 
   // perform transformation
   polarCoeffs = M*polarCoeffs;
   if (cov != NULL && cov->getColumns() == polarCoeffs.getNCoeffs())
-    *cov = (M * (*cov)) * M.transpose();
+    *cov = (M * (*cov)) * M;
 }
 
 NumMatrixDiagonal<Complex> ImageTransformation::getCircularizationMatrix(const IndexVector& nVector) {
