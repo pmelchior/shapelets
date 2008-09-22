@@ -383,7 +383,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     data_t stepsize;
 
     switch (step) {
-    case 1: beta = 0.5*(betaMax + betaMin); stepsize = 0.25*(betaMax + betaMin); break;
+    case 1: beta = 0.5*(betaMax + betaMin); stepsize = 0.21*(betaMax + betaMin); break;
     case 2: beta *= 0.75; stepsize = 0.2 * beta; break;
     case 3: stepsize = 0.1 * beta; break;
     case 6: stepsize = 0.05 * beta; break;
