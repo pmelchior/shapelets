@@ -128,8 +128,8 @@ inline unsigned int GridT<T>::size() const {
 
 template <class T> 
 inline void GridT<T>::getCoords(unsigned int pixel, unsigned int& x, unsigned int& y) const {
-  x = pixel%N0;
-  y = pixel/N0;
+  x = start0 + pixel%N0;
+  y = start1 + pixel/N0;
 }
 
 template <class T> 
