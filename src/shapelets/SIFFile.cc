@@ -85,9 +85,30 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   fits_write_record(outfptr,"",&status);
   IO::appendFITSHistory(outfptr,sobj.getHistory());
   
-  if (saveErrors)
-    IO::writeFITSImage(outfptr,cov,sobj.getName()+"ERRORS");
-
+  if (saveErrors) {
+    // if noisemodel is GAUSSIAN and shapelet model is untransformed
+    // cov is diagonal and constant.
+    // so save only 1x1 matrix
+    bool diag = true;
+    if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
+      // check whether cov is diagonal by running along first rows
+      for (unsigned int i=0; i < 4; i++) {
+	for (unsigned int j=i+1; j < sobj.coeffs.size(); j++) {
+	  if (sobj.cov(i,j) != 0) {
+	    diag = false;
+	    break;
+	  }
+	}
+      }
+      if (diag) {
+	NumMatrix<data_t> one(1,1);
+	one(0,0) = cov(0,0);
+	IO::writeFITSImage(outfptr,one,sobj.getName()+"ERRORS");
+      }
+    }
+    if (ShapeLensConfig::NOISEMODEL != "GAUSSIAN" || diag == false)
+      IO::writeFITSImage(outfptr,cov,sobj.getName()+"ERRORS");
+  }
 }
 
 void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
@@ -179,6 +200,15 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
       status = IO::readFITSImage(fptr,coeffs);
       CoefficientVector<data_t> errors(coeffs);
       sobj.setErrors(errors);
+    }
+    // if noise is Gaussian and shapelet model is untransformed
+    // expand 1x1 matrix to full size
+    else if (sobj.cov.getRows() == 1 && sobj.cov.getColumns() == 1 && sobj.coeffs.size() > 1) {
+      data_t sigma = sobj.cov(0,0);
+      sobj.cov.resize(sobj.coeffs.size(),sobj.coeffs.size());
+      sobj.cov.clear();
+      for (unsigned int i=0; i < sobj.coeffs.size(); i++)
+	sobj.cov(i,i) = sigma;
     }
   }
   IO::closeFITSFile(fptr);

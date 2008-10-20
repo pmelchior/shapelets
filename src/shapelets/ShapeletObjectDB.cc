@@ -97,7 +97,8 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   if (!exists) createTable();
   ostringstream query;
   query << setprecision(23); // maximum precision of FLOAT in MySQL
-  query << "INSERT INTO `" << table << "` VALUES (" << sobj.getObjectID() << ",";
+  //query << "INSERT INTO `" << table << "` VALUES (" << sobj.getObjectID() << ",";
+  query << "INSERT INTO `" << table << "` VALUES ('',";
   query << sobj.getNMax() << "," << sobj.getBeta() << ",";
   query << sobj.getChiSquare() << "," << sobj.getFlags().to_ulong() << ",";
   const Grid& grid = sobj.getGrid();
@@ -130,18 +131,41 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
 
   // same for cov if not empty
   // only store the neccessary entries of the symmetric matrix
-  // by copying them row-wise (and shrinking the number of columns)
+  // by copying them row-wise (and shrinking the number of columns);
+  // in case of Gaussian errors with diagonal matrix, store only first diagonal
+  // element
   const NumMatrix<data_t>& cov = sobj.getCovarianceMatrix();
   if (cov.getRows() > 0) {
-    unsigned long covlen = ((nCoeffs + 1)*nCoeffs)/2 * sizeof(data_t);
-    char* covhex = (char*) malloc(2*covlen + 1);
-    int done = 0;
-    for (unsigned int i = 0; i < nCoeffs; i++) {
-      mysql_hex_string(covhex + 2*done*sizeof(data_t), reinterpret_cast<const char*>(cov.c_array() + i*(nCoeffs+1)),(nCoeffs-i)*sizeof(data_t));
-      done += nCoeffs-i;
+    bool diag = true;
+    if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
+    // check whether cov is diagonal by running along first rows
+      for (unsigned int i=0; i < 4; i++) {
+	for (unsigned int j=i+1; j < sobj.coeffs.size(); j++) {
+	  if (sobj.cov(i,j) != 0) {
+	    diag = false;
+	    break;
+	  }
+	}
+      }
+      // covlen  = 1 here:
+      if (diag) {
+	char* covhex = (char*) malloc(2*sizeof(data_t) + 1);
+	mysql_hex_string(covhex, reinterpret_cast<const char*>(&cov(0,0)),sizeof(data_t));
+	query << "0x" << string(covhex) << ")";
+	free(covhex);
+      }
     }
-    query << "0x" << string(covhex) << ")";
-    free(covhex);
+    if (ShapeLensConfig::NOISEMODEL != "GAUSSIAN" || diag == false) {
+      unsigned long covlen = ((nCoeffs + 1)*nCoeffs)/2 * sizeof(data_t);
+      char* covhex = (char*) malloc(2*covlen + 1);
+      int done = 0;
+      for (unsigned int i = 0; i < nCoeffs; i++) {
+	mysql_hex_string(covhex + 2*done*sizeof(data_t), reinterpret_cast<const char*>(cov.c_array() + i*(nCoeffs+1)),(nCoeffs-i)*sizeof(data_t));
+	done += nCoeffs-i;
+      }
+      query << "0x" << string(covhex) << ")";
+      free(covhex);
+    }
   }
   else 
     query << "'')";
@@ -155,7 +179,7 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
 
 ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
   //send SQL query
-  string query = "SELECT * FROM `" + table + "`";
+  string query = "SELECT *, OCTET_LENGTH( `cov` ) FROM `" + table + "`";
   if (where_clause.size() > 0) {
     query += " WHERE " + where_clause;
   }
@@ -197,20 +221,28 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
     memcpy(cv.c_array(),reinterpret_cast<data_t*>(row[16]),nCoeffs*sizeof(data_t));
     // check whether covariance matrix is stored
     if (row[17] != NULL) {
-      tmp.cov.resize(nCoeffs,nCoeffs);
-      // as symmetric matrix is stored in packed format
-      // we have to unpack it here again:
-      // readout in row-wise fashion
-      int done = 0;
-      for (unsigned int i = 0; i < nCoeffs; i++) {
-	memcpy(cov.c_array() + i*(nCoeffs+1),reinterpret_cast<data_t*>(row[17]) + done,(nCoeffs-i)*sizeof(data_t));
-	done += nCoeffs-i;
+      cov.resize(nCoeffs,nCoeffs);
+      // cov is stored in either symmetric-packed format or compressed
+      // into one number (first diagonal element)
+      if (atoi(row[18]) == 8) {// single element
+	data_t sigma = *reinterpret_cast<data_t*>(row[17]);
+	for (unsigned int i=0; i < nCoeffs; i++)
+	  cov(i,i) = sigma;
+      } else {
+	// as symmetric matrix is stored in packed format
+	// we have to unpack it here again:
+	// readout in row-wise fashion
+	int done = 0;
+	for (unsigned int i = 0; i < nCoeffs; i++) {
+	  memcpy(cov.c_array() + i*(nCoeffs+1),reinterpret_cast<data_t*>(row[17]) + done,(nCoeffs-i)*sizeof(data_t));
+	  done += nCoeffs-i;
+	}
+	// reconstruct the upper left from the lower right side of cov
+	for (unsigned int i = 1; i < nCoeffs; i++)
+	  for (unsigned int j = 0; j < i; j++)
+	    cov(i,j) = cov(j,i);
       }
     }
-    // reconstruct the upper left from the lower right side of cov
-    for (unsigned int i = 1; i < nCoeffs; i++)
-      for (unsigned int j = 0; j < i; j++)
-	tmp.cov(i,j) = tmp.cov(j,i);
 
     // push copy of tmp to sl
     boost::shared_ptr<ShapeletObject> safePointer (new ShapeletObject(tmp));

@@ -33,12 +33,12 @@ int main(int argc, char *argv[]) {
   std::ofstream output;
   if (outputArg.isSet()) {
     output.open(outputArg.getValue().c_str(),std::ios::out);
-    output << "# ID BETA NMAX CHI2 FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
+    output << "# ID BETA NMAX CHI2 R_S FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
   } else
-    std::cout << "# ID BETA NMAX CHI2 FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
+    std::cout << "# ID BETA NMAX CHI2 R_S FLUX XC1 XC2 Q11 Q12 Q22 E1 E2 ELLIP THETA RMS FLAGS" << std::endl;
   
   int nmax;
-  data_t beta, chi2, flux, e1,e2,e,theta, RMS;
+  data_t beta, chi2, flux, e1,e2,e,theta, RMS, Rs;
   Point2D scentroid;
   NumMatrix<data_t> Q(2,2);
   for (ShapeletObjectList::iterator iter = sl.begin(); iter != sl.end() ; iter++) {
@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
     beta = (*iter)->getBeta();
     nmax = (*iter)->getNMax();
     chi2 = (*iter)->getChiSquare();
+    Rs = sqrt(((*iter)->getCoeffs())*((*iter)->getCoeffs()));
 
     // get flux and centroid, 2nd moments and RMS radius
     flux = (*iter)->getShapeletFlux();
@@ -57,9 +58,9 @@ int main(int argc, char *argv[]) {
 
     // output statistics
     if (outputArg.isSet())
-      output << (*iter)->getObjectID() << " " << beta << " " << nmax << " " << chi2 << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS  << " " << (*iter)->getFlags().to_string<char,std::char_traits<char>,std::allocator<char> >() << std::endl;
+      output << (*iter)->getObjectID() << " " << beta << " " << nmax << " " << chi2 << " " << Rs << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS  << " " << (*iter)->getFlags().to_string<char,std::char_traits<char>,std::allocator<char> >() << std::endl;
     else
-      std::cout << (*iter)->getObjectID() << " " << beta << " " << nmax << " " << chi2 << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS << " " << (*iter)->getFlags().to_string<char,std::char_traits<char>,std::allocator<char> >() << std::endl;
+      std::cout << (*iter)->getObjectID() << " " << beta << " " << nmax << " " << chi2 << " " <<  Rs << " " << flux << " " << scentroid(0) << " " << scentroid(1) << " " << Q(0,0) << " " << Q(0,1) << " " << Q(1,1) << " " << e1 << " " << e2 << " " << e << " " << theta << " " << RMS << " " << (*iter)->getFlags().to_string<char,std::char_traits<char>,std::allocator<char> >() << std::endl;
     
   }
   if (outputArg.isSet())
