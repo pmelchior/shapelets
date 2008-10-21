@@ -224,7 +224,7 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
       cov.resize(nCoeffs,nCoeffs);
       // cov is stored in either symmetric-packed format or compressed
       // into one number (first diagonal element)
-      if (atoi(row[18]) == 8) {// single element
+      if (atoi(row[18]) == sizeof(data_t)) {// single element
 	data_t sigma = *reinterpret_cast<data_t*>(row[17]);
 	for (unsigned int i=0; i < nCoeffs; i++)
 	  cov(i,i) = sigma;
