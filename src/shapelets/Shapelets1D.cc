@@ -32,9 +32,7 @@ data_t Shapelets1D::getThetaMax(int order) const {
 
 data_t Shapelets1D::eval (int order, data_t x) {
   data_t x_scaled = x/beta;
-  return 1./(sqrt_beta * sqrt(M_SQRTPI*gsl_pow_int(2,order)*gsl_sf_fact(order))) * 
-  H.eval(order,x_scaled) *
-  exp(-x_scaled*x_scaled/2); 
+  return 1./(sqrt_beta * sqrt(M_SQRTPI*gsl_pow_int(2,order)*gsl_sf_fact(order))) * H.eval(order,x_scaled) * exp(-x_scaled*x_scaled/2);
 }
 
 // integral over basis function
@@ -54,11 +52,11 @@ data_t Shapelets1D::integrate(int order, data_t xmin, data_t xmax) {
   if (order == 0) 
     result = (gsl_sf_erf(xmax/(M_SQRT2*beta)) - gsl_sf_erf(xmin/(M_SQRT2*beta))) * sqrt_beta *sqrt(M_SQRTPI/2);
   else if (order == 1) 
-    result = -sqrt_beta * M_SQRT2 * (eval(0,xmax) - eval(0,xmin));
+    result = - beta * M_SQRT2 * (eval(0,xmax) - eval(0,xmin));
   else if (order > 1) {
-    result = -beta * sqrt((data_t) 2/order) * 
+    result = -beta * sqrt(2./order) * 
       (eval(order-1,xmax) - eval(order-1,xmin)) +
-      sqrt((data_t) (order-1)/order) * integrate(order-2,xmin,xmax);
+      sqrt(data_t(order-1)/order) * integrate(order-2,xmin,xmax);
   }
   return result;
 }

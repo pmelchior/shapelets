@@ -4,7 +4,7 @@ using namespace boost::numeric::ublas;
 
 // constructors
 Hermite::Hermite () {
-  computed = 0;
+  computed = -1;
 }
 
 Hermite::Hermite (unsigned int order) {
@@ -27,7 +27,7 @@ void Hermite::computeHermiteCoeffs(unsigned int order) {
     if (order >= 1) HermiteCoeffs(1,1) = 2;
     computed = 1;
   }
-  while (computed<order) {
+  while (computed<int(order)) {
     for (int i=0; i<= computed; i+=1) {
       HermiteCoeffs(computed+1,i+1) = 2*HermiteCoeffs(computed,i);
       if (i<= computed-1) HermiteCoeffs(computed+1,i) -= 2*computed*HermiteCoeffs(computed-1,i);
@@ -42,18 +42,17 @@ int Hermite::getOrder () const {
 
 void Hermite::setOrder (unsigned int order) {
   // only do something if, we need higher orders
-  if (order > computed) {
-    HermiteCoeffs.resize(order+1,order+1);
+  if (int(order) > computed) {
+    HermiteCoeffs = boost::numeric::ublas::triangular_matrix<data_t,lower>(order+1,order+1);
+    HermiteCoeffs.clear();
+    computed = 0;
+    //HermiteCoeffs.resize(order+1,order+1);
     computeHermiteCoeffs(order);
   }
 }
 
 data_t Hermite::eval (unsigned int order, data_t x) {
-  // if (order > computed) {
-//     std::cerr << "Hermite: order higher than computed; call setOrder() before!" << std::cout;
-//     std::terminate();
-//   }
-  if (order > computed)
+  if (int(order) > computed)
     setOrder(order);
 
   data_t result = 0;
@@ -63,7 +62,7 @@ data_t Hermite::eval (unsigned int order, data_t x) {
 }
 
 data_t Hermite::getCoefficient(unsigned int order, unsigned int power) const {
-  if (order > computed) {
+  if (int(order) > computed) {
     std::cerr << "Hermite: order higher than computed; call setOrder() before!" << std::cout;
     std::terminate();
   }
