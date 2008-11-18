@@ -4,6 +4,7 @@ using namespace boost::numeric::ublas;
 
 // constructors
 Hermite::Hermite () {
+  computed = 0;
 }
 
 Hermite::Hermite (unsigned int order) {

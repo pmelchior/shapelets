@@ -484,10 +484,10 @@ void Frame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& 
     }
     // make the object frame square, because of const beta in both directions
     if (xrange < yrange) {
-      yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);
+      yborder = GSL_MAX_INT((int)floor(yrange*factor), 6);
       xborder = yborder + (yrange - xrange)/2;
     } else {
-      xborder = GSL_MAX_INT((int)floor(xrange*factor), 12);
+      xborder = GSL_MAX_INT((int)floor(xrange*factor), 6);
       yborder = xborder + (xrange - yrange)/2;
     }
     xmin -= xborder;
