@@ -82,15 +82,21 @@ class Decomposite2D {
   /// Get residuals between data and shapelet model.
   /// \f$res = data-model\f$.
   const NumVector<data_t>& getResiduals();
+  /// Compute shapelet coefficients which minimize \f$\chi^2\f$.
+  /// Return value is \p true if coefficients are updated.
+  bool computeCoeffs();
+  /// Compute shapelet model from shapelet coefficients.
+  /// Return value is \p true if model is updated.
+  bool computeModel();
+  /// Compute residuals between data and model.
+  /// Return value is \p true if residuals are updated.
+  bool computeResiduals();
 
  protected:
   /// Reference to Composite2D entity.
   Composite2D& C2D;
   /// Reference to Object entity.
   const Object& obj;
-  bool computeCoeffs();
-  bool computeModel();
-  bool computeResiduals();
   void makeLSMatrix ();
 
  private:
