@@ -1,7 +1,9 @@
 #include <shapelets/Composite2D.h>
+#include <ShapeLensConfig.h>
 // for factorial and other math functions
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
+#include <IO.h>
 
 using namespace std;
 
@@ -93,7 +95,10 @@ void Composite2D::setGrid(const Grid& ingrid) {
 void Composite2D::evalGrid() {
   if (changeModel) {
     makeShapeletMatrix();
-    model = M * coeffs;
+    if (ShapeLensConfig::PIXEL_INTEGRATION)
+      model = MInt * coeffs;
+    else
+      model = M * coeffs;
     changeModel = 0;
   }
 }  
@@ -277,39 +282,97 @@ void Composite2D::makeShapeletMatrix() {
     int nmax = nVector.getNMax();
     int nCoeffs = nVector.getNCoeffs();
     int npixels = grid.size();
-    NumMatrix<data_t> M0(nmax+1,npixels), M1(nmax+1,npixels);
+    int N0 = grid.getSize(0), N1 = grid.getSize(1);
+    NumMatrix<data_t> M0(nmax+1,N0), M1(nmax+1,N1);
     // start with 0th and 1st order shapelets
     data_t x0_scaled, x1_scaled;
     data_t beta = Shapelets2D::getBeta();
     data_t factor0 = 1./sqrt(M_SQRTPI*beta);
-    for (int i=0; i<npixels; i++) {
-      x0_scaled = (grid(i,0) - xcentroid(0))/beta;
-      x1_scaled = (grid(i,1) - xcentroid(1))/beta;
-      M0(0,i) = factor0*exp(-x0_scaled*x0_scaled/2);
-      M1(0,i) = factor0*exp(-x1_scaled*x1_scaled/2);
-      if (nmax > 0) {
-	M0(1,i) = M_SQRT2*x0_scaled*M0(0,i);
-	M1(1,i) = M_SQRT2*x1_scaled*M1(0,i);
-      }
+    data_t factor1, factor2;
+    int x,y;
+    for (x=0; x< N0; x++) {
+      x0_scaled = (grid(x,0) - xcentroid(0) + 0.5)/beta;
+      M0(0,x) = factor0*exp(-x0_scaled*x0_scaled/2);
+      if (nmax > 0)
+	M0(1,x) = M_SQRT2*x0_scaled*M0(0,x);
     }
+    for (y=0; y< N1; y++) {
+      x1_scaled = (grid(y*N0,1) - xcentroid(1) + 0.5)/beta;
+      M1(0,y) = factor0*exp(-x1_scaled*x1_scaled/2);
+      if (nmax > 0) 
+	M1(1,y) = M_SQRT2*x1_scaled*M1(0,y);
+    }
+
     // use recurrance relation to compute higher orders
     for (int n=2;n<=nmax;n++) {
-      data_t factor1 = sqrt(1./(2*n)), factor2 =sqrt((n-1.)/n); 
-      for (int i=0; i<npixels; i++) {
-	M0(n,i) = 2*(grid(i,0) - xcentroid(0))/beta*factor1*M0(n-1,i) 
-	  - factor2*M0(n-2,i);
-	M1(n,i) = 2*(grid(i,1) - xcentroid(1))/beta*factor1*M1(n-1,i) 
-	  - factor2*M1(n-2,i);
-      }
+      factor1 = sqrt(1./(2*n));
+      factor2 =sqrt((n-1.)/n); 
+      for (x=0; x < N0; x++)
+	M0(n,x) = 2*(grid(x,0) - xcentroid(0) + 0.5)/beta*factor1*M0(n-1,x) 
+	  - factor2*M0(n-2,x);
+      for (y=0; y< N1; y++)
+	M1(n,y) = 2*(grid(y*N0,1) - xcentroid(1) + 0.5)/beta*factor1*M1(n-1,y) 
+	  - factor2*M1(n-2,y);
     }
     // now build tensor product of M0 and M1
     int n0, n1;
     for (int l = 0; l < nCoeffs; l++) {
       n0 = nVector.getState1(l);
       n1 = nVector.getState2(l);
-      for (int i=0; i<npixels; i++)
-	// this access scheme is probably slow but we come around the matrix Mt
-	M(i,l) = M0(n0,i)*M1(n1,i);
+      for (int i=0; i<npixels; i++) {
+	x = i%N0;
+	y = i/N0;
+	M(i,l) = M0(n0,x)*M1(n1,y);
+      }
+    }
+
+    // in-pixel integration: use M0 and M1 from above to compute
+    // one-dimensional integral matrix
+    // according to PaperIII, eqs (30) - (34)
+    if (ShapeLensConfig::PIXEL_INTEGRATION) {
+      // it is possible to store this entire in matrix M
+      // but then the basis functions are not orthonormal anymore
+      // computation of coefficients in Decomposite2D must be changed then
+      if (MInt.getRows() != grid.size() || MInt.getColumns() != coeffs.size())
+	MInt.resize(grid.size(),coeffs.getNCoeffs());
+
+      NumMatrix<data_t> I0(nmax+1,N0), I1(nmax+1,N1);
+      data_t x0_scaled_b, x1_scaled_b;
+      factor0 = sqrt(beta*M_SQRTPI/2);
+      factor1 = -M_SQRT2*beta;
+      for (x=0; x<N0 - 1; x++) {
+	x0_scaled = (grid(x,0) - xcentroid(0))/(M_SQRT2*beta);
+	x0_scaled_b = (grid(x+1,0) - xcentroid(0))/(M_SQRT2*beta);
+	I0(0,x) = factor0*(gsl_sf_erf(x0_scaled_b) - gsl_sf_erf(x0_scaled));
+	if (nmax > 0)
+	  I0(1,x) = factor1*(M0(0,x+1) - M0(0,x));
+      }
+      for (y=0; y<N1 - 1; y++) {
+	x1_scaled = (grid(y*N0,1) - xcentroid(1))/(M_SQRT2*beta);
+	x1_scaled_b = (grid((y+1)*N0,1) - xcentroid(1))/(M_SQRT2*beta);
+	I1(0,y) = factor0*(gsl_sf_erf(x1_scaled_b) - gsl_sf_erf(x1_scaled));
+	if (nmax > 0)
+	  I1(1,y) = factor1*(M1(0,y+1) - M1(0,y));
+      }
+      // use recurrance relation to compute higher orders
+      for (int n=2;n<=nmax;n++) {
+	factor1 = -beta*sqrt(2./n);
+	factor2 = sqrt((n-1.)/n);
+	for (x=0; x < N0 - 1; x++)
+	  I0(n,x) = factor1*(M0(n-1,x+1) - M0(n-1,x)) + factor2*I0(n-2,x);
+	for (y=0; y<N1 - 1; y++) 
+	  I1(n,y) = factor1*(M1(n-1,y+1) - M1(n-1,y)) + factor2*I1(n-2,y);
+      }
+      // now build tensor product of I0 and I1
+      for (int l = 0; l < nCoeffs; l++) {
+	n0 = nVector.getState1(l);
+	n1 = nVector.getState2(l);
+	for (int i=0; i<npixels; i++) {
+	  x = i%N0;
+	  y = i/N0;
+	  MInt(i,l) = I0(n0,x)*I1(n1,y);
+	}
+      }
     }
   }
   changeM = 0;

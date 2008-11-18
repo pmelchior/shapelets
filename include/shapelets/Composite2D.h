@@ -103,7 +103,7 @@ class Composite2D : private Shapelets2D {
   /// The shapelet coefficients.
   CoefficientVector<data_t> coeffs;
   /// The shapelet design matrix.
-  NumMatrix<data_t> M;
+  NumMatrix<data_t> M, MInt;
   /// The coefficient covariance matrix.
   NumMatrix<data_t> cov;
   /// The shapelet model.

@@ -22,6 +22,7 @@ std::string ShapeLensConfig::NOISEMODEL = "GAUSSIAN";
 bool ShapeLensConfig::BLENDING = 1;
 data_t ShapeLensConfig::BLEND_MINCONT = 0.01;
 unsigned int ShapeLensConfig::BLEND_NTHRESH = 16;
+bool ShapeLensConfig::PIXEL_INTEGRATION = 0;
 
 ShapeLensConfig::ShapeLensConfig() {
 }
@@ -74,6 +75,8 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
 	DETECT_THRESHOLD = (data_t) atof (column[1].c_str());
       if (column[0] == "NOISEMODEL")
 	NOISEMODEL = column[1];
+      if (column[0] == "PIXEL_INTEGRATION")
+	PIXEL_INTEGRATION = (bool) atoi(column[1].c_str());
     }
   }
   // check if limits on beta and nmax make sense

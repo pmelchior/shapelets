@@ -75,6 +75,9 @@ class ShapeLensConfig {
   /// Whether flattening of \f$\chi^2\f$ is allowed as termination criterium
   /// for the optimization process, default = 0.
   static bool ALLOW_FLATTENING;
+  /// Whether the value if the shapelet basis functions should be integrated
+  /// within pixels when computing the shapelet model, default = 0;
+  static bool PIXEL_INTEGRATION;
   /// The noise model employed during the decomposition (see Decomposite2D),
   /// default = "GAUSSIAN"
   static std::string NOISEMODEL;
