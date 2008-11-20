@@ -129,11 +129,11 @@ NumVector<data_t>& Object::accessWeightMap() {
   return weight;
 }
 
-const Point2D& Object::getCentroid() const {
+const Point2D<data_t>& Object::getCentroid() const {
   return centroid;
 }
 
-void Object::setCentroid(const Point2D& xc) {
+void Object::setCentroid(const Point2D<data_t>& xc) {
   centroid = xc;
   history << "# Centroid set to ("<< centroid(0) << "/" << centroid(1) <<  ") by user." << std::endl;
 }

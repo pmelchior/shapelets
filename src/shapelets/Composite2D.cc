@@ -11,7 +11,7 @@ Composite2D::Composite2D() : Shapelets2D() {
   changeM = changeModel = true;
 }
 
-Composite2D::Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D& inxcentroid) : Shapelets2D() {  
+Composite2D::Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D<data_t>& inxcentroid) : Shapelets2D() {  
   coeffs = Coeffs;
   xcentroid = inxcentroid;
   Shapelets2D::setBeta(beta);
@@ -73,11 +73,11 @@ void Composite2D::setBeta(data_t beta) {
   }
 }
 
-const Point2D& Composite2D::getCentroid() const {
+const Point2D<data_t>& Composite2D::getCentroid() const {
   return xcentroid;
 }
 
-void Composite2D::setCentroid(const Point2D& inxcentroid) {
+void Composite2D::setCentroid(const Point2D<data_t>& inxcentroid) {
   xcentroid = inxcentroid;
   changeM = changeModel = true;
 }
@@ -108,8 +108,8 @@ const NumVector<data_t>& Composite2D::getModel() {
   return model;
 }
 
-data_t Composite2D::eval(const Point2D& x, NumMatrix<data_t>* cov_est) {
-  Point2D xdiff(x(0) - xcentroid(0), x(1) - xcentroid(1));
+data_t Composite2D::eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov_est) {
+  Point2D<data_t> xdiff(x(0) - xcentroid(0), x(1) - xcentroid(1));
   // result = sum over all coeffs * basis function
   const IndexVector& nVector = coeffs.getIndexVector();
   NumMatrix<data_t> Eval(1,nVector.getNCoeffs());
@@ -175,7 +175,7 @@ data_t Composite2D::getShapeletFlux(NumMatrix<data_t>* cov_est) const {
 
 // compute centroid position from shapelet coeffs
 // see Paper I, eq. 27
-Point2D Composite2D::getShapeletCentroid(NumMatrix<data_t>* cov_est) const {
+Point2D<data_t> Composite2D::getShapeletCentroid(NumMatrix<data_t>* cov_est) const {
   int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   NumMatrix<data_t> Centroid(2,nVector.getNCoeffs());
@@ -194,7 +194,7 @@ Point2D Composite2D::getShapeletCentroid(NumMatrix<data_t>* cov_est) const {
     }
   }
   NumVector<data_t> result = Centroid * coeffs;
-  Point2D xc;
+  Point2D<data_t> xc;
   data_t flux = getShapeletFlux(); // ignore covariance of flux here
   data_t beta = Shapelets2D::getBeta();
   data_t factor = M_SQRTPI*beta*beta/flux;

@@ -62,9 +62,9 @@ class Object : public Image<data_t> {
   void setFlux(data_t F);
   /// Return the position of the object's centroid.
   /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
-  const Point2D& getCentroid() const;
+  const Point2D<data_t>& getCentroid() const;
   /// Set the position of the object's centroid.
-  void setCentroid(const Point2D& xc);
+  void setCentroid(const Point2D<data_t>& xc);
   /// Return 2nd brightness moments.
   /// The 2nd brightness moments are defined relative to the centroid computed
   /// with getCentroid().
@@ -127,7 +127,7 @@ class Object : public Image<data_t> {
   SegmentationMap segMap;
   PixelCovarianceMatrix cov;
   CorrelationFunction xi;
-  Point2D centroid;
+  Point2D<data_t> centroid;
   data_t flux, noise_mean, noise_rms, classifier;
   std::bitset<8> flag;
   std::string basefilename;

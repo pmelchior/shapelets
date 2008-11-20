@@ -43,11 +43,11 @@ class ShapeletObject : public Composite2D {
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
-  ShapeletObject(const CoefficientVector<data_t>& cartesianCoeffs, data_t beta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,-25,50,50));
+  ShapeletObject(const CoefficientVector<data_t>& cartesianCoeffs, data_t beta, const Point2D<data_t>& xcentroid = Point2D<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D& xcentroid = Point2D(0,0), const Grid& grid = Grid(-25,-25,50,50));
+  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D<data_t>& xcentroid = Point2D<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically,

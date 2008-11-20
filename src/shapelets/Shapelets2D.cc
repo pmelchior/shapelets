@@ -34,6 +34,6 @@ data_t Shapelets2D::integrate(int order0, int order1, data_t x0min, data_t x0max
   return S1D.integrate(order0,x0min,x0max)*S1D.integrate(order1,x1min,x1max);
 }
 
-data_t Shapelets2D::eval (int order0, int order1, Point2D& x) {
+data_t Shapelets2D::eval (int order0, int order1, Point2D<data_t>& x) {
   return S1D.eval(order0,x(0)) * S1D.eval(order1,x(1));
 }

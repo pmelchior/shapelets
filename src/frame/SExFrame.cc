@@ -182,7 +182,7 @@ void SExFrame::fillObject(Object& O) {
     // Fill other quantities into Object
     O.history << "# Segment:" << endl;
     O.flux = catiter->second.FLUX;
-    O.centroid = Point2D(catiter->second.XCENTROID,catiter->second.YCENTROID);
+    O.centroid = Point2D<data_t>(catiter->second.XCENTROID,catiter->second.YCENTROID);
     O.history << "# Setting catalog values: Flux = " << O.flux << ", Centroid = ("<< O.centroid(0) << "/" << O.centroid(1) << ")" << std::endl; 
     O.flag = std::bitset<8>(catiter->second.FLAGS);
     O.classifier = catiter->second.CLASSIFIER;

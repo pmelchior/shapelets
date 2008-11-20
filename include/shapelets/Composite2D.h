@@ -34,7 +34,7 @@ class Composite2D : private Shapelets2D {
   /// Don't use it for explicit composition.
   Composite2D();
   /// Argumented constructor.
-  Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D& xcentroid);
+  Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D<data_t>& xcentroid);
   /// Copy constructor.
   Composite2D(const Composite2D &source);
   /// Copy operator
@@ -54,9 +54,9 @@ class Composite2D : private Shapelets2D {
   /// Set new \f$\beta\f$ for basis functions.
   void setBeta(data_t beta);
   /// Get centroid position \f$x_c\f$
-  const Point2D& getCentroid() const;
+  const Point2D<data_t>& getCentroid() const;
   /// Set centroid position \f$x_c\f$
-  void setCentroid(const Point2D& inxcentroid);
+  void setCentroid(const Point2D<data_t>& inxcentroid);
   /// Get current Grid.
   const Grid& getGrid() const;
   /// Set new Grid.
@@ -68,7 +68,7 @@ class Composite2D : private Shapelets2D {
   const NumVector<data_t>& getModel();
   /// Evaluate \f$f(x)\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$f(x)\f$.
-  data_t eval(const Point2D& x, NumMatrix<data_t>* cov = NULL);
+  data_t eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov = NULL);
   /// Integrate \f$f(x)\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
   /// \f$\int\ dx\ f(x)\f$.
@@ -84,7 +84,7 @@ class Composite2D : private Shapelets2D {
   /// Get the object centroid \f$\vec{x}_c\f$ from the coefficients.
   /// cf. Paper I, eq. 27\n
   /// When given, \p cov will be the (2,2) covariance matrix of \f$\vec{x}_c\f$.
-  Point2D getShapeletCentroid(NumMatrix<data_t>* cov = NULL) const;
+  Point2D<data_t> getShapeletCentroid(NumMatrix<data_t>* cov = NULL) const;
   /// Get 2nd brightness moments \f$Q_{ij}\f$.
   /// When given, \p cov will be the (3,3) covariance matrix of \f$Q_{ij}\f$, ordered as
   /// \f$Q_{11},\ Q_{12},\ Q_{22}\f$.
@@ -109,7 +109,7 @@ class Composite2D : private Shapelets2D {
   /// The shapelet model.
   NumVector<data_t> model;
   /// The centroid position.
-  Point2D xcentroid;
+  Point2D<data_t> xcentroid;
   /// Whether M must be updated.
   bool changeM;
   /// Wheter model must be updated.

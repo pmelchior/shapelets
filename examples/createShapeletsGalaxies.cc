@@ -34,7 +34,7 @@ void createShapeletImages(CoefficientVector<data_t>& averageCoeffs, CoefficientV
   r = gsl_rng_alloc (T);
   
   // build template shapelet
-  Point2D xcentroid(0,0);
+  Point2D<data_t> xcentroid(0,0);
   CoefficientVector<data_t> coeffs(averageCoeffs.getNMax());
   data_t beta = 1;
   ShapeletObject s (coeffs,beta,xcentroid);

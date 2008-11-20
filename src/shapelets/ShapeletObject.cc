@@ -50,7 +50,7 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   fits = false;
 }
 
-ShapeletObject::ShapeletObject(const CoefficientVector<data_t>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid) :
+ShapeletObject::ShapeletObject(const CoefficientVector<data_t>& incoeffs, data_t beta, const Point2D<data_t>& xcentroid, const Grid& grid) :
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   tag = classifier = chisquare = id = 0;
   fits = false;
@@ -63,7 +63,7 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   Composite2D::setGrid(grid);
 }
 
-ShapeletObject::ShapeletObject(const CoefficientVector<Complex>& incoeffs, data_t beta, const Point2D& xcentroid, const Grid& grid):
+ShapeletObject::ShapeletObject(const CoefficientVector<Complex>& incoeffs, data_t beta, const Point2D<data_t>& xcentroid, const Grid& grid):
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov)  {
   tag = classifier = chisquare = id = 0 ;
   fits = false;

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   
   int nmax;
   data_t beta, chi2, flux, e1,e2,e,theta, RMS, Rs;
-  Point2D scentroid;
+  Point2D<data_t> scentroid;
   NumMatrix<data_t> Q(2,2);
   for (ShapeletObjectList::iterator iter = sl.begin(); iter != sl.end() ; iter++) {
     // get shapelet parameters used in decomposition

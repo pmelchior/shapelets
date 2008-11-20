@@ -23,7 +23,7 @@ class GridT {
   /// Index operator for const GridT.
   T operator() (unsigned int index, bool direction) const;
   /// Return the ith point as a Point2D.
-  Point2D operator() (unsigned int index) const;
+  Point2D<T> operator() (unsigned int index) const;
   /// Return stepsize between grid points in given direction.
   T getStepsize(bool direction) const;
   /// Return starting position in given direction.
@@ -85,8 +85,8 @@ inline T GridT<T>::operator() (unsigned int index, bool direction) const {
 }
 
 template <class T> 
-inline Point2D GridT<T>::operator() (unsigned int i) const {
-  return Point2D(operator()(i,0),operator()(i,1));
+inline Point2D<T> GridT<T>::operator() (unsigned int i) const {
+  return Point2D<T>(operator()(i,0),operator()(i,1));
 }
 
 template <class T> 
