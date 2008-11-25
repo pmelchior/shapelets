@@ -474,29 +474,18 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 // with the one stored in obj
 void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals() {
   const CorrelationFunction& xi = (Decomposite2D::obj).getCorrelationFunction();
-  // look for the bandwidth of V to decide on the size of the box within
-  // which to compute the correlation function
-  unsigned int bandwidth = (Decomposite2D::obj).getPixelCovarianceMatrix().getBandwidth();
-  unsigned int size;
-  switch(bandwidth) {
-  case 1: size=0; break;
-  case 5: size=1; break;
-  case 9: size=1; break;
-  default: size=2; break;
-  }
   
-  CorrelationFunction xi_res(Decomposite2D::getResiduals(),(Decomposite2D::obj).getGrid(),size);
-  NumVector<data_t> corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(),
-    corr_res = xi_res.getCorrelationFunction(), sigma_res = xi_res.getCorrelationError();
+  CorrelationFunction xi_res(Decomposite2D::getResiduals(),(Decomposite2D::obj).getGrid(),xi.getMaxLength());
+  const std::map<Point2D<grid_t>, data_t>& corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(), corr_res = xi_res.getCorrelationFunction(), sigma_res = xi_res.getCorrelationError();
 
   comp_corr = 0;
   comp_corr_string = "";
-  for (uint i=0; i<corr_res.size(); i++) {
-    if (corr(i) + sigma(i) < corr_res(i) - sigma_res(i)) {
+  for (std::map<Point2D<grid_t>, data_t>::const_iterator iter = corr.begin(); iter != corr.end(); iter++) {
+    if (iter->second + sigma.find(iter->first)->second < corr_res.find(iter->first)->second - sigma_res.find(iter->first)->second) {
       comp_corr++;
       comp_corr_string += "+";
     }
-    else if (corr(i) - sigma(i) > corr_res(i) + sigma_res(i)) {
+    else if (iter->second - sigma.find(iter->first)->second > corr_res.find(iter->first)->second + sigma_res.find(iter->first)->second) {
       comp_corr--;
       comp_corr_string += "-";
     }

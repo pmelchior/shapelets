@@ -31,7 +31,8 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
   } 
   else if (ShapeLensConfig::NOISEMODEL == "COVARIANCE") {
     noise = 2;
-    V_ = obj.getPixelCovarianceMatrix().invert(); 
+    V_.setCovarianceMatrix(obj.getCorrelationFunction(),obj.getGrid());
+    V_ = V_.invert();
   }
   else if (ShapeLensConfig::NOISEMODEL == "POISSONIAN") {
     noise = 3;

@@ -62,11 +62,19 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   fits_movabs_hdu(fptr, 2, &hdutype, &status);
   IO::readFITSImage(fptr, segMap.accessGrid(), segMap);
 
-  // check if there is 2nd extHDU: the weight map
+  // check if there is 2nd extHDU: the weight map or correlation
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
-    history << " and weight map";
-    Grid weightgrid;
-    IO::readFITSImage(fptr, weightgrid, weight);
+    std::string extname;
+    IO::readFITSKeywordString(fptr, "EXTNAME", extname);
+    if (extname == "WEIGTH") {
+      history << " and weight map";
+      Grid weightgrid;
+      IO::readFITSImage(fptr, weightgrid, weight);
+    } else if (extname == "CORRELATION") {
+      NumMatrix<data_t> corr;
+      IO::readFITSImage(fptr, corr);
+      xi = CorrelationFunction(corr);
+    }
   }
   history << std::endl;
 
@@ -109,6 +117,9 @@ void Object::save(std::string filename) {
   //if weight map provided, save it too
   if (weight.size() != 0)
     status = IO::writeFITSImage(outfptr,grid,weight,"WEIGHT");
+  //if correlationFunction is provided, save it
+  if (xi.getCorrelationFunction().size() > 0)
+    status = IO::writeFITSImage(outfptr,xi.getCorrelationMatrix(),"CORRELATION");
 
   status = IO::closeFITSFile(outfptr);
 }
@@ -274,14 +285,6 @@ const SegmentationMap& Object::getSegmentationMap() const {
 
 SegmentationMap& Object::accessSegmentationMap() {
   return segMap;
-}
-
-const PixelCovarianceMatrix& Object::getPixelCovarianceMatrix() const {
-  return cov;
-}
-
-PixelCovarianceMatrix& Object::accessPixelCovarianceMatrix() {
-  return cov;
 }
 
 const CorrelationFunction& Object::getCorrelationFunction() const {

@@ -82,160 +82,19 @@ data_t PixelCovarianceMatrix::operator()(unsigned int i, unsigned int j) const {
 }
 
 
-void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid, History& hist) {
-  hist << "# Reading correlation function:" << std::endl;
-  const NumVector<data_t>& corr = xi.getCorrelationFunction();
-  const NumVector<data_t>& distance = xi.getDistances();
-  const NumVector<data_t>& sigma = xi.getCorrelationError();
-  if (corr.size() == 0) {
-    std::cout << "PixelCovarianceMatrix: correlation function has size 0" << std::endl;
-    std::terminate();
-  }
-  // print correlation function in a nice way
-  hist << "# dist\tcorr\t\t +- sigma" << std::endl;
-  char diststr[10];
-  char corrstr[20];
-  for (int i=0; i < corr.size(); i++) {
-    sprintf(diststr,"%1.2f",distance(i)); 
-    sprintf(corrstr,"%1.2e\t +- %1.2e",corr(i),sigma(i));
-    hist << "# "+std::string(diststr)+"\t"+std::string(corrstr) << std::endl;
-  }
-
-  // the bandwidth depends on the values of the correlation function
-  // for distances larger than 0.
-  // use 2% of the maximum (distance 0) value as threshold, or the information content 
-  // of the correlation function to decide what is necessary for proper description
+void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid) {
+  const std::map<Point2D<grid_t>, data_t>& corr = xi.getCorrelationFunction();
+  const std::map<Point2D<grid_t>, data_t>& sigma = xi.getCorrelationError();
   uint N1 = grid.getSize(0);
-  // effectively zero pixel correlation
-  if (corr.size() == 1 || corr(1) < 0.02*corr(0)) {
-    bandwidth = 1;
-    hist << "# Restricting covariance matrix to 1 band: corr(r>0) = 0" << std::endl;
-    setBandwidth(bandwidth);
-    offset(0) = 0;
-    entry(0) = corr(0);
-  }
-  // include all pixels with distance 1
-  else if (corr.size() >= 3 && corr(2) < 0.02*corr(0)) {
-    bandwidth = 5;
-    hist << "# Restricting covariance matrix to 5 band: corr(r>1) = 0" << std::endl;
-    setBandwidth(bandwidth);
-    offset(0) = -N1;
-    offset(1) = -1;
-    offset(2) = 0;
-    offset(3) = 1;
-    offset(4) = N1;
-    entry(2) = corr(0);
-    entry(0) = entry(1) = entry(3) = entry(4) = corr(1);
-  }
-  // include now also top-right/top-left/bottom-right/bottom-left neighbor: 3x3 box
-  else if (corr.size() == 3 || corr(3) < 0.02*corr(0)){
-    bandwidth = 9;
-    hist << "# Restricting covariance matrix to 9 bands: corr(r>=2) = 0" << std::endl;
-    setBandwidth(bandwidth);
-    offset(0) = -N1-1;
-    offset(1) = -N1;
-    offset(2) = -N1+1;
-    offset(3) = -1;
-    offset(4) = 0;
-    offset(5) = 1;
-    offset(6) = N1-1;
-    offset(7) = N1;
-    offset(8) = N1+1;
-    entry(0) = entry(2) = entry(6) = entry(8) = corr(2);
-    entry(1) = entry(3) = entry(5) = entry(7) = corr(1);
-    entry(4) = corr(0);
-  }
-  // distance = 2 included
-  else if (corr.size() >= 6 && corr(4) < 0.02*corr(0)) {
-    bandwidth = 13;
-    hist << "# Restricting covariance matrix to 13 bands: corr(r>2) = 0" << std::endl;
-    setBandwidth(bandwidth);
-    offset(0) = -2*N1;
-    offset(1) = -N1-1;
-    offset(2) = -N1;
-    offset(3) = -N1+1;
-    offset(4) = -2;
-    offset(5) = -1;
-    offset(6) = 0;
-    offset(7) = 1;
-    offset(8) = 2;
-    offset(9) = N1-1;
-    offset(10) = N1;
-    offset(11) = N1+1;
-    offset(12) = 2*N1;
-    entry(0) = entry(4) = entry(8) = entry(12) = corr(3);
-    entry(1) = entry(3) = entry(9) = entry(11) = corr(2);
-    entry(2) = entry(5) = entry(7) = entry(10) = corr(1);
-    entry(6) = corr(0);
-  }
-  // distance = sqrt(5) included
-  else if (corr.size() >= 6 && corr(5) < 0.02*corr(0)) {
-    bandwidth = 21;
-    hist << "# Restricting covariance matrix to 21 bands: corr(r>sqrt(5)) = 0" << std::endl;
-    setBandwidth(bandwidth);
-    offset(0) = -2*N1-1;
-    offset(1) = -2*N1;
-    offset(2) = -2*N1+1;
-    offset(3) = -N1-2;
-    offset(4) = -N1-1;
-    offset(5) = -N1;
-    offset(6) = -N1+1;
-    offset(7) = -N1+2;
-    offset(8) = -2;
-    offset(9) = -1;
-    offset(10) = 0;
-    offset(11) = 1;
-    offset(12) = 2;
-    offset(13) = N1-2;
-    offset(14) = N1-1;
-    offset(15) = N1;
-    offset(16) = N1+1;
-    offset(17) = N1+2;
-    offset(18) = 2*N1-1;
-    offset(19) = 2*N1;
-    offset(20) = 2*N1+1;
-    entry(0) = entry(2) = entry(3) = entry(7) = entry(13) = entry(17) = entry(18) = entry(20) = corr(4);
-    entry(1) = entry(8) = entry(12) = entry(19) = corr(3);
-    entry(4) = entry(6) = entry(14) = entry(16) = corr(2);
-    entry(5) = entry(9) = entry(11) = entry(15) = corr(1);
-    entry(10) = corr(0);
-  }
-  // include all pixels in a box of 5x5
-  else {
-    bandwidth = 25;
-    hist << "# Restricting covariance matrix to 25 bands: corr(r>=3)) = 0" << std::endl;
-    setBandwidth(bandwidth);
-    offset(0) = -2*N1-2;
-    offset(1) = -2*N1-1;
-    offset(2) = -2*N1;
-    offset(3) = -2*N1+1;
-    offset(4) = -2*N1+2;
-    offset(5) = -N1-2;
-    offset(6) = -N1-1;
-    offset(7) = -N1;
-    offset(8) = -N1+1;
-    offset(9) = -N1+2;
-    offset(10) = -2;
-    offset(11) = -1;
-    offset(12) = 0;
-    offset(13) = 1;
-    offset(14) = 2;
-    offset(15) = N1-2;
-    offset(16) = N1-1;
-    offset(17) = N1;
-    offset(18) = N1+1;
-    offset(19) = N1+2;
-    offset(20) = 2*N1-2;
-    offset(21) = 2*N1-1;
-    offset(22) = 2*N1;
-    offset(23) = 2*N1+1;
-    offset(24) = 2*N1+2;
-    entry(0) = entry(4) = entry(20) = entry(24) = corr(5);
-    entry(1) = entry(3) = entry(5) = entry(9) = entry(15) = entry(19) = entry(21) = entry(23) = corr(4);
-    entry(2) = entry(10) = entry(14) = entry(22) = corr(3);
-    entry(6) = entry(8) = entry(16) = entry(18) = corr(2);
-    entry(7) = entry(11) = entry(13) = entry(17) = corr(1);
-    entry(12) = corr(0);
+  bandwidth = corr.size();
+  offset.resize(bandwidth);
+  entry.resize(bandwidth);
+  uint band = 0;
+
+  for (std::map<Point2D<grid_t>, data_t>::const_iterator iter = corr.begin(); iter !=corr.end(); iter++) {
+    offset(band) = (iter->first)(0) + (iter->first)(1)*N1;
+    entry(band) = iter->second;
+    band++;
   }
 }
 
@@ -269,8 +128,8 @@ PixelCovarianceMatrix PixelCovarianceMatrix::invert() const {
   else {
     uint N = GSL_MAX_INT(10,offset.max())*5;
     if (N%2==1) N++; // ensure that divides by 2
-    NumMatrix<data_t> M = getMatrix(N).svd_invert();
-
+    NumMatrix<data_t> M = getMatrix(N).invert();
+ 
     int center = N/2;
     data_t max = fabs(M(center,center));
     uint inv_bandwidth = 0;

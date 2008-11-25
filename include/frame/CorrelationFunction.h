@@ -9,9 +9,28 @@
 #include <frame/Grid.h>
 
 /// Class for computing and storing the pixel correlation function.
-/// For computing the correlation function \f$\xi_{ij} = \langle I(x_i) I(x_j)\rangle\f$
-/// it is assumed that the pixel correlation is isotropic, thus \f$\xi_{ij} = \xi(r)\f$ with
-/// \f$r = |x_i-x_j|\f$.
+/// The pixel correlation function \f$\xi\f$ is defined as
+/// \f[\xi_{\vec\Delta} \equiv N_{\vec\Delta}^{-1}\sum_{i,j}[I(\vec{x}_i) I(\vec{x}_j)]\,\f]
+/// where \f$N_{\vec\Delta}\f$ denotes the number of pixels pairs 
+/// considered for the given displacement vector \f$\vec{\Delta}\equiv \vec{x}_i - \vec{x}_j\f$.\n
+/// This is also applicable for non-isotropic noise correlations.\n\n
+/// \b Example
+/// \code
+/// Frame* f = new Frame(filename);
+/// f->subtractBackground();
+/// f->findObjects();
+///
+/// CorrelationFunction corr(*f,f->getSegmentationMap(),5,true);
+/// corr.applyThreshold(2);
+/// const std::map<Point2D<grid_t>, data_t>& xi = corr.getCorrelationFunction();
+/// for (std::map<Point2D<grid_t>, data_t>::const_iterator iter = xi.begin(); iter != xi.end(); iter++)
+///   std::cout << iter->first << "\t" << iter->second << std::endl;
+/// ...
+///  delete f;
+/// \endcode
+/// This would open a file, detect all objects inside and use the pixel data
+/// plus the segmentation to compute the correlation function only pixels
+/// which are not considered as object pixels.
 
 class CorrelationFunction {
  public:
@@ -21,40 +40,37 @@ class CorrelationFunction {
   /// The SegmentationMap is used to mask pixels with <tt>segMap(i)!=0</tt>,
   /// unless <tt>mask=0</tt>.\n
   /// Since correlation is expected only on small scales, the averging is done in a
-  /// box of area <tt>(2*size+1)^2</tt> centered on each pixel.
-  CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, unsigned int size = 2, bool mask=1);
-  /// Constructor for computing the correlation function from an NumVector.
-  /// The correlation function is computed on all pixels of <tt>data</tt>.\n
-  /// Since correlation is expected only on small scales, the averging is done in a
-  /// box of area <tt>(2*size+1)^2</tt> centered on each pixel.
-  CorrelationFunction (const NumVector<data_t>& data, const Grid& grid, unsigned int size = 2);
+  /// box of area <tt>(2*maxLength+1)^2</tt> centered on each pixel.
+  CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, int maxLength = 2, bool mask=true);
+  CorrelationFunction (const NumVector<data_t>& data, const Grid& grid, int size = 2);
+  /// Constructor from a correlation matrix;
+  /// \p corr must have the layout used by getCorrelationMatrix().
+  CorrelationFunction (const NumMatrix<data_t>& corr);
   /// Copy constructor.
   void operator= (const CorrelationFunction& xi);
-  /// Get correlation function \f$\xi(r)\f$.
-  /// This is the mean of the product of pixel values,
-  /// \f$\xi(r) = N^{-1}\sum_{i,j}[I(x_i) I(x_j)]\f$ with \f$|x_i-x_j|=r\f$; \f$N(r)\f$
-  /// denotes the number of pixels pairs considered.\n
-  /// The vector of distances \f$r\f$ is provided by getDistances().
-  const NumVector<data_t>& getCorrelationFunction() const;
-  /// Access correlation function \f$\xi(r)\f$.
-  NumVector<data_t>& accessCorrelationFunction();
-  /// Get distances \f$r\f$.
-  const NumVector<data_t>& getDistances() const;
-  /// Access distances \f$r\f$.
-  NumVector<data_t>& accessDistances();
-  /// Get the error of the correlation function.
+  /// Get correlation function \f$\xi\f$ as matrix.
+  /// Returns a <tt>(2*maxLength+1)^2</tt> matrix, where the indices encode
+  /// the spatial information of \f$\vec\Delta\f$.
+  /// The pixel with \f$\xi_{\vec 0}\f$ is in the center.
+  NumMatrix<data_t> getCorrelationMatrix() const;
+  /// Get correlation function \f$\xi\f$.
+  const std::map<Point2D<grid_t>, data_t>& getCorrelationFunction() const;
+  /// Get the error \f$\sigma(\xi)\f$ of the correlation function.
   /// The error provided here is the standard deviation of the mean of the correlation
-  /// at the considered distances, 
-  /// \f$\Delta\xi(r) = \bigl[\sqrt{N(r)(N(r)-1)}\bigr]^{-1}\bigl[\sum_{i,j}{[I(x_i) I(x_j)-\xi(r)]^2}\bigr]^{\frac{1}{2}}\f$ 
-  /// with \f$|x_i-x_j|=r\f$; \f$N(r)\f$ denotes the number of pixels pairs considered.
-  const NumVector<data_t>& getCorrelationError() const;
-  /// Access the error of the correlation function.
-  NumVector<data_t>& accessCorrelationError();
-  
+  /// at the considered displacements, 
+  /// \f$\sigma(\xi)_{\vec\Delta} = \bigl[\sqrt{N(N-1)}\bigr]^{-1}\bigl[\sum_{i,j}{[I(\vec{x}_i) I(\vec{x}_j)-\xi_{\vec\Delta}]^2}\bigr]^{\frac{1}{2}}\f$ 
+  /// with  \f$\vec\Delta\f$ and \f$N_{\vec\Delta}\f$ as defined above.
+  const std::map<Point2D<grid_t>, data_t>& getCorrelationError() const;
+  /// Apply significance threshold to entries of \f$\xi\f$.
+  /// Keep only entries, where \f$\xi_i \geq \tau \sigma(\xi)_i\f$.
+  void applyThreshold(data_t tau);
+  /// Get maximal length used for constructing \f$\xi\f$.
+  unsigned int getMaxLength() const;
  private:
-  NumVector<data_t> xi,sigma,dist;
-  unsigned int size;
-  void makeIndexSetDistances(std::map<unsigned int, unsigned int>& index);
+  std::map<Point2D<grid_t>, data_t> xi, sigma;
+  std::map<Point2D<grid_t>, unsigned int> num;
+  int size;
+  void setPoints();
 };
 
 #endif

@@ -16,7 +16,7 @@
 
 int main(int argc, char *argv[]) {
   // read in necessary information from command line
-  TCLAP::CmdLine cmd("Decompose FITS file into shapelets", ' ', "0.4");
+  TCLAP::CmdLine cmd("Decompose FITS file into shapelets", ' ', "0.5");
   TCLAP::UnlabeledValueArg<std::string> input("file","FITS file to analyze",true,"","string", cmd);
   TCLAP::ValueArg<std::string> prefix("p","prefix","Prefix of SIF files",true,"","string", cmd);
   TCLAP::ValueArg<std::string> config("c","config","ShapeLens configuration file",false,"","string", cmd);
@@ -54,7 +54,25 @@ int main(int argc, char *argv[]) {
   // extracted below.
   if (segmap.isSet())
     f->getSegmentationMap().save(segmap.getValue());    
-    
+  
+  // if noisemodel is COVARIANCE: measure pixel correlations
+  // and construct pixel covariance matrix to store with objects
+  CorrelationFunction corr;
+  const std::map<Point2D<grid_t>, data_t>& xi = corr.getCorrelationFunction();
+  unsigned int corr_length = 1, sig_pixels;
+  if (ShapeLensConfig::NOISEMODEL == "COVARIANCE") {
+    corr = CorrelationFunction(*f,f->getSegmentationMap(),corr_length,true);
+    sig_pixels = xi.size();
+    corr.applyThreshold(2); // cut entries in xi which are below 2 sigma
+    // continue until some entries go below threshold
+    while (sig_pixels == xi.size()) { 
+      corr_length++;
+      corr = CorrelationFunction(*f,f->getSegmentationMap(),corr_length,true);
+      sig_pixels = xi.size();
+      corr.applyThreshold(2);
+    }
+  }
+
   // if required: save a file which lists all stored SIF files
   std::ofstream listfile;
   if (list.isSet())
@@ -72,6 +90,9 @@ int main(int argc, char *argv[]) {
     Object obj(id);
     // "cut out" the object from whole frame and put it into Object obj
     f->fillObject(obj);
+    // add correlation function and pixel covariance if demanded
+    if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
+      obj.accessCorrelationFunction() = corr;
     // dismiss objects with a flag set from detection/segmentation process
     //if ((*iter).second.FLAGS == 0) {
 

@@ -4,7 +4,6 @@
 #include <NumVector.h>
 #include <NumMatrix.h>
 #include <Typedef.h>
-#include <History.h>
 #include <frame/SegmentationMap.h>
 #include <frame/CorrelationFunction.h>
 
@@ -12,11 +11,8 @@
 /// 
 /// This class provides means to effectively store and work with pixel covariance matrices.
 /// It is assumed here that the matrices are banded and the entries on each band are 
-/// constant (which is true in the case of <tt>GAUSSIAN</tt> noise).
+/// constant (which is true in the case of correlated Gaussian noise).
 /// 
-/// \todo
-/// - implement non-constant entries
-/// - exploit symmetry if present
 
 class PixelCovarianceMatrix {
  public:
@@ -30,7 +26,7 @@ class PixelCovarianceMatrix {
   /// It's assumed that \f$\xi(r\geq2)\approx 0\f$, which is true for most images, 
   /// such that the maximum bandwidth is limited to 9 (the pixel itself and his 
   /// 8 neighbors).
-  void setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid, History& history);
+  void setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid);
   /// Get the bandwidth of the covariance matrix.
   /// <tt>bandwidth</tt> is the number of bands in the matrix with values different from 0.
   unsigned int getBandwidth() const ;

@@ -23,6 +23,15 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
   template <class R> void operator=( Base_vector& r) {
     Base_vector::operator=(r);
   }
+  // comparison operator for sorted containers of the STL
+  // 2nd dimension first ensures efficient lookup for images
+  template <class R>
+    bool operator<(const Point2D<R>& b) const {
+    if (Base_vector::operator()(1) < b(1) || (Base_vector::operator()(1) == b(1) && Base_vector::operator()(0) < b(0)))
+      return true;
+    else
+      return false;
+  }
 };
 
 #endif

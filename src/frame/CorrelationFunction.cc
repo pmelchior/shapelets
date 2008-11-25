@@ -6,33 +6,29 @@ typedef unsigned int uint;
 CorrelationFunction::CorrelationFunction () {
 }
 
-CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, uint insize, bool mask) {
-  size = insize;
-  uint x,y,x1,y1,i;
-
-  std::map<uint, uint> index;
-  makeIndexSetDistances(index);
-  uint length = index.size();
-
-  xi.resize(length);
-  sigma.resize(length); // dist has been resized by makeIndexSetDistances()
-  NumVector<uint> num(length);
-
-
+CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, int size, bool mask) :
+  size(size) {
+  int x,y,x1,y1,i,j;
+  Point2D<grid_t> p;
+  setPoints();
+  const Grid& grid = im.getGrid();
   int axsize0 = im.getSize(0), axsize1 = im.getSize(1);
+
+  // 1) compute mean of correlation
   for (i =0; i < im.size(); i++) {
     // choose only noise pixels
-    if (!mask || segMap(i) <= 0) {
-      im.getGrid().getCoords(i,x,y);
+    if (!mask || segMap(i) == 0) {
+      grid.getCoords(i,x,y);
       for (x1=x-size; x1<= x+size; x1++) {
 	for (y1=y-size; y1<= y+size; y1++) {
 	  if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
-	    uint j = im.getGrid().getPixel(x1,y1);
+	    j = grid.getPixel(x1,y1);
 	    // again: choose only noise pixels
-	    if (!mask || segMap(j) <= 0) {
-	      uint dist = (x1-x)*(x1-x)+(y1-y)*(y1-y);
-	      xi(index[dist]) += im(i)*im(j);
-	      num(index[dist])++;
+	    if (!mask || segMap(j) == 0) {
+	      p(0) = x1-x;
+	      p(1) = y1-y;
+	      xi[p] += im(i)*im(j);
+	      num[p]++;
 	    }
 	  }
 	}
@@ -40,24 +36,27 @@ CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const Segment
     }
   }
   // normalize values by numbers of pixels counted per entry
-  for (i=0; i<length; i++) {
-    if (num(i) > 0)
-      xi(i) /= num(i);
+  std::map<Point2D<grid_t>, data_t>::iterator iter;
+  for (iter = xi.begin(); iter != xi.end(); iter++) {
+    uint n = num[iter->first];
+    if (n > 0)
+      iter->second /= n;
   }
 
-  // compute the variance
+  // 2) compute std of correlation given mean from above
   for (i =0; i < im.size(); i++) {
     // choose only noise pixels
-    if (!mask || segMap(i) <= 0) {
-      im.getGrid().getCoords(i,x,y);
+    if (!mask || segMap(i) == 0) {
+      grid.getCoords(i,x,y);
       for (x1=x-size; x1<= x+size; x1++) {
 	for (y1=y-size; y1<= y+size; y1++) {
 	  if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
-	    uint j = im.getGrid().getPixel(x1,y1);
+	    j = grid.getPixel(x1,y1);
 	    // again: choose only noise pixels
-	    if (!mask || segMap(j) <= 0) {
-	      uint dist = (x1-x)*(x1-x)+(y1-y)*(y1-y);
-	      sigma(index[dist]) += gsl_pow_2(xi(index[dist]) - im(i)*im(j));
+	    if (!mask || segMap(j) == 0) {
+	      p(0) = x1-x;
+	      p(1) = y1-y;
+	      sigma[p] += gsl_pow_2(xi[p] - im(i)*im(j));
 	    }
 	  }
 	}
@@ -65,111 +64,137 @@ CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const Segment
     }
   }
   // normalize values by numbers of pixels counted per entry
-  for (i=0; i<length; i++) {
-    if (num(i) > 0)
-      sigma(i) = sqrt(sigma(i)/(num(i)*(num(i) - 1)));
+  for (iter = sigma.begin(); iter != sigma.end(); iter++) {
+    uint n = num[iter->first];
+    if (n > 0)
+      iter->second = sqrt((iter->second)/(n*(n-1)));
   }
 }
 
-// same as above but with out segmentation map;
-// this runs over all data pixels.
-CorrelationFunction::CorrelationFunction (const NumVector<data_t>& data, const Grid& grid, uint insize) {
-  size = insize;
-  uint x,y,x1,y1,i;
+CorrelationFunction::CorrelationFunction (const NumVector<data_t>& data, const Grid& grid, int size) :
+  size(size) {
+  int x,y,x1,y1,i,j;
+  Point2D<grid_t> p;
+  setPoints();
+  grid_t startx = grid.getStartPosition(0), starty = grid.getStartPosition(1),
+    stopx = grid.getStopPosition(0), stopy = grid.getStopPosition(1);
 
-  std::map<uint, uint> index;
-  makeIndexSetDistances(index);
-  uint length = index.size();
-
-  xi.resize(length);
-  sigma.resize(length); // dist has been resized by makeIndexSetDistances()
-  NumVector<uint> num(length);
-
-  int axsize0 = grid.getSize(0), axsize1 = grid.getSize(1);
-  for (i =0; i < grid.size(); i++) {
+  // 1) compute mean of correlation
+  for (i =0; i < data.size(); i++) {
     grid.getCoords(i,x,y);
     for (x1=x-size; x1<= x+size; x1++) {
       for (y1=y-size; y1<= y+size; y1++) {
-	if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
-	  uint j = grid.getPixel(x1,y1);
-	  uint dist = (x1-x)*(x1-x)+(y1-y)*(y1-y);
-	  xi(index[dist]) += data(i)*data(j);
-	  num(index[dist])++;
+	if (x1 >= startx && x1 < stopx && y1 >= starty && y1 < stopy) {
+	  j = grid.getPixel(x1,y1);
+	  p(0) = x1-x;
+	  p(1) = y1-y;
+	  xi[p] += data(i)*data(j);
+	  num[p]++;
 	}
       }
     }
   }
   // normalize values by numbers of pixels counted per entry
-  for (i=0; i<length; i++) {
-    if (num(i) > 0)
-      xi(i) /= num(i);
+  std::map<Point2D<grid_t>, data_t>::iterator iter;
+  for (iter = xi.begin(); iter != xi.end(); iter++) {
+    uint n = num[iter->first];
+    //std::cout << iter->first << "\t" << iter->second << "\t" << n << std::endl;
+    if (n > 0)
+      iter->second /= n;
   }
 
-  // compute the variance
-  for (i =0; i < grid.size(); i++) {
+  // 2) compute std of correlation given mean from above
+  for (i =0; i < data.size(); i++) {
     grid.getCoords(i,x,y);
     for (x1=x-size; x1<= x+size; x1++) {
       for (y1=y-size; y1<= y+size; y1++) {
-	if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
-	  uint j = grid.getPixel(x1,y1);
-	  uint dist = (x1-x)*(x1-x)+(y1-y)*(y1-y);
-	  sigma(index[dist]) += gsl_pow_2(xi(index[dist]) - data(i)*data(j));
+	if (x1 >= startx && x1 < stopx && y1 >= starty && y1 < stopy) {
+	  j = grid.getPixel(x1,y1);
+	  p(0) = x1-x;
+	  p(1) = y1-y;
+	  sigma[p] += gsl_pow_2(xi[p] - data(i)*data(j));
 	}
       }
     }
   }
   // normalize values by numbers of pixels counted per entry
-  for (i=0; i<length; i++) {
-    if (num(i) > 0)
-      sigma(i) = sqrt(sigma(i)/(num(i)*(num(i) - 1)));
+  for (iter = sigma.begin(); iter != sigma.end(); iter++) {
+    uint n = num[iter->first];
+    if (n > 0)
+      iter->second = sqrt((iter->second)/(n*(n-1)));
+  }
+}
+
+CorrelationFunction::CorrelationFunction(const NumMatrix<data_t>& corr)  {
+  if (size%2 != 1) {
+    std::cerr << "CorrelationFunction: correlation matrix must have odd dimension" << std::endl;
+    std::terminate();
+  }
+  size = (corr.getColumns() - 1)/2;
+  Point2D<grid_t> p;
+  int i,j;
+  for (int i=0; i < corr.getRows(); i++) {
+    for (int j =0; j < corr.getColumns(); j++) {
+      p(0) = i - size;
+      p(1) = j - size;
+      xi[p] = corr(i,j);
+      sigma[p] = 0;
+    }
   }
 }
 
 void CorrelationFunction::operator= (const CorrelationFunction& xi2) {
   xi = xi2.xi;
-  dist = xi2.dist;
   sigma = xi2.sigma;
   size = xi2.size;
 }
 
-const NumVector<data_t>& CorrelationFunction::getCorrelationFunction() const {
+NumMatrix<data_t> CorrelationFunction::getCorrelationMatrix() const {
+  NumMatrix<data_t> corr(2*size+1, 2*size+1);
+  std::map<Point2D<grid_t>, data_t>::const_iterator iter;
+  int i,j;
+  for (iter = xi.begin(); iter != xi.end(); iter++) {
+    i = iter->first(0) + size;
+    j = iter->first(1) + size;
+    corr(i,j) = iter->second;
+  }
+  return corr;
+}
+
+const std::map<Point2D<grid_t>, data_t>& CorrelationFunction::getCorrelationFunction() const {
   return xi;
 }
-NumVector<data_t>& CorrelationFunction::accessCorrelationFunction() {
-  return xi;
-}
-
-const NumVector<data_t>& CorrelationFunction::getDistances() const {
-  return dist;
-}
-
-NumVector<data_t>& CorrelationFunction::accessDistances() {
-  return dist;
-}
-
-const NumVector<data_t>& CorrelationFunction::getCorrelationError() const {
+const std::map<Point2D<grid_t>, data_t>& CorrelationFunction::getCorrelationError() const {
   return sigma;
-}
-
-NumVector<data_t>& CorrelationFunction::accessCorrelationError() {
-  return sigma;
-}
-
-// setup map distance^2 -> vector index
-// both distances and indices are ordered
-void CorrelationFunction::makeIndexSetDistances(std::map<unsigned int, unsigned int>& index) {
-  // first setup distances: creates a ordered list of keys, possible
-  // distances between two pixels (smaller than rmax)
-  for (uint i=0; i<=size; i++)
-    for (uint j=i; j<=size; j++)
-      index[i*i + j*j] = 0;
-  // set keys to sequences of vector indices between 0 and length
-  uint n=0;
-  dist.resize(index.size());
-  for( std::map<uint,uint>::iterator iter = index.begin(); iter != index.end(); iter++ ) {
-    (*iter).second = n;
-    dist(n) = sqrt((*iter).first);
-    n++;
-  }   
 }
   
+void CorrelationFunction::setPoints() {
+  Point2D<grid_t> p;
+  for (int i = -size; i <= size; i++) {
+    for (int j = -size; j <= size; j++) {
+      p(0) = i;
+      p(1) = j;
+      xi[p] = sigma[p] = 0;
+      num[p] = 0;
+    }
+  }
+}
+
+void CorrelationFunction::applyThreshold(data_t thresh) {
+  Point2D<grid_t> p;
+  // don't use iterators here because the erase messes them up
+  for (int i = -size; i <= size; i++) {
+    for (int j = -size; j <= size; j++) {
+      p(0) = i;
+      p(1) = j;
+      if (xi[p] < thresh*sigma[p]) {
+	xi.erase(p);
+	sigma.erase(p);
+      }
+    }
+  }
+}
+
+unsigned int CorrelationFunction::getMaxLength() const {
+  return size;
+}

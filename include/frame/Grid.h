@@ -37,14 +37,14 @@ class GridT {
   /// Set the x and y coordinate from the pixel number.
   /// The coordinate system is defined such, that the left lower corder of the image
   /// has the coordinates (0,0) and each pixel has unit length.
-  void getCoords(unsigned int pixel, unsigned int& x, unsigned int& y) const;
+  void getCoords(unsigned int pixel, int& x, int& y) const;
   /// Get the pixel number from the x and y corrdinates.
-  unsigned int getPixel(unsigned int x, unsigned int y) const;
+  unsigned int getPixel(int x, int y) const;
   /// Get the pixel number of the neighbor pixel using image coordinates.
   /// Returns the pixel index or -1 if the pixel is outside the image area.\n
   /// The directions (0..8) go clockwise from top(1) to top-left(8); 
   /// direction 0 is the pixel itself.
-  int getNeighborPixel(unsigned int pixel, unsigned int x, unsigned int y, unsigned int direction) const;
+  int getNeighborPixel(unsigned int pixel, int x, int y, unsigned int direction) const;
   /// Get the pixel number of the neighbor pixel using its pixel number.
   int getNeighborPixel(unsigned int pixel, unsigned int direction) const;
 
@@ -127,18 +127,18 @@ inline unsigned int GridT<T>::size() const {
 }
 
 template <class T> 
-inline void GridT<T>::getCoords(unsigned int pixel, unsigned int& x, unsigned int& y) const {
+inline void GridT<T>::getCoords(unsigned int pixel, int& x, int& y) const {
   x = start0 + pixel%N0;
   y = start1 + pixel/N0;
 }
 
 template <class T> 
-inline unsigned int GridT<T>::getPixel(unsigned int x, unsigned int y) const {
-  return (unsigned int) x + y*N0;
+inline unsigned int GridT<T>::getPixel(int x, int y) const {
+  return (unsigned int) (x-start0) + (y-start1)*N0;
 }
 
 template <class T> 
-inline int GridT<T>::getNeighborPixel(unsigned int pixel, unsigned int x, unsigned int y, unsigned int direction) const {
+inline int GridT<T>::getNeighborPixel(unsigned int pixel, int x, int y, unsigned int direction) const {
   int index;
   switch(direction) {
   case 0: 
@@ -183,7 +183,7 @@ inline int GridT<T>::getNeighborPixel(unsigned int pixel, unsigned int x, unsign
 
 template <class T> 
 inline int GridT<T>::getNeighborPixel(unsigned int pixel, unsigned int direction) const {
-  uint x,y;
+  int x,y;
   getCoords(pixel,x,y);
   return getNeighborPixel(pixel,x,y,direction);
 }

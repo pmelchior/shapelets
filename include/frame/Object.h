@@ -90,10 +90,6 @@ class Object : public Image<data_t> {
   const SegmentationMap& getSegmentationMap() const;
   /// Access the segmentation map.
   SegmentationMap& accessSegmentationMap();
-  /// Get the pixel covariance matrix.
-  const PixelCovarianceMatrix& getPixelCovarianceMatrix() const;
-  /// Access the pixel covariance matrix.
-  PixelCovarianceMatrix& accessPixelCovarianceMatrix();
   /// Get the correlation function.
   const CorrelationFunction& getCorrelationFunction() const;
   /// Access the correlation function.
