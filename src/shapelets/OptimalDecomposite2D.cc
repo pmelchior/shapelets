@@ -217,7 +217,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 
     // depending on result of chi^2:
     // chisquare is smaller than 1: we've reached the goal
-    if (newChisquare <= 1) {
+    if (newChisquare <= 1 && newChisquare > 0) {
       optimalNMax = Decomposite2D::getNMax();
       history << "# Optimal decomposition order n_max = " << optimalNMax << endl;
       break;

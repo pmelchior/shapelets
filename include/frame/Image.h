@@ -52,6 +52,29 @@ class Image : public NumVector<T> {
   const NumVector<T>& getNumVector() const {
     return *this;
   }
+  /// Slice a sub-image, specified by edge-points \p P1 and \p P2.
+  Image<T> slice(const Point2D<grid_t>& P1, const Point2D<grid_t>& P2) const {
+    int xmin = P1(0), xmax = P2(0), ymin = P1(1), ymax = P2(1);
+    int axis0 = xmax-xmin;
+    Image<T> sub;
+    sub.resize((xmax-xmin)*(ymax-ymin));
+
+    // lop over all object pixels
+    for (int i =0; i < sub.size(); i++) {
+      // old coordinates derived from new pixel index i
+      int x = i%axis0 + xmin;
+      int y = i/axis0 + ymin;
+      if (x>=0 && x < Image::getSize(0) && y >= 0 && y < Image::getSize(1))
+	sub(i) = Image<T>::operator()(x,y);
+    }
+    sub.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    sub.filename = filename;
+    sub.history.setSilent();
+    sub.history << "# Slice from " << filename << " in the area (";
+    sub.history << xmin << "/" << ymin << ") -> (";
+    sub.history << xmax << "/" << ymax << ")" << std::endl;
+    return sub;
+  }
   /// Get axis size of the whole image in given direction.
   unsigned int getSize(bool direction) const {
     return grid.getSize(direction);
