@@ -59,8 +59,9 @@ void Catalog::read(string catfile) {
       so.XMAX = atoi(column[format.XMAX].c_str())-1;
       so.YMIN = atoi(column[format.YMIN].c_str())-1;
       so.YMAX = atoi(column[format.YMAX].c_str())-1;
-      so.XCENTROID = atof(column[format.XCENTROID].c_str())-1;
-      so.YCENTROID = atof(column[format.YCENTROID].c_str())-1;
+      // as our pixels are sampled at the pixel center, we need hal-pixel offsets
+      so.XCENTROID = atof(column[format.XCENTROID].c_str())-0.5;
+      so.YCENTROID = atof(column[format.YCENTROID].c_str())-0.5;
       so.FLUX = atof(column[format.FLUX].c_str());
       so.FLAGS = (unsigned char) atoi(column[format.FLAGS].c_str());
       if (present.test(9))
