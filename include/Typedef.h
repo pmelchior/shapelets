@@ -4,8 +4,10 @@
 // define floating point format for (almost) all data used in shaplens
 typedef double data_t;
 
-#include <frame/Grid.h>
+//#include <frame/Grid.h>
 typedef int grid_t; 
+template <class T> class GridT;
+
 typedef GridT<grid_t> Grid;
 
 #endif

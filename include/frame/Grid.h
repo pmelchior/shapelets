@@ -9,6 +9,7 @@
 /// a single change in the file \p Typedef.h is thus sufficient.
 
 #include <math.h>
+#include <Typedef.h>
 #include <frame/Point2D.h>
 
 template <class T>
@@ -21,9 +22,9 @@ class GridT {
   /// \f$N_0\ (N_1)\f$ steps of given \p stepsize into positive direction.
   GridT(T start0, T start1, T N0, T N1, T stepsize0 = 1, T stepsize1 = 1);
   /// Index operator for const GridT.
-  T operator() (unsigned int index, bool direction) const;
+  data_t operator() (unsigned int index, bool direction) const;
   /// Return the ith point as a Point2D.
-  Point2D<T> operator() (unsigned int index) const;
+  Point2D<data_t> operator() (unsigned int index) const;
   /// Return stepsize between grid points in given direction.
   T getStepsize(bool direction) const;
   /// Return starting position in given direction.
@@ -72,21 +73,21 @@ inline GridT<T>::GridT(T start0, T start1, T N0, T N1, T stepsize0, T stepsize1)
 }
 
 template <class T> 
-inline T GridT<T>::operator() (unsigned int index, bool direction) const {
+inline data_t GridT<T>::operator() (unsigned int index, bool direction) const {
   int offset;
   if (direction) {
     offset = index/N0;
-    return start1 + offset*stepsize1;
+    return start1 + offset*stepsize1 + 0.5;
   }
   else {
     offset = index%N0;
-    return start0 + offset*stepsize0;
+    return start0 + offset*stepsize0 + 0.5;
   }
 }
 
 template <class T> 
-inline Point2D<T> GridT<T>::operator() (unsigned int i) const {
-  return Point2D<T>(operator()(i,0),operator()(i,1));
+inline Point2D<data_t> GridT<T>::operator() (unsigned int i) const {
+  return Point2D<data_t>(operator()(i,0),operator()(i,1));
 }
 
 template <class T> 

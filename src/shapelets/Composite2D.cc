@@ -291,13 +291,13 @@ void Composite2D::makeShapeletMatrix() {
     data_t factor1, factor2;
     int x,y;
     for (x=0; x< N0; x++) {
-      x0_scaled = (grid(x,0) - xcentroid(0) + 0.5)/beta;
+      x0_scaled = (grid(x,0) - xcentroid(0))/beta;
       M0(0,x) = factor0*exp(-x0_scaled*x0_scaled/2);
       if (nmax > 0)
 	M0(1,x) = M_SQRT2*x0_scaled*M0(0,x);
     }
     for (y=0; y< N1; y++) {
-      x1_scaled = (grid(y*N0,1) - xcentroid(1) + 0.5)/beta;
+      x1_scaled = (grid(y*N0,1) - xcentroid(1))/beta;
       M1(0,y) = factor0*exp(-x1_scaled*x1_scaled/2);
       if (nmax > 0) 
 	M1(1,y) = M_SQRT2*x1_scaled*M1(0,y);
@@ -308,10 +308,10 @@ void Composite2D::makeShapeletMatrix() {
       factor1 = sqrt(1./(2*n));
       factor2 =sqrt((n-1.)/n); 
       for (x=0; x < N0; x++)
-	M0(n,x) = 2*(grid(x,0) - xcentroid(0) + 0.5)/beta*factor1*M0(n-1,x) 
+	M0(n,x) = 2*(grid(x,0) - xcentroid(0))/beta*factor1*M0(n-1,x) 
 	  - factor2*M0(n-2,x);
       for (y=0; y< N1; y++)
-	M1(n,y) = 2*(grid(y*N0,1) - xcentroid(1) + 0.5)/beta*factor1*M1(n-1,y) 
+	M1(n,y) = 2*(grid(y*N0,1) - xcentroid(1))/beta*factor1*M1(n-1,y) 
 	  - factor2*M1(n-2,y);
     }
     // now build tensor product of M0 and M1
