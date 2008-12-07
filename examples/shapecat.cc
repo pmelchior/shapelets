@@ -22,14 +22,36 @@ void ellipticity(const NumMatrix<data_t>& Q, data_t& e1, data_t& e2, data_t& e, 
 }
 
 int main(int argc, char *argv[]) {
-  TCLAP::CmdLine cmd("Compute various shape statistic based on shapelet coefficients", ' ', "0.3");
-  TCLAP::ValueArg<std::string> listArg("l","list","File that lists the SIF files",true,"","string", cmd);
+  TCLAP::CmdLine cmd("Compute various shape statistic based on shapelet coefficients", ' ', "0.5");
+  TCLAP::ValueArg<std::string> listArg("l","list","File that lists the SIF files",true,"","string");
+  TCLAP::ValueArg<std::string> input("i","input","SIF file to analyze",true,"","string");
+  TCLAP::ValueArg<std::string> table("t","table","Table in DB to load SObjs (uses where is present)",true,"","string");
+  std::vector<TCLAP::Arg*> inputs;
+  inputs.push_back(&listArg);
+  inputs.push_back(&input);
+  inputs.push_back(&table);
+  cmd.xorAdd(inputs);
+  TCLAP::ValueArg<std::string> kernel("k","kernel","Deconvolve from this kernel SIF file",false,"","string",cmd);
+  TCLAP::ValueArg<std::string> where("w","where","Where statement to select SObjs in table",false,"","string",cmd);
   TCLAP::ValueArg<std::string> outputArg("o","output","Name of output file for shape catalog",false,"","string", cmd);
   cmd.parse( argc, argv );
 
   // open ensembles of SIF files
-  ShapeletObjectList sl(listArg.getValue());
+  ShapeletObjectList sl;
+  if (listArg.isSet())
+    sl = ShapeletObjectList(listArg.getValue());
+  else if (input.isSet())
+    sl.push_back(boost::shared_ptr<ShapeletObject>(new ShapeletObject(input.getValue())));
+  else {
+    ShapeletObjectDB db;
+    db.selectTable(table.getValue());
+    sl = db.load(where.getValue());
+  }
 
+  ShapeletObject sk;
+  if (kernel.isSet())
+    sk = ShapeletObject(kernel.getValue());
+  
   std::ofstream output;
   if (outputArg.isSet()) {
     output.open(outputArg.getValue().c_str(),std::ios::out);
@@ -42,6 +64,10 @@ int main(int argc, char *argv[]) {
   Point2D<data_t> scentroid;
   NumMatrix<data_t> Q(2,2);
   for (ShapeletObjectList::iterator iter = sl.begin(); iter != sl.end() ; iter++) {
+    // deconvolve if demanded
+    if (kernel.isSet())
+      (*iter)->deconvolve(sk.getCoeffs(), sk.getBeta());
+
     // get shapelet parameters used in decomposition
     beta = (*iter)->getBeta();
     nmax = (*iter)->getNMax();

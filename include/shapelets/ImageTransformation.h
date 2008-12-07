@@ -94,25 +94,27 @@ class ImageTransformation {
   void convolve(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, const NumMatrix<data_t>& convolutionMatrix, data_t beta_kernel, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Compute convolution matrix.
   /// cf. Paper I, eq. (52), and Paper II, sect. 3.1.\n
-  /// For tweaking issues, \p beta_convolved and \p nmax_convolved are treated as
-  /// free parameters (but must be handled with care).
-  NumMatrix<data_t> getConvolutionMatrix(const CoefficientVector<data_t>& cartesianCoeffs, const CoefficientVector<data_t>& kernelCoeffs, data_t beta, data_t beta_kernel, data_t beta_convolved, unsigned int nmax_convolved);
+  /// For tweaking issues, maximum orders and scale sizes of all objects are
+  /// configurable (but must be handled with care).
+  NumMatrix<data_t> getConvolutionMatrix(const CoefficientVector<data_t>& kernelCoeffs, unsigned int nmax_orig, unsigned int nmax_kernel, unsigned int nmax_convolved, data_t beta_orig, data_t beta_kernel, data_t beta_convolved);
 
   /// Deconvolve the image from a kernel.
-  /// The deconvolution keeps the maximum order constant, but lowers the scale size,
+  /// cf. Paper IV, sect. 3.1.\n
+  /// The deconvolution lowers the maximum order, \f$n_{max} \to n_{max}-n_{max}^\text{kernel}\f$, and the scale size,
   /// \f$\beta^2 \to \beta^2 - \bigl(\beta^\text{kernel}\bigr)^2\f$ 
   /// if \f$\beta>\beta^\text{kernel}\f$ or \f$\beta\to 0.1\f$ else.\n
   /// If \p covariance is given, the covariance matrix is updated. 
   /// If \p history is given, an appropriate statement is appended to it.
   void deconvolve(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Deconvolve the image from a kernel by applying the given \p deconvolutionMatrix.
-  /// See getDeconvolutionMatrix() and convolve().
+  /// See getDeconvolutionMatrix() and deconvolve().
   void deconvolve(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, const NumMatrix<data_t>& deconvolutionMatrix, data_t beta_kernel, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
-  /// Compute convolution matrix.
-  /// cf. Paper II, sect. 3.2.\n
-  /// The computed matrix is the inverse of getConvolutionMatrix() with
-  /// <tt> nmax_convolved = cartesianCoeffs.getNMax()</tt>.
-  NumMatrix<data_t> getDeconvolutionMatrix(const CoefficientVector<data_t>& cartesianCoeffs, const CoefficientVector<data_t>& kernelCoeffs, data_t beta, data_t beta_kernel, data_t beta_orig);
+  /// Compute deconvolution matrix.
+  /// cf. Paper IV, sect. 3.1 and deconvolve().\n
+  /// The computed matrix is the pseudo-inverse 
+  /// \f$\bigl(P^t P\bigr)^{-1} P^t\f$ of getConvolutionMatrix().\n
+  /// If \p covariance is given, it will be considered in the computation.
+  NumMatrix<data_t> getDeconvolutionMatrix(const CoefficientVector<data_t>& kernelCoeffs, unsigned int nmax_orig, unsigned int nmax_kernel, unsigned int nmax_convolved, data_t beta_orig, data_t beta_kernel, data_t beta_convolved, NumMatrix<data_t>* covariance = NULL);
 
   /// Change the scale size of the image by using rescaling relation.
   /// If \p covariance is given, the covariance matrix is updated. 

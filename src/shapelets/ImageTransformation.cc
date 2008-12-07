@@ -174,9 +174,7 @@ void ImageTransformation::brighten(CoefficientVector<data_t>& cartesianCoeffs, d
   }
 }
 
-NumMatrix<data_t> ImageTransformation::getConvolutionMatrix(const CoefficientVector<data_t>& cartesianCoeffs, const CoefficientVector<data_t>& kernelCoeffs, data_t beta_orig, data_t beta_kernel, data_t beta_convolved, unsigned int nmax_convolved) {
-  unsigned int nmax_kernel = kernelCoeffs.getNMax();
-  unsigned int nmax_orig = cartesianCoeffs.getNMax();
+NumMatrix<data_t> ImageTransformation::getConvolutionMatrix(const CoefficientVector<data_t>& kernelCoeffs, unsigned int nmax_orig, unsigned int nmax_kernel, unsigned int nmax_convolved, data_t beta_orig, data_t beta_kernel, data_t beta_convolved) {
   unsigned int nmax = GSL_MAX_INT(nmax_orig,nmax_convolved);
   nmax = GSL_MAX_INT(nmax_kernel,nmax);
   boost::multi_array<data_t,3> bt(boost::extents[nmax+1][nmax+1][nmax+1]);
@@ -195,9 +193,8 @@ NumMatrix<data_t> ImageTransformation::getConvolutionMatrix(const CoefficientVec
   
   // the 2D convolution tensor C_nml
   // the matrix->vector projection
-  IndexVectorCartesian  nVector_convolved(nmax_convolved);
+  IndexVectorCartesian  nVector_convolved(nmax_convolved), nVector_orig(nmax_orig);
   const IndexVector& nVector_kernel = kernelCoeffs.getIndexVector();
-  const IndexVector& nVector_orig = cartesianCoeffs.getIndexVector();
   int nCoeffs_orig = nVector_orig.getNCoeffs();
   int nCoeffs_kernel = nVector_kernel.getNCoeffs();
   int nCoeffs_convolved = nVector_convolved.getNCoeffs();
@@ -228,10 +225,10 @@ void ImageTransformation::convolve(CoefficientVector<data_t>& cartesianCoeffs, d
   int nmax_convolved = cartesianCoeffs.getNMax() + kernelCoeffs.getNMax();
 
   // construct convolution matrix
-  NumMatrix<data_t> P = getConvolutionMatrix(cartesianCoeffs,kernelCoeffs,beta,beta_kernel,beta_convolved,nmax_convolved);
+  NumMatrix<data_t> P = getConvolutionMatrix(kernelCoeffs,cartesianCoeffs.getNMax(),kernelCoeffs.getNMax(),nmax_convolved,beta,beta_kernel,beta_convolved);
   // perform the convolution
   cartesianCoeffs = P*cartesianCoeffs;
-  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
+  if (cov != NULL && cov->getRows() == P.getColumns())
     *cov = (P*(*cov))*P.transpose();
   beta = beta_convolved;
 }
@@ -241,15 +238,20 @@ void ImageTransformation::convolve(CoefficientVector<data_t>& cartesianCoeffs, d
     (*history) << "# Convolving image with kernel via given convolution matrix, beta = " << beta_kernel << endl;
   // perform the convolution
   cartesianCoeffs = P*cartesianCoeffs;
-  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
+  if (cov != NULL && cov->getRows() == P.getColumns())
     *cov = (P*(*cov))*P.transpose();
   beta = sqrt(beta*beta + beta_kernel*beta_kernel);
 } 
 
-NumMatrix<data_t> ImageTransformation::getDeconvolutionMatrix(const CoefficientVector<data_t>& cartesianCoeffs, const CoefficientVector<data_t>& kernelCoeffs, data_t beta, data_t beta_kernel, data_t beta_orig) {
-  // construct quadratic deconvolution matrix (does not truncate higher orders)
-  int nmax_convolved = cartesianCoeffs.getNMax();
-  return getConvolutionMatrix(cartesianCoeffs,kernelCoeffs,beta_orig,beta_kernel,beta,nmax_convolved).invert();
+NumMatrix<data_t> ImageTransformation::getDeconvolutionMatrix(const CoefficientVector<data_t>& kernelCoeffs, unsigned int nmax_orig, unsigned int nmax_kernel, unsigned int nmax_convolved, data_t beta_orig, data_t beta_kernel, data_t beta_convolved, NumMatrix<data_t>* cov) {
+  // construct pseudoinverse of convolution matrix
+  NumMatrix<data_t> P = getConvolutionMatrix(kernelCoeffs,nmax_orig,nmax_kernel,nmax_convolved,beta_orig,beta_kernel,beta_convolved);
+  //if (cov == NULL)
+  //return (P.transpose() * P).invert() * P.transpose();
+    //else {
+    NumMatrix<data_t> Pt = P.transpose() * (*cov);
+    return (Pt*P).invert()*Pt;
+    //} 
 }
 
 void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel, NumMatrix<data_t>* cov, History* history) {
@@ -261,10 +263,15 @@ void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs,
     beta_orig = sqrt(beta*beta - beta_kernel*beta_kernel);
   else
     beta_orig = 0.1;
-  NumMatrix<data_t> P_1 = getDeconvolutionMatrix(cartesianCoeffs,kernelCoeffs,beta,beta_kernel,beta_orig);
+  int nmax_orig = cartesianCoeffs.getNMax();
+//   if (cartesianCoeffs.getNMax() >= kernelCoeffs.getNMax())
+//     nmax_orig = cartesianCoeffs.getNMax() - kernelCoeffs.getNMax();
+//   else
+//     nmax_orig = 0;
+  NumMatrix<data_t> P_1 = getDeconvolutionMatrix(kernelCoeffs,nmax_orig,kernelCoeffs.getNMax(),cartesianCoeffs.getNMax(),beta_orig,beta_kernel,beta,cov);
   // perform the deconvolution
   cartesianCoeffs = P_1*cartesianCoeffs;
-  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
+  if (cov != NULL && cov->getRows() == P_1.getColumns())
     *cov = (P_1*(*cov))*P_1.transpose();
   beta = beta_orig;
 }
@@ -280,7 +287,7 @@ void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs,
     beta_orig = 0.1;
   // perform the deconvolution
   cartesianCoeffs = P_1*cartesianCoeffs;
-  if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
+  if (cov != NULL && cov->getRows() == P_1.getColumns())
     *cov = (P_1*(*cov))*P_1.transpose();
   beta = beta_orig;
 }

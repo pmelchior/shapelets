@@ -65,6 +65,7 @@ organized as a ShapeletObjectList.
 #include <shapelets/ShapeletObject.h>
 #include <shapelets/SIFFile.h>
 #include <shapelets/ShapeletObjectList.h>
+#include <shapelets/ShapeletObjectDB.h>
 
 #include <lensing/LensingEstimator.h>
 

@@ -56,7 +56,6 @@ int main(int argc, char *argv[]) {
     f->getSegmentationMap().save(segmap.getValue());    
   
   // if noisemodel is COVARIANCE: measure pixel correlations
-  // and construct pixel covariance matrix to store with objects
   CorrelationFunction corr;
   const std::map<Point2D<grid_t>, data_t>& xi = corr.getCorrelationFunction();
   unsigned int corr_length = 1, sig_pixels;

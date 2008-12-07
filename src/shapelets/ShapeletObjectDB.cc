@@ -97,8 +97,8 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   if (!exists) createTable();
   ostringstream query;
   query << setprecision(23); // maximum precision of FLOAT in MySQL
-  //query << "INSERT INTO `" << table << "` VALUES (" << sobj.getObjectID() << ",";
-  query << "INSERT INTO `" << table << "` VALUES ('',";
+  query << "INSERT INTO `" << table << "` VALUES (" << sobj.getObjectID() << ",";
+  //query << "INSERT INTO `" << table << "` VALUES ('',";
   query << sobj.getNMax() << "," << sobj.getBeta() << ",";
   query << sobj.getChiSquare() << "," << sobj.getFlags().to_ulong() << ",";
   const Grid& grid = sobj.getGrid();

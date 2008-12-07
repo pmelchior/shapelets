@@ -91,7 +91,6 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   // transforms obj into Composite2D *this
   OptimalDecomposite2D optimalDecomp(obj,*this);
   chisquare = optimalDecomp.getOptimalChiSquare();
-  
   // needs more testing before automatically used ...
   // correctCovarianceMatrix();
 
