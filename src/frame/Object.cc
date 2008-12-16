@@ -10,8 +10,7 @@ Object::Object(unsigned long inid) : Image<data_t>(), segMap() {
   flux = centroid(0) = centroid(1) = 0;
 }
 
-Object::Object (const Image<data_t>& base) {
-  *this = base;
+Object::Object (const Image<data_t>& base) : Image<data_t>(base), segMap() {
 }
 
 Object::Object(std::string objfile) : Image<data_t>(), segMap() {

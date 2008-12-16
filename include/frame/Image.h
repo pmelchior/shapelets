@@ -109,12 +109,12 @@ class Image : public NumVector<T> {
   History& accessHistory() {
     return history;
   }
-  //friend class IO;
+
  protected:
   Grid grid;
- private:
   std::string filename;
   History history;
+ private:
   void read() {
     fitsfile *fptr = IO::openFITSFile(filename);
     int status = IO::readFITSImage(fptr,grid,*this);
