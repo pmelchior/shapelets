@@ -3,6 +3,7 @@
 #define SHAPELETOBJECTDB_H
 
 #include <string>
+#include <Typedef.h>
 #include <shapelets/ShapeletObject.h>
 #include <shapelets/ShapeletObjectList.h>
 
@@ -106,6 +107,9 @@ class ShapeletObjectDB {
   /// This call requires the permission to execute a <tt>DROP TABLE</tt> statement.\n\n
   /// \b CAUTION: This call is irreversible.
   void dropTable();
+  /// Submit query to \p DB.
+  /// The call requires permissions to execute the specified statement.
+  void query(std::string query);
 
  private:
   std::string table;

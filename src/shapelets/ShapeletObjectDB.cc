@@ -297,6 +297,13 @@ void ShapeletObjectDB::checkForTable() {
   mysql_free_result(res);
 }
 
+void ShapeletObjectDB::query(std::string query) {
+  if (mysql_real_query(conn, query.c_str(),query.size())) {
+    cerr <<  mysql_error(conn) << endl;
+    terminate();
+  }
+}
+
 void ShapeletObjectDB::createTable() {
   string query = "CREATE TABLE `" + table + "` (";
   query += "`id` int(10) unsigned NOT NULL default '0' COMMENT 'object id',";
