@@ -221,7 +221,7 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
     memcpy(cv.c_array(),reinterpret_cast<data_t*>(row[16]),nCoeffs*sizeof(data_t));
     // check whether covariance matrix is stored
     if (row[17] != NULL) {
-      cov.resize(nCoeffs,nCoeffs);
+      cov = NumMatrix<data_t>(nCoeffs,nCoeffs); // quickly creates a matrix with zeros
       // cov is stored in either symmetric-packed format or compressed
       // into one number (first diagonal element)
       if (atoi(row[18]) == sizeof(data_t)) {// single element
