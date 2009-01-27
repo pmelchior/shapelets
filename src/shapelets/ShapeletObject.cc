@@ -108,9 +108,11 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
     flags[8+i] = decompFlags[i];
   }
   // since Composite2D::model ist correctly populated,
-  // we currently do not need Composite2D::M anymore, 
+  // we currently do not need Composite2D::M anymore (also Composite2D::Mint if present);
   // so we throw it away for saving space
   Composite2D::M.resize(0,0);
+  if (ShapeLensConfig::PIXEL_INTEGRATION)
+    Composite2D::MInt.resize(0,0);
   Composite2D::changeM = true;
 }  
 
