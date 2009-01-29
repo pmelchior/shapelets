@@ -5,26 +5,18 @@
 
 using namespace std;
 
-bool alwaysTrue(ShapeletObject& so) {
-  return 1;
-}
-
-data_t alwaysOne(ShapeletObject& so) {
-  return 1;
-}
-
 ShapeletObjectList::ShapeletObjectList() : vector<boost::shared_ptr<ShapeletObject> >() {
 }
 
 ShapeletObjectList::ShapeletObjectList(string filename) : vector<boost::shared_ptr<ShapeletObject> >() {
-  readListFile(filename,&alwaysTrue);
+  readListFile(filename,NULL,NULL);
 }
 
-ShapeletObjectList::ShapeletObjectList(string filename, bool (* selectionFunction) (ShapeletObject&)) : vector<boost::shared_ptr<ShapeletObject> >() {
-  readListFile(filename,selectionFunction);
+ShapeletObjectList::ShapeletObjectList(string filename, bool (* selectionFunction) (ShapeletObject&, void*), void* p) : vector<boost::shared_ptr<ShapeletObject> >() {
+  readListFile(filename,selectionFunction,p);
 }
 
-void ShapeletObjectList::readListFile(string filename, bool (* selectionFunction) (ShapeletObject&)) {
+void ShapeletObjectList::readListFile(string filename, bool (* selectionFunction) (ShapeletObject&, void*), void* p) {
   // open file with list of ShapeletObjects
   ifstream listfile (filename.c_str());
   if (listfile.fail()) {
@@ -35,18 +27,21 @@ void ShapeletObjectList::readListFile(string filename, bool (* selectionFunction
   string sifname;
   while(getline(listfile, sifname)) {
     boost::shared_ptr<ShapeletObject> safePointer (new ShapeletObject(sifname));
-    // if selectionFunction return 1 for this sobj,
+    // if there is a selectionFunction and it returns 1 for this sobj,
     // append it to list
-    if ((*selectionFunction)(*safePointer) && checkSIFFile(*safePointer,sifname))
+    if (selectionFunction != NULL) {
+      if ((*selectionFunction)(*safePointer,p))
+	vector<boost::shared_ptr<ShapeletObject> >::push_back(safePointer);
+    }else // otherwise just append it
       vector<boost::shared_ptr<ShapeletObject> >::push_back(safePointer);
   }
 }
 
 void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta) {
-  average(mean,std_mean,beta,&alwaysOne);
+  average(mean,std_mean,beta,NULL);
 }
 
-void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&)) {
+void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&, void*), void* p) {
   // set up two empty matrices for mean and std_mean
   // as they are easier to resize
   NumMatrix<data_t> meanMatrix(1,1), stdMatrix(1,1);
@@ -58,7 +53,9 @@ void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVec
   for (ShapeletObjectList::iterator iter = ShapeletObjectList::begin(); iter != ShapeletObjectList::end(); iter++) {
     const CoefficientVector<data_t>& coeffs = (*iter)->getCoeffs();
     const IndexVector& nVector = coeffs.getIndexVector();
-    data_t weight = (*weightFunction)(*(*iter));
+    data_t weight = 1;
+    if (weightFunction != NULL)
+      weight = (*weightFunction)(*(*iter), p);
     // if new coeff matrix is bigger than current matrices:
     // expand them
     if (coeffs.getNMax() > nmax) {
@@ -92,26 +89,10 @@ void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVec
   }
 }
 
-bool ShapeletObjectList::checkSIFFile(ShapeletObject& so, std::string siffile) {
-  // check coeffs and beta for correctness
-  const CoefficientVector<data_t>& coeffs = so.getCoeffs();
-  const IndexVector& nVector = coeffs.getIndexVector();
-  bool ok = 1;
-  for (unsigned int i=0; i < nVector.getNCoeffs(); i++) {
-    if (isinf(coeffs(i)) || isnan(coeffs(i)) || fabs(coeffs(i))> 1e20) {
-      ok = 0;
-      break;
-    }
-  }
-  if (!ok)
-    std::cerr << siffile << " contains errors, thus rejected from list." << std::cout;
-  return ok;
-}
-
-ShapeletObjectList ShapeletObjectList::select(bool (* selectionFunction) (ShapeletObject&)) {
+ShapeletObjectList ShapeletObjectList::select(bool (* selectionFunction) (ShapeletObject&, void*), void* p) {
   ShapeletObjectList selection;
   for(vector<boost::shared_ptr<ShapeletObject> >::iterator iter = vector<boost::shared_ptr<ShapeletObject> >::begin(); iter != vector<boost::shared_ptr<ShapeletObject> >::end(); iter++)
-    if ((*selectionFunction)(*(*iter)))
+    if ((*selectionFunction)(*(*iter),p))
       selection.push_back(*iter);				
   return selection;
 }		

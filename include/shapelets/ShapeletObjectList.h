@@ -55,11 +55,11 @@ class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> 
   /// Constructor for loading a subset of files from <tt>listfile</tt>. 
   /// The ShapeletObject <tt>sobj</tt> entities have to fulfill the criterium 
   /// <tt>selectionFunction (sobj) == 1</tt> to be included in the list.
-  ShapeletObjectList(std::string listfile, bool (* selectionFunction) (ShapeletObject&));
+  ShapeletObjectList(std::string listfile, bool (* selectionFunction) (ShapeletObject&, void*), void* p = NULL);
   /// Select a subset of ShapeletObject entities.
   /// The usage of <tt>selectionFunction</tt> is identical as in the
   /// constructor.
-  ShapeletObjectList select(bool (* selectionFunction) (ShapeletObject&));
+  ShapeletObjectList select(bool (* selectionFunction) (ShapeletObject&, void*), void* p = NULL);
   /// Compute coefficient and scale size average of all SIFs in the list.
   /// <tt>std_mean</tt> is the standard deviation of the mean of the coefficient set.
   void average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta);
@@ -83,10 +83,9 @@ class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> 
   /// which is computed as 
   /// \f[s_{\langle x\rangle} = \frac{\sum_{i=1}^N{w_i {x_i}^2} \sum_{i=1}^N{w_i} - (\sum_{i=1}^N{w_i x_i})^2} {(\sum_{i=1}^N{w_i})^2 - \sum_{i=1}^N{{w_i}^2}}\f]
   /// where \f$N\f$ is <tt>sl.size()</tt> and \f$x\f$ is any available coefficient in <tt>sl</tt>.
-  void average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&));
+  void average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&, void*), void* p =NULL);
 
  private:
-  void readListFile(std::string listfile, bool (* selectionFunction) (ShapeletObject&));
-  bool checkSIFFile(ShapeletObject&, std::string );
+  void readListFile(std::string listfile, bool (* selectionFunction) (ShapeletObject&, void*), void* p);
 };
 #endif

@@ -149,8 +149,10 @@ class CoefficientVector : public NumVector<T> {
   void setNMax(unsigned int nmax) {
     nVector->setNMax(nmax);
     if (NumVector<T>::size() != nVector->getNCoeffs()) {
-      NumVector<T>::resize(nVector->getNCoeffs());
-      NumVector<T>::clear();
+      if (NumVector<T>::size() < nVector->getNCoeffs())
+	NumVector<T>::resize_clear(nVector->getNCoeffs());
+      else
+	NumVector<T>::resize(nVector->getNCoeffs());
     }
   }
 
