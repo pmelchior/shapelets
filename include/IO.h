@@ -117,7 +117,7 @@ class IO {
 
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
-    Grid grid(0,0,M.getRows(),M.getColumns());
+    Grid grid(0,0,M.getColumns(),M.getRows());
     return writeFITSImage(outfptr,grid,M.vectorize(1),extname);
   }
 
