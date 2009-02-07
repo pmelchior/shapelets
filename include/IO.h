@@ -117,8 +117,26 @@ class IO {
 
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
-    Grid grid(0,0,M.getColumns(),M.getRows());
-    return writeFITSImage(outfptr,grid,M.vectorize(1),extname);
+    int dim0 = M.getColumns();
+    int dim1 = M.getRows();
+    long naxis = 2;      
+    long naxes[2] = { dim0, dim1 };
+    long npixels = dim0*dim1;
+
+    // define image format and dataformat according to cfitsio definitions
+    int imageformat = getFITSImageFormat(M(0,0));
+    int datatype = getFITSDataType(M(0,0));
+    // create HDU
+    int status = 0;
+    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    // write pixel data
+    long firstpix[2] = {1,1};
+    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(M.c_array()), &status);
+    // insert creator and extname keywords
+    if (extname != "")
+      status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
+    status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+    return status;
   }
 
   template <class T>
@@ -138,7 +156,7 @@ class IO {
     }
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
-    M.resize(naxes[0],naxes[1]);
+    M.resize(naxes[1],naxes[0]);
     long firstpix[2] = {1,1};
     T val;
     int imageformat = getFITSImageFormat(val);
