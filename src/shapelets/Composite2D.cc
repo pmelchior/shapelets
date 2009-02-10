@@ -33,9 +33,18 @@ Composite2D & Composite2D::operator= (const Composite2D &source) {
   changeModel = source.changeModel;
   return *this;
 }
-  
+ 
 unsigned int Composite2D::getNMax() const {
   return coeffs.getNMax();
+}
+
+void Composite2D::setNMax(unsigned int nmax) {
+  if (coeffs.getNMax() != nmax) {
+    coeffs.setNMax(nmax);
+    changeM = true;
+    changeModel = true;
+    cov.resize(coeffs.size(),coeffs.size());
+  }
 }
 
 void Composite2D::setCoeffs(const CoefficientVector<data_t>& newCoeffs ) {
@@ -289,15 +298,17 @@ void Composite2D::makeShapeletMatrix() {
     data_t beta = Shapelets2D::getBeta();
     data_t factor0 = 1./sqrt(M_SQRTPI*beta);
     data_t factor1, factor2;
-    int x,y;
+    int x,y,n0,n1;
+    
+    // simple sampling: center of the pixel -> 0.5 offsets below
     for (x=0; x< N0; x++) {
-      x0_scaled = (grid(x,0) - xcentroid(0))/beta;
+      x0_scaled = (grid(x,0) + 0.5 - xcentroid(0))/beta;
       M0(0,x) = factor0*exp(-x0_scaled*x0_scaled/2);
       if (nmax > 0)
 	M0(1,x) = M_SQRT2*x0_scaled*M0(0,x);
     }
     for (y=0; y< N1; y++) {
-      x1_scaled = (grid(y*N0,1) - xcentroid(1))/beta;
+      x1_scaled = (grid(y*N0,1) + 0.5 - xcentroid(1))/beta;
       M1(0,y) = factor0*exp(-x1_scaled*x1_scaled/2);
       if (nmax > 0) 
 	M1(1,y) = M_SQRT2*x1_scaled*M1(0,y);
@@ -308,14 +319,13 @@ void Composite2D::makeShapeletMatrix() {
       factor1 = sqrt(1./(2*n));
       factor2 =sqrt((n-1.)/n); 
       for (x=0; x < N0; x++)
-	M0(n,x) = 2*(grid(x,0) - xcentroid(0))/beta*factor1*M0(n-1,x) 
+	M0(n,x) = 2*(grid(x,0) + 0.5 - xcentroid(0))/beta*factor1*M0(n-1,x) 
 	  - factor2*M0(n-2,x);
       for (y=0; y< N1; y++)
-	M1(n,y) = 2*(grid(y*N0,1) - xcentroid(1))/beta*factor1*M1(n-1,y) 
+	M1(n,y) = 2*(grid(y*N0,1) + 0.5 - xcentroid(1))/beta*factor1*M1(n-1,y) 
 	  - factor2*M1(n-2,y);
     }
     // now build tensor product of M0 and M1
-    int n0, n1;
     for (int l = 0; l < nCoeffs; l++) {
       n0 = nVector.getState1(l);
       n1 = nVector.getState2(l);
@@ -326,10 +336,36 @@ void Composite2D::makeShapeletMatrix() {
       }
     }
 
-    // in-pixel integration: use M0 and M1 from above to compute
-    // one-dimensional integral matrix
+    // in-pixel integration:
     // according to PaperIII, eqs (30) - (34)
     if (ShapeLensConfig::PIXEL_INTEGRATION) {
+      // M0 and M1 have to be re-computed at the edges of grid points
+      // not in their centers
+      for (x=0; x< N0; x++) {
+	x0_scaled = (grid(x,0) - xcentroid(0))/beta;
+	M0(0,x) = factor0*exp(-x0_scaled*x0_scaled/2);
+	if (nmax > 0)
+	  M0(1,x) = M_SQRT2*x0_scaled*M0(0,x);
+      }
+      for (y=0; y< N1; y++) {
+	x1_scaled = (grid(y*N0,1) - xcentroid(1))/beta;
+	M1(0,y) = factor0*exp(-x1_scaled*x1_scaled/2);
+	if (nmax > 0) 
+	  M1(1,y) = M_SQRT2*x1_scaled*M1(0,y);
+      }
+
+      // use recurrance relation to compute higher orders
+      for (int n=2;n<=nmax;n++) {
+	factor1 = sqrt(1./(2*n));
+	factor2 =sqrt((n-1.)/n); 
+	for (x=0; x < N0; x++)
+	  M0(n,x) = 2*(grid(x,0) - xcentroid(0))/beta*factor1*M0(n-1,x) 
+	    - factor2*M0(n-2,x);
+	for (y=0; y< N1; y++)
+	  M1(n,y) = 2*(grid(y*N0,1) - xcentroid(1))/beta*factor1*M1(n-1,y) 
+	    - factor2*M1(n-2,y);
+      }
+
       // it is possible to store this entire in matrix M
       // but then the basis functions are not orthonormal anymore
       // computation of coefficients in Decomposite2D must be changed then

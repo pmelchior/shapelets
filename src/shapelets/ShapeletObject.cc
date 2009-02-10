@@ -325,7 +325,9 @@ void ShapeletObject::deconvolve(const CoefficientVector<data_t>& kernelCoeffs, d
 }
 
 void ShapeletObject::rescale(data_t newBeta) {
-  trafo.rescale(coeffs,Composite2D::getBeta(),newBeta,&cov,&history);
+  data_t beta = Composite2D::getBeta();
+  trafo.rescale(coeffs,beta,newBeta,&cov,&history);
+  Composite2D::setBeta(beta);
   Composite2D::changeModel = true;
   updatePolar = true;
 }

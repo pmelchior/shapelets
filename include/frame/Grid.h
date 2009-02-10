@@ -77,11 +77,11 @@ inline data_t GridT<T>::operator() (unsigned int index, bool direction) const {
   int offset;
   if (direction) {
     offset = index/N0;
-    return start1 + offset*stepsize1 + 0.5;
+    return start1 + offset*stepsize1;// + 0.5;
   }
   else {
     offset = index%N0;
-    return start0 + offset*stepsize0 + 0.5;
+    return start0 + offset*stepsize0;// + 0.5;
   }
 }
 

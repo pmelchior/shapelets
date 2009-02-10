@@ -246,12 +246,12 @@ void ImageTransformation::convolve(CoefficientVector<data_t>& cartesianCoeffs, d
 NumMatrix<data_t> ImageTransformation::getDeconvolutionMatrix(const CoefficientVector<data_t>& kernelCoeffs, unsigned int nmax_orig, unsigned int nmax_kernel, unsigned int nmax_convolved, data_t beta_orig, data_t beta_kernel, data_t beta_convolved, NumMatrix<data_t>* cov) {
   // construct pseudoinverse of convolution matrix
   NumMatrix<data_t> P = getConvolutionMatrix(kernelCoeffs,nmax_orig,nmax_kernel,nmax_convolved,beta_orig,beta_kernel,beta_convolved);
-  //if (cov == NULL)
-  //return (P.transpose() * P).invert() * P.transpose();
-    //else {
+  if (cov == NULL)
+    return (P.transpose() * P).invert() * P.transpose();
+  else {
     NumMatrix<data_t> Pt = P.transpose() * (*cov);
     return (Pt*P).invert()*Pt;
-    //} 
+  } 
 }
 
 void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, const CoefficientVector<data_t>& kernelCoeffs, data_t beta_kernel, NumMatrix<data_t>* cov, History* history) {
@@ -264,10 +264,11 @@ void ImageTransformation::deconvolve(CoefficientVector<data_t>& cartesianCoeffs,
   else
     beta_orig = 0.1;
   int nmax_orig = cartesianCoeffs.getNMax();
-//   if (cartesianCoeffs.getNMax() >= kernelCoeffs.getNMax())
-//     nmax_orig = cartesianCoeffs.getNMax() - kernelCoeffs.getNMax();
-//   else
-//     nmax_orig = 0;
+  // coefficient reduction here:
+  // if (cartesianCoeffs.getNMax() >= kernelCoeffs.getNMax())
+  //    nmax_orig = cartesianCoeffs.getNMax() - kernelCoeffs.getNMax();
+  //   else
+  //    nmax_orig = 0;
   NumMatrix<data_t> P_1 = getDeconvolutionMatrix(kernelCoeffs,nmax_orig,kernelCoeffs.getNMax(),cartesianCoeffs.getNMax(),beta_orig,beta_kernel,beta,cov);
   // perform the deconvolution
   cartesianCoeffs = P_1*cartesianCoeffs;
@@ -315,13 +316,14 @@ NumMatrix<data_t> ImageTransformation::getRescalingMatrix(data_t beta2, data_t b
   return M2D;
 }
 
-void ImageTransformation::rescale(CoefficientVector<data_t>& cartesianCoeffs, data_t beta, data_t newbeta, NumMatrix<data_t>* cov, History* history) {
+void ImageTransformation::rescale(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, data_t newbeta, NumMatrix<data_t>* cov, History* history) {
   if (history != NULL)
     (*history) << "# Rescaling image from beta = "<< beta << " to new beta = " << newbeta << endl;
   NumMatrix<data_t> R = getRescalingMatrix(newbeta,beta,cartesianCoeffs.getIndexVector());
   cartesianCoeffs = R * cartesianCoeffs;
   if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (R*(*cov))*R.transpose();
+  beta = newbeta;
 }
  
 void ImageTransformation::rescale(CoefficientVector<data_t>& cartesianCoeffs, const NumMatrix<data_t>& R, NumMatrix<data_t>* cov, History* history) {
@@ -618,7 +620,7 @@ void ImageTransformation::makeBTensor(boost::multi_array<data_t,3>& bt, data_t a
 // this does not look alike, but is effectively identical to eq. (A3) in Paper I,
 // but obtained by myself. This formulation contains less factorials and powers
 // and is therefore somewhat faster for large matrices than the original formulation.
-NumMatrix<data_t> ImageTransformation::make1DRescalingMatrix(data_t beta2, data_t beta1, int nmax) {
+NumMatrix<data_t> ImageTransformation::make1DRescalingMatrix(data_t beta1, data_t beta2, int nmax) {
   data_t b1 = (beta1*beta1 - beta2*beta2)/(beta1*beta1 + beta2*beta2);
   data_t b2 = 2*beta1*beta2/(beta1*beta1 + beta2*beta2);
   // loop over all entries i,j

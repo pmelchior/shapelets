@@ -9,6 +9,7 @@ int main (int argc, char *argv[]) {
   TCLAP::CmdLine cmd("Print SIF file information", ' ', "0.2");
   TCLAP::SwitchArg historySwitch("H","history","Show hisory of SIF file", cmd, false);
   TCLAP::SwitchArg coefficientSwitch("c","coefficients","Show coefficients of SIF file", cmd, false);
+  TCLAP::SwitchArg polarSwitch("p","polar_coeffs","Show polar coefficients of SIF file", cmd, false);
   TCLAP::SwitchArg errorSwitch("e","errors","Show coefficient errors of SIF file", cmd, false);
   TCLAP::SwitchArg covSwitch("C","covariance","Show covariance matrix of SIF file", cmd, false);
   TCLAP::SwitchArg sigSwitch("s","significance","Show significance (= S/N) of the coefficients of SIF file", cmd, false);
@@ -35,6 +36,8 @@ int main (int argc, char *argv[]) {
   // if required, print out shapelet coeffs (+ errors)
   if (coefficientSwitch.isSet())
     std::cout << "Cartesian coefficients:" << std::endl << sobj.getCoeffs() << std::endl << std::endl;
+  if (polarSwitch.isSet())
+    std::cout << "Polar coefficients:" << std::endl << sobj.getPolarCoeffs() << std::endl << std::endl;
   if (covSwitch.isSet())
     std::cout << "Cartesian coefficient covariance:" << std::endl << sobj.getCovarianceMatrix() << std::endl << std::endl;
   if (errorSwitch.isSet())

@@ -119,9 +119,10 @@ class ImageTransformation {
   /// Change the scale size of the image by using rescaling relation.
   /// If \p covariance is given, the covariance matrix is updated. 
   /// If \p history is given, an appropriate statement is appended to it.
-  void rescale(CoefficientVector<data_t>& cartesianCoeffs, data_t beta, data_t newbeta, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
+  void rescale(CoefficientVector<data_t>& cartesianCoeffs, data_t& beta, data_t newbeta, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Change the scale size of the image by applying the given \p rescalingMatrix.
   /// See getRescalingMatrix() and rescale().
+  /// \b CAUTION: In addition, the scale size of the object has to be changed here.
   void rescale(CoefficientVector<data_t>& cartesianCoeffs, const NumMatrix<data_t>& rescalingMatrix, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Compute rescaling matrix.
   /// cf. Paper I, appendix A.

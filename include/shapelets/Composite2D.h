@@ -49,6 +49,9 @@ class Composite2D : private Shapelets2D {
   void setCovarianceMatrix(const NumMatrix<data_t>& cov);
   /// Get \f$n_{max}\f$, the maximum order of the shapelet model.
   unsigned int getNMax() const;
+  /// Set \f$n_{max}\f$.
+  /// The underlying CoefficientVector is changed accordingly.
+  void setNMax(unsigned int nmax);
   /// Get \f$\beta\f$ from basis function.
   data_t getBeta() const;
   /// Set new \f$\beta\f$ for basis functions.
