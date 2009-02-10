@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 	obj.save(fitsname);
 	// ... add shapelet model ...
 	fitsfile* fptr = IO::openFITSFile(fitsname,1);
-	IO::writeFITSImage(fptr,obj.getGrid(),sobj.getModel(),"MODEL");
+	IO::writeFITSImage(fptr,obj.grid,sobj.getModel(),"MODEL");
 	IO::appendFITSHistory(fptr,sobj.getHistory());
 	// ... and residuals (obj - model).
 	obj -= sobj.getModel();

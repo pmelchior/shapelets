@@ -16,24 +16,24 @@ typedef unsigned int uint;
 typedef unsigned long ulong;
 
 Frame::Frame(string filename) : 
-Image<data_t>(filename), segMap(), weight(), history(segMap.accessHistory()) {
+Image<data_t>(filename), segMap(), weight(), history(segMap.history) {
   history << "# Reading FITS file " << filename << endl;
   history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl;
   segMap.resize(Frame::getSize(0)*Frame::getSize(1));
   segMap.clear();
-  segMap.accessGrid() = Frame::getGrid();
+  segMap.grid = Frame::grid;
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
   catalog.clear();
 }
 
 Frame::Frame(string datafile, string weightfile) : 
-Image<data_t>(datafile), weight(weightfile), segMap(), history(segMap.accessHistory()) {
+Image<data_t>(datafile), weight(weightfile), segMap(), history(segMap.history) {
   history << "# Reading data from " << datafile << " and weights from " << weightfile << endl;
   history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl; 
   segMap.resize(Frame::getSize(0)*Frame::getSize(1));
   segMap.clear();
-  segMap.accessGrid() = Frame::getGrid();
+  segMap.grid = Frame::grid;
   if (weight.size() != (*this).size()) {
     history << "Frame: weight map has different layout than data!" << endl;
     cerr << "Frame: weight map has different layout than data!" << endl;
@@ -163,7 +163,7 @@ void Frame::linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& m
     ulong pixel = *iter;
     // loop over all direct neighbors and check if they are above/below threshold
     for (uint dir = 1; dir <= 8 ; dir++) {
-      long neighbor = Frame::getGrid().getNeighborPixel(pixel,dir);
+      long neighbor = Frame::grid.getNeighborPixel(pixel,dir);
       if (neighbor != -1) {
 	data_t threshold_neighbor = getThreshold(neighbor, ShapeLensConfig::MIN_THRESHOLD);
 	if (data(neighbor) > threshold_neighbor) {
@@ -285,7 +285,7 @@ void Frame::insertNodesAboveThreshold(tree<set<ulong> >& Tree, tree<set<ulong> >
 	ulong pixel = *iter;
 	// loop over all direct neighbors
 	for (uint dir = 1; dir <= 8 ; dir++) {
-	  long neighbor = Frame::getGrid().getNeighborPixel(pixel,dir);
+	  long neighbor = Frame::grid.getNeighborPixel(pixel,dir);
 	  // neighbor is within the image
 	  if (neighbor > 0)  {
 	    // neighbor is not already in child
@@ -371,10 +371,9 @@ void Frame::fillObject(Object& O) {
     // fill the object pixel data
     const NumVector<data_t>& data = *this;
     O.resize((xmax-xmin)*(ymax-ymin));
-    History& objSegMapHistory = O.segMap.accessHistory();
-    objSegMapHistory.setSilent();
-    objSegMapHistory << history.str();
-    objSegMapHistory.unsetSilent();
+    O.segMap.history.setSilent();
+    O.segMap.history = history;
+    O.segMap.history.unsetSilent();
     O.segMap.resize((xmax-xmin)*(ymax-ymin));
     if (weight.size()!=0) 
       O.weight.resize((xmax-xmin)*(ymax-ymin));
@@ -386,7 +385,7 @@ void Frame::fillObject(Object& O) {
       int axis0 = xmax-xmin;
       int x = i%axis0 + xmin;
       int y = i/axis0 + ymin;
-      uint j = Frame::getGrid().getPixel(x,y);
+      uint j = Frame::grid.getPixel(x,y);
 
       // if pixel is out of image region, fill noise
       if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
@@ -423,7 +422,7 @@ void Frame::fillObject(Object& O) {
     gsl_rng_free (r);
 
     // Grid will be changed but not shifted (all pixels stay at their position)
-    O.accessGrid() = O.segMap.accessGrid() = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
 
     // Fill other quantities into Object
     O.flags = flags;
@@ -446,7 +445,7 @@ void Frame::fillObject(Object& O) {
     O.history.clear();
     O.history << "# Extracting Object 0 (whole Fits image)." << endl;
     O = *this;
-    O.accessGrid() = Frame::getGrid();
+    O.grid = Frame::grid;
     O.segMap = segMap;
     if (weight.size()!=0)
       O.weight = weight;

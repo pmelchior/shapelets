@@ -112,7 +112,7 @@ class IO {
 
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const Image<T>& image, std::string extname="") {
-    return writeFITSImage(outfptr,image.getGrid(),image,extname);
+    return writeFITSImage(outfptr,image.grid,image,extname);
   }
 
   template <class T>

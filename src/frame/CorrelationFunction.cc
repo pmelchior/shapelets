@@ -11,18 +11,17 @@ CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const Segment
   int x,y,x1,y1,i,j;
   Point2D<grid_t> p;
   setPoints();
-  const Grid& grid = im.getGrid();
   int axsize0 = im.getSize(0), axsize1 = im.getSize(1);
 
   // 1) compute mean of correlation
   for (i =0; i < im.size(); i++) {
     // choose only noise pixels
     if (!mask || segMap(i) == 0) {
-      grid.getCoords(i,x,y);
+      im.grid.getCoords(i,x,y);
       for (x1=x-size; x1<= x+size; x1++) {
 	for (y1=y-size; y1<= y+size; y1++) {
 	  if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
-	    j = grid.getPixel(x1,y1);
+	    j = im.grid.getPixel(x1,y1);
 	    // again: choose only noise pixels
 	    if (!mask || segMap(j) == 0) {
 	      p(0) = x1-x;
@@ -47,11 +46,11 @@ CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const Segment
   for (i =0; i < im.size(); i++) {
     // choose only noise pixels
     if (!mask || segMap(i) == 0) {
-      grid.getCoords(i,x,y);
+      im.grid.getCoords(i,x,y);
       for (x1=x-size; x1<= x+size; x1++) {
 	for (y1=y-size; y1<= y+size; y1++) {
 	  if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
-	    j = grid.getPixel(x1,y1);
+	    j = im.grid.getPixel(x1,y1);
 	    // again: choose only noise pixels
 	    if (!mask || segMap(j) == 0) {
 	      p(0) = x1-x;

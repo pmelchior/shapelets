@@ -132,7 +132,7 @@ void SExFrame::fillObject(Object& O) {
       int axis0 = xmax-xmin;
       int x = i%axis0 + xmin;
       int y = i/axis0 + ymin;
-      uint j = SExFrame::getGrid().getPixel(x,y);
+      uint j = SExFrame::grid.getPixel(x,y);
 
       // if pixel is out of image region, fill noise from default values
       // since we fill same noise into data and into bgrms
@@ -174,7 +174,7 @@ void SExFrame::fillObject(Object& O) {
     }
     
     // Grid will be changed but not shifted (all pixels stay at their position)
-    O.accessGrid() = O.segMap.accessGrid() = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
 
     // Fill other quantities into Object
     O.history << "# Segment:" << endl;

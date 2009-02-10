@@ -85,15 +85,6 @@ class Image : public NumVector<T> {
   unsigned int getSize(bool direction) const {
     return grid.getSize(direction);
   }
-  /// Get the Grid for the image.
-  /// The grid is defined to range from 0 to getAxisSize(i)-1 in steps of 1.
-  const Grid& getGrid() const {
-    return grid;
-  }
-  /// Access the Grid of the image.
-  Grid& accessGrid() {
-    return grid;
-  }
   /// Get the filename of the Fits file.
   std::string getFilename() const {
     return filename;
@@ -107,19 +98,19 @@ class Image : public NumVector<T> {
       IO::appendFITSHistory(fptr,history.str());
     IO::closeFITSFile(fptr);
   }
-  ///  Get image history.
-  const History& getHistory() const {
-    return history;
-  }
-  /// Access image history.
-  History& accessHistory() {
-    return history;
+  /// The Grid this Image is defined on.
+  /// The grid is defined to range from 0 to getAxisSize(i)-1 in steps of 1.
+  Grid grid;
+  /// The image history.
+  History history;
+  
+  // Legacy function
+  const Grid& getGrid() const {
+    return grid;
   }
 
  protected:
-  Grid grid;
   std::string filename;
-  History history;
  private:
   void read() {
     fitsfile *fptr = IO::openFITSFile(filename);

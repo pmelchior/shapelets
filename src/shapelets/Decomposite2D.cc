@@ -13,7 +13,7 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
 {
   // set up model to obj layout
   C2D.setCentroid(obj.centroid);
-  C2D.setGrid(obj.getGrid());
+  C2D.setGrid(obj.grid);
 
   // ways to give pixel errors (depending on noiseModel):
   // GAUSSIAN:   sigma_n -> background_variance
@@ -31,7 +31,7 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
   } 
   else if (ShapeLensConfig::NOISEMODEL == "COVARIANCE") {
     noise = 2;
-    V_.setCovarianceMatrix(obj.xi,obj.getGrid());
+    V_.setCovarianceMatrix(obj.xi,obj.grid);
     V_ = V_.invert();
   }
   else if (ShapeLensConfig::NOISEMODEL == "POISSONIAN") {

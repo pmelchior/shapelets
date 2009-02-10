@@ -23,7 +23,6 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   fitsfile* fptr = IO::openFITSFile(objfile);
 
   // reading objects pixel data
-  Grid& grid = Object::accessGrid();
   history << "# Reading object's pixel data";
   IO::readFITSImage(fptr,grid,Object::accessNumVector());
   
@@ -33,7 +32,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   grid_t xmin,ymin;
   status = IO::readFITSKeyword(fptr,"XMIN",xmin);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
-  grid = Grid(xmin,ymin,grid.getSize(0),grid.getSize(1));
+  Image<data_t>::grid = Grid(xmin,ymin,grid.getSize(0),grid.getSize(1));
   complex<data_t> xc;
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
@@ -51,7 +50,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   IO::readFITSKeyCards(fptr,"HISTORY",hstr);
 
   // check whether grid has same size as object
-  if (Object::size() != Object::getGrid().size()) {
+  if (Object::size() != Image<data_t>::grid.size()) {
     std::cerr << "Object: Grid size from header keywords wrong" << std::endl;
     std::terminate();
   }
@@ -59,7 +58,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   history << ", segmentation map";
   // move to 1st extHDU for the segmentation map
   fits_movabs_hdu(fptr, 2, &hdutype, &status);
-  IO::readFITSImage(fptr, segMap.accessGrid(), segMap);
+  IO::readFITSImage(fptr, segMap.grid, segMap);
 
   // check if there is 2nd extHDU: the weight map or correlation
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
@@ -88,7 +87,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
 void Object::save(std::string filename) {
   // write pixel data
   const NumVector<data_t>& data = *this;
-  const Grid& grid = Image<data_t>::getGrid();
+  const Grid& grid = Image<data_t>::grid;
   int status = 0;
   fitsfile *outfptr = IO::createFITSFile(filename);
   status = IO::writeFITSImage(outfptr,grid,data);
@@ -110,7 +109,7 @@ void Object::save(std::string filename) {
   // save segMap
   if (segMap.size() != 0) {
     status = IO::writeFITSImage(outfptr,grid,segMap,"SEGMAP");
-    status = IO::appendFITSHistory(outfptr,(segMap.getHistory()).str());
+    status = IO::appendFITSHistory(outfptr,segMap.history.str());
   }
 
   //if weight map provided, save it too
@@ -125,7 +124,7 @@ void Object::save(std::string filename) {
 
 NumMatrix<data_t> Object::get2ndBrightnessMoments() {
   const NumVector<data_t>& data = *this;
-  const Grid& grid = Image<data_t>::getGrid();
+  const Grid& grid = Image<data_t>::grid;
   NumMatrix<data_t> Q(2,2);
   
   // check if weights are available: if yes, use them
@@ -172,7 +171,7 @@ complex<data_t> Object::getEllipticity() {
 
 void Object::computeFluxCentroid() {
   const NumVector<data_t>& data = *this;
-  const Grid& grid = Image<data_t>::getGrid();
+  const Grid& grid = Image<data_t>::grid;
 
   // check if weights are available: if yes, use them
   bool weights = false;
