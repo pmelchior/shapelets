@@ -12,7 +12,7 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
   obj(O)
 {
   // set up model to obj layout
-  C2D.setCentroid(obj.getCentroid());
+  C2D.setCentroid(obj.centroid);
   C2D.setGrid(obj.getGrid());
 
   // ways to give pixel errors (depending on noiseModel):
@@ -23,20 +23,20 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
   // WEIGTH_POISSONIAN: weight map + model -> Weight
   if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
     noise = 0;
-    background_variance = gsl_pow_2(obj.getNoiseRMS());
+    background_variance = gsl_pow_2(obj.noise_rms);
   }
   else if (ShapeLensConfig::NOISEMODEL == "WEIGHT") {
     noise = 1;
-    Weight = obj.getWeightMap();
+    Weight = obj.weight;
   } 
   else if (ShapeLensConfig::NOISEMODEL == "COVARIANCE") {
     noise = 2;
-    V_.setCovarianceMatrix(obj.getCorrelationFunction(),obj.getGrid());
+    V_.setCovarianceMatrix(obj.xi,obj.getGrid());
     V_ = V_.invert();
   }
   else if (ShapeLensConfig::NOISEMODEL == "POISSONIAN") {
     noise = 3;
-    background_variance = gsl_pow_2(obj.getNoiseRMS());
+    background_variance = gsl_pow_2(obj.noise_rms);
     Weight.resize(obj.size());
     // as we do not have a valid shapelet model yet, we start with a flat prior
     for (int i=0; i < obj.size(); i++)
@@ -45,7 +45,7 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
   else if (ShapeLensConfig::NOISEMODEL == "WEIGHT_POISSONIAN") {
     noise = 4;
     // as we do not have a valid shapelet model yet, we start with the original weight map
-    Weight = obj.getWeightMap();
+    Weight = obj.weight;
   }
   else {
     std::cerr << "Decomposite2D: noise model '" << ShapeLensConfig::NOISEMODEL << "' unknown!" << std::endl;
@@ -200,11 +200,10 @@ void Decomposite2D::updateWeightMap() {
 	  Weight(i) = 1./background_variance;
       }
     } else {
-      const NumVector<data_t>& weight = obj.getWeightMap();
-      Weight = weight;
+      Weight = obj.weight;
       for (int i=0; i < obj.size(); i++)
 	if ((C2D.model)(i) > 0)
-	  Weight(i) = 1./((1./weight(i)) + (C2D.model)(i));
+	  Weight(i) = 1./((1./obj.weight(i)) + (C2D.model)(i));
     }
   }
 }

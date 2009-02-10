@@ -5,7 +5,7 @@
 
 Object::Object(unsigned long inid) : Image<data_t>(), segMap() {
   id = inid;
-  flag = 0;
+  flags = 0;
   classifier = 0;
   flux = centroid(0) = centroid(1) = 0;
 }
@@ -41,9 +41,9 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   status = IO::readFITSKeyword(fptr,"FLUX",flux);
   status = IO::readFITSKeyword(fptr,"BG_MEAN",noise_mean);
   status = IO::readFITSKeyword(fptr,"BG_RMS",noise_rms);
-  unsigned long flags;
-  status = IO::readFITSKeyword(fptr,"FLAG",flags);
-  flag = std::bitset<8>(flags);
+  unsigned long f;
+  status = IO::readFITSKeyword(fptr,"FLAG",f);
+  flags = std::bitset<8>(f);
   status = IO::readFITSKeyword(fptr,"CLASSIFIER",classifier);
   
   // read history
@@ -103,7 +103,7 @@ void Object::save(std::string filename) {
   status = IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
   status = IO::updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
   status = IO::updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
-  status = IO::updateFITSKeyword(outfptr,"FLAG",flag.to_ulong(),"extraction flag");
+  status = IO::updateFITSKeyword(outfptr,"FLAG",flags.to_ulong(),"extraction flags");
   status = IO::updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
   status = IO::appendFITSHistory(outfptr,history.str());
 
@@ -121,40 +121,6 @@ void Object::save(std::string filename) {
     status = IO::writeFITSImage(outfptr,xi.getCorrelationMatrix(),"CORRELATION");
 
   status = IO::closeFITSFile(outfptr);
-}
-
-void Object::setID(unsigned long inid) {
-  id = inid;
-}
-
-unsigned long Object::getID() const {
-  return id;
-}
-
-const NumVector<data_t>& Object::getWeightMap() const {
-  return weight;
-}
-
-NumVector<data_t>& Object::accessWeightMap() {
-  return weight;
-}
-
-const Point2D<data_t>& Object::getCentroid() const {
-  return centroid;
-}
-
-void Object::setCentroid(const Point2D<data_t>& xc) {
-  centroid = xc;
-  history << "# Centroid set to ("<< centroid(0) << "/" << centroid(1) <<  ") by user." << std::endl;
-}
-
-data_t Object::getFlux() const {
-  return flux;
-}
-
-void Object::setFlux(data_t F) {
-  flux = F;
-  history << "# Flux set to " << flux << " by user." <<std::endl;
 }
 
 NumMatrix<data_t> Object::get2ndBrightnessMoments() {
@@ -240,64 +206,4 @@ void Object::computeFluxCentroid() {
     flux /= sum_weights/sum_pixels;
   
   history << "# Flux = " << flux << ", Centroid = ("<< centroid(0) << "/" << centroid(1) << ")" << std::endl;
-}
-
-std::bitset<8> Object::getDetectionFlags() const {
-  return flag;
-}
-
-void Object::setDetectionFlags(const std::bitset<8>& inflag) {
-  flag = std::bitset<8>(inflag.to_ulong());
-}
-
-data_t Object::getNoiseMean() const {
-  return noise_mean;
-}
-
-data_t Object::getNoiseRMS() const {
-  return noise_rms;
-}
-
-void Object::setNoiseMeanRMS(data_t mean, data_t rms) {
-  noise_mean = mean;
-  noise_rms = rms;
-  history << "# Setting noise to (" << mean << ") +- (" << rms << ")" << std::endl;
-}
-
-data_t Object::getClassifier() const {
-  return classifier;
-}
-
-void Object::setClassifier(data_t c) {
-  classifier = c;
-}
-
-void Object::setBaseFilename(std::string filename) {
-  basefilename = filename;
-}
-std::string Object::getBaseFilename() const {
-  return basefilename;
-}
-const SegmentationMap& Object::getSegmentationMap() const {
-  return segMap;
-}
-
-SegmentationMap& Object::accessSegmentationMap() {
-  return segMap;
-}
-
-const CorrelationFunction& Object::getCorrelationFunction() const {
-  return xi;
-}
-
-CorrelationFunction& Object::accessCorrelationFunction() {
-  return xi;
-}
-
-std::string Object::getHistory() const {
-  return history.str();
-}
-
-History& Object::accessHistory() {
-  return history;
 }

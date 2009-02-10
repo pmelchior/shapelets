@@ -24,8 +24,6 @@
 /// - processing history
 /// - arbitrary classifier variable
 /// - segmentation map
-/// 
-///\todo Save PixelCovarianceMatrix and CorrelationFunction to Fits file during save()
 
 class Object : public Image<data_t> {
  public:
@@ -37,34 +35,23 @@ class Object : public Image<data_t> {
   Object (std::string fitsfile);
   /// Copy constructor from base type.
   Object (const Image<data_t>& base);
-  /// Set the \p id.
-  void setID(unsigned long id);
-  /// Return the \p id.
-  unsigned long getID() const;
-  /// Get object classifier.
+  /// The \p id of the Object.
+  unsigned long id;
+  /// The object classifier.
   /// This can be an arbitrary floating point number, e.g. <tt>CLASS_STAR</tt> from
   /// SExFrame.\n
   /// When the objects come from reading a Catalog (e.g. in SExFrame), CatObject.CLASSIFIER
   /// will be used to set this variable.
-  data_t getClassifier() const;
-  /// Set the object classifier.
-  void setClassifier(data_t classifier);
-  /// Return the weight (inverse variance) map in the region of this object.
+  data_t classifier;
+  /// The weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
-  const NumVector<data_t>& getWeightMap() const;
-  /// Access the weight (inverse variance) map in the region of this object.
-  /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
-  NumVector<data_t>& accessWeightMap();
-  /// Return flux of object.
+  NumVector<data_t> weight;
+  /// The flux of this Object.
+  /// To set this quantity, you have to call computeFluxCentroid() before.
+  data_t flux;
+  /// The position of the object's centroid.
   /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
-  data_t getFlux() const;
-  /// Set flux of object.
-  void setFlux(data_t F);
-  /// Return the position of the object's centroid.
-  /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
-  const Point2D<data_t>& getCentroid() const;
-  /// Set the position of the object's centroid.
-  void setCentroid(const Point2D<data_t>& xc);
+  Point2D<data_t> centroid;
   /// Return 2nd brightness moments.
   /// The 2nd brightness moments are defined relative to the centroid computed
   /// with getCentroid().
@@ -74,59 +61,32 @@ class Object : public Image<data_t> {
   /// in Bartelmann & Schneider (2001):\n
   /// \f$ \epsilon = (Q_{11}-Q_{22}+2iQ_{12})/(Q_{11}+Q_{22}+2\sqrt{Q_{11}Q_{22}-Q_{12}^2})\f$
   complex<data_t> getEllipticity();
-  /// Return the detection flags.
+  /// The detection flags.
   /// They indicates problems during the various procedures and are filled by a frameing class.
   /// Thus, look at Frame or SExFrame for the meaning of the individual bits.
-  std::bitset<8> getDetectionFlags() const;
-  /// Set detection flag (from Frame).
-  void setDetectionFlags(const std::bitset<8>& flags);
-  /// Return noise mean \f$\mu_n\f$.
-  data_t getNoiseMean() const;
-  /// Return noise RMS \f$\sigma_n\f$.
-  data_t getNoiseRMS() const;
-  /// Set noise features from external measurements (e.g. in Frame).
-  void setNoiseMeanRMS(data_t mean, data_t rms);
-  /// Get the segmentation map.
-  const SegmentationMap& getSegmentationMap() const;
-  /// Access the segmentation map.
-  SegmentationMap& accessSegmentationMap();
-  /// Get the correlation function.
-  const CorrelationFunction& getCorrelationFunction() const;
-  /// Access the correlation function.
-  CorrelationFunction& accessCorrelationFunction();
-  /// Set the filename from which this object is derived.
+  std::bitset<8> flags;
+  /// The noise mean \f$\mu_n\f$.
+  data_t noise_mean;
+  /// The noise RMS \f$\sigma_n\f$.
+  data_t noise_rms;
+  /// The segmentation map.
+  SegmentationMap segMap;
+  /// The correlation function.
+  CorrelationFunction xi;
+  /// The filename from which this object is derived.
   /// This will be stored in the FITS header when using save().
   /// The string should not exceed 80 characters, otherwise it becomes truncated 
   /// in the FITS header.
-  void setBaseFilename(std::string filename);
-  /// Get the filename from which this object is derived.
-  /// see setBaseFilename() for details.
-  std::string getBaseFilename() const;
+  std::string basefilename;
   /// Save the object information in a Fits file.
   /// Data and SegmentationMap will go to pHDU and 1st extHDU, respectively. 
   /// All other information goes to the pHDU header.
-  /// If a weight map is provided, these will be stored in the 2nd extHDU.
+  /// If a weight map is provided, these will be stored in the extension \p WEIGTH
+  /// If a correlation function is provided, these will be stored in the extension \p CORRELATION.
   void save(std::string fitsfile);
-  /// Get History of the object.
-  std::string getHistory() const;
-  /// Access History of the object.
-  History& accessHistory();
+  /// The History of the object.
+  History history;
   /// Computes the flux and the position of the centroid of the object from pixel data.
   void computeFluxCentroid();
-
-  friend class Frame;
-  friend class SExFrame;
-  
- private:
-  unsigned long id;
-  NumVector<data_t> weight;
-  SegmentationMap segMap;
-  PixelCovarianceMatrix cov;
-  CorrelationFunction xi;
-  Point2D<data_t> centroid;
-  data_t flux, noise_mean, noise_rms, classifier;
-  std::bitset<8> flag;
-  std::string basefilename;
-  History history;
 };
 #endif

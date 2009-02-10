@@ -83,9 +83,9 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   updatePolar = true;
   tag = 0;
   name = "";
-  id = obj.getID();
-  classifier = obj.getClassifier();
-  basefilename = obj.getBaseFilename();
+  id = obj.id;
+  classifier = obj.classifier;
+  basefilename = obj.basefilename;
 
   // optimized decomposition
   // transforms obj into Composite2D *this
@@ -96,12 +96,12 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
 
   history.clear();
   history.setSilent();
-  history << obj.getHistory();
+  history = obj.history;
   history << optimalDecomp.getHistory();
   history.unsetSilent();
   // joint detection and decomposition flags to form a 16 bit set
   flags.reset();
-  const bitset<8>& fitsFlags = obj.getDetectionFlags();
+  const bitset<8>& fitsFlags = obj.flags;
   const bitset<8>& decompFlags = optimalDecomp.getDecompositionFlags();
   for (int i = 0; i < 8; i++) {
     flags[i] = fitsFlags[i];

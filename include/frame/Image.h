@@ -10,28 +10,34 @@
 #include <frame/Grid.h>
 
 /// Class for image data.
-/// The class represents image data as a vector.\n
-/// It is particularly suited for reading in data from FITS files.
+/// Internally, the class represents image data as a vector. But the interface
+/// allows two-dimensional access.\n
+/// The class can read in data directly from and save it to FITS files.
 
 template <class T>
 class Image : public NumVector<T> {
   typedef NumVector<T> data;
  public:
   /// Default constructor.
-  /// Only usefull when constructing a FitsImage from data in memory.
   Image() : NumVector<T>() {
     filename = "";
     history.clear();
   }
+  /// Constructor with given image size \f$N\times M\f$.
+  Image(unsigned int N, unsigned int M) : NumVector<T>(N*M) {
+    filename = "";
+    history.clear();
+    grid = Grid(0,0,N,M);
+  }
   /// Argumented constructor for reading from a FITS file.
-  /// The extension has to given in the standard cfitsio way as
+  /// The extension can be given in the standard cfitsio way as
   /// filename[extension].
   Image(std::string infilename) : NumVector<T>() {
     filename = infilename;
     history.clear();
     read();
   }
-  /// Acess operator using pixel index.
+  /// Access operator using pixel index.
   T& operator()(unsigned long i) {
     return NumVector<T>::operator()(i);
   }
@@ -42,7 +48,7 @@ class Image : public NumVector<T> {
   T& operator()(unsigned long x, unsigned long y) {
     return NumVector<T>::operator()(y*Image::getSize(0) + x);
   }
-  /// const Acess operator using pixel coordinates.
+  /// const access operator using pixel coordinates.
   const T& operator()(unsigned long x, unsigned long y) const {
     return NumVector<T>::operator()(y*Image::getSize(0) + x);
   }

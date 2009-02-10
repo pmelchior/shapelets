@@ -84,7 +84,7 @@ void SExFrame::fillObject(Object& O) {
   
   // check if object is in the catalog
   // this will also provied us with the correct entry of catalog (if present)
-  Catalog::iterator catiter = catalog.find(O.getID());
+  Catalog::iterator catiter = catalog.find(O.id);
   if (catiter != catalog.end()) {
     int xmin, xmax, ymin, ymax;
     xmin = catiter->second.XMIN;
@@ -121,16 +121,13 @@ void SExFrame::fillObject(Object& O) {
     // in the end only object data into new vector of smaller size, the rest will
     // filled up with artificial noise
     const NumVector<data_t>& data = *this;
-    NumVector<data_t>& objdata = O;
-    objdata.resize((xmax-xmin)*(ymax-ymin));
-    SegmentationMap& objSegMap = O.segMap;
-    objSegMap.resize((xmax-xmin)*(ymax-ymin));
-    NumVector<data_t>& objWeightMap = O.weight;
+    O.resize((xmax-xmin)*(ymax-ymin));
+    O.segMap.resize((xmax-xmin)*(ymax-ymin));
     if (weight.size()!=0) 
-      objWeightMap.resize((xmax-xmin)*(ymax-ymin));
+      O.weight.resize((xmax-xmin)*(ymax-ymin));
     vector<uint> nearby_objects;
 
-    for (int i =0; i < objdata.size(); i++) {
+    for (int i =0; i < O.size(); i++) {
       // old coordinates derived from new pixel index i
       int axis0 = xmax-xmin;
       int x = i%axis0 + xmin;
@@ -141,12 +138,12 @@ void SExFrame::fillObject(Object& O) {
       // since we fill same noise into data and into bgrms
       // the overall chi^2 (normalized by bg_rms) is unaffected by this region
       if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
-	objdata(i) = gsl_ran_gaussian (r, bg_rms);
-	objSegMap(i) = 0;
+	O(i) = gsl_ran_gaussian (r, bg_rms);
+	O.segMap(i) = 0;
 	if (weight.size()!=0) 
-	  objWeightMap(i) = 1./gsl_pow_2(bg_rms);
+	  O.weight(i) = 1./gsl_pow_2(bg_rms);
 	if (!subtractBG)
-	  objdata(i) += bg_mean;
+	  O(i) += bg_mean;
       } 
       //now inside image region
       else {
@@ -154,44 +151,45 @@ void SExFrame::fillObject(Object& O) {
 	if ((segMap(j) > 0 && segMap(j) != catiter->first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
 	  // if we have a weight map 
 	  if (weight.size()!=0)
-	    objdata(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
+	    O(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
 	  else
-	    objdata(i) = gsl_ran_gaussian (r, bg_rms);
+	    O(i) = gsl_ran_gaussian (r, bg_rms);
 	  // this objects has to yet been found to be nearby
 	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
 	    O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
 	    nearby_objects.push_back(segMap(j));
 	  }
 	  if (!subtractBG)
-	    objdata(i) += bg_mean;
+	    O(i) += bg_mean;
 	}
 	else {
-	  objdata(i) = data(j);
+	  O(i) = data(j);
 	  if (subtractBG) 
-	    objdata(i) -= bg_mean;
+	    O(i) -= bg_mean;
 	}
-	objSegMap(i) = segMap(j);
+	O.segMap(i) = segMap(j);
 	if (weight.size()!=0) 
-	  objWeightMap(i) = weight(j);
+	  O.weight(i) = weight(j);
       }
     }
     
     // Grid will be changed but not shifted (all pixels stay at their position)
-    O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.accessGrid() = O.segMap.accessGrid() = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
 
     // Fill other quantities into Object
     O.history << "# Segment:" << endl;
     O.flux = catiter->second.FLUX;
     O.centroid = Point2D<data_t>(catiter->second.XCENTROID,catiter->second.YCENTROID);
     O.history << "# Setting catalog values: Flux = " << O.flux << ", Centroid = ("<< O.centroid(0) << "/" << O.centroid(1) << ")" << std::endl; 
-    O.flag = std::bitset<8>(catiter->second.FLAGS);
+    O.flags = std::bitset<8>(catiter->second.FLAGS);
     O.classifier = catiter->second.CLASSIFIER;
     O.basefilename = SExFrame::getFilename();
     if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
+      O.noise_rms = bg_rms;
       if (subtractBG)
-	O.setNoiseMeanRMS(0,bg_rms);
+	O.noise_mean = 0;
       else
-	O.setNoiseMeanRMS(bg_mean,bg_rms);
+	O.noise_mean = bg_mean;
     }
   }
   else {

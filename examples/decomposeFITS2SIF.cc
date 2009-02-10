@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
     f->fillObject(obj);
     // add correlation function and pixel covariance if demanded
     if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
-      obj.accessCorrelationFunction() = corr;
+      obj.xi = corr;
     // dismiss objects with a flag set from detection/segmentation process
     //if ((*iter).second.FLAGS == 0) {
 

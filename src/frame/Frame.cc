@@ -316,7 +316,7 @@ unsigned long Frame::getNumberOfObjects() {
 void Frame::fillObject(Object& O) {
   // check if object is in the catalog
   // this will also provied us with the correct entry of catalog (if present)
-  Catalog::iterator catiter = catalog.find(O.getID());
+  Catalog::iterator catiter = catalog.find(O.id);
   if (catiter != catalog.end()) {
     // set up detection flags bitset, use existing ones as starting value
     std::bitset<8> flags(catiter->second.FLAGS);
@@ -370,21 +370,18 @@ void Frame::fillObject(Object& O) {
 
     // fill the object pixel data
     const NumVector<data_t>& data = *this;
-    NumVector<data_t>& objdata = O;
-    objdata.resize((xmax-xmin)*(ymax-ymin));
-    SegmentationMap& objSegMap = O.segMap;
-    History& objSegMapHistory = objSegMap.accessHistory();
+    O.resize((xmax-xmin)*(ymax-ymin));
+    History& objSegMapHistory = O.segMap.accessHistory();
     objSegMapHistory.setSilent();
     objSegMapHistory << history.str();
     objSegMapHistory.unsetSilent();
-    objSegMap.resize((xmax-xmin)*(ymax-ymin));
-    NumVector<data_t>& objWeightMap = O.weight;
+    O.segMap.resize((xmax-xmin)*(ymax-ymin));
     if (weight.size()!=0) 
-      objWeightMap.resize((xmax-xmin)*(ymax-ymin));
+      O.weight.resize((xmax-xmin)*(ymax-ymin));
     vector<uint> nearby_objects;
 
     // lop over all object pixels
-    for (int i =0; i < objdata.size(); i++) {
+    for (int i =0; i < O.size(); i++) {
       // old coordinates derived from new pixel index i
       int axis0 = xmax-xmin;
       int x = i%axis0 + xmin;
@@ -393,19 +390,19 @@ void Frame::fillObject(Object& O) {
 
       // if pixel is out of image region, fill noise
       if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
-	objdata(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
-	objSegMap(i) = 0;
+	O(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
+	O.segMap(i) = 0;
 	if (weight.size()!=0) 
-	  objWeightMap(i) = 1./gsl_pow_2(noise_rms);
+	  O.weight(i) = 1./gsl_pow_2(noise_rms);
       } 
       else {
 	// filter other objects in the frame
 	if ((segMap(j) > 0 && segMap(j) != catiter->first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
 	  // if we have a weight map 
 	  if (weight.size()!=0)
-	    objdata(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
+	    O(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
 	  else
-	    objdata(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
+	    O(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
 	  flags[0] = 1;
 	  // this objects has to yet been found to be nearby
 	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
@@ -415,21 +412,21 @@ void Frame::fillObject(Object& O) {
 	} 
 	// copy all other pixels into objdata
 	else {
-	  objdata(i) = data(j);
+	  O(i) = data(j);
 	}
-	objSegMap(i) = segMap(j);
+	O.segMap(i) = segMap(j);
 	if (weight.size()!=0) 
-	  objWeightMap(i) = weight(j);
+	  O.weight(i) = weight(j);
       }
     }
 
     gsl_rng_free (r);
 
     // Grid will be changed but not shifted (all pixels stay at their position)
-    O.accessGrid() = objSegMap.accessGrid() = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.accessGrid() = O.segMap.accessGrid() = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
 
     // Fill other quantities into Object
-    O.flag = flags;
+    O.flags = flags;
     O.history << "# Segment:" << endl;
     O.computeFluxCentroid();
 
@@ -445,11 +442,11 @@ void Frame::fillObject(Object& O) {
     catiter->second.CLASSIFIER = 0;
   } 
   // this is the whole frame
-  else if (O.getID()==0) {
+  else if (O.id==0) {
     O.history.clear();
     O.history << "# Extracting Object 0 (whole Fits image)." << endl;
     O = *this;
-    O.grid = Frame::getGrid();
+    O.accessGrid() = Frame::getGrid();
     O.segMap = segMap;
     if (weight.size()!=0)
       O.weight = weight;
@@ -458,8 +455,10 @@ void Frame::fillObject(Object& O) {
     std::cerr << "# Frame: This Object does not exist!" << endl;
     terminate();
   }
-  if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN")
-    O.setNoiseMeanRMS(noise_mean,noise_rms);
+  if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
+    O.noise_mean = noise_mean;
+    O.noise_rms = noise_rms;
+  }
   O.basefilename = getFilename();
 }
 
