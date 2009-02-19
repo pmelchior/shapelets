@@ -15,10 +15,8 @@ int main(int argc, char *argv[]) {
 
   // open sif file
   ShapeletObject sobj(input.getValue());
-  // get grid from sobj
-  const Grid& grid = sobj.getGrid();
   // construct shapelet model from coeffs stored in sobj
-  NumVector<data_t> data = sobj.getModel();
+  Image<data_t> data = sobj.getModel();
   // add noise if required
 
   // add noise
@@ -33,7 +31,7 @@ int main(int argc, char *argv[]) {
   // colormodel in {"RED", "BLUE", "GREEN", "GRAY", "WARM"}
   // data scaling in {"LINEAR", "SQUARE_ROOT", "LOGARITHMIC"} 
   // for the data range between min() and max()
-  IO::writePPMImage(output.getValue(),"SPECTRUM","LINEAR",data.min(),data.max(),grid,data);
+  IO::writePPMImage(output.getValue(),"SPECTRUM","LINEAR",data.min(),data.max(),data.grid,data);
 }
   
 							

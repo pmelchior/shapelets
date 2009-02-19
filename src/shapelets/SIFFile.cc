@@ -160,7 +160,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   status = IO::readFITSKeyword(fptr,"XMAX",xmax);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
   status = IO::readFITSKeyword(fptr,"YMAX",ymax);
-  sobj.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+  sobj.model.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
   complex<data_t> xc;
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   sobj.xcentroid(0) = real(xc);

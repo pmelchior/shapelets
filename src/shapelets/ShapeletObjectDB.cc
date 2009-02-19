@@ -205,7 +205,7 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
     tmp.chisquare = atof(row[3]);
     tmp.flags = bitset<16>(atoi(row[4]));
     // this assumes integer grids
-    tmp.grid = Grid(atoi(row[5]),atoi(row[6]),atoi(row[7]),atoi(row[8]));
+    tmp.model.grid = Grid(atoi(row[5]),atoi(row[6]),atoi(row[7]),atoi(row[8]));
     tmp.xcentroid(0) = atof(row[9]);
     tmp.xcentroid(1) = atof(row[10]);
     tmp.basefilename = string(row[11]);

@@ -23,8 +23,7 @@
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Typedef.h>
-#include <frame/Point2D.h>
-#include <frame/Grid.h>
+#include <frame/Image.h>
 #include <shapelets/Shapelets2D.h>
 #include <shapelets/CoefficientVector.h>
 
@@ -68,7 +67,7 @@ class Composite2D : private Shapelets2D {
   void setGrid(const Grid& ingrid);
   /// Get the shapelet model.
   /// This evaluates \f$f\f$ on the whole grid.
-  const NumVector<data_t>& getModel();
+  const Image<data_t>& getModel();
   /// Evaluate \f$f(x)\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$f(x)\f$.
   data_t eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov = NULL);
@@ -101,16 +100,14 @@ class Composite2D : private Shapelets2D {
   friend class Decomposite2D;
 
  protected:
-  /// The spatial Grid on which the shapelet model is defined.
-  Grid grid;
   /// The shapelet coefficients.
   CoefficientVector<data_t> coeffs;
   /// The shapelet design matrix.
   NumMatrix<data_t> M, MInt;
   /// The coefficient covariance matrix.
   NumMatrix<data_t> cov;
-  /// The shapelet model.
-  NumVector<data_t> model;
+  /// The shapelet model (which contains the Grid).
+  Image<data_t> model;
   /// The centroid position.
   Point2D<data_t> xcentroid;
   /// Whether M must be updated.

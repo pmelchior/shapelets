@@ -37,6 +37,10 @@ class Image : public NumVector<T> {
     history.clear();
     read();
   }
+  /// Copy operator from base-class.
+  void operator=(const NumVector<T>& v) {
+    NumVector<T>::operator=(v);
+  }
   /// Access operator using pixel index.
   T& operator()(unsigned long i) {
     return NumVector<T>::operator()(i);

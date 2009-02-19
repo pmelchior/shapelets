@@ -14,8 +14,7 @@ int main(int argc, char *argv[]) {
   cmd.parse(argc,argv);
 
   ShapeletObject sobj(input.getValue());
-  const Grid& grid = sobj.getGrid();
-  NumVector<data_t> data = sobj.getModel();
+  Image<data_t> data = sobj.getModel();
   
   // add noise
   if (rms.isSet() || mean.isSet()) {
@@ -26,7 +25,7 @@ int main(int argc, char *argv[]) {
   }
 
   fitsfile* fptr = IO::createFITSFile(output.getValue());
-  IO::writeFITSImage(fptr,grid,data,"MODEL");
+  IO::writeFITSImage(fptr,data,"MODEL");
   // append history
   if (history.isSet())
     IO::appendFITSHistory(fptr,sobj.getHistory());
