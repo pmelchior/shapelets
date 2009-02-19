@@ -1,21 +1,20 @@
 #include <modelfit/GalaxyModel.h>
-#include <iostream>
 
 GalaxyModel::~GalaxyModel() {}
-void GalaxyModel::setObject(Object& obj, bool normed, bool add) const {
+void GalaxyModel::setObject(Object& obj, data_t normalization, bool add) const {
   int x,y;
   for(int i=0; i < obj.size(); i++) {
     obj.grid.getCoords(i,x,y);
     x -= obj.centroid(0);  // coords must be around (0,0)
     y -= obj.centroid(1);
     if (add)
-      obj(i) += getValue(x,y,normed);
+      obj(i) += getValue(x,y)/normalization;
     else
-      obj(i) = getValue(x,y,normed);
+      obj(i) = getValue(x,y/normalization);
   }
 }
 
-void GalaxyModel::setObjectSheared(Object& obj, complex<data_t> gamma, bool normed, bool add) const {
+void GalaxyModel::setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add) const {
   NumVector<data_t> sourceCoords(2), lensCoords(2);
   NumMatrix<data_t> A(2,2);
   int x,y;
@@ -29,9 +28,9 @@ void GalaxyModel::setObjectSheared(Object& obj, complex<data_t> gamma, bool norm
     lensCoords(1) = y - obj.centroid(1);
     sourceCoords = A*lensCoords;
     if (add)
-      obj(i) += getValue(sourceCoords(0),sourceCoords(1),normed) * (1 - gsl_pow_2(abs(gamma))); // shear changes size and thus also flux
+      obj(i) += getValue(sourceCoords(0),sourceCoords(1)) * (1 - gsl_pow_2(abs(gamma))) / normalization; // shear changes size and thus also flux
     else
-      obj(i) = getValue(sourceCoords(0),sourceCoords(1),normed) * (1 - gsl_pow_2(abs(gamma)));
+      obj(i) = getValue(sourceCoords(0),sourceCoords(1)) * (1 - gsl_pow_2(abs(gamma))) / normalization;
   }
 }
 
@@ -49,15 +48,11 @@ SersicModel::SersicModel(data_t n, data_t Re) :
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
 }
 
-data_t SersicModel::getValue(data_t x, data_t y, bool normed) const {
+data_t SersicModel::getValue(data_t x, data_t y) const {
   data_t radius = sqrt(gsl_pow_2(x) + gsl_pow_2(y));
-  if (radius < limit) {
-    data_t val = exp(-b*(pow(radius/Re,1./n) -1)) - flux_limit;
-    if (normed)
-      return val/flux;
-    else
-      return val;
-  } else
+  if (radius < limit)
+    return exp(-b*(pow(radius/Re,1./n) -1)) - flux_limit;
+  else
     return 0;
 }
 
@@ -78,15 +73,11 @@ MoffatModel::MoffatModel(data_t beta, data_t FWHM) :
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
 }
 
-data_t MoffatModel::getValue(data_t x, data_t y, bool normed) const {
+data_t MoffatModel::getValue(data_t x, data_t y) const {
   data_t radius = sqrt(gsl_pow_2(x) + gsl_pow_2(y));
-  if (radius < limit) {
-    data_t val =  pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit;
-    if (normed)
-      return val/flux;
-    else
-      return val;
-  } else
+  if (radius < limit)
+    return pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit;
+  else
     return 0;
 }
 
@@ -98,7 +89,7 @@ data_t MoffatModel::getFlux() const {
 // ##### Interpolated Model ##### //
 InterpolatedModel::InterpolatedModel(Object& obj) : obj(obj) {}
 
-data_t InterpolatedModel::getValue(data_t x, data_t y,bool normed) const {
+data_t InterpolatedModel::getValue(data_t x, data_t y) const {
   data_t f11, f12, f21, f22,val = 0;
   int x1,x2,y1,y2;
   x += obj.centroid(0);
@@ -115,10 +106,7 @@ data_t InterpolatedModel::getValue(data_t x, data_t y,bool normed) const {
       
     val = f11*(x2-x)*(y2-y) + f12*(x2-x)*(y-y1) + f21*(x-x1)*(y2-y) + f22*(x-x1)*(y-y1);
   }
-  if (normed)
-    return val/obj.flux;
-  else
-    return val;
+  return val;
 }
 
 data_t InterpolatedModel::getFlux() const {
@@ -128,14 +116,11 @@ data_t InterpolatedModel::getFlux() const {
 // ##### Shapelet Model ##### //
 ShapeletModel::ShapeletModel(ShapeletObject& sobj) : sobj(sobj) {}
 
-data_t ShapeletModel::getValue(data_t x, data_t y, bool normed) const {
+data_t ShapeletModel::getValue(data_t x, data_t y) const {
   Point2D<data_t> centroid = sobj.getCentroid();
   centroid(0) += x;
   centroid(1) += y;
-  if (normed)
-    return sobj.eval(centroid)/sobj.getShapeletFlux();
-  else
-    return sobj.eval(centroid);
+  return sobj.eval(centroid);
 }
 
 data_t ShapeletModel::getFlux() const {

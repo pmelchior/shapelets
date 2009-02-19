@@ -16,17 +16,16 @@ public:
   /// Destructor.
   virtual ~GalaxyModel();
   /// Sample model at \f$(x,y)\f$.
-  /// When <tt>normed == true</tt>, all value are normalized to unit flux.
-  virtual data_t getValue(data_t x, data_t y,bool normed = false) const = 0;
+  virtual data_t getValue(data_t x, data_t y) const = 0;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const = 0;
   /// Populate \p obj by sampling from the model.
-  /// The model will be placed at the centroid of \p obj.\n
-  /// If <tt>normed == true</tt>, the resulting object has unit flux.\n
+  /// The model is placed at the centroid of \p obj.\n
+  /// The sampled model points are divided by \p normalization.\n
   /// If <tt>add == true</tt>, the model values are added to the entries of \p obj.
-  void setObject(Object& obj, bool normed = false, bool add = false) const;
+  void setObject(Object& obj, data_t normalization, bool add = false) const;
   /// Populate \p obj by sampling from a sheared model.
-  void setObjectSheared(Object& obj, complex<data_t> gamma, bool normed = false, bool add = false) const;
+  void setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add = false) const;
 };
 
 /// Sersic model class.
@@ -43,8 +42,7 @@ class SersicModel : public GalaxyModel {
   /// Constructor with Sersic index \p n and effective radius \p Re.
   SersicModel(data_t n, data_t Re);
   /// Sample model at \f$(x,y)\f$.
-  /// When <tt>normed == true</tt>, all value are normalized to unit flux.
-  virtual data_t getValue(data_t x, data_t y, bool normed = false) const;
+  virtual data_t getValue(data_t x, data_t y) const;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
 private:
@@ -62,8 +60,7 @@ class MoffatModel : public GalaxyModel {
   /// Constructor with Moffat index \p beta and width \p FWHM.
   MoffatModel(data_t beta, data_t FWHM);
   /// Sample model at \f$(x,y)\f$.
-  /// When <tt>normed == true</tt>, all value are normalized to unit flux.
-  virtual data_t getValue(data_t x, data_t y, bool normed = false) const;
+  virtual data_t getValue(data_t x, data_t y) const;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
  private:
@@ -78,9 +75,7 @@ public:
   /// Constructor.
   InterpolatedModel(Object& obj);
   /// Sample model at \f$(x,y)\f$.
-  /// When <tt>normed == true</tt>, all value are normalized to unit 
-  /// Object::flux.
-  virtual data_t getValue(data_t x, data_t y,bool normed = false) const;
+  virtual data_t getValue(data_t x, data_t y) const;
   /// Get Object::flux.
   virtual data_t getFlux() const;
 private:
@@ -94,8 +89,7 @@ public:
   /// Constructor.
   ShapeletModel(ShapeletObject& sobj);
   /// Sample model at \f$(x,y)\f$.
-  /// When <tt>normed == true</tt>, all value are normalized to unit flux.
-  virtual data_t getValue(data_t x, data_t y,bool normed = false) const;
+  virtual data_t getValue(data_t x, data_t y) const;
   /// Return ShapeletObject::getShapeletFlux().
   virtual data_t getFlux() const;
 private:
