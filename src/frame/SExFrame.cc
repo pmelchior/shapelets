@@ -79,13 +79,10 @@ const Catalog& SExFrame::getCatalog() {
   return catalog;
 }
 
-void SExFrame::fillObject(Object& O) {
+void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
   if (!estimatedBG) estimateNoise();
-  
-  // check if object is in the catalog
-  // this will also provied us with the correct entry of catalog (if present)
-  Catalog::iterator catiter = catalog.find(O.id);
   if (catiter != catalog.end()) {
+    O.id = catiter->first;
     int xmin, xmax, ymin, ymax;
     xmin = catiter->second.XMIN;
     xmax = catiter->second.XMAX;
@@ -174,7 +171,7 @@ void SExFrame::fillObject(Object& O) {
     }
     
     // Grid will be changed but not shifted (all pixels stay at their position)
-    O.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.grid = O.weight.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
 
     // Fill other quantities into Object
     O.history << "# Segment:" << endl;
@@ -267,4 +264,8 @@ void SExFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
   estimatedBG = 1;
   bg_mean = mean;
   bg_rms = rms;
+}
+
+CorrelationFunction SExFrame::computeCorrelationFunction(data_t threshold) {
+  return CorrelationFunction(*this,segMap,threshold);
 }

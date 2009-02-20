@@ -56,21 +56,9 @@ int main(int argc, char *argv[]) {
     f->getSegmentationMap().save(segmap.getValue());    
   
   // if noisemodel is COVARIANCE: measure pixel correlations
-  CorrelationFunction corr;
-  const std::map<Point2D<grid_t>, data_t>& xi = corr.getCorrelationFunction();
-  unsigned int corr_length = 1, sig_pixels;
-  if (ShapeLensConfig::NOISEMODEL == "COVARIANCE") {
-    corr = CorrelationFunction(*f,f->getSegmentationMap(),corr_length,true);
-    sig_pixels = xi.size();
-    corr.applyThreshold(2); // cut entries in xi which are below 2 sigma
-    // continue until some entries go below threshold
-    while (sig_pixels == xi.size()) { 
-      corr_length++;
-      corr = CorrelationFunction(*f,f->getSegmentationMap(),corr_length,true);
-      sig_pixels = xi.size();
-      corr.applyThreshold(2);
-    }
-  }
+  CorrelationFunction xi;
+  if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
+    xi = f->computeCorrelationFunction(2);
 
   // if required: save a file which lists all stored SIF files
   std::ofstream listfile;
@@ -80,20 +68,20 @@ int main(int argc, char *argv[]) {
   // run through all objects
   // every file generated will have the appendix "_n", with n being the
   // object's running number
-  const Catalog& cat = f->getCatalog();
-  Catalog::const_iterator iter;
+  Catalog& cat = f->getCatalog();
+  Catalog::iterator iter;
   for(iter = cat.begin(); iter != cat.end(); iter++) {
     // for clearity:
     unsigned long id = (*iter).first;
-    // choose the actual object in the frame
-    Object obj(id);
+    // choose the actual object in the frame:
     // "cut out" the object from whole frame and put it into Object obj
-    f->fillObject(obj);
-    // add correlation function and pixel covariance if demanded
+    Object obj;
+    f->fillObject(obj,iter);
+    // set objects correlation to the one measure from f
     if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
-      obj.xi = corr;
+      obj.xi = xi;
     // dismiss objects with a flag set from detection/segmentation process
-    //if ((*iter).second.FLAGS == 0) {
+    if ((*iter).second.FLAGS == 0) {
 
       // actual decomposition is done here
       ShapeletObject sobj (obj);
@@ -120,7 +108,7 @@ int main(int argc, char *argv[]) {
 	IO::writeFITSImage(fptr,obj,"RESIDUAL");
 	IO::closeFITSFile(fptr);
       }
-      //}
+    }
   }
   // save catalog when demanded
   if (catalog.isSet())

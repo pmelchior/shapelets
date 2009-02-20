@@ -37,17 +37,23 @@ class CorrelationFunction {
   /// Default constructor.
   CorrelationFunction ();
   /// Constructor for computing the correlation function from an Image.
-  /// The SegmentationMap is used to mask pixels with <tt>segMap(i)!=0</tt>,
-  /// unless <tt>mask=0</tt>.\n
-  /// Since correlation is expected only on small scales, the averging is done in a
-  /// box of area <tt>(2*maxLength+1)^2</tt> centered on each pixel.
-  CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, int maxLength = 2, bool mask=true);
-  CorrelationFunction (const NumVector<data_t>& data, const Grid& grid, int size = 2);
+  /// Only pixel correlation with a significance higher than \p threshold 
+  /// are considered. The computation is performed on increasingly bigger boxes,
+  /// until some correlation become insignificant.\n
+  /// If <tt>limit > 0</tt>, the computation is performed in boxes of maximum
+  /// sidelength of <tt>2*maxLength+1</tt>.
+  CorrelationFunction (const Image<data_t>& data, data_t threshold, int limit = 0);
+  /// Constructor for computing the correlation function from an Image.
+  /// The SegmentationMap is used to mask pixels with <tt>segMap(i)!=0</tt>.\n
+  /// Only pixel correlation with a significance higher than \p threshold 
+  /// are considered. The computation is performed on increasingly bigger boxes,
+  /// until some correlation become insignificant.\n
+  /// If <tt>limit > 0</tt>, the computation is performed in boxes of maximum
+  /// sidelength of <tt>2*maxLength+1</tt>.
+  CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, data_t threshold, int limit = 0);
   /// Constructor from a correlation matrix;
   /// \p corr must have the layout used by getCorrelationMatrix().
   CorrelationFunction (const NumMatrix<data_t>& corr);
-  /// Copy constructor.
-  void operator= (const CorrelationFunction& xi);
   /// Get correlation function \f$\xi\f$ as matrix.
   /// Returns a <tt>(2*maxLength+1)^2</tt> matrix, where the indices encode
   /// the spatial information of \f$\vec\Delta\f$.
@@ -66,10 +72,14 @@ class CorrelationFunction {
   void applyThreshold(data_t tau);
   /// Get maximal length used for constructing \f$\xi\f$.
   unsigned int getMaxLength() const;
+  /// Get amount of pixels relevant for \f$\xi\f$.
+  unsigned int getSize() const;
  private:
+  void compute(const Image<data_t>& data);
+  void compute(const Image<data_t>& im, const SegmentationMap& segMap);
   std::map<Point2D<grid_t>, data_t> xi, sigma;
   std::map<Point2D<grid_t>, unsigned int> num;
-  int size;
+  int maxLength;
   void setPoints();
 };
 

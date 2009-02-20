@@ -8,6 +8,7 @@
 #include <frame/SegmentationMap.h>
 #include <frame/PixelCovarianceMatrix.h>
 #include <frame/CorrelationFunction.h>
+#include <frame/Moments.h>
 #include <bitset>
 
 /// Central object representing class.
@@ -27,14 +28,58 @@
 
 class Object : public Image<data_t> {
  public:
-  /// Argumented constructor.
-  /// The \p id is  determined during the segmentation process.
-  Object(unsigned long id);
+  /// Constructor.
+  Object();
   /// Argumented constructor for loading an object from a Fits file.
   /// The Fits file shold have been created by Object::save().
   Object (std::string fitsfile);
-  /// Copy constructor from base type.
+  /// Copy constructor from base class.
   Object (const Image<data_t>& base);
+  /// Copy operator from base class.
+  /// It copies only the Image part, but does not replace any other
+  /// data members of Object.
+  void operator=(const Image<data_t>& base);
+  /// Save the object information in a Fits file.
+  /// Data and SegmentationMap will go to pHDU and 1st extHDU, respectively. 
+  /// All other information goes to the pHDU header.
+  /// If a weight map is provided, these will be stored in the extension \p WEIGTH
+  /// If a correlation function is provided, these will be stored in the extension \p CORRELATION.
+  void save(std::string fitsfile);
+
+  /// Computes Object::flux from pixel data.
+  /// If Object::weight is non-empty, the pixel weights are considered.
+  void computeFlux();
+  /// Computes Object::centroid from pixel data.
+  /// If Object::weight is non-empty, the pixel weights are considered.\n
+  /// \b CAUTION: The results depends on the value of Object::flux.
+  void computeCentroid();
+  /// Computes the quadrupole moment Object::Q from pixel data.
+  /// If Object::weight is non-empty, the pixel weights are considered.\n
+  /// \b CAUTION: The results depends on the value of Object::flux and 
+  /// Object::centroid.
+  void computeQuadrupole();
+  /// Computes the octupole moment Object::O from pixel data.
+  /// If Object::weight is non-empty, the pixel weights are considered.\n
+  /// \b CAUTION: The results depends on the value of Object::flux and 
+  /// Object::centroid.
+  void computeOctupole();
+  /// Computes the hexadecupole moment Object::H from pixel data.
+  /// If Object::weight is non-empty, the pixel weights are considered.\n
+  /// \b CAUTION: The results depends on the value of Object::flux and 
+  /// Object::centroid.
+  void computeHexadecupole();
+  /// Short-hand for computing Object::Q, Object::O, and Object::H.
+  /// If Object::weight is non-empty, the pixel weights are considered.\n
+  /// \b CAUTION: The results depends on the value of Object::flux and
+  /// Object::centroid.
+  void computeMoments();
+  /// Compute correlation function Object::xi from the pixel data.
+  /// \p threshold is the minimum significance of the correlation to
+  /// to be considered (reasonable value are around 2).
+  void computeCorrelationFunction(data_t threshold);
+
+
+
   /// The \p id of the Object.
   unsigned long id;
   /// The object classifier.
@@ -45,22 +90,17 @@ class Object : public Image<data_t> {
   data_t classifier;
   /// The weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
-  NumVector<data_t> weight;
+  Image<data_t> weight;
   /// The flux of this Object.
-  /// To set this quantity, you have to call computeFluxCentroid() before.
   data_t flux;
   /// The position of the object's centroid.
-  /// To get the flux from pixel data, you have to call computeFluxCentroid() before.
   Point2D<data_t> centroid;
-  /// Return 2nd brightness moments.
-  /// The 2nd brightness moments are defined relative to the centroid computed
-  /// with getCentroid().
-  NumMatrix<data_t> get2ndBrightnessMoments();
-  /// Return ellipticity of the object.
-  /// Ellipticity is calculated from the 2nd brightness moments \f$Q_{ij}\f$ as defined
-  /// in Bartelmann & Schneider (2001):\n
-  /// \f$ \epsilon = (Q_{11}-Q_{22}+2iQ_{12})/(Q_{11}+Q_{22}+2\sqrt{Q_{11}Q_{22}-Q_{12}^2})\f$
-  complex<data_t> getEllipticity();
+  /// The 2nd brightness moments, defined relative to centroid.
+  Quadrupole Q;
+  /// The 3rd brightness moments, defined relative to centroid.
+  Octupole O;
+  /// The 3rd brightness moments, defined relative to centroid.
+  Hexadecupole H;
   /// The detection flags.
   /// They indicates problems during the various procedures and are filled by a frameing class.
   /// Thus, look at Frame or SExFrame for the meaning of the individual bits.
@@ -73,20 +113,5 @@ class Object : public Image<data_t> {
   SegmentationMap segMap;
   /// The correlation function.
   CorrelationFunction xi;
-  /// The filename from which this object is derived.
-  /// This will be stored in the FITS header when using save().
-  /// The string should not exceed 80 characters, otherwise it becomes truncated 
-  /// in the FITS header.
-  std::string basefilename;
-  /// Save the object information in a Fits file.
-  /// Data and SegmentationMap will go to pHDU and 1st extHDU, respectively. 
-  /// All other information goes to the pHDU header.
-  /// If a weight map is provided, these will be stored in the extension \p WEIGTH
-  /// If a correlation function is provided, these will be stored in the extension \p CORRELATION.
-  void save(std::string fitsfile);
-  /// The History of the object.
-  History history;
-  /// Computes the flux and the position of the centroid of the object from pixel data.
-  void computeFluxCentroid();
 };
 #endif

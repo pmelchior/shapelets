@@ -20,22 +20,25 @@ class Image : public NumVector<T> {
  public:
   /// Default constructor.
   Image() : NumVector<T>() {
-    filename = "";
+    basefilename = "???";
     history.clear();
   }
   /// Constructor with given image size \f$N\times M\f$.
   Image(unsigned int N, unsigned int M) : NumVector<T>(N*M) {
-    filename = "";
+    basefilename = "???";
     history.clear();
     grid = Grid(0,0,N,M);
   }
   /// Argumented constructor for reading from a FITS file.
   /// The extension can be given in the standard cfitsio way as
-  /// filename[extension].
-  Image(std::string infilename) : NumVector<T>() {
-    filename = infilename;
+  /// \p filename[extension].
+  Image(std::string filename) : NumVector<T>() {
+    basefilename = filename;
     history.clear();
     read();
+  }
+  /// Copy constructor from base class.
+  Image(const NumVector<T>& v) :  NumVector<T>(v) {
   }
   /// Copy operator from base-class.
   void operator=(const NumVector<T>& v) {
@@ -63,10 +66,9 @@ class Image : public NumVector<T> {
     return *this;
   }
   /// Slice a sub-image, specified by edge-points \p P1 and \p P2.
-  Image<T> slice(const Point2D<grid_t>& P1, const Point2D<grid_t>& P2) const {
+  void slice(Image<T>& sub, const Point2D<grid_t>& P1, const Point2D<grid_t>& P2) const {
     int xmin = P1(0), xmax = P2(0), ymin = P1(1), ymax = P2(1);
     int axis0 = xmax-xmin;
-    Image<T> sub;
     sub.resize((xmax-xmin)*(ymax-ymin));
 
     // lop over all object pixels
@@ -78,12 +80,49 @@ class Image : public NumVector<T> {
 	sub(i) = Image<T>::operator()(x,y);
     }
     sub.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
-    sub.filename = filename;
+    sub.basefilename = basefilename;
     sub.history.setSilent();
-    sub.history << "# Slice from " << filename << " in the area (";
+    sub.history << "# Slice from " << basefilename << " in the area (";
     sub.history << xmin << "/" << ymin << ") -> (";
     sub.history << xmax << "/" << ymax << ")" << std::endl;
-    return sub;
+  }
+  /// Create sampled version if this image by averaging over
+  /// \p sampling pixels in each direction
+  void sample(Image<T>& sampled, int sampling) {
+    T av;
+    int highres_x, highres_y;
+    if (sampled.size() != Image<T>::size()/(sampling*sampling)) {
+      sampled.resize(Image<T>::size()/(sampling*sampling));
+      sampled.grid = Grid(0,0,Image<T>::getSize(0)/sampling,Image<T>::getSize(1)/sampling);
+    }
+    for (int x=0; x < sampled.getSize(0); x++) {
+      for (int y=0; y < sampled.getSize(1); y++) {
+	av = 0;
+	// left-lower starting point for sampling
+	if (sampling%2==0) {
+	  for (int nx=0; nx<sampling; nx++)
+	    for (int ny=0; ny<sampling; ny++)
+	      av += Image<T>::operator()(x*sampling + nx, y*sampling + ny);
+	} else { // centered sampling
+	  for (int nx=-sampling/2; nx<sampling/2; nx++) {
+	    for (int ny=-sampling/2; ny<sampling/2; ny++) {
+	      highres_x = x*sampling + nx;
+	      highres_y = y*sampling + ny;
+	      // if pixel get out of bounds, mirror at the center
+	      if (highres_x < 0 || highres_x >= Image<T>::getSize(0))
+		highres_x = Image<T>::getSize(0) - abs(highres_x);
+	      if (highres_y < 0 || highres_y >= Image<T>::getSize(1))
+		highres_y = Image<T>::getSize(1) - abs(highres_y);
+	      av += Image<T>::operator()(highres_x,highres_y);
+	    }
+	  }
+	}
+	sampled(x,y) = av;
+      }
+    }
+    sampled.basefilename = basefilename;
+    sampled.history.setSilent();
+    sampled.history << "# Downsampled from " << basefilename << " by factor " << sampling << std::endl;
   }
   /// Get axis size of the whole image in given direction.
   unsigned int getSize(bool direction) const {
@@ -91,7 +130,7 @@ class Image : public NumVector<T> {
   }
   /// Get the filename of the Fits file.
   std::string getFilename() const {
-    return filename;
+    return basefilename;
   }
   /// Save as FITS file.
   void save(std::string filename) const {
@@ -107,17 +146,18 @@ class Image : public NumVector<T> {
   Grid grid;
   /// The image history.
   History history;
+  /// The file this data is derived from.
+  /// The string should not exceed 80 characters, otherwise it becomes 
+  /// eventually truncated during save().
+  std::string basefilename;
   
   // Legacy function
   const Grid& getGrid() const {
     return grid;
   }
-
- protected:
-  std::string filename;
  private:
   void read() {
-    fitsfile *fptr = IO::openFITSFile(filename);
+    fitsfile *fptr = IO::openFITSFile(basefilename);
     int status = IO::readFITSImage(fptr,grid,*this);
     status = IO::closeFITSFile(fptr);
   }

@@ -58,12 +58,15 @@
 /// f->readCatalog(catfile);
 /// f->readSegmentationMap(segfile);
 /// f->subtractBackground();
-/// for(int n = 1; n <= f->getNumberOfObjects(); n++) {
-///   Object* obj = new Object(i);
-///   f->fillObject(obj);
-///   NumVector<data_t>& data = obj->getData();
-///   Grid& grid = obj->getGrid();
-///   ...
+/// const Catalog& cat = f->getCatalog();
+/// Catalog::const_iterator iter;
+/// for(iter = cat.begin(); iter != cat.end(); iter++) {
+///   unsigned long id = (*iter).first;
+///   Object obj;
+///   f->fillObject(obj,iter);
+///   if ((*iter).second.FLAGS == 0) {
+///     // do something useful with obj ...
+///   }
 /// }
 ///\endcode
 ///
@@ -104,11 +107,14 @@ class SExFrame : public Image<data_t> {
   /// for object independently.
   void subtractBackground();
   /// Fill all necessary information into an Object.
-  /// The Object(id) will then have a segmented version of the area around
-  /// the SExtractor object specified by NUMBER.
+  /// The object is selected by the iterator \p catiter which must must
+  /// be constructed from the Catalog obtained by calling getCatalog().\n
+  /// The image will be cut to a region around the selected object. 
+  /// If another objects is inside this region, its pixel will be replaced 
+  /// by noise according to the noise statistics derived in estimateBackground().\n
   /// If subtractBackground() was called before, the background noise level
   /// will be subtracted.
-  void fillObject(Object& obj);
+  void fillObject(Object& obj, Catalog::const_iterator& catiter);
   /// Return number of objects found by SExtractor.
   /// If it returns 0, the catalog file is either empty or its format is wrongly specified.
   unsigned long getNumberOfObjects();
@@ -124,6 +130,10 @@ class SExFrame : public Image<data_t> {
   const SegmentationMap& getSegmentationMap();
   /// Return Catalog read by readCatalog().
   const Catalog& getCatalog();
+  /// Compute correlation function from the pixel data of the entire Frame.
+  /// \p threshold is the minimum significance of the correlation to
+  /// to be considered (reasonable value are around 2).
+  CorrelationFunction computeCorrelationFunction(data_t threshold);
 
  private:
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);

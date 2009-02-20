@@ -6,24 +6,78 @@ typedef unsigned int uint;
 CorrelationFunction::CorrelationFunction () {
 }
 
-CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const SegmentationMap& segMap, int size, bool mask) :
-  size(size) {
+CorrelationFunction::CorrelationFunction (const Image<data_t>& data, data_t threshold, int limit) {
+  maxLength = 1;
+  int sig_pixels;
+  compute(data);
+  sig_pixels = xi.size();
+  applyThreshold(threshold); // cut entries in xi which are below threshold
+  // continue until some entries go below threshold
+  while (sig_pixels == xi.size()) {
+    if ((limit > 0 && maxLength < limit) || limit <= 0) {
+      maxLength++;
+      compute(data);
+      sig_pixels = xi.size();
+      applyThreshold(threshold);
+    } else 
+      break;
+  }
+}
+
+CorrelationFunction::CorrelationFunction (const Image<data_t>& data, const SegmentationMap& segMap, data_t threshold, int limit) {
+  maxLength = 1;
+  int sig_pixels;
+  compute(data,segMap);
+  sig_pixels = xi.size();
+  applyThreshold(threshold); // cut entries in xi which are below threshold
+  // continue until some entries go below threshold
+  while (sig_pixels == xi.size()) {
+    if ((limit > 0 && maxLength < limit) || limit <= 0) {
+      maxLength++;
+      compute(data,segMap);
+      sig_pixels = xi.size();
+      applyThreshold(threshold);
+    } else 
+      break;
+  }
+}
+
+
+CorrelationFunction::CorrelationFunction(const NumMatrix<data_t>& corr)  {
+  if (corr.getRows()%2 != 1 || corr.getRows() != corr.getColumns()) {
+    std::cerr << "CorrelationFunction: correlation matrix must be square and have odd dimension" << std::endl;
+    std::terminate();
+  }
+  maxLength = (corr.getColumns() - 1)/2;
+  Point2D<grid_t> p;
+  int i,j;
+  for (int i=0; i < corr.getRows(); i++) {
+    for (int j =0; j < corr.getColumns(); j++) {
+      p(0) = i - maxLength;
+      p(1) = j - maxLength;
+      xi[p] = corr(i,j);
+      sigma[p] = 0;
+    }
+  }
+}
+
+void CorrelationFunction::compute(const Image<data_t>& im, const SegmentationMap& segMap) {
   int x,y,x1,y1,i,j;
   Point2D<grid_t> p;
   setPoints();
-  int axsize0 = im.getSize(0), axsize1 = im.getSize(1);
+  grid_t startx = im.grid.getStartPosition(0), starty = im.grid.getStartPosition(1), stopx = im.grid.getStopPosition(0), stopy = im.grid.getStopPosition(1);
 
   // 1) compute mean of correlation
   for (i =0; i < im.size(); i++) {
     // choose only noise pixels
-    if (!mask || segMap(i) == 0) {
+    if (segMap(i) == 0) {
       im.grid.getCoords(i,x,y);
-      for (x1=x-size; x1<= x+size; x1++) {
-	for (y1=y-size; y1<= y+size; y1++) {
-	  if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
+      for (x1=x-maxLength; x1<= x+maxLength; x1++) {
+	for (y1=y-maxLength; y1<= y+maxLength; y1++) {
+	  if (x1>=startx && x1<stopx && y1>=starty && y1 < stopy) {
 	    j = im.grid.getPixel(x1,y1);
 	    // again: choose only noise pixels
-	    if (!mask || segMap(j) == 0) {
+	    if (segMap(j) == 0) {
 	      p(0) = x1-x;
 	      p(1) = y1-y;
 	      xi[p] += im(i)*im(j);
@@ -41,18 +95,18 @@ CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const Segment
     if (n > 0)
       iter->second /= n;
   }
-
+  
   // 2) compute std of correlation given mean from above
   for (i =0; i < im.size(); i++) {
     // choose only noise pixels
-    if (!mask || segMap(i) == 0) {
+    if (segMap(i) == 0) {
       im.grid.getCoords(i,x,y);
-      for (x1=x-size; x1<= x+size; x1++) {
-	for (y1=y-size; y1<= y+size; y1++) {
-	  if (x1>=0 && x1<axsize0 && y1>=0 && y1 < axsize1) {
+      for (x1=x-maxLength; x1<= x+maxLength; x1++) {
+	for (y1=y-maxLength; y1<= y+maxLength; y1++) {
+	  if (x1>=startx && x1<stopx && y1>=starty && y1 < stopy) {
 	    j = im.grid.getPixel(x1,y1);
 	    // again: choose only noise pixels
-	    if (!mask || segMap(j) == 0) {
+	    if (segMap(j) == 0) {
 	      p(0) = x1-x;
 	      p(1) = y1-y;
 	      sigma[p] += gsl_pow_2(xi[p] - im(i)*im(j));
@@ -70,24 +124,22 @@ CorrelationFunction::CorrelationFunction (const Image<data_t>& im, const Segment
   }
 }
 
-CorrelationFunction::CorrelationFunction (const NumVector<data_t>& data, const Grid& grid, int size) :
-  size(size) {
+void CorrelationFunction::compute (const Image<data_t>& im) {
   int x,y,x1,y1,i,j;
   Point2D<grid_t> p;
   setPoints();
-  grid_t startx = grid.getStartPosition(0), starty = grid.getStartPosition(1),
-    stopx = grid.getStopPosition(0), stopy = grid.getStopPosition(1);
+  grid_t startx = im.grid.getStartPosition(0), starty = im.grid.getStartPosition(1), stopx = im.grid.getStopPosition(0), stopy = im.grid.getStopPosition(1);
 
   // 1) compute mean of correlation
-  for (i =0; i < data.size(); i++) {
-    grid.getCoords(i,x,y);
-    for (x1=x-size; x1<= x+size; x1++) {
-      for (y1=y-size; y1<= y+size; y1++) {
+  for (i =0; i < im.size(); i++) {
+    im.grid.getCoords(i,x,y);
+    for (x1=x-maxLength; x1<= x+maxLength; x1++) {
+      for (y1=y-maxLength; y1<= y+maxLength; y1++) {
 	if (x1 >= startx && x1 < stopx && y1 >= starty && y1 < stopy) {
-	  j = grid.getPixel(x1,y1);
+	  j = im.grid.getPixel(x1,y1);
 	  p(0) = x1-x;
 	  p(1) = y1-y;
-	  xi[p] += data(i)*data(j);
+	  xi[p] += im(i)*im(j);
 	  num[p]++;
 	}
       }
@@ -103,15 +155,15 @@ CorrelationFunction::CorrelationFunction (const NumVector<data_t>& data, const G
   }
 
   // 2) compute std of correlation given mean from above
-  for (i =0; i < data.size(); i++) {
-    grid.getCoords(i,x,y);
-    for (x1=x-size; x1<= x+size; x1++) {
-      for (y1=y-size; y1<= y+size; y1++) {
+  for (i =0; i < im.size(); i++) {
+    im.grid.getCoords(i,x,y);
+    for (x1=x-maxLength; x1<= x+maxLength; x1++) {
+      for (y1=y-maxLength; y1<= y+maxLength; y1++) {
 	if (x1 >= startx && x1 < stopx && y1 >= starty && y1 < stopy) {
-	  j = grid.getPixel(x1,y1);
+	  j = im.grid.getPixel(x1,y1);
 	  p(0) = x1-x;
 	  p(1) = y1-y;
-	  sigma[p] += gsl_pow_2(xi[p] - data(i)*data(j));
+	  sigma[p] += gsl_pow_2(xi[p] - im(i)*im(j));
 	}
       }
     }
@@ -124,37 +176,14 @@ CorrelationFunction::CorrelationFunction (const NumVector<data_t>& data, const G
   }
 }
 
-CorrelationFunction::CorrelationFunction(const NumMatrix<data_t>& corr)  {
-  if (size%2 != 1) {
-    std::cerr << "CorrelationFunction: correlation matrix must have odd dimension" << std::endl;
-    std::terminate();
-  }
-  size = (corr.getColumns() - 1)/2;
-  Point2D<grid_t> p;
-  int i,j;
-  for (int i=0; i < corr.getRows(); i++) {
-    for (int j =0; j < corr.getColumns(); j++) {
-      p(0) = i - size;
-      p(1) = j - size;
-      xi[p] = corr(i,j);
-      sigma[p] = 0;
-    }
-  }
-}
-
-void CorrelationFunction::operator= (const CorrelationFunction& xi2) {
-  xi = xi2.xi;
-  sigma = xi2.sigma;
-  size = xi2.size;
-}
 
 NumMatrix<data_t> CorrelationFunction::getCorrelationMatrix() const {
-  NumMatrix<data_t> corr(2*size+1, 2*size+1);
+  NumMatrix<data_t> corr(2*maxLength+1, 2*maxLength+1);
   std::map<Point2D<grid_t>, data_t>::const_iterator iter;
   int i,j;
   for (iter = xi.begin(); iter != xi.end(); iter++) {
-    i = iter->first(0) + size;
-    j = iter->first(1) + size;
+    i = iter->first(0) + maxLength;
+    j = iter->first(1) + maxLength;
     corr(i,j) = iter->second;
   }
   return corr;
@@ -169,8 +198,8 @@ const std::map<Point2D<grid_t>, data_t>& CorrelationFunction::getCorrelationErro
   
 void CorrelationFunction::setPoints() {
   Point2D<grid_t> p;
-  for (int i = -size; i <= size; i++) {
-    for (int j = -size; j <= size; j++) {
+  for (int i = -maxLength; i <= maxLength; i++) {
+    for (int j = -maxLength; j <= maxLength; j++) {
       p(0) = i;
       p(1) = j;
       xi[p] = sigma[p] = 0;
@@ -182,8 +211,8 @@ void CorrelationFunction::setPoints() {
 void CorrelationFunction::applyThreshold(data_t thresh) {
   Point2D<grid_t> p;
   // don't use iterators here because the erase messes them up
-  for (int i = -size; i <= size; i++) {
-    for (int j = -size; j <= size; j++) {
+  for (int i = -maxLength; i <= maxLength; i++) {
+    for (int j = -maxLength; j <= maxLength; j++) {
       p(0) = i;
       p(1) = j;
       if (xi[p] < thresh*sigma[p]) {
@@ -195,5 +224,9 @@ void CorrelationFunction::applyThreshold(data_t thresh) {
 }
 
 unsigned int CorrelationFunction::getMaxLength() const {
-  return size;
+  return maxLength;
+}
+
+unsigned int CorrelationFunction::getSize() const {
+  return xi.size();
 }

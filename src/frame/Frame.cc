@@ -313,11 +313,9 @@ unsigned long Frame::getNumberOfObjects() {
 
 // cut the image to a small region around the object
 // and set all pixels to zero than are not related to the image
-void Frame::fillObject(Object& O) {
-  // check if object is in the catalog
-  // this will also provied us with the correct entry of catalog (if present)
-  Catalog::iterator catiter = catalog.find(O.id);
+void Frame::fillObject(Object& O, Catalog::iterator& catiter) {
   if (catiter != catalog.end()) {
+    O.id = catiter->first;
     // set up detection flags bitset, use existing ones as starting value
     std::bitset<8> flags(catiter->second.FLAGS);
 
@@ -422,12 +420,12 @@ void Frame::fillObject(Object& O) {
     gsl_rng_free (r);
 
     // Grid will be changed but not shifted (all pixels stay at their position)
-    O.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.grid = O.weight.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
 
     // Fill other quantities into Object
     O.flags = flags;
-    O.history << "# Segment:" << endl;
-    O.computeFluxCentroid();
+    O.computeFlux();
+    O.computeCentroid();
 
     // Update catalog with object values
     catiter->second.XMIN = xmin;
@@ -449,7 +447,8 @@ void Frame::fillObject(Object& O) {
     O.segMap = segMap;
     if (weight.size()!=0)
       O.weight = weight;
-    O.computeFluxCentroid();
+    O.computeFlux();
+    O.computeCentroid();
   } else {
     std::cerr << "# Frame: This Object does not exist!" << endl;
     terminate();
@@ -510,8 +509,14 @@ const std::set<unsigned long>& Frame::getPixelSet(unsigned long objectnr) {
   }
 }
 
-const Catalog& Frame::getCatalog() {
+Catalog& Frame::getCatalog() {
   return catalog;
 }
 
-
+CorrelationFunction Frame::computeCorrelationFunction(data_t threshold) {
+// findObject() has been called -> segMap is meaningfull
+  if(getNumberOfObjects())   
+    return CorrelationFunction(*this,segMap,threshold);
+  else
+    return CorrelationFunction(*this,threshold);
+}

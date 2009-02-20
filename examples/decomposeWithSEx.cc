@@ -26,6 +26,11 @@ int main(int argc, char *argv[]) {
     f = new SExFrame(input.getValue(),segmap.getValue(),catalog.getValue());
   f->subtractBackground();
 
+  // if noisemodel is COVARIANCE: measure pixel correlations
+  CorrelationFunction xi;
+  if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
+    xi = f->computeCorrelationFunction(2);
+  
   // if required: save a file which lists all stored SIF files
   std::ofstream listfile;
   if (list.isSet())
@@ -41,9 +46,12 @@ int main(int argc, char *argv[]) {
     // for clearity:
     unsigned long id = (*iter).first;
     // choose the actual object in the frame
-    Object obj(id);
     // cut out object in place it in obj
-    f->fillObject(obj);
+    Object obj;
+    f->fillObject(obj,iter);
+    // set objects correlation to the one measure from f
+    if (ShapeLensConfig::NOISEMODEL == "COVARIANCE")
+      obj.xi = xi;
     // dismiss objects with flags[i] = 1 for i >= 3 because of serious trouble
     // during the detection/segmentation process
     if ((*iter).second.FLAGS < 8) {

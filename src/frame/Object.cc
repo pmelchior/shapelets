@@ -3,14 +3,22 @@
 #include <gsl/gsl_math.h>
 #include <IO.h>
 
-Object::Object(unsigned long inid) : Image<data_t>(), segMap() {
-  id = inid;
+Object::Object() : Image<data_t>(), segMap() {
+  id = 0;
   flags = 0;
   classifier = 0;
   flux = centroid(0) = centroid(1) = 0;
 }
 
 Object::Object (const Image<data_t>& base) : Image<data_t>(base), segMap() {
+  id = 0;
+  flags = 0;
+  classifier = 0;
+  flux = centroid(0) = centroid(1) = 0;
+}
+
+void Object::operator=(const Image<data_t>& base) {
+  Image<data_t>::operator=(base);
 }
 
 Object::Object(std::string objfile) : Image<data_t>(), segMap() {
@@ -27,7 +35,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   IO::readFITSImage(fptr,grid,Object::accessNumVector());
   
   // recover object information from header keywords
-  status = IO::readFITSKeywordString(fptr,"BASEFILE",basefilename);
+  status = IO::readFITSKeywordString(fptr,"BASEFILE",Image<data_t>::basefilename);
   status = IO::readFITSKeyword(fptr,"ID",id);
   grid_t xmin,ymin;
   status = IO::readFITSKeyword(fptr,"XMIN",xmin);
@@ -93,7 +101,7 @@ void Object::save(std::string filename) {
   status = IO::writeFITSImage(outfptr,grid,data);
 
   // add object information to header
-  status = IO::updateFITSKeywordString(outfptr,"BASEFILE",basefilename,"name of source file");
+  status = IO::updateFITSKeywordString(outfptr,"BASEFILE",Image<data_t>::basefilename,"name of source file");
   status = IO::updateFITSKeyword(outfptr,"ID",id,"object id");
   status = IO::updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
   status = IO::updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
@@ -122,87 +130,167 @@ void Object::save(std::string filename) {
   status = IO::closeFITSFile(outfptr);
 }
 
-NumMatrix<data_t> Object::get2ndBrightnessMoments() {
+void Object::computeFlux() {
   const NumVector<data_t>& data = *this;
   const Grid& grid = Image<data_t>::grid;
-  NumMatrix<data_t> Q(2,2);
-  
-  // check if weights are available: if yes, use them
-  bool weights = false;
-  if (weight.size() != 0)
-    weights = true;
-  
-  data_t datapoint, unnormed_flux = 0;
-  for (int i=0; i< grid.size(); i++) {
-    if (weights) {
-      if (weight(i) != 0)
-	datapoint = data(i) * sqrt(weight(i));
-      else
-	datapoint = 0;
-    }
-    else
-      datapoint = data(i);
-    
-    unnormed_flux += datapoint;
-    Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * datapoint;
-    Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * datapoint;
-    Q(1,1) += gsl_pow_2(grid(i,1)-centroid(1)) * datapoint;
-  }
-  
-  // since unnormed_flux and Qs have same normalization, so it drops out
-  Q(0,0) /= unnormed_flux;
-  Q(0,1) /= unnormed_flux;
-  Q(1,0) = Q(0,1);
-  Q(1,1) /= unnormed_flux;
-  return Q;
-}
-
-// ellipticity as defined in Bartelmann & Schneider (2001)
-complex<data_t> Object::getEllipticity() {
-  NumMatrix<data_t> Q = get2ndBrightnessMoments();
-  complex<data_t> I(0,1);
-  complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
-  complex<data_t> epsilon = (Q11 - Q22 + data_t(2)*I*Q12)/(Q11+Q22 + data_t(2)*sqrt(Q11*Q22-Q12*Q12));
-  return epsilon;
-  // axis ratio
-  //data_t e = abs(epsilon);
-  //data_t r = (1-e)/(1+e);
-}
-
-void Object::computeFluxCentroid() {
-  const NumVector<data_t>& data = *this;
-  const Grid& grid = Image<data_t>::grid;
-
-  // check if weights are available: if yes, use them
-  bool weights = false;
-  if (weight.size() != 0)
-    weights = true;
-  
   flux = 0;
-  centroid(0) = centroid(1) = 0;
-  data_t datapoint, sum_weights = 0;
-  unsigned long sum_pixels = 0;
-  for (int i=0; i< grid.size(); i++) {
-    if (weights) {
-      if (weight(i) != 0) {
-	datapoint = data(i) * sqrt(weight(i));
-	sum_weights += sqrt(weight(i));
-	sum_pixels++;
-      } else
-	datapoint = 0;
+  // check if weights are available: if yes, use them
+  if (weight.size() != 0) {
+    data_t sum_weights = 0;
+    for (int i=0; i< grid.size(); i++) {
+      if (weight(i) > 0) {
+	flux += data(i) * weight(i);
+	sum_weights += weight(i);
+      }
     }
-    else
-      datapoint = data(i);
-    flux += datapoint;
-    centroid(0) += grid(i,0) * datapoint;
-    centroid(1) += grid(i,1) * datapoint;
+    flux /= sum_weights;
   }
-  
-  // even for weighted centroid: sum_weights drops out
-  centroid(0) /= flux;
-  centroid(1) /= flux;
-  if (weights)
-    flux /= sum_weights/sum_pixels;
-  
-  history << "# Flux = " << flux << ", Centroid = ("<< centroid(0) << "/" << centroid(1) << ")" << std::endl;
+  else // unweigthed
+    for (int i=0; i< grid.size(); i++)
+      flux += data(i);
+}
+
+void Object::computeCentroid() {
+  const NumVector<data_t>& data = *this;
+  const Grid& grid = Image<data_t>::grid;
+  centroid(0) = centroid(1) = 0;
+  // check if weights are available: if yes, use them
+  if (weight.size() != 0) {
+    data_t sum_weights = 0;
+    for (int i=0; i< grid.size(); i++) {
+      if (weight(i) > 0) {
+	centroid(0) += data(i) * grid(i,0) * weight(i);
+	centroid(0) += data(i) * grid(i,1) * weight(i);
+	sum_weights += weight(i);
+      }
+    }
+    centroid(0) /= flux * sum_weights;
+    centroid(1) /= flux * sum_weights;
+  }
+  else { // unweighted
+    for (int i=0; i< grid.size(); i++) {
+      centroid(0) += grid(i,0) * data(i);
+      centroid(1) += grid(i,1) * data(i);
+    }
+    centroid(0) /= flux;
+    centroid(1) /= flux;
+  }
+}
+
+void Object::computeQuadrupole() {
+  const NumVector<data_t>& data = *this;
+  const Grid& grid = Image<data_t>::grid;
+  Q(0,0) = Q(0,1) = Q(1,1) = 0;
+  // check if weights are available: if yes, use them
+  if (weight.size() != 0) {
+    data_t sum_weights = 0;
+    for (int i=0; i< grid.size(); i++) {
+      if (weight(i) > 0) {
+	Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i) * weight(i);
+	Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	Q(1,1) += gsl_pow_2(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	sum_weights += weight(i);
+      }
+    }
+    Q(0,0) /= flux * sum_weights;
+    Q(0,1) /= flux * sum_weights;
+    Q(1,1) /= flux * sum_weights;
+  }
+  else { // unweighted
+    for (int i=0; i< grid.size(); i++) {
+      Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i);
+      Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
+      Q(1,1) += gsl_pow_2(grid(i,1)-centroid(1)) * data(i);
+    }
+    Q(0,0) /= flux;
+    Q(0,1) /= flux;
+    Q(1,1) /= flux;
+  }
+}
+
+void Object::computeOctupole() {
+  const NumVector<data_t>& data = *this;
+  const Grid& grid = Image<data_t>::grid;
+  O(0,0,0) = O(0,0,1) = O(0,1,1) = O(1,1,1) = 0;
+  // check if weights are available: if yes, use them
+  if (weight.size() != 0) {
+    data_t sum_weights = 0;
+    for (int i=0; i< grid.size(); i++) {
+      if (weight(i) > 0) {
+	O(0,0,0) += gsl_pow_3(grid(i,0)-centroid(0)) * data(i) * weight(i);
+	O(0,0,1) += gsl_pow_2(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	O(0,1,1) += (grid(i,0)-centroid(0))*gsl_pow_2(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	O(1,1,1) += gsl_pow_3(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	sum_weights += weight(i);
+      }
+    }
+    O(0,0,0) /= flux * sum_weights;
+    O(0,0,1) /= flux * sum_weights;
+    O(0,1,1) /= flux * sum_weights;
+    O(1,1,1) /= flux * sum_weights;
+  }
+  else { // unweighted
+    for (int i=0; i< grid.size(); i++) {
+      O(0,0,0) += gsl_pow_3(grid(i,0)-centroid(0)) * data(i);
+      O(0,0,1) += gsl_pow_2(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
+      O(0,1,1) += (grid(i,0)-centroid(0))*gsl_pow_2(grid(i,1)-centroid(1)) * data(i);
+      O(1,1,1) += gsl_pow_3(grid(i,1)-centroid(1)) * data(i);
+    }
+    O(0,0,0) /= flux;
+    O(0,0,1) /= flux;
+    O(0,1,1) /= flux;
+    O(1,1,1) /= flux;
+  }
+}
+
+void Object::computeHexadecupole() {
+  const NumVector<data_t>& data = *this;
+  const Grid& grid = Image<data_t>::grid;
+  H(0,0,0,0) = H(0,0,0,1) = H(0,0,1,1) = H(0,1,1,1) = H(1,1,1,1) = 0;
+  // check if weights are available: if yes, use them
+  if (weight.size() != 0) {
+    data_t sum_weights = 0;
+    for (int i=0; i< grid.size(); i++) {
+      if (weight(i) > 0) {
+	H(0,0,0,0) += gsl_pow_4(grid(i,0)-centroid(0)) * data(i) * weight(i);
+	H(0,0,0,1) += gsl_pow_3(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	H(0,0,1,1) += gsl_pow_2(grid(i,0)-centroid(0))*gsl_pow_2(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	H(0,1,1,1) += (grid(i,0)-centroid(0))*gsl_pow_3(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	H(1,1,1,1) = gsl_pow_4(grid(i,1)-centroid(1)) * data(i) * weight(i);
+	sum_weights += weight(i);
+      }
+    }
+    H(0,0,0,0) /= flux * sum_weights;
+    H(0,0,0,1) /= flux * sum_weights;
+    H(0,0,1,1) /= flux * sum_weights;
+    H(0,1,1,1) /= flux * sum_weights;
+    H(1,1,1,1) /= flux * sum_weights;
+  }
+  else { // unweighted
+    for (int i=0; i< grid.size(); i++) {
+      H(0,0,0,0) += gsl_pow_4(grid(i,0)-centroid(0)) * data(i);
+      H(0,0,0,1) += gsl_pow_3(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
+      H(0,0,1,1) += gsl_pow_2(grid(i,0)-centroid(0))*gsl_pow_2(grid(i,1)-centroid(1)) * data(i);
+      H(0,1,1,1) += (grid(i,0)-centroid(0))*gsl_pow_3(grid(i,1)-centroid(1)) * data(i);
+      H(1,1,1,1) = gsl_pow_4(grid(i,1)-centroid(1)) * data(i);
+    }
+    H(0,0,0,0) /= flux;
+    H(0,0,0,1) /= flux;
+    H(0,0,1,1) /= flux;
+    H(0,1,1,1) /= flux;
+    H(1,1,1,1) /= flux;
+  }
+}
+
+void Object::computeMoments() {
+  computeQuadrupole();
+  computeOctupole();
+  computeHexadecupole();
+}
+
+void Object::computeCorrelationFunction(data_t threshold) {
+  if (segMap.size()) // if a segMap is provided, mask object pixels
+    xi = CorrelationFunction(*this,segMap,threshold);
+  else
+    xi = CorrelationFunction(*this,2,threshold);
 }

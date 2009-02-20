@@ -14,6 +14,8 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
   // set up model to obj layout
   C2D.setCentroid(obj.centroid);
   C2D.setGrid(obj.grid);
+  residual.grid = obj.grid;
+  residual.basefilename = obj.basefilename;
 
   // ways to give pixel errors (depending on noiseModel):
   // GAUSSIAN:   sigma_n -> background_variance
@@ -137,7 +139,7 @@ bool Decomposite2D::computeResiduals() {
     return false;
 }
 
-const NumVector<data_t>& Decomposite2D::getResiduals() {
+const Image<data_t>& Decomposite2D::getResiduals() {
   computeResiduals();
   return residual;
 }
@@ -147,11 +149,11 @@ const NumVector<data_t>& Decomposite2D::getResiduals() {
 data_t Decomposite2D::getChiSquare() {
   if (computeResiduals()) {
     if (noise == 0)
-      chi2 = (residual*residual)/background_variance;
+      chi2 = (residual.getNumVector()*residual.getNumVector())/background_variance;
     else if (noise == 1 || noise == 3 || noise == 4)
-      chi2 = residual*(Weight*residual);
+      chi2 = residual.getNumVector()*(Weight*residual.getNumVector());
     else if (noise == 2)
-      chi2 = residual*(V_*residual);
+      chi2 = residual.getNumVector()*(V_*residual.getNumVector());
     chi2 /= obj.size() - C2D.coeffs.size();
   }
   return chi2;

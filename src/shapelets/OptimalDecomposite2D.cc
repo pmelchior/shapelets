@@ -475,7 +475,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
 void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals() {
   const CorrelationFunction& xi = (Decomposite2D::obj).xi;
   
-  CorrelationFunction xi_res(Decomposite2D::getResiduals(),(Decomposite2D::obj).grid,xi.getMaxLength());
+  CorrelationFunction xi_res(Decomposite2D::getResiduals(),0,xi.getMaxLength());
   const std::map<Point2D<grid_t>, data_t>& corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(), corr_res = xi_res.getCorrelationFunction(), sigma_res = xi_res.getCorrelationError();
 
   comp_corr = 0;

@@ -81,7 +81,7 @@ class Decomposite2D {
   void setCoeffs(const CoefficientVector<data_t>& coeffs);
   /// Get residuals between data and shapelet model.
   /// \f$res = data-model\f$.
-  const NumVector<data_t>& getResiduals();
+  const Image<data_t>& getResiduals();
   /// Compute shapelet coefficients which minimize \f$\chi^2\f$.
   /// Return value is \p true if coefficients are updated.
   bool computeCoeffs();
@@ -103,7 +103,7 @@ class Decomposite2D {
   data_t background_variance, chi2;
   char noise;
   NumMatrix<data_t> Mt, LS;
-  NumVector<data_t> residual;
+  Image<data_t> residual;
   PixelCovarianceMatrix V_;
   NumMatrixDiagonal<data_t> Weight;
   bool fixedCoeffs;

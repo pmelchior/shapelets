@@ -30,12 +30,12 @@
 /// Frame* f = new Frame(fitsfile);
 /// f->subtractBackground();
 /// f->findObjects();
-/// const Catalog& cat = f->getCatalog();
-/// Catalog::const_iterator iter;
+/// Catalog& cat = f->getCatalog();
+/// Catalog::iterator iter;
 /// for(iter = cat.begin(); iter != cat.end(); iter++) {
 ///   unsigned long id = (*iter).first;
-///   Object obj(id);
-///   f->fillObject(obj);
+///   Object obj;
+///   f->fillObject(obj,iter);
 ///   if ((*iter).second.FLAGS == 0) {
 ///     // do something useful with obj ...
 ///   }
@@ -113,12 +113,12 @@ class Frame : public Image<data_t> {
   /// If it returns 0, no objects have been found.
   unsigned long getNumberOfObjects();
   /// Select the object to use for further analysis.
-  /// Object 0 is the whole image, Objects 1 to N have to be found in findObjects().
-  /// Object 1 is the brightest, all others are essentially unordered.\n
-  /// The image will be cut to a region around the selected object. If another objects
-  /// is inside this region, its pixel will be replaced by noise according to the
-  /// noise statistics derived in estimateBackground().\n
-  void fillObject(Object& obj);
+  /// The object is selected by the iterator \p catiter which must must
+  /// be constructed from the Catalog obtained by calling getCatalog().\n
+  /// The image will be cut to a region around the selected object. 
+  /// If another objects is inside this region, its pixel will be replaced 
+  /// by noise according to the noise statistics derived in estimateBackground().
+  void fillObject(Object& obj, Catalog::iterator& catiter);
   /// Get the SegmentationMap.
   /// The segmentation map defines for each pixel, if it is part of an object.
   /// The convention is:
@@ -132,9 +132,13 @@ class Frame : public Image<data_t> {
   /// fillObject(Object& obj) is called, all values of the catalog entry <tt>obj.getID()</tt>
   /// are set. Thus, if you want to save the catalog detected by Frame, 
   /// run through all detected objects before.
-  const Catalog& getCatalog();
+  Catalog& getCatalog();
   /// Get the history object of this image.
   const History& getHistory ();
+  /// Compute correlation function from the pixel data of the entire Frame.
+  /// \p threshold is the minimum significance of the correlation to
+  /// to be considered (reasonable value are around 2).
+  CorrelationFunction computeCorrelationFunction(data_t threshold);
 
  private:
   data_t noise_mean, noise_rms;
