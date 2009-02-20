@@ -2,10 +2,10 @@
 #include <tclap/CmdLine.h>
 #include <fstream>
 
-void ellipticity(const NumMatrix<data_t>& Q, data_t& e1, data_t& e2, data_t& e, data_t& theta) {
+void ellipticity(Quadrupole& Q, data_t& e1, data_t& e2, data_t& e, data_t& theta) {
   complex<data_t> I(0,1);
   complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
-  complex<data_t> denom = Q11+Q22;// + 2.*sqrt(Q11*Q22-Q12*Q12);
+  complex<data_t> denom = Q11+Q22 + 2.*sqrt(Q11*Q22-Q12*Q12);
   complex<data_t> epsilon = (Q11 - Q22 + data_t(2)*I*Q12)/denom;
   
   e1 = real(epsilon);
@@ -31,8 +31,10 @@ int main(int argc, char *argv[]) {
   inputs.push_back(&input);
   inputs.push_back(&table);
   cmd.xorAdd(inputs);
-  TCLAP::ValueArg<std::string> kernel("k","kernel","Deconvolve from this kernel SIF file",false,"","string",cmd);
   TCLAP::ValueArg<std::string> where("w","where","Where statement to select SObjs in table",false,"","string",cmd);
+  TCLAP::ValueArg<std::string> kernel("k","kernel","Deconvolve from this kernel SIF file",false,"","string",cmd);
+  TCLAP::ValueArg<unsigned int> truncate("T","truncate","Truncate coefficient set at given order n_max",false,0,"unsigned int",cmd);
+  TCLAP::ValueArg<unsigned int> diamond("D","diamond","Truncate coefficient set to diamond shape of given order n_max",false,0,"unsigned int",cmd);
   TCLAP::ValueArg<std::string> outputArg("o","output","Name of output file for shape catalog",false,"","string", cmd);
   cmd.parse( argc, argv );
 
@@ -62,11 +64,31 @@ int main(int argc, char *argv[]) {
   int nmax;
   data_t beta, chi2, flux, e1,e2,e,theta, RMS, Rs;
   Point2D<data_t> scentroid;
-  NumMatrix<data_t> Q(2,2);
+  Quadrupole Q;
   for (ShapeletObjectList::iterator iter = sl.begin(); iter != sl.end() ; iter++) {
     // deconvolve if demanded
     if (kernel.isSet())
       (*iter)->deconvolve(sk.getCoeffs(), sk.getBeta());
+
+    // apply truncation of demanded
+    if(truncate.isSet()) {
+      (*iter)->setNMax(truncate.getValue());
+    }
+    else if (diamond.isSet()) {
+      CoefficientVector<complex<data_t> > pcoeffs = (*iter)->getPolarCoeffs();
+      int limit;
+      if (diamond.getValue() % 2 == 0)
+	limit = diamond.getValue();
+      else
+	limit = diamond.getValue() + 1;
+      // lower order
+      pcoeffs.setNMax(diamond.getValue());
+      for (int n = limit/2; n <= diamond.getValue(); n++)
+	for (int m = -n; m <= n; m+=2)
+	  if (abs(m) > limit-n)
+	    pcoeffs(n,m) = complex<data_t>(0,0);
+      (*iter)->setPolarCoeffs(pcoeffs);
+    }
 
     // get shapelet parameters used in decomposition
     beta = (*iter)->getBeta();
