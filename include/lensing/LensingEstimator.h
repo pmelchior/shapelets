@@ -52,7 +52,7 @@ class LensingEstimator {
   void computeShearFlexionActive(complex<data_t>& gamma, complex<data_t>& F, complex<data_t>& G);
  private:
   ShapeletObjectList::iterator iter;
-  complex<data_t> getEllipticity(NumMatrix<data_t>& Q);
+  complex<data_t> getEllipticity(Quadrupole& Q);
   complex<data_t> getWeightFlexionFProfile(ShapeletObject& so, int n);
   complex<data_t> getWeightFlexionGProfile(ShapeletObject& so, int n);
 };

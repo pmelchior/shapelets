@@ -8,11 +8,11 @@ LensingEstimator::LensingEstimator() {
 }
 
 complex<data_t> LensingEstimator::getShearMoments(ShapeletObject& so) {
-  NumMatrix<data_t> Q = so.getShapelet2ndMoments();
+  Quadrupole Q = so.getShapelet2ndMoments();
   return getEllipticity(Q);
 }
 
-complex<data_t> LensingEstimator::getEllipticity(NumMatrix<data_t>& Q) {
+complex<data_t> LensingEstimator::getEllipticity(Quadrupole& Q) {
   complex<data_t> I(0,1);
   complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
   complex<data_t> denom = Q11+Q22 + data_t(2)*sqrt(Q11*Q22-Q12*Q12);
@@ -55,7 +55,7 @@ complex<data_t> LensingEstimator::getShearUnweighted(ShapeletObject& so, complex
 complex<data_t> LensingEstimator::getNormShearUnweighted(ShapeletObjectList& ensemble) {
   Complex norm(0,0), epsilon;
   int counter = 0;
-  NumMatrix<data_t> Q;
+  Quadrupole Q;
   for (iter = ensemble.begin(); iter != ensemble.end(); iter++) {
     if ((*iter)->getNMax() >= 2) {
       Q = (*iter)->getShapelet2ndMoments();
