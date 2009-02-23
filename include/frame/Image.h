@@ -5,8 +5,8 @@
 #include <string>
 #include <NumVector.h>
 #include <Typedef.h>
-#include <History.h>
-#include <IO.h>
+#include <utils/History.h>
+#include <utils/IO.h>
 #include <frame/Grid.h>
 
 /// Class for image data.

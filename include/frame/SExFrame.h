@@ -6,7 +6,6 @@
 #include <gsl/gsl_rng.h>
 #include <NumMatrix.h>
 #include <Typedef.h>
-#include <History.h>
 #include <ShapeLensConfig.h>
 #include <frame/Grid.h>
 #include <frame/Image.h>

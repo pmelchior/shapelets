@@ -55,9 +55,9 @@ organized as a ShapeletObjectList.
 */
 
 #include <Typedef.h>
-#include <IO.h>
 #include <ShapeLensConfig.h>
-#include <History.h>
+#include <utils/IO.h>
+#include <utils/History.h>
 
 #include <frame/Frame.h>
 #include <frame/SExFrame.h>

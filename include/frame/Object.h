@@ -1,9 +1,7 @@
 #ifndef OBJECT_H
 #define OBJECT_H
 
-#include <History.h>
 #include <Typedef.h>
-#include <IO.h>
 #include <frame/Image.h>
 #include <frame/SegmentationMap.h>
 #include <frame/PixelCovarianceMatrix.h>

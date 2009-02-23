@@ -12,7 +12,7 @@ complex<data_t> LensingEstimator::getShearMoments(ShapeletObject& so) {
   return getEllipticity(Q);
 }
 
-complex<data_t> LensingEstimator::getEllipticity(Quadrupole& Q) {
+complex<data_t> LensingEstimator::getEllipticity(const Quadrupole& Q) {
   complex<data_t> I(0,1);
   complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
   complex<data_t> denom = Q11+Q22 + data_t(2)*sqrt(Q11*Q22-Q12*Q12);

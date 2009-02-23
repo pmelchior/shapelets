@@ -7,7 +7,7 @@
 #include <NumMatrix.h>
 #include <NumMatrixDiagonal.h>
 #include <Typedef.h>
-#include <History.h>
+#include <utils/History.h>
 #include <frame/Point2D.h>
 #include <shapelets/CoefficientVector.h>
 

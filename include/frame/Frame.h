@@ -3,11 +3,10 @@
 
 #include <vector>
 #include <set>
-#include <tree.hh>
 #include <NumVector.h>
 #include <Typedef.h>
-#include <History.h>
 #include <ShapeLensConfig.h>
+#include <utils/tree.hh>
 #include <frame/Grid.h>
 #include <frame/Image.h>
 #include <frame/Object.h>

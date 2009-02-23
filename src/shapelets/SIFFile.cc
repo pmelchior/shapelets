@@ -1,5 +1,5 @@
 #include <shapelets/SIFFile.h>
-#include <IO.h>
+#include <utils/IO.h>
 #include <ShapeLensConfig.h>
 #include <bitset>
 #include <fstream>

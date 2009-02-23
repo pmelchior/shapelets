@@ -7,8 +7,6 @@
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Typedef.h>
-#include <History.h>
-#include <IO.h>
 #include <ShapeLensConfig.h>
 #include <frame/Point2D.h>
 #include <frame/Grid.h>

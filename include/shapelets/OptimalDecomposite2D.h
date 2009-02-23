@@ -7,8 +7,6 @@
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Typedef.h>
-#include <History.h>
-#include <frame/Point2D.h>
 #include <frame/Grid.h>
 #include <frame/Object.h>
 #include <shapelets/Decomposite2D.h>

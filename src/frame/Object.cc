@@ -1,7 +1,6 @@
 #include <frame/Object.h>
 #include <sstream>
 #include <gsl/gsl_math.h>
-#include <IO.h>
 
 Object::Object() : Image<data_t>(), segMap() {
   id = 0;
