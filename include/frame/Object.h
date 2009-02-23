@@ -7,6 +7,7 @@
 #include <frame/PixelCovarianceMatrix.h>
 #include <frame/CorrelationFunction.h>
 #include <frame/Moments.h>
+#include <utils/FFT.h>
 #include <bitset>
 
 /// Central object representing class.
@@ -71,11 +72,19 @@ class Object : public Image<data_t> {
   /// \b CAUTION: The results depends on the value of Object::flux and
   /// Object::centroid.
   void computeMoments();
-  /// Compute correlation function Object::xi from the pixel data.
+  /// Compute correlation function Object::xi from pixel data.
   /// \p threshold is the minimum significance of the correlation to
   /// to be considered (reasonable value are around 2).
   void computeCorrelationFunction(data_t threshold);
-
+#ifdef HAS_FFTW3
+  /// Compute Fourier transform Object::fourier from pixel data.
+  void computeFFT();
+  /// Convolve with given \p kernel.
+  /// For this to work, \p kernel has to have to same size as this object.
+  /// If this is not the case, it will be resized accordingly.
+  /// Also, kernel::fourier will be computed if the present.
+  void convolve(Object& kernel);
+#endif
 
 
   /// The \p id of the Object.
@@ -111,5 +120,9 @@ class Object : public Image<data_t> {
   SegmentationMap segMap;
   /// The correlation function.
   CorrelationFunction xi;
+#ifdef HAS_FFTW3
+  /// The Fourier transform of the pixel data.
+  FourierTransform2D fourier;
+#endif  
 };
 #endif

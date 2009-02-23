@@ -293,3 +293,45 @@ void Object::computeCorrelationFunction(data_t threshold) {
   else
     xi = CorrelationFunction(*this,2,threshold);
 }
+
+#ifdef HAS_FFTW3
+void Object::computeFFT() {
+  FFT::transform(*this,fourier);
+}
+
+void Object::convolve(Object& kernel) {
+  // compute fourier is not done yet
+  if(fourier.getRealSize(0) == 0)
+    computeFFT();
+
+  // check size of kernel
+  int N = getSize(0);
+  int M = getSize(1);
+  if (N != kernel.getSize(0)) {
+    int N1 = kernel.getSize(0);
+    int M1 = kernel.getSize(1); 
+    if (N1%2==1) {
+      N1++;
+      kernel.resize_clear(N1*M1);
+    }
+    if (M1%2==1) {
+      M1++;
+      kernel.resize_clear(N1*M1);
+    }
+    int xmin = (N1-N)/2, xmax = N1 + (N-N1)/2, ymin = (M1-M)/2, ymax = M1+ (M-M1)/2;
+    Image<data_t> sub(xmax-xmin,ymax-ymin);
+    kernel.slice(sub,Point2D<grid_t>(xmin,ymin),Point2D<grid_t>(xmax,ymax));
+    kernel = sub;
+    // compute new kernel::fourier
+    kernel.computeFFT();
+  }
+  else if(kernel.fourier.getRealSize(0) == 0)
+    kernel.computeFFT();
+
+  // actual convolution
+  FFT::conv_multiply(fourier,kernel.fourier,fourier);
+  // Transform back to real space and reorder:
+  FFT::transform(fourier,*this);
+  FFT::reorder(*this);
+}
+#endif
