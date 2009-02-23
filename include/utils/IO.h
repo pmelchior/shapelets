@@ -16,6 +16,14 @@ class Image;
 class IO {
   public:
 
+  /// Return FITS Image format definition, based on the type of \p entry.
+  /// - <tt>char, unsigned char -> BYTE_IMG</tt>
+  /// - <tt>int -> SHORT_IMG</tt>
+  /// - <tt>unsigned int -> USHORT_IMG</tt>
+  /// - <tt>long -> LONG_IMG</tt>
+  /// - <tt>unsigned long -> ULONG_IMG</tt>
+  /// - <tt>float -> FLOAT_IMG</tt>
+  /// - <tt>double -> DOUBLE_IMG</tt>
   template <class T> 
     static  int getFITSImageFormat(T entry) {
     char tc;
@@ -41,7 +49,18 @@ class IO {
     if (typeid(entry) == typeid(td))
       return DOUBLE_IMG;
   }
-
+  
+  /// Return FITS Image format definition, based on the type of \p entry.
+  /// - <tt>bool, char, unsigned char -> TBYTE</tt>
+  /// - <tt>int -> TINT</tt>
+  /// - <tt>unsigned int -> TUINT</tt>
+  /// - <tt>long -> TLONG</tt>
+  /// - <tt>unsigned long -> TULONG</tt>
+  /// - <tt>float -> TFLOAT</tt>
+  /// - <tt>double -> TDOUBLE</tt>
+  /// - <tt>complex<float> -> TCOMPLEX</tt>
+  /// - <tt>complex<double> -> TDBLCOMPLEX</tt>
+  /// - <tt>std::string -> TSTRING</tt>
   template <class T>
     static int getFITSDataType(T entry) {
     bool tb;
@@ -78,14 +97,27 @@ class IO {
       return TSTRING;
   }
 
-  static fitsfile* openFITSFile(std::string filename, bool write=0);
+  /// Open FITS file.
+  /// If <tt>write == false</tt>, the file will be opened in read-only mode.
+  static fitsfile* openFITSFile(std::string filename, bool write=false);
+  /// Create new FITS file.
+  /// If the file \p filename already exists, it will be overwritten.
   static fitsfile* createFITSFile(std::string filename);
+  /// Close FITS file pointer.
   static int closeFITSFile(fitsfile* fptr);
+  /// Set/update std::string keyword in FITS file header.
   static int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
+  /// Append \p history to FITS header histroy.
   static int appendFITSHistory(fitsfile *outfptr, std::string history);
+  /// Read std::string keyword from FITS header.
   static int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val);
+  /// Read FITS keyword cards directly.
   static int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
 
+  /// Write FITS image from a NumVector and an appropriate Grid.
+  /// The datatype will be automatically adjusted, based on the
+  /// result of getFITSImageFormat() and getFITSDataType().
+  /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data, std::string extname="") {
     int dim0 = grid.getSize(0);
@@ -110,11 +142,19 @@ class IO {
     return status;
   }
 
+  /// Write FITS image from an Image<T>.
+  /// The datatype will be automatically adjusted, based on the
+  /// result of getFITSImageFormat() and getFITSDataType().
+  /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const Image<T>& image, std::string extname="") {
     return writeFITSImage(outfptr,image.grid,image,extname);
   }
 
+  /// Write FITS image from an NumMatrix<T>.
+  /// The datatype will be automatically adjusted, based on the
+  /// result of getFITSImageFormat() and getFITSDataType().
+  /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
     int dim0 = M.getColumns();
@@ -139,6 +179,8 @@ class IO {
     return status;
   }
 
+  /// Set/update keyword in FITS file header.
+  /// For setting string keywords, use updateFITSKeywordString() instead.
   template <class T>
     static int updateFITSKeyword(fitsfile *outfptr, std::string keyword, T value, std::string comment="") {
     int status = 0;
@@ -146,6 +188,9 @@ class IO {
     return status;
   }
 
+  /// Read FITS image into NumMatrix<T>.
+  /// \p M is adjusted to hold the contents of the image; the image value are 
+  /// automatically casted to the type \p T of \p M.
   template <class T>
     static int readFITSImage(fitsfile *fptr, NumMatrix<T>& M) {
     int naxis, status = 0;
@@ -165,6 +210,11 @@ class IO {
     return status;
   }
 
+  /// Read FITS image into NumVector<T> and a Grid.
+  /// \p v is adjusted to hold the contents of the image; the image value are 
+  /// automatically casted to the type \p T of \p v.\n
+  /// \p grid is set to Grid(0,0,N,M), where \p N and \p M are the row and
+  /// column numbers of the FITS image.
   template <class T>
     static int readFITSImage(fitsfile *fptr, Grid& grid, NumVector<T>& v) {
     int naxis, status = 0;
@@ -183,7 +233,32 @@ class IO {
     fits_read_pix(fptr, datatype, firstpix, grid.size(), NULL, v.c_array(), NULL, &status);
     return status;
   }
+  /// Read FITS image into Image<T>.
+  /// \p im is adjusted to hold the contents of the image; the image value are 
+  /// automatically casted to the type \p T of \p im.\n
+  /// \p Image<T>::grid is set to Grid(0,0,N,M), where \p N and \p M 
+  /// are the row and column numbers of the FITS image.
+  template <class T>
+    static int readFITSImage(fitsfile *fptr, Image<T>& im) {
+    int naxis, status = 0;
+    fits_get_img_dim(fptr, &naxis, &status);
+    if (naxis!=2) {
+      std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
+      std::terminate();
+    }
+    long naxes[2] = {1,1};
+    fits_get_img_size(fptr, naxis, naxes, &status);
+    im.grid = Grid(0,0,naxes[0],naxes[1]);
+    im.resize(im.grid.size());
+    long firstpix[2] = {1,1};
+    T val;
+    int datatype = getFITSDataType(val);
+    fits_read_pix(fptr, datatype, firstpix, im.grid.size(), NULL, im.c_array(), NULL, &status);
+    return status;
+  }
 
+  /// Read in keyword from FITS header.
+  /// For std::string keywords, use readFITSKeywordString() instead.
   template <class T>
     static int readFITSKeyword(fitsfile *fptr, std::string key, T& val) {
     int status = 0;
@@ -204,8 +279,10 @@ class IO {
   /// - "LINEAR"
   /// - "SQUARE_ROOT"
   /// - "LOGAITHMIC"
-  /// min and max indicate the ends of the accepted range of values, values smaller
-  /// (larger) than min (max) are set to min (max).
+  /// 
+  /// \p min and \p max indicate the ends of the accepted range of values, 
+  /// values smaller (larger) than <tt>min (max)</tt> are set to 
+  /// <tt>min (max)</tt>.
   static void writePPMImage(std::string filename,std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
   /// Create RGB representation of data.
   /// This function is usefull for manipulations of the data in RGB space. 
