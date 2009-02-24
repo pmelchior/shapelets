@@ -2,6 +2,7 @@
 
 #include <shapelets/ShapeletObjectDB.h>
 #include <boost/tokenizer.hpp>
+#include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -180,19 +181,19 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
 
   while (row = res.getRow()) {
     tmp.history.clear();
-    tmp.id = atoi(row[0]);
-    cv.setNMax(atoi(row[1]));
-    tmp.setBeta(atof(row[2]));
-    tmp.chisquare = atof(row[3]);
-    tmp.flags = bitset<16>(atoi(row[4]));
+    tmp.id = boost::lexical_cast<unsigned long>(row[0]);
+    cv.setNMax(boost::lexical_cast<unsigned int>(row[1]));
+    tmp.setBeta(boost::lexical_cast<data_t>(row[2]));
+    tmp.chisquare = boost::lexical_cast<data_t>(row[3]);
+    tmp.flags = bitset<16>(boost::lexical_cast<unsigned long>(row[4]));
     // this assumes integer grids
-    tmp.model.grid = Grid(atoi(row[5]),atoi(row[6]),atoi(row[7]),atoi(row[8]));
-    tmp.xcentroid(0) = atof(row[9]);
-    tmp.xcentroid(1) = atof(row[10]);
+    tmp.model.grid = Grid(boost::lexical_cast<grid_t>(row[5]),boost::lexical_cast<grid_t>(row[6]),boost::lexical_cast<grid_t>(row[7]),boost::lexical_cast<grid_t>(row[8]));
+    tmp.xcentroid(0) = boost::lexical_cast<data_t>(row[9]);
+    tmp.xcentroid(1) = boost::lexical_cast<data_t>(row[10]);
     tmp.basefilename = string(row[11]);
     tmp.name = string(row[12]);
-    tmp.classifier = atof(row[13]);
-    tmp.tag = atof(row[14]);
+    tmp.classifier = boost::lexical_cast<data_t>(row[13]);
+    tmp.tag = boost::lexical_cast<data_t>(row[14]);
     // copy history
     tmp.history.setSilent();
     tmp.history << row[15];

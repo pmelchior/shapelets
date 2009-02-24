@@ -4,7 +4,8 @@
 #include <iostream>
 #include <set>
 #include <boost/tokenizer.hpp>
-#include <gsl/gsl_math.h>
+#include <boost/lexical_cast.hpp>
+// #include <gsl/gsl_math.h>
 
 using namespace std;
 
@@ -46,35 +47,35 @@ void Catalog::read(string catfile) {
       column.push_back(*tok_iter);
     // comment line: contains format definition at columns 2,3
     if (column[0].compare("#") == 0)
-      setFormatField(column[2],atoi(column[1].c_str()));
+      setFormatField(column[2],boost::lexical_cast<unsigned short>(column[1].c_str()));
     // at this point we should have a complete format definition: check it
     // from here on we expect the list of object to come along.
     else {
       if (!formatChecked) checkFormat();
       // then set up a true SExCatObject
       CatObject so;
-      unsigned long id = (unsigned long) atoi(column[format.ID].c_str());
+      unsigned long id = boost::lexical_cast<unsigned long>(column[format.ID].c_str());
       // the sextractor corrdinates start with (1,1), ours with (0,0)
-      so.XMIN = atoi(column[format.XMIN].c_str())-1;
-      so.XMAX = atoi(column[format.XMAX].c_str())-1;
-      so.YMIN = atoi(column[format.YMIN].c_str())-1;
-      so.YMAX = atoi(column[format.YMAX].c_str())-1;
+      so.XMIN = boost::lexical_cast<int>(column[format.XMIN].c_str())-1;
+      so.XMAX = boost::lexical_cast<int>(column[format.XMAX].c_str())-1;
+      so.YMIN = boost::lexical_cast<int>(column[format.YMIN].c_str())-1;
+      so.YMAX = boost::lexical_cast<int>(column[format.YMAX].c_str())-1;
       // as Catalog pixels start with (1,1) and ours with (0,0), 
       // we need to subtract 1
-      so.XCENTROID = atof(column[format.XCENTROID].c_str())-1;
-      so.YCENTROID = atof(column[format.YCENTROID].c_str())-1;
-      so.FLUX = atof(column[format.FLUX].c_str());
-      so.FLAGS = (unsigned char) atoi(column[format.FLAGS].c_str());
+      so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
+      so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
+      so.FLUX = boost::lexical_cast<data_t>(column[format.FLUX].c_str());
+      so.FLAGS = boost::lexical_cast<unsigned char>(column[format.FLAGS].c_str());
       if (present.test(9))
-	so.CLASSIFIER = (data_t) atof(column[format.CLASSIFIER].c_str());
+	so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
       else
 	so.CLASSIFIER = (data_t) 0;
       if (present.test(10))
-	so.PARENT = (unsigned long) atoi(column[format.PARENT].c_str());
+	so.PARENT = boost::lexical_cast<unsigned long>(column[format.PARENT].c_str());
       else
 	so.PARENT = (unsigned long)0;
       // then store it in map
-      Catalog::operator[](id) = so;
+      Catalog::insert(make_pair(id,so));
     }
   }
   catalog.close();

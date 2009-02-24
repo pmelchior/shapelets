@@ -1,5 +1,6 @@
 #include <ShapeLensConfig.h>
 #include <boost/tokenizer.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -50,33 +51,33 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
     // exclude empty and comment lines
     if (column.size() >= 2 && column[0] != "#") {
       if (column[0] == "VERBOSITY")
-	VERBOSITY = (bool) atoi (column[1].c_str());
+	VERBOSITY = boost::lexical_cast<bool>(column[1].c_str());
       if (column[0] == "NMAX_LOW")
-	NMAX_LOW = (unsigned int) atoi (column[1].c_str());
+	NMAX_LOW = boost::lexical_cast<unsigned int>(column[1].c_str());
       if (column[0] == "NMAX_HIGH")
-	NMAX_HIGH = (unsigned int) atoi (column[1].c_str());
+	NMAX_HIGH = boost::lexical_cast<unsigned int>(column[1].c_str());
       if (column[0] == "BETA_LOW")
-	BETA_LOW = (data_t) atof (column[1].c_str());
+	BETA_LOW = boost::lexical_cast<data_t>(column[1].c_str());
       if (column[0] == "BETA_HIGH")
-	BETA_HIGH = (data_t) atof (column[1].c_str());
+	BETA_HIGH = boost::lexical_cast<data_t>(column[1].c_str());
       if (column[0] == "DELTA_BETA")
-	DELTA_BETA = (data_t) atof (column[1].c_str());
+	DELTA_BETA = boost::lexical_cast<data_t>(column[1].c_str());
       if (column[0] == "ALLOW_FLATTENING")
-	ALLOW_FLATTENING = (bool) atoi (column[1].c_str());
+	ALLOW_FLATTENING = boost::lexical_cast<bool>(column[1].c_str());
       if (column[0] == "FILTER_SPURIOUS")
-        FILTER_SPURIOUS = (bool) atoi (column[1].c_str());
+        FILTER_SPURIOUS = boost::lexical_cast<bool>(column[1].c_str());
       if (column[0] == "ADD_BORDER")
-        ADD_BORDER = (data_t) atof (column[1].c_str());
+        ADD_BORDER = boost::lexical_cast<data_t>(column[1].c_str());
       if (column[0] == "MIN_PIXELS")
-	MIN_PIXELS = (unsigned int) atoi (column[1].c_str());
+	MIN_PIXELS = boost::lexical_cast<unsigned int>(column[1].c_str());
       if (column[0] == "MIN_THRESHOLD")
-	MIN_THRESHOLD = (data_t) atof (column[1].c_str());
+	MIN_THRESHOLD = boost::lexical_cast<data_t>(column[1].c_str());
       if (column[0] == "DETECT_THRESHOLD")
-	DETECT_THRESHOLD = (data_t) atof (column[1].c_str());
+	DETECT_THRESHOLD = boost::lexical_cast<data_t>(column[1].c_str());
       if (column[0] == "NOISEMODEL")
 	NOISEMODEL = column[1];
       if (column[0] == "PIXEL_INTEGRATION")
-	PIXEL_INTEGRATION = (bool) atoi(column[1].c_str());
+	PIXEL_INTEGRATION = boost::lexical_cast<bool>(column[1].c_str());
     }
   }
   // check if limits on beta and nmax make sense
