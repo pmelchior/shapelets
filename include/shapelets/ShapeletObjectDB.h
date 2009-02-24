@@ -8,7 +8,7 @@
 #include <shapelets/ShapeletObjectList.h>
 
 #if SHAPELETDB==MySQL
-#include <mysql.h>
+#include <utils/MySQLDB.h>
 #endif
 
 /// Database backend class.
@@ -77,8 +77,6 @@ class ShapeletObjectDB {
   /// the file permissions such that \p username is the only user who can read 
   /// this file.  
   ShapeletObjectDB();
-  /// Default destructor.
-  ~ShapeletObjectDB();
   /// Change the table within the database.
   void selectTable(std::string table);
   /// Change the selected database.
@@ -103,13 +101,9 @@ class ShapeletObjectDB {
   /// This call requires the permission to execute a \p TRUNCATE statement.\n\n
   /// \b CAUTION: This call is irreversible.
   void clear();
-  /// Drop the current \p table.
-  /// This call requires the permission to execute a <tt>DROP TABLE</tt> statement.\n\n
-  /// \b CAUTION: This call is irreversible.
-  void dropTable();
   /// Submit query to \p DB.
   /// The call requires permissions to execute the specified statement.
-  void query(std::string query);
+  DBResult query(std::string query);
 
  private:
   std::string table;
@@ -118,7 +112,7 @@ class ShapeletObjectDB {
   void checkForTable();
   bool exists;
 #if SHAPELETDB==MySQL
-  MYSQL *conn;
+  MySQLDB db;
 #endif
 };
 

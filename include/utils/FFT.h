@@ -76,7 +76,7 @@ class FFT {
   /// Transform Image \f$F(\vec{k})\rightarrow f(\vec{x})\f$.
   static void transform(const  FourierTransform2D& F, Image<data_t>& f);
   /// Convolve \p data with kernel
-  /// It si assumed that both \p data and \p kernel have the same sizes.
+  /// It is assumed that both \p data and \p kernel have the same sizes.
   static void convolve(Image<data_t>& data, const Image<data_t>& kernel);
  private:
   friend class Object;

@@ -47,11 +47,7 @@ ShapeletObjectDB::ShapeletObjectDB() {
     }
   }
   checkConnectionDetails(host,user,password,database,table);
-  conn = mysql_init(NULL);
-  if (!mysql_real_connect(conn, host.c_str(), user.c_str(), password.c_str(), database.c_str(), 0, NULL, 0)) {
-    cerr << mysql_error(conn) << endl;
-    terminate();
-  }
+  db.connect(host,user,password,database);
   exists = false;
 }
 
@@ -67,19 +63,12 @@ void ShapeletObjectDB::checkConnectionDetails(std::string host, std::string user
   }
 }
 
-ShapeletObjectDB::~ShapeletObjectDB() {
-  mysql_close(conn);
-}
-
 void ShapeletObjectDB::selectTable(std::string t) {
   table = t;
 }
 
 void ShapeletObjectDB::selectDatabase(std::string database) {
-  if(!mysql_select_db(conn, database.c_str())) {
-    cerr << mysql_error(conn) << endl;
-    terminate();
-  }
+  db.query("USE `" + database + "`");
 }
 
 void ShapeletObjectDB::save(const ShapeletObjectList& sl) {
@@ -171,33 +160,25 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
     query << "'')";
 
   // send SQL query
-  if (mysql_real_query(conn, query.str().c_str(),query.str().size())) {
-    cerr <<  mysql_error(conn) << endl;
-    terminate();
-  }
+  db.query(query.str());
 }
 
 ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
   //send SQL query
-  string query = "SELECT *, OCTET_LENGTH( `cov` ) FROM `" + table + "`";
+  string query = "SELECT *, OCTET_LENGTH(`cov`) FROM `" + table + "`";
   if (where_clause.size() > 0) {
     query += " WHERE " + where_clause;
   }
-  if (mysql_query(conn, query.c_str())) {
-    cerr <<  mysql_error(conn) << endl;
-    terminate();
-  }
-  MYSQL_RES *res;
+  DBResult res = db.query(query);
   MYSQL_ROW row;
-  res = mysql_use_result(conn);
-  
+
   // store results in list
   ShapeletObjectList sl;
   ShapeletObject tmp;
   CoefficientVector<data_t>& cv = tmp.coeffs;
   NumMatrix<data_t>& cov = tmp.cov;
 
-  while (row = mysql_fetch_row(res)) {
+  while (row = res.getRow()) {
     tmp.history.clear();
     tmp.id = atoi(row[0]);
     cv.setNMax(atoi(row[1]));
@@ -248,8 +229,6 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
     boost::shared_ptr<ShapeletObject> safePointer (new ShapeletObject(tmp));
     sl.push_back(safePointer);
   }
-  // clean up and return result
-  mysql_free_result(res);
   return sl;
 }
 
@@ -257,51 +236,26 @@ void ShapeletObjectDB::clear() {
   if (!exists) checkForTable();
   if (exists) {
     string query = "TRUNCATE `" + table + "`";
-    // send SQL query
-    if (mysql_real_query(conn, query.c_str(),query.size())) {
-      cerr <<  mysql_error(conn) << endl;
-      terminate();
-    }
+    db.query(query);
   }
-}
-
-void ShapeletObjectDB::dropTable() {
-  string query = "DROP TABLE IF EXISTS `" + table + "`";
-  // send SQL query
-  if (mysql_real_query(conn, query.c_str(),query.size())) {
-    cerr <<  mysql_error(conn) << endl;
-    terminate();
-  }
-  exists = false;
 }
 
 void ShapeletObjectDB::checkForTable() {
   string query = "SHOW tables";
-  // send SQL query
-  if (mysql_real_query(conn, query.c_str(),query.size())) {
-    cerr <<  mysql_error(conn) << endl;
-    terminate();
-  }
-  MYSQL_RES *res;
-  MYSQL_ROW row;
-  res = mysql_use_result(conn);
-  
+  DBResult result = db.query(query);
+
   exists = false;
-  while (row = mysql_fetch_row(res)) {
+  while (MYSQL_ROW row = result.getRow()) {
     string current(row[0]);
     if (table == current) {
       exists = true;
       break;
     }
   }
-  mysql_free_result(res);
 }
 
-void ShapeletObjectDB::query(std::string query) {
-  if (mysql_real_query(conn, query.c_str(),query.size())) {
-    cerr <<  mysql_error(conn) << endl;
-    terminate();
-  }
+DBResult ShapeletObjectDB::query(std::string query) {
+  return db.query(query);
 }
 
 void ShapeletObjectDB::createTable() {
@@ -326,11 +280,8 @@ void ShapeletObjectDB::createTable() {
   query += "`cov` mediumblob COMMENT 'covariance matrix of shapelet coefficients',";
   query += "PRIMARY KEY  (`id`))";
   query += "ENGINE=MyISAM DEFAULT CHARSET=latin1";
-  // send SQL query
-  if (mysql_real_query(conn, query.c_str(),query.size())) {
-    cerr <<  mysql_error(conn) << endl;
-    terminate();
-  }
+
+  db.query(query);
   exists = true;
 }
 
