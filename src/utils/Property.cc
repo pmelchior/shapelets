@@ -7,48 +7,68 @@ Property::Property() : std::map<std::string, variant_t>() {}
 // Helper class for performing write()
 class OutFunctor : public boost::static_visitor<void> {
 public:
-  OutFunctor(std::ostream& o) : out(o) {
+  OutFunctor(std::ostream& o, std::string linesep) : out(o),ls(linesep) {
   }
   void operator()(int e) const {
-    out << "\tI\t" << e << std::endl;
+    out << "\tI\t" << e;
+    if (ls.size() == 0)
+      out << std::endl;
+    else
+      out << ls;
   }
   void operator()(data_t e) const {
-    out << "\tD\t" << e << std::endl;
+    out << "\tD\t" << e;
+    if (ls.size() == 0)
+      out << std::endl;
+    else
+      out << ls;
   }
-  void operator()(std::string& e) const {
-    out << "\tS\t" << e << std::endl;
+  void operator()(const std::string& e) const {
+    out << "\tS\t" << e;
+    if (ls.size() == 0)
+      out << std::endl;
+    else
+      out << ls;
   }
-  void operator()(std::vector<int>& e) const {
+  void operator()(const std::vector<int>& e) const {
     out << "\tVI\t";
-    for (std::vector<int>::iterator iter = e.begin(); iter != e.end(); iter++) {
+    for (std::vector<int>::const_iterator iter = e.begin(); iter != e.end(); iter++) {
       out << *iter;
       if (iter != --e.end())
 	out  << ",";
     }
-    out << std::endl;
+    if (ls.size() == 0)
+      out << std::endl;
+    else
+      out << ls;
   }
-  void operator()(std::vector<data_t>& e) const {
+  void operator()(const std::vector<data_t>& e) const {
     out << "\tVD\t";
-    for (std::vector<data_t>::iterator iter = e.begin(); iter != e.end(); iter++) {
+    for (std::vector<data_t>::const_iterator iter = e.begin(); iter != e.end(); iter++) {
       out << *iter;
       if (iter != --e.end())
 	out  << ",";
     }
-    out << std::endl;
+    if (ls.size() == 0)
+      out << std::endl;
+    else
+      out << ls;
   }
 private:
   std::ostream & out;
+  std::string  ls;
 };
 
-void Property::write(std::ostream& o) {
-  OutFunctor out(o);
-  for (Property::iterator iter = std::map<std::string, variant_t>::begin(); iter != std::map<std::string, variant_t>::end(); iter++) {
+void Property::write(std::ostream& o,std::string linesep) const {
+  OutFunctor out(o,linesep);
+  for (Property::const_iterator iter = std::map<std::string, variant_t>::begin(); iter != std::map<std::string, variant_t>::end(); iter++) {
     o << iter->first << "\t";
     boost::apply_visitor(out, iter->second);
   }
 }
 
 void Property::read(std::istream& in) {
+  std::map<std::string, variant_t>::clear();
   std::string line, name, type, value;
   typedef boost::tokenizer<boost::char_separator<char> > Tok;
   boost::char_separator<char> fieldsep("\t");

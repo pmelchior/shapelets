@@ -86,9 +86,8 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   if (!exists) checkForTable();
   if (!exists) createTable();
   ostringstream query;
-  query << setprecision(23); // maximum precision of FLOAT in MySQL
+  //query << setprecision(23); // maximum precision of FLOAT in MySQL
   query << "INSERT INTO `" << table << "` VALUES (" << sobj.getObjectID() << ",";
-  //query << "INSERT INTO `" << table << "` VALUES ('',";
   query << sobj.getNMax() << "," << sobj.getBeta() << ",";
   query << sobj.getChiSquare() << "," << sobj.getFlags().to_ulong() << ",";
   const Grid& grid = sobj.getGrid();
@@ -96,8 +95,10 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   query << grid.getSize(0) << "," << grid.getSize(1) << ",";
   const Point2D<data_t>& centroid = sobj.getCentroid();
   query << centroid(0) << "," << centroid(1) << ",";
-  query << "'" << sobj.getBaseFilename() << "','" << sobj.getName() << "',";
-  query << sobj.getObjectClassifier() << "," << sobj.getTag() << ",'";
+  query << "'" << sobj.getBaseFilename() << "','";
+  // write sobj.prop to query with "\n" lineseparator (see below)
+  sobj.prop.write(query,"\\n");
+  query << "','";
   // for MySQL we have to convert the newline character (ASCII 10) to the string "\n"
   // therefore we have to copy the history and replace the newlines
   string hist = sobj.getHistory();
@@ -173,6 +174,19 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
   DBResult res = db.query(query);
   MYSQL_ROW row;
 
+  // legacy: check whether name, tag is saved or prop
+  MYSQL_FIELD* fields = res.getFields();
+  bool legacy = false;
+  int Nleg = 12; // last field index for legacy block
+  for (unsigned int i = 0; i < res.getFieldCount(); i++) {
+    std::string f(fields[i].name);
+    if (f=="name") {
+      legacy = true;
+      Nleg = 14;
+      break;
+    }
+  }
+
   // store results in list
   ShapeletObjectList sl;
   ShapeletObject tmp;
@@ -186,28 +200,32 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
     tmp.setBeta(boost::lexical_cast<data_t>(row[2]));
     tmp.chisquare = boost::lexical_cast<data_t>(row[3]);
     tmp.flags = bitset<16>(boost::lexical_cast<unsigned long>(row[4]));
-    // this assumes integer grids
     tmp.model.grid = Grid(boost::lexical_cast<grid_t>(row[5]),boost::lexical_cast<grid_t>(row[6]),boost::lexical_cast<grid_t>(row[7]),boost::lexical_cast<grid_t>(row[8]));
     tmp.xcentroid(0) = boost::lexical_cast<data_t>(row[9]);
     tmp.xcentroid(1) = boost::lexical_cast<data_t>(row[10]);
     tmp.basefilename = string(row[11]);
-    tmp.name = string(row[12]);
-    tmp.classifier = boost::lexical_cast<data_t>(row[13]);
-    tmp.tag = boost::lexical_cast<data_t>(row[14]);
+    if (legacy) {
+      tmp.prop["name"] = string(row[12]);
+      tmp.prop["classifier"] = boost::lexical_cast<data_t>(row[13]);
+      tmp.prop["tag"] = boost::lexical_cast<data_t>(row[14]);
+    } else {
+      istringstream is(row[12]);
+      tmp.prop.read(is);
+    }
     // copy history
     tmp.history.setSilent();
-    tmp.history << row[15];
+    tmp.history << row[Nleg+1];
     tmp.history.unsetSilent();
     // load coeffs and cov: binary string has to be interpreted as data_t
     unsigned int nCoeffs = cv.getNCoeffs();
-    memcpy(cv.c_array(),reinterpret_cast<data_t*>(row[16]),nCoeffs*sizeof(data_t));
+    memcpy(cv.c_array(),reinterpret_cast<data_t*>(row[Nleg+2]),nCoeffs*sizeof(data_t));
     // check whether covariance matrix is stored
-    if (row[17] != NULL) {
+    if (row[Nleg+3] != NULL) {
       cov = NumMatrix<data_t>(nCoeffs,nCoeffs); // quickly creates a matrix with zeros
       // cov is stored in either symmetric-packed format or compressed
       // into one number (first diagonal element)
-      if (atoi(row[18]) == sizeof(data_t)) {// single element
-	data_t sigma = *reinterpret_cast<data_t*>(row[17]);
+      if (atoi(row[Nleg+4]) == sizeof(data_t)) {// single element
+	data_t sigma = *reinterpret_cast<data_t*>(row[Nleg+3]);
 	for (unsigned int i=0; i < nCoeffs; i++)
 	  cov(i,i) = sigma;
       } else {
@@ -216,7 +234,7 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
 	// readout in row-wise fashion
 	int done = 0;
 	for (unsigned int i = 0; i < nCoeffs; i++) {
-	  memcpy(cov.c_array() + i*(nCoeffs+1),reinterpret_cast<data_t*>(row[17]) + done,(nCoeffs-i)*sizeof(data_t));
+	  memcpy(cov.c_array() + i*(nCoeffs+1),reinterpret_cast<data_t*>(row[Nleg+3]) + done,(nCoeffs-i)*sizeof(data_t));
 	  done += nCoeffs-i;
 	}
 	// reconstruct the upper left from the lower right side of cov
@@ -273,9 +291,7 @@ void ShapeletObjectDB::createTable() {
   query += "`centroid_x` float unsigned NOT NULL default '0' COMMENT 'x-position of centroid in image coordinates',";
   query += "`centroid_y` float unsigned NOT NULL default '0' COMMENT 'y-Position of centroid in image coordinates',";
   query += "`basefile` varchar(255) default NULL COMMENT 'object source file',";
-  query += "`name` varchar(255) default NULL COMMENT 'arbitrary object name',";
-  query += "`classifier` float default NULL COMMENT 'object classification number',";
-  query += "`tag` float default NULL COMMENT 'arbitrary object tag',";
+  query += "`prop` text COMMENT 'arbitrary object properties',";
   query += "`history` text COMMENT 'object history',";
   query += "`coeffs` blob NOT NULL COMMENT 'shapelet coefficients',";
   query += "`cov` mediumblob COMMENT 'covariance matrix of shapelet coefficients',";

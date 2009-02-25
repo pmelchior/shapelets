@@ -3,14 +3,15 @@
 GalaxyModel::~GalaxyModel() {}
 void GalaxyModel::setObject(Object& obj, data_t normalization, bool add) const {
   int x,y;
+  data_t x_rel, y_rel;
   for(int i=0; i < obj.size(); i++) {
     obj.grid.getCoords(i,x,y);
-    x -= obj.centroid(0);  // coords must be around (0,0)
-    y -= obj.centroid(1);
+    x_rel = x - obj.centroid(0);  // coords must be around (0,0)
+    y_rel = y - obj.centroid(1);
     if (add)
-      obj(i) += getValue(x,y)/normalization;
+      obj(i) += getValue(x_rel,y_rel)/normalization;
     else
-      obj(i) = getValue(x,y/normalization);
+      obj(i) = getValue(x_rel,y_rel/normalization);
   }
 }
 

@@ -8,9 +8,7 @@
 #include <NumVector.h>
 #include <Typedef.h>
 #include <ShapeLensConfig.h>
-#include <frame/Point2D.h>
-#include <frame/Grid.h>
-#include <frame/Image.h>
+#include <utils/Property.h>
 #include <frame/Object.h>
 #include <shapelets/Composite2D.h>
 #include <shapelets/OptimalDecomposite2D.h>
@@ -138,25 +136,21 @@ class ShapeletObject : public Composite2D {
   /// Get the object id assigned to this object.
   /// See Object::getID() for details.
   unsigned long getObjectID() const;
-  /// Get the classifier assigned to this object.
-  /// See Object::getClassifier() for details.
-  data_t getObjectClassifier() const;
   /// Get the object extraction and decomposition flags.
   /// The extraction flags populate the lower 8 bits, the decomposition
   /// flags upper ones.\n
   /// See OptimalDecomposite2D::getDecompositionFlag() and Object::getDetectionFlag()
   /// for details.
   const std::bitset<16>& getFlags() const;
-
-  // two storage containers for a floating type and a string
-  /// Set the name for this ShapeletObject.
+  /// Flexible storage container.
+  Property prop;
+  
+  // legacy functions:
   void setName(std::string name);
-  /// Get the name of this ShapeletObject.
   std::string getName() const;
-  /// Assign a tag to this ShapeletObject.
   void setTag(data_t tag);
-  /// Get the tag of this ShapeletObject.
   data_t getTag() const;
+  data_t getObjectClassifier() const;
   
   friend class SIFFile;
   friend class ShapeletObjectDB;

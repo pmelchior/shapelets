@@ -291,7 +291,7 @@ void Object::computeCorrelationFunction(data_t threshold) {
   if (segMap.size()) // if a segMap is provided, mask object pixels
     xi = CorrelationFunction(*this,segMap,threshold);
   else
-    xi = CorrelationFunction(*this,2,threshold);
+    xi = CorrelationFunction(*this,threshold);
 }
 
 #ifdef HAS_FFTW3

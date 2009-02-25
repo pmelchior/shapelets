@@ -51,7 +51,12 @@ class Property : public std::map<std::string, variant_t> {
   /// Constructor.
   Property();
   /// Write contents of property to \p out.
-  void write(std::ostream& out);
+  /// If the entries should be written with a different separator than \p std::endl,
+  /// specify \p linesep. This should only be used in cases where the line separator
+  /// needs to be masked in order to be written to a certain format.\n
+  /// \b CAUTION: \p linesep must not be either \p "\t" or \p "," as they are
+  /// needed for the serialization.
+  void write(std::ostream& out, std::string linesep = std::string()) const;
   /// Read contents of property from \p out.
   void read(std::istream& in);
 };

@@ -10,11 +10,11 @@ typedef complex<data_t> Complex;
 
 ShapeletObject::ShapeletObject() : 
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
-  tag = classifier = chisquare = id = 0;
+  chisquare = id = 0;
   fits = false;
   updatePolar = true;
   flags.reset();
-  name = basefilename = "";
+  basefilename = "";
 }
 
 ShapeletObject::ShapeletObject(const ShapeletObject& source) : 
@@ -29,16 +29,14 @@ ShapeletObject& ShapeletObject::operator=(const ShapeletObject& source) {
   polarCoeffs = source.polarCoeffs;
   c2p = source.c2p;
   trafo = source.trafo;
-  tag = source.tag;
-  classifier = source.classifier;
   chisquare = source.chisquare;
   id = source.id;
   fits = source.fits;
   updatePolar = source.updatePolar;
   flags = source.flags;
-  name = source.name;
   basefilename = source.basefilename;
   history = source.history;
+  prop = source.prop;
   return *this;
 }
 
@@ -52,11 +50,11 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
 
 ShapeletObject::ShapeletObject(const CoefficientVector<data_t>& incoeffs, data_t beta, const Point2D<data_t>& xcentroid, const Grid& grid) :
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
-  tag = classifier = chisquare = id = 0;
+  chisquare = id = 0;
   fits = false;
   updatePolar = true;
   flags.reset();
-  name = basefilename = "";
+  basefilename = "";
   coeffs = incoeffs;
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
@@ -65,11 +63,11 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
 
 ShapeletObject::ShapeletObject(const CoefficientVector<Complex>& incoeffs, data_t beta, const Point2D<data_t>& xcentroid, const Grid& grid):
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov)  {
-  tag = classifier = chisquare = id = 0 ;
+  chisquare = id = 0 ;
   fits = false;
   updatePolar = false;
   flags.reset();
-  name = basefilename = "";
+  basefilename = "";
   Composite2D::setCentroid(xcentroid);
   Composite2D::setBeta(beta);
   Composite2D::setGrid(grid);
@@ -81,11 +79,10 @@ ShapeletObject::ShapeletObject(const Object& obj) :
 Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   fits = true;
   updatePolar = true;
-  tag = 0;
-  name = "";
   id = obj.id;
-  classifier = obj.classifier;
   basefilename = obj.basefilename;
+  // in legacy mode: uncomment the following line
+  // prop["classifier"] = obj.classifier;
 
   // optimized decomposition
   // transforms obj into Composite2D *this
@@ -359,27 +356,43 @@ unsigned long ShapeletObject::getObjectID() const {
   return id;
 }
 
-data_t ShapeletObject::getObjectClassifier() const {
-  return classifier;
-}
-
 const std::bitset<16>& ShapeletObject::getFlags() const {
   return flags;
 }
 
-void ShapeletObject::setName(std::string inname) {
-  name = inname;
+// begin legacy functions //
+data_t ShapeletObject::getObjectClassifier() const {
+  Property::const_iterator iter = prop.find("classifier");
+  data_t d;
+  if (iter != prop.end() && iter->second.type() == typeid(d))
+    return boost::get<data_t>(iter->second);
+  else
+    return 0;
+}
+
+void ShapeletObject::setName(std::string name) {
+  prop["name"] = name;
 }
 
 std::string ShapeletObject::getName() const {
-  return name;
+  Property::const_iterator iter = prop.find("name");
+  std::string s;
+  if (iter != prop.end() && iter->second.type() == typeid(s))
+    return boost::get<std::string>(iter->second);
+  else
+    return "";
 }
 
-void ShapeletObject::setTag(data_t intag) {
-  tag = intag;
+void ShapeletObject::setTag(data_t tag) {
+  prop["tag"] = tag;
 }
 
 data_t ShapeletObject::getTag() const {
-  return tag;
+  Property::const_iterator iter = prop.find("tag");
+  data_t d;
+  if (iter != prop.end() && iter->second.type() == typeid(d))
+    return boost::get<data_t>(iter->second);
+  else
+    return 0;
 }
-  
+// end legacy function //

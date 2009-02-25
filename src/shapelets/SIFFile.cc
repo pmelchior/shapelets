@@ -33,13 +33,6 @@ void SIFFile::save(ShapeletObjectList& sl) {
 void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   int status = IO::writeFITSImage(outfptr,sobj.getCoeffs().getCoeffMatrix());
 
-  // when present, save errors also
-  bool saveErrors = 0;
-  const NumMatrix<data_t>& cov = sobj.getCovarianceMatrix();
-  if (cov.getRows() != 0 && cov.getColumns() != 0)
-    saveErrors = 1;
-  
-
   // add shapelet parameters and other necessary information in pHDU header
   IO::updateFITSKeyword(outfptr,"VERSION",(unsigned int) 1,"SIF version");
 
@@ -49,10 +42,8 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   IO::updateFITSKeyword(outfptr,"BETA",sobj.getBeta(),"scale size in pixel units");
   IO::updateFITSKeyword(outfptr,"DIM",sobj.coeffs.getNMax()+1,"dimensions in shapelet space (nmax+1)");
   IO::updateFITSKeyword(outfptr,"CHI2",sobj.getChiSquare(),"decomposition quality");
-  IO::updateFITSKeyword(outfptr,"ERRORS",saveErrors,"whether coefficient errors are available");
   IO::updateFITSKeyword(outfptr,"FLAGS",sobj.getFlags().to_ulong(),"extraction and decomposition flags");
   IO::updateFITSKeywordString(outfptr, "EXTNAME", sobj.getName(), "shapelet object name");
-  IO::updateFITSKeyword(outfptr, "TAG", sobj.getTag(), "shapelet object tag");
 
   // ** Frame parameters **
   fits_write_record(outfptr,"        / Frame parameters     /",&status);
@@ -85,7 +76,8 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   fits_write_record(outfptr,"",&status);
   IO::appendFITSHistory(outfptr,sobj.getHistory());
   
-  if (saveErrors) {
+  const NumMatrix<data_t>& cov = sobj.getCovarianceMatrix();
+  if (cov.getRows() != 0 && cov.getColumns() != 0) {
     // if noisemodel is GAUSSIAN and shapelet model is untransformed
     // cov is diagonal and constant.
     // so save only 1x1 matrix
@@ -103,11 +95,29 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
       if (diag) {
 	NumMatrix<data_t> one(1,1);
 	one(0,0) = cov(0,0);
-	IO::writeFITSImage(outfptr,one,sobj.getName()+"ERRORS");
+	IO::writeFITSImage(outfptr,one,"ERRORS");
       }
     }
     if (ShapeLensConfig::NOISEMODEL != "GAUSSIAN" || diag == false)
-      IO::writeFITSImage(outfptr,cov,sobj.getName()+"ERRORS");
+      IO::writeFITSImage(outfptr,cov,"ERRORS");
+  }
+  // create binary image extension for property string
+  // use directly cfitsio, otherwise copy to NumVector necessary
+  if (sobj.prop.size() > 0) {
+    ostringstream os;
+    sobj.prop.write(os);
+    int dim = os.str().size();
+    long naxis = 2;      
+    long naxes[2] = { 1, dim };
+    char c;
+    int imageformat = IO::getFITSImageFormat(c);
+    int datatype = IO::getFITSDataType(c);
+    // create HDU
+    int status = 0;
+    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    long firstpix[2] = {1,1};
+    fits_write_pix(outfptr,datatype,firstpix,dim,const_cast<char*>(os.str().c_str()), &status);
+    IO::updateFITSKeywordString (outfptr,"EXTNAME","PROPS");
   }
 }
 
@@ -136,17 +146,9 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   status = IO::readFITSKeyword(fptr,"BETA",tmp);
   sobj.setBeta(tmp);
   status = IO::readFITSKeyword(fptr,"CHI2",sobj.chisquare);
-  bool errors;
-  status = IO::readFITSKeyword(fptr,"ERRORS",errors);
   unsigned long flags;
   status = IO::readFITSKeyword(fptr,"FLAGS",flags);
   sobj.flags = std::bitset<16>(flags);
-  status = IO::readFITSKeywordString(fptr,"EXTNAME",sobj.name);
-  if (status != 0)
-    sobj.name = "";
-  status = IO::readFITSKeyword(fptr,"TAG",sobj.tag);
-  if (status != 0)
-    sobj.tag = 0;
 
   // read frame parameters
   status = IO::readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
@@ -190,9 +192,9 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   sobj.history << hstr;
   sobj.history.unsetSilent();
 
-  // if errors have been saved, load it
-  if (errors) {
-    fits_movrel_hdu(fptr,1,IMAGE_HDU,&status);
+  // if errors have been saved, load them
+  fits_movnam_hdu(fptr,IMAGE_HDU,const_cast<char*>(string("ERRORS").c_str()),0,&status);
+  if (status != BAD_HDU_NUM) {
     status = IO::readFITSImage(fptr,sobj.cov);
     // legacy mode: if errors are coefficient errors instead of full cov. matrix:
     // set them on diagonal of cov
@@ -210,6 +212,17 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
       for (unsigned int i=0; i < sobj.coeffs.size(); i++)
 	sobj.cov(i,i) = sigma;
     }
+  }
+
+  // if props have been save, load them
+  fits_movnam_hdu(fptr,IMAGE_HDU,const_cast<char*>(string("PROPS").c_str()),0,&status);
+  if (status != BAD_HDU_NUM) {
+    int dim;
+    NumVector<char> v;
+    Grid g;
+    status = IO::readFITSImage(fptr,g,v);
+    std::istringstream is(v.c_array());
+    sobj.prop.read(is);
   }
   IO::closeFITSFile(fptr);
 }
