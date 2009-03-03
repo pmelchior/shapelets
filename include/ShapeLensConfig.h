@@ -4,6 +4,7 @@
 #include <string>
 #include <Typedef.h>
 
+namespace shapelens {
 /// Class for ShapeLens++ configuration parameters.
 /// This class stores configuration parameters determining the behaviour of the shapelet
 /// decomposition process and the framing process.\n
@@ -83,4 +84,5 @@ class ShapeLensConfig {
   static std::string NOISEMODEL;
 
 };
+} // end namespace
 #endif

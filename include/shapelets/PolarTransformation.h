@@ -8,6 +8,8 @@
 #include <frame/Grid.h>
 #include <shapelets/CoefficientVector.h>
 
+namespace shapelens {
+
 /// Class for Polar Shapelets.
 /// Performs a coefficient transformation cartesian -> polar and vice versa.
 /// The transformation matrix and its inverse are stored since they only depend on
@@ -36,5 +38,5 @@ class PolarTransformation {
   NumMatrix<complex<data_t> > c2p,p2c;
   void buildTransformationMatrix(const IndexVector& , const IndexVector& );
 };
-
+} // end namespace
 #endif

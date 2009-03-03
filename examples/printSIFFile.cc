@@ -1,6 +1,8 @@
 #include <ShapeLens.h>
 #include <tclap/CmdLine.h>
 
+using namespace shapelens;
+
 // printSIFFile:
 // open SIF file and print header (+ decomposition history + 
 // shapelet coefficients/errors) to stdout.

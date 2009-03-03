@@ -1,16 +1,18 @@
 #ifndef GRID_H
 #define GRID_H
 
+#include <math.h>
+#include <Typedef.h>
+#include <frame/Point2D.h>
+
+namespace shapelens {
+
 /// Templated grid class.
 /// The class defines the Grid on which an Image entity is defined.\n\n
 /// Traditionally, grid positions are integer pixel numbers (starting from 0,0
 /// by default). Therefore \p Typedef.h defines \p GridT<int> as \p Grid.\n
 /// If its required to work on floating point grids,
 /// a single change in the file \p Typedef.h is thus sufficient.
-
-#include <math.h>
-#include <Typedef.h>
-#include <frame/Point2D.h>
 
 template <class T>
 class GridT {
@@ -188,6 +190,6 @@ inline int GridT<T>::getNeighborPixel(unsigned int pixel, unsigned int direction
   getCoords(pixel,x,y);
   return getNeighborPixel(pixel,x,y,direction);
 }
-
+} // end namespace
 
 #endif

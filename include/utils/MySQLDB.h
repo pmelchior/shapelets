@@ -6,7 +6,7 @@
 #include <string>
 #include <mysql.h>
 
-  
+namespace shapelens {  
 /// MySQLDB result class.
 /// This class creates and frees the memory associated with a
 /// \p MYSQL_RES instance.
@@ -44,6 +44,6 @@ class MySQLDB {
  private:
   MYSQL* conn;
 };
-
+} // end namespace
 #endif // SHAPELETDB
 #endif // MYSQLDB_H

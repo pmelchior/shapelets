@@ -2,6 +2,8 @@
 #include <tclap/CmdLine.h>
 #include <fstream>
 
+using namespace shapelens;
+
 int main(int argc, char *argv[]) {
   TCLAP::CmdLine cmd("Perform shapelet decomposition of input file, save results and output shape catalog", ' ', "0.3");
   TCLAP::ValueArg<std::string> input("f","file","FITS file to analyze",true,"","string", cmd);

@@ -1,5 +1,6 @@
 #include <shapelets/IndexVectorCartesian.h>
 
+using namespace shapelens;
 using namespace std;
 
 IndexVectorCartesian::IndexVectorCartesian () :

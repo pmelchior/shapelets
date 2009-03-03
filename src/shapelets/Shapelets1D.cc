@@ -3,6 +3,8 @@
 #include <gsl/gsl_sf_erf.h>
 #include <gsl/gsl_sf_exp.h>
 
+using namespace shapelens;
+
 Shapelets1D::Shapelets1D() {
 }
 

@@ -5,6 +5,7 @@
 #include <NumMatrix.h>
 #include <map>
 
+namespace shapelens {
 class IndexVectorPolar : public IndexVector {
  public:
   IndexVectorPolar();
@@ -25,5 +26,5 @@ class IndexVectorPolar : public IndexVector {
   int mIndex(unsigned int n, int m) const;
   void computeIndexMaps();
 };
-
+} // end namespace
 #endif

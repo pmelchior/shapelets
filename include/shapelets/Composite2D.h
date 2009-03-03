@@ -1,6 +1,16 @@
 #ifndef COMPOSITE2D_H
 #define COMPOSITE2D_H
 
+#include <NumMatrix.h>
+#include <NumVector.h>
+#include <Typedef.h>
+#include <frame/Image.h>
+#include <frame/Moments.h>
+#include <shapelets/Shapelets2D.h>
+#include <shapelets/CoefficientVector.h>
+
+namespace shapelens {
+
 /// Shapelet composition class.
 /// Provides methods associated with a 2D shapelet model, 
 /// \f[f(x_1,x_2) = \sum_{n_1,n_2}^{n_1 + n_2 = n_{max}} f_{n_1,n_2}\ B_{n_1,n_2}(x_1,x_2;\beta)\f]
@@ -19,14 +29,6 @@
 /// \endcode
 /// The example calculates the integral \f$\int dx\ f(x)\f$ without and the quadrupole 
 /// moment \f$Q\f$ with the respective covariance matrix.
-
-#include <NumMatrix.h>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <frame/Image.h>
-#include <frame/Moments.h>
-#include <shapelets/Shapelets2D.h>
-#include <shapelets/CoefficientVector.h>
 
 class Composite2D : private Shapelets2D {
  public:
@@ -121,5 +123,5 @@ class Composite2D : private Shapelets2D {
   void makeShapeletMatrix();
   void updateOrders();
 };
-
+} // end namespace
 #endif

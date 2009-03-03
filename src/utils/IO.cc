@@ -8,6 +8,7 @@
 #include <boost/tokenizer.hpp>
 #include <fstream>
 
+using namespace shapelens;
 namespace ublas = boost::numeric::ublas;
 
 fitsfile* IO::openFITSFile(std::string filename, bool write) {

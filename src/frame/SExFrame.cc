@@ -10,6 +10,8 @@
 #include <set>
 #include <vector>
 #include <bitset>
+
+using namespace shapelens;
 using namespace std;
 using namespace boost;
 

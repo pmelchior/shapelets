@@ -1,5 +1,6 @@
 #include <shapelets/IndexVectorPolar.h>
 
+using namespace shapelens;
 using namespace std;
 
 IndexVectorPolar::IndexVectorPolar () :

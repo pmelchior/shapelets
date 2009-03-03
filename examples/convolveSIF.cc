@@ -1,6 +1,7 @@
 #include <ShapeLens.h>
 #include <tclap/CmdLine.h>
 
+using namespace shapelens;
 using namespace std;
 
 int main(int argc, char *argv[]) {

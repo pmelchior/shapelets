@@ -5,6 +5,8 @@
 #include <frame/Object.h>
 #include <tclap/CmdLine.h> 
 
+using namespace shapelens;
+
 int main(int argc, char *argv[]) {
   TCLAP::CmdLine cmd("Convolve FitsObject with anoher FitsObject in Real Space", ' ', "0.1");
   TCLAP::ValueArg<std::string> input("i","input","input FITS file",true,"","std::string", cmd);

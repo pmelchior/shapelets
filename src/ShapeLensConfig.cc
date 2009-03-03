@@ -5,6 +5,7 @@
 #include <iostream>
 #include <limits>
 
+using namespace shapelens;
 using namespace std;
 
 bool ShapeLensConfig::VERBOSITY = 0;

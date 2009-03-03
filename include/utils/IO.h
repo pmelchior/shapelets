@@ -9,6 +9,7 @@
 #include <Typedef.h>
 #include <frame/Grid.h>
 
+namespace shapelens {
 template <class T>
 class Image;
 
@@ -304,5 +305,5 @@ class IO {
   static int makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme);
   static unsigned int getScaledValue(data_t value, int maxcolors, data_t min, data_t max, char scaling);
 };
-
+} // end namespace
 #endif

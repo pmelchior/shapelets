@@ -1,5 +1,6 @@
 #include <shapelets/Hermite.h>
 
+using namespace shapelens;
 using namespace boost::numeric::ublas;
 
 // constructors

@@ -7,12 +7,13 @@
 #include <frame/SegmentationMap.h>
 #include <frame/CorrelationFunction.h>
 
+namespace shapelens {
+
 /// Class for the pixel covariance matrix.
 /// 
 /// This class provides means to effectively store and work with pixel covariance matrices.
 /// It is assumed here that the matrices are banded and the entries on each band are 
 /// constant (which is true in the case of correlated Gaussian noise).
-/// 
 
 class PixelCovarianceMatrix {
  public:
@@ -85,7 +86,6 @@ class PixelCovarianceMatrix {
   NumVector<int> offset;
   NumVector<data_t> entry;
 };
-
-NumMatrix<data_t> operator*(const NumMatrix<data_t>& M, const PixelCovarianceMatrix& V);
-
+} // end namespace
+NumMatrix<shapelens::data_t> operator*(const NumMatrix<shapelens::data_t>& M, const shapelens::PixelCovarianceMatrix& V);
 #endif

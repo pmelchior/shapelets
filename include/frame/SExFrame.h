@@ -12,6 +12,7 @@
 #include <frame/Object.h>
 #include <frame/Catalog.h>
 
+namespace shapelens {
 /// Wrapper class for SExtractor.
 /// Provides segmentation of a FitsFile into various Object entities employing 
 /// SExtractor's output files and some additional processing.\n
@@ -74,7 +75,6 @@
 /// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>\n
 /// The noise estimation step can be bypassed if the header keywords <tt>NOISE_MEAN</tt>
 /// and <tt>NOISE_RMS</tt> are set in this FITS file.
-
 
 class SExFrame : public Image<data_t> {
  public:
@@ -145,7 +145,5 @@ class SExFrame : public Image<data_t> {
   Image<data_t> weight;
   gsl_rng* r;
 };
-
-
-
+} // end namespace
 #endif

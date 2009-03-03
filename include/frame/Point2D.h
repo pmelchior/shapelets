@@ -1,10 +1,12 @@
 #ifndef POINT2D_H
 #define POINT2D_H
 
+#include <boost/numeric/bindings/traits/ublas_vector.hpp>
+
+namespace shapelens {
+
 /// Templated 2D Point class.
 /// publicly inherited from uBLAS vectors
-
-#include <boost/numeric/bindings/traits/ublas_vector.hpp>
 
 template <class T>
 class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::bounded_array<T,2> >
@@ -33,5 +35,5 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
       return false;
   }
 };
-
+} // end namespace
 #endif

@@ -5,12 +5,14 @@
 #include <Typedef.h>
 #include <frame/Image.h>
 
+namespace shapelens {
+
 /// Segmentation map class.
 /// Methods for working on segmentation maps.
 
 class SegmentationMap : public Image<long> {
  public:
-  /// Defautl constructor.
+  /// Default constructor.
   SegmentationMap();
   /// Constructor from the existing segmentation FITS file <tt>segMapFile</tt>.
   /// The <tt>image</tt> has to be defined on the same Grid as the given  
@@ -32,5 +34,5 @@ class SegmentationMap : public Image<long> {
   /// Clean the segmentation map within the given region from already detected objects.
   void cleanSegMapArea(long xmin, long xmax, long ymin, long ymax);
 };
-
+} // end namespace
 #endif

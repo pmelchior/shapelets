@@ -5,6 +5,7 @@
 #include <NumMatrix.h>
 #include <map>
 
+namespace shapelens {
 class IndexVectorCartesian : public IndexVector {
  public:
   IndexVectorCartesian();
@@ -24,5 +25,5 @@ class IndexVectorCartesian : public IndexVector {
   NumMatrix<unsigned int> cMatrix;
   void computeIndexMaps();
 };
-
+} // end namespace
 #endif

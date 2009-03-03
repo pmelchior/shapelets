@@ -1,8 +1,9 @@
 #include <utils/FFT.h>
 
 #ifdef HAS_FFTW3
-typedef complex<data_t> Complex;
 
+using namespace shapelens;
+typedef complex<data_t> Complex;
 
 FourierTransform1D::FourierTransform1D() : NumVector<Complex> () {
   N = 0;

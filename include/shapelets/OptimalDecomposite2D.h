@@ -11,6 +11,8 @@
 #include <frame/Object.h>
 #include <shapelets/Decomposite2D.h>
 
+namespace shapelens {
+
 /// Class for optimal shapelet decomposition.
 /// Provides minimization of the decomposition's \f$\chi^2\f$.
 /// This class delivers best fit \f$\beta\f$ and \f$n_{max}\f$, assuming a known position
@@ -91,5 +93,5 @@ private:
   data_t getBetaLimit(bool upper);
 
 };
-
+} // end namespace
 #endif

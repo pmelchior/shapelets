@@ -11,6 +11,8 @@
 #include <shapelets/ShapeletObject.h>
 #include <shapelets/ShapeletObjectList.h>
 
+namespace shapelens {
+
 /// Read/Write methods for SIF files.
 /// The SIF (Shapelet Image Format) is used to store and retrieve all information 
 /// that specifies a ShapeletObject.
@@ -33,5 +35,5 @@ class SIFFile {
   std::string filename;
   void saveSObj(fitsfile* fptr, const ShapeletObject& sobj);
 };
-
+} // end namespace
 #endif

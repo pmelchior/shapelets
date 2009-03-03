@@ -4,6 +4,8 @@
 #include <Typedef.h>
 #include <shapelets/Hermite.h>
 
+namespace shapelens {
+
 /// 1D Shapelet class.
 /// Provides calculation of values of 1D Shapelets basis functions 
 /// \f$B_n(x;\beta) = \beta^{-\frac{1}{2}}\phi_n(\beta^{-1}x)\f$ where
@@ -36,5 +38,5 @@ private:
   Hermite H;
   data_t beta,sqrt_beta;
 };
-
+} // end namespace
 #endif

@@ -6,6 +6,8 @@
 #include <string>
 #include <ShapeLensConfig.h>
 
+namespace shapelens {
+
 /// History class.
 /// The class stores the history of processing steps.
 /// New texts are added by using the operator<< (borrowed from std::ostringstream).\n
@@ -95,5 +97,5 @@ class History {
   std::ostringstream s;
   bool silent;
 }; 
-
+} // end namespace
 #endif

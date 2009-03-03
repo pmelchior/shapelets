@@ -1,6 +1,8 @@
 #include <utils/MySQLDB.h>
 #include <iostream>
 
+using namespace shapelens;
+
 DBResult::DBResult(MYSQL* conn) {
   res = mysql_store_result(conn);
 }

@@ -1,15 +1,17 @@
 #ifndef SHAPELETS2D_H
 #define SHAPELETS2D_H
 
-/// 2D Shapelet class.
-/// Provides calculation of values of 2D Shapelets basis functions 
-/// \f$B_{n_0,n_1}(x_0,x_1;\beta) \equiv B_{n_0}(x_0;\beta)B_{n_1}(x_1;\beta)\f$, where
-/// \f$B_{n_i}(x_i;\beta)\f$ is the Shapelets1D basis function.
-
 #include <Typedef.h>
 #include <frame/Point2D.h>
 #include <frame/Grid.h>
 #include <shapelets/Shapelets1D.h>
+
+namespace shapelens {
+//
+/// 2D Shapelet class.
+/// Provides calculation of values of 2D Shapelets basis functions 
+/// \f$B_{n_0,n_1}(x_0,x_1;\beta) \equiv B_{n_0}(x_0;\beta)B_{n_1}(x_1;\beta)\f$, where
+/// \f$B_{n_i}(x_i;\beta)\f$ is the Shapelets1D basis function.
 
 class Shapelets2D {
  public:
@@ -37,5 +39,5 @@ class Shapelets2D {
 private:
   Shapelets1D S1D;
 };
-
+} // end namespace
 #endif

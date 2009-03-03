@@ -4,6 +4,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>
 
+using namespace shapelens;
 using namespace std;
 
 Composite2D::Composite2D() : Shapelets2D() {

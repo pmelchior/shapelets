@@ -7,6 +7,8 @@
 #include <Typedef.h>
 #include <shapelets/ShapeletObject.h>
 
+namespace shapelens {
+
 /// Class for managing an ensemble of ShapeletObjects.
 /// This class is meant for loading a set of ShapeletObject entities by giving a list
 /// of SIFFile names as an ASCII file.\n
@@ -44,7 +46,6 @@
 /// In this example, all SIFFile names stored in <tt>file.lst</tt> are opened;
 /// if their decomposition \f$\chi^2\f$ is less than 1, they will be included in
 /// the list.
-
 
 class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> > {
  public:
@@ -88,4 +89,5 @@ class ShapeletObjectList : public std::vector<boost::shared_ptr<ShapeletObject> 
  private:
   void readListFile(std::string listfile, bool (* selectionFunction) (ShapeletObject&, void*), void* p);
 };
+} // end namespace
 #endif

@@ -4,9 +4,10 @@
 #include <NumMatrix.h>
 #include <NumVector.h>
 #include <Typedef.h>
-#include <shapelets/IndexVector.h>
 #include <shapelets/IndexVectorCartesian.h>
 #include <shapelets/IndexVectorPolar.h>
+
+namespace shapelens {
 
 /// Class for storing shapelet coefficients as vector.
 /// To perform linear transformation in shapelet space, it is necessary to
@@ -25,7 +26,7 @@
 ///  // transform vector back to coefficient matrix
 ///  h.fillCoeffMatrix(cartesianCoeffs);
 /// \endcode
-/// 
+
 template <class T>
 class CoefficientVector : public NumVector<T> {
  public:
@@ -191,4 +192,6 @@ template <class T>
 NumVector<T> operator*(const NumMatrix<T>& M, const CoefficientVector<T>& cv) {
   return M*cv.getNumVector();
 }
+
+} // end namespace
 #endif

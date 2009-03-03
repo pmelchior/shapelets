@@ -5,6 +5,7 @@
 #include <fstream>
 
 typedef unsigned int uint;
+using namespace shapelens;
 
 PixelCovarianceMatrix::PixelCovarianceMatrix() {
   bandwidth = 0;

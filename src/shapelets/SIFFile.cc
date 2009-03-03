@@ -4,6 +4,7 @@
 #include <bitset>
 #include <fstream>
 
+using namespace shapelens;
 using namespace std;
 
 SIFFile::SIFFile(std::string infilename) {

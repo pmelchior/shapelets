@@ -1,6 +1,8 @@
 #include <ShapeLens.h>
 #include <tclap/CmdLine.h>
 
+using namespace shapelens;
+
 int main(int argc, char *argv[]) {
   TCLAP::CmdLine cmd("Create a FITS file from a shapelet model specified by SIF file", ' ', "0.2");
   TCLAP::ValueArg<data_t> rms("r","rms","RMS of pixel noise",false,0,"data_t", cmd);

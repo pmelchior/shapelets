@@ -6,6 +6,8 @@
 #include <shapelets/ShapeletObjectList.h>
 #include <complex>
 
+namespace shapelens {
+
 /// Class for passive lensing estimators.
 ///
 /// \todo implement with CoefficientVector instead of matrices.
@@ -56,5 +58,5 @@ class LensingEstimator {
   complex<data_t> getWeightFlexionFProfile(ShapeletObject& so, int n);
   complex<data_t> getWeightFlexionGProfile(ShapeletObject& so, int n);
 };
-
+} // end namespace
 #endif

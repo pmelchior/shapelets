@@ -3,9 +3,12 @@
 
 #include <Typedef.h>
 
+namespace shapelens {
+//
 /// Container class for Quadrupole moments of two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
+
 class Quadrupole {
  public:
   /// Constructor.
@@ -35,7 +38,7 @@ class Octupole {
   data_t m[4];
 };
 
-/// Container class for Octupole moments of two-dimensional quantity.
+/// Container class for Hexadecupole moments of two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
 class Hexadecupole {
@@ -50,5 +53,5 @@ class Hexadecupole {
  private:
   data_t m[5];
 };
-
+} // end namespace
 #endif

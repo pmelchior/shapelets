@@ -2,6 +2,8 @@
 #include <tclap/CmdLine.h>
 #include <fstream>
 
+using namespace shapelens;
+
 void ellipticity(Quadrupole& Q, data_t& e1, data_t& e2, data_t& e, data_t& theta) {
   complex<data_t> I(0,1);
   complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);

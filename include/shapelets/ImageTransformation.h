@@ -11,6 +11,8 @@
 #include <frame/Point2D.h>
 #include <shapelets/CoefficientVector.h>
 
+namespace shapelens {
+
 /// Class for image transformation in shapelet space.
 /// See Paper I, sect. 3.3 and Paper III, sect. 5 for details.\n\n
 /// In general, the transformations are done by constructing a transformation matrix
@@ -166,5 +168,5 @@ class ImageTransformation {
   void makeBTensor(boost::multi_array<data_t,3>& bt, data_t alpha_1, data_t beta_1, data_t gamma_1, int nmax);
   NumMatrix<data_t> make1DRescalingMatrix(data_t beta1, data_t beta2, int nmax);
 };
-
+} // end namespace
 #endif

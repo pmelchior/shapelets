@@ -2,6 +2,7 @@
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_histogram.h>
 
+using namespace shapelens;
 using namespace std;
 
 typedef unsigned long ulong;

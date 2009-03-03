@@ -5,8 +5,8 @@
 #include <set>
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
-// #include <gsl/gsl_math.h>
 
+using namespace shapelens;
 using namespace std;
 
 Catalog::Catalog() : map<unsigned long, CatObject>() {

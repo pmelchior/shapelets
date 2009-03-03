@@ -10,6 +10,7 @@
 #include <bitset>
 #include <list>
 
+using namespace shapelens;
 using namespace std;
 
 typedef unsigned int uint;

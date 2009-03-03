@@ -1,5 +1,7 @@
 #include <modelfit/GalaxyModel.h>
 
+using namespace shapelens;
+
 GalaxyModel::~GalaxyModel() {}
 void GalaxyModel::setObject(Object& obj, data_t normalization, bool add) const {
   int x,y;

@@ -2,6 +2,8 @@
 #include <sstream>
 #include <gsl/gsl_math.h>
 
+using namespace shapelens;
+
 Object::Object() : Image<data_t>(), segMap() {
   id = 0;
   flags = 0;

@@ -3,6 +3,8 @@
 #include <ShapeLens.h>
 #include <tclap/CmdLine.h>
 
+using namespace shapelens;
+
 // decomposeFITS2SIF:
 // * open FITS file
 // * estimate background noise mean and variance,

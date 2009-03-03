@@ -4,6 +4,8 @@
 #include <frame/Object.h>
 #include <shapelets/ShapeletObject.h>
 
+namespace shapelens {
+
 /// Base class for idealized galaxy models.
 /// A galaxy model is a idealized representation of a two-dimensional shape.
 /// It's bigget advantage: It can be sampled at any resolution.\n\n
@@ -11,6 +13,7 @@
 /// - they provide a well-defined value at any position \f$(x,y)\f$
 /// - their centroids are set to \f$(0,0)\f$
 /// - their total integrated flux is finite.
+
 class GalaxyModel {
 public:
   /// Destructor.
@@ -95,6 +98,5 @@ public:
 private:
   ShapeletObject& sobj;
 };
-
-
+} // end namespace
 #endif

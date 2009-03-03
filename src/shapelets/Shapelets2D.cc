@@ -1,6 +1,8 @@
 #include <shapelets/Shapelets2D.h>
 #include <gsl/gsl_math.h>
 
+using namespace shapelens;
+
 Shapelets2D::Shapelets2D () {
 }
 

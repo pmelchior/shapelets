@@ -6,9 +6,10 @@
 #include <map>
 #include <string>
 #include <iostream>
-
-/// Allowed types for usage in Property.
 #include <boost/variant.hpp>
+
+namespace shapelens {
+/// Allowed types for usage in Property.
 typedef boost::variant<std::string,data_t,int,std::vector<int>,std::vector<data_t> > variant_t;
 
 /// Flexible container class.
@@ -46,6 +47,7 @@ typedef boost::variant<std::string,data_t,int,std::vector<int>,std::vector<data_
 /// \endcode
 /// Alternatively, use the concept of \p boost::static_visitor (described as part
 /// of the \p boost::variant documentation). 
+
 class Property : public std::map<std::string, variant_t> {
  public:
   /// Constructor.
@@ -60,5 +62,5 @@ class Property : public std::map<std::string, variant_t> {
   /// Read contents of property from \p out.
   void read(std::istream& in);
 };
-
+} // end namespace
 #endif

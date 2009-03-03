@@ -14,7 +14,8 @@
 #include <shapelets/OptimalDecomposite2D.h>
 #include <shapelets/PolarTransformation.h>
 #include <shapelets/ImageTransformation.h>
-#include <shapelets/CoefficientVector.h>
+
+namespace shapelens {
 
 /// Central class for 2D shapelet objects.
 /// Provides all functionalities related to the work with 2D shapelet objects.\n
@@ -217,5 +218,5 @@ class ShapeletObject : public Composite2D {
     return result;
   }
 };
-
+} // end namespace
 #endif

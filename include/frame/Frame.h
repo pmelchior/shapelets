@@ -13,6 +13,7 @@
 #include <frame/SegmentationMap.h>
 #include <frame/Catalog.h>
 
+namespace shapelens {
 /// Image preprocessing class.
 /// The purpose of this class is to read in a Image and segment it into individual
 /// Object entities.\n
@@ -156,5 +157,5 @@ class Frame : public Image<data_t> {
   bool subtractedBG, estimatedBG;
   Catalog catalog;
 };
-
+} // end namespace
 #endif

@@ -9,6 +9,8 @@
 #include <utils/IO.h>
 #include <frame/Grid.h>
 
+namespace shapelens {
+
 /// Class for image data.
 /// Internally, the class represents image data as a vector. But the interface
 /// allows two-dimensional access.\n
@@ -162,4 +164,5 @@ class Image : public NumVector<T> {
     status = IO::closeFITSFile(fptr);
   }
 };
+} // end namespace
 #endif

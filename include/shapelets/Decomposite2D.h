@@ -12,6 +12,8 @@
 #include <frame/Object.h>
 #include <shapelets/Composite2D.h>
 
+namespace shapelens {
+
 /// Shapelet decomposition class.
 /// Provides decomposition of a given Object entity into a Composite2D entity, aka
 /// a shapelet model. All protected data members of Composite2D are populated during the
@@ -108,5 +110,5 @@ class Decomposite2D {
   NumMatrixDiagonal<data_t> Weight;
   bool fixedCoeffs;
 };
-
+} // end namespace
 #endif

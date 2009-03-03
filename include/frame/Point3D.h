@@ -1,10 +1,12 @@
 #ifndef POINT3D_H
 #define POINT3D_H
 
+#include <boost/numeric/bindings/traits/ublas_vector.hpp>
+
+namespace shapelens {
+
 /// 3D Point class.
 /// publicly inherited from uBLAS vectors
-
-#include <boost/numeric/bindings/traits/ublas_vector.hpp>
 
 template <class T>
 class Point3D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::bounded_array<T,3> >
@@ -25,5 +27,5 @@ class Point3D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
     Base_vector::operator=(r);
   }
 };
-
+} // end namespace
 #endif

@@ -10,6 +10,8 @@
 #include <utils/FFT.h>
 #include <bitset>
 
+namespace shapelens {
+
 /// Central object representing class.
 /// The purpose of this class is to faciliate the exchange of object related information
 /// between different codes. By our definition, an object is a significant peak of the 
@@ -125,4 +127,5 @@ class Object : public Image<data_t> {
   FourierTransform2D fourier;
 #endif  
 };
+} // end namespace
 #endif

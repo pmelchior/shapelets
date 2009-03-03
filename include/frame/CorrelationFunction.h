@@ -8,6 +8,7 @@
 #include <frame/SegmentationMap.h>
 #include <frame/Grid.h>
 
+namespace shapelens {
 /// Class for computing and storing the pixel correlation function.
 /// The pixel correlation function \f$\xi\f$ is defined as
 /// \f[\xi_{\vec\Delta} \equiv N_{\vec\Delta}^{-1}\sum_{i,j}[I(\vec{x}_i) I(\vec{x}_j)]\,\f]
@@ -82,5 +83,5 @@ class CorrelationFunction {
   int maxLength;
   void setPoints();
 };
-
+} // end namespace
 #endif

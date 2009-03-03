@@ -3,6 +3,7 @@
 #include <list>
 #include <cmath>
 
+using namespace shapelens;
 using namespace std;
 
 ShapeletObjectList::ShapeletObjectList() : vector<boost::shared_ptr<ShapeletObject> >() {

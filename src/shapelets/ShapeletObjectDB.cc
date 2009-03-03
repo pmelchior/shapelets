@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <fenv.h>
 
+using namespace shapelens;
 using namespace std;
 
 #if SHAPELETDB==MySQL

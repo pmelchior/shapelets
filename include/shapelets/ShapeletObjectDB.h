@@ -11,6 +11,8 @@
 #include <utils/MySQLDB.h>
 #endif
 
+namespace shapelens {
+
 /// Database backend class.
 /// This class provides an interface to a database server/file (later called \p DB).
 /// Single ShapeletObject entities or whole ShapeletObjectList entities can be stored
@@ -32,9 +34,7 @@
 ///  `centroid_x` float unsigned NOT NULL default '0' COMMENT 'x-position of centroid in image coordinates',
 ///  `centroid_y` float unsigned NOT NULL default '0' COMMENT 'y-Position of centroid in image coordinates',
 ///  `basefile` varchar(255) default NULL COMMENT 'object source file',
-///  `name` varchar(255) default NULL COMMENT 'arbitrary object name',
-///  `classifier` float default NULL COMMENT 'object classification number',
-///  `tag` float default NULL COMMENT 'arbitrary object tag',
+///  `prop` text COMMENT 'arbitrary object properties',
 ///  `history` text COMMENT 'object history',
 ///  `coeffs` blob NOT NULL COMMENT 'shapelet coefficients',
 ///  `cov` mediumblob COMMENT 'covariance matrix of shapelet coefficients',
@@ -115,7 +115,6 @@ class ShapeletObjectDB {
   MySQLDB db;
 #endif
 };
-
-
+} // end namespace
 #endif  // SHAPELETOBJECTDB_H
 #endif  // SHAPELETDB

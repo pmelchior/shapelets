@@ -4,6 +4,8 @@
 #include <NumMatrix.h>
 #include <map>
 
+namespace shapelens {
+
 /// Index of vector representation of coefficient matrix.
 /// It is often convenient to store the shapelet coefficients (matrix) as vectors.
 /// This class provides the methods to infer the matrix indices or the 
@@ -38,5 +40,5 @@ class IndexVector {
   /// Get the vector index from the eigenstate numbers.
   virtual int getIndex(int i, int j) const = 0;
 };
-
+} // end namespace
 #endif

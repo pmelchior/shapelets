@@ -6,13 +6,12 @@
 #include <time.h>
 #include <iomanip>
 #include <map>
-// for chi^2 minimization
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_math.h>
-//#include <gsl/gsl_min.h>
 #include <gsl/gsl_multimin.h>
 #include <gsl/gsl_sf.h>
 
+using namespace shapelens;
 using namespace std;
 
 OptimalDecomposite2D::OptimalDecomposite2D(const Object& obj, Composite2D& c) : 

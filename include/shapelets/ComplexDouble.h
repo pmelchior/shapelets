@@ -4,6 +4,8 @@
 #include <complex>
 #include <Typedef.h>
 
+namespace shapelens {
+
 /// Enhanced <tt>complex<data_t></tt> class.
 /// This class provides an typecast operator from <tt>complex<data_t></tt> to <tt>data_t</tt> which is missing
 /// in the base class.
@@ -26,5 +28,5 @@ class ComplexDouble : public complex<data_t> {
     return std::real(*this);
   }
 };
-
+} // end namespace
 #endif

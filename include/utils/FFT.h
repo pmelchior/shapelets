@@ -9,11 +9,14 @@
 #include <NumMatrix.h>
 #include <frame/Image.h>
 
+namespace shapelens {
+
 /// Class for storing result of one-dimensional FFT.
 /// This class exploits that the Fourier transform of a real vector
 /// obeys the Hermiticity condition
 /// \f[F(i) = F^*(N-i)\f]
 /// for a vector index \f$i\f$ and the length of the real vector \f$N\f$.
+
 class FourierTransform1D : public NumVector<complex<data_t> > {
  public:
   /// Constructor.
@@ -83,6 +86,6 @@ class FFT {
   static void reorder(Image<data_t>& im);
   static void conv_multiply(const FourierTransform2D& f1, const FourierTransform2D& f2, FourierTransform2D& target);
 };
-
+} // end namespace
 #endif // HAS_FFTW3
 #endif // FFT_H

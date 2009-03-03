@@ -1,6 +1,7 @@
 #include <shapelets/PolarTransformation.h>
 #include <shapelets/CoefficientVector.h>
 
+using namespace shapelens;
 typedef complex<data_t> Complex;
 const Complex I = Complex(0,1);
 

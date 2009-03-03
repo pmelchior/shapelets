@@ -8,6 +8,7 @@
 #include <list>
 #include <tclap/CmdLine.h>
 
+using namespace shapelens;
 typedef complex<data_t> Complex;
 
 /// Creates \f$N\f$ galaxy images in shapelet space.

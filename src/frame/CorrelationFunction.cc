@@ -2,6 +2,7 @@
 #include <gsl/gsl_math.h>
 
 typedef unsigned int uint;
+using namespace shapelens;
 
 CorrelationFunction::CorrelationFunction () {
 }

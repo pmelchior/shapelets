@@ -6,6 +6,8 @@
 #include <boost/numeric/ublas/triangular.hpp>
 #include <Typedef.h>
 
+namespace shapelens {
+
 /// Hermite polynomial class.
 /// Provides calculation of values of Hermite polynomials and its coefficients
 /// \f$H_n(x) = \sum_{2i+j=n} (-1)^i(2x)^j\frac{n!}{i!j!}\f$. \n\n
@@ -35,7 +37,7 @@ private:
   int computed;
   void computeHermiteCoeffs(unsigned int n);
 };
-
+} // end namespace
 #endif
 
 

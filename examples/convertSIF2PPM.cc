@@ -1,6 +1,8 @@
 #include <ShapeLens.h>
 #include <tclap/CmdLine.h>
 
+using namespace shapelens;
+
 // convertSIF2PPM:
 // create a PPM file from a shapelet model specified by SIF file.
 

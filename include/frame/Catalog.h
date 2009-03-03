@@ -5,7 +5,8 @@
 #include <string>
 #include <bitset>
 #include <Typedef.h>
-//#include <rtree.hh>
+
+namespace shapelens {
 
 /// Structure to store information of Catalog objects.
 /// The names of the parameters are indentical or similar to those used by SExtractor.
@@ -13,7 +14,6 @@
 /// Allowed values for <tt>PARAMETER_NAME</tt> in the file read by Catalog are listed below.
 /// In addition to these, the number of the object must be given; 
 /// its <tt>PARAMETER_NAME</tt> is one these: <tt>ID,NR,NUMBER</tt>.
-
 
 struct CatObject {
   /// Minimum <tt>X</tt> coordinate of cutout (allowed: <tt>XMIN*</tt>).
@@ -169,5 +169,5 @@ class Catalog : public std::map<unsigned long, CatObject> {
   //  }
   //}
 };
-
+} // end namespace
 #endif

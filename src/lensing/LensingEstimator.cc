@@ -2,6 +2,7 @@
 #include <math.h>
 #include <gsl/gsl_math.h>
 
+using namespace shapelens;
 typedef complex<data_t> Complex;
 
 LensingEstimator::LensingEstimator() {

@@ -2,6 +2,8 @@
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 
+using namespace shapelens;
+
 Property::Property() : std::map<std::string, variant_t>() {}
 
 // Helper class for performing write()

@@ -1,6 +1,23 @@
 #ifndef SHAPELENS_H
 #define SHAPELENS_H
 
+#include <Typedef.h>
+#include <ShapeLensConfig.h>
+
+#include <frame/Frame.h>
+#include <frame/SExFrame.h>
+
+#include <shapelets/ShapeletObject.h>
+#include <shapelets/SIFFile.h>
+#include <shapelets/ShapeletObjectList.h>
+#include <shapelets/ShapeletObjectDB.h>
+
+#include <lensing/LensingEstimator.h>
+#include <modelfit/GalaxyModel.h>
+
+/// Namespace for ShapeLens++
+namespace shapelens {
+
 /** \mainpage ShapeLens++ Documentation
 \section intro Introduction
 The Shapelets formalism is a recent approach to image analysis, especially suited for
@@ -54,19 +71,5 @@ organized as a ShapeletObjectList.
 \author Peter Melchior (pmelchior at ita dot uni-heidelberg dot de)
 */
 
-#include <Typedef.h>
-#include <ShapeLensConfig.h>
-#include <utils/IO.h>
-#include <utils/History.h>
-
-#include <frame/Frame.h>
-#include <frame/SExFrame.h>
-
-#include <shapelets/ShapeletObject.h>
-#include <shapelets/SIFFile.h>
-#include <shapelets/ShapeletObjectList.h>
-#include <shapelets/ShapeletObjectDB.h>
-
-#include <lensing/LensingEstimator.h>
-
+} // end namespace
 #endif

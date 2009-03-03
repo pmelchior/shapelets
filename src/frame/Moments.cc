@@ -1,5 +1,7 @@
 #include <frame/Moments.h>
 
+using namespace shapelens;
+
 Quadrupole::Quadrupole() {
   m[0] = m[1] = m[2] = 0;
 }
