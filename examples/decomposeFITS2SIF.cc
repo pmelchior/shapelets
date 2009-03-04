@@ -70,8 +70,8 @@ int main(int argc, char *argv[]) {
   // run through all objects
   // every file generated will have the appendix "_n", with n being the
   // object's running number
-  Catalog& cat = f->getCatalog();
-  Catalog::iterator iter;
+  const Catalog& cat = f->getCatalog();
+  Catalog::const_iterator iter;
   for(iter = cat.begin(); iter != cat.end(); iter++) {
     // for clearity:
     unsigned long id = (*iter).first;

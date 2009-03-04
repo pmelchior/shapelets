@@ -314,7 +314,7 @@ unsigned long Frame::getNumberOfObjects() {
 
 // cut the image to a small region around the object
 // and set all pixels to zero than are not related to the image
-void Frame::fillObject(Object& O, Catalog::iterator& catiter) {
+void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
   if (catiter != catalog.end()) {
     O.id = catiter->first;
     // set up detection flags bitset, use existing ones as starting value
@@ -429,15 +429,19 @@ void Frame::fillObject(Object& O, Catalog::iterator& catiter) {
     O.computeCentroid();
 
     // Update catalog with object values
-    catiter->second.XMIN = xmin;
-    catiter->second.XMAX = xmax;
-    catiter->second.YMIN = ymin;
-    catiter->second.YMAX = ymax;
-    catiter->second.XCENTROID = O.centroid(0);
-    catiter->second.YCENTROID = O.centroid(1);
-    catiter->second.FLUX = O.flux;
-    catiter->second.FLAGS = (unsigned char) flags.to_ulong();
-    catiter->second.CLASSIFIER = 0;
+    // therefore we need a iterator from the const_iterator
+    Catalog::iterator write_iter(catalog.begin());
+    advance(write_iter, distance<Catalog::const_iterator>(write_iter, catiter));
+
+    write_iter->second.XMIN = xmin;
+    write_iter->second.XMAX = xmax;
+    write_iter->second.YMIN = ymin;
+    write_iter->second.YMAX = ymax;
+    write_iter->second.XCENTROID = O.centroid(0);
+    write_iter->second.YCENTROID = O.centroid(1);
+    write_iter->second.FLUX = O.flux;
+    write_iter->second.FLAGS = (unsigned char) flags.to_ulong();
+    write_iter->second.CLASSIFIER = 0;
   } 
   // this is the whole frame
   else if (O.id==0) {
@@ -510,7 +514,7 @@ const std::set<unsigned long>& Frame::getPixelSet(unsigned long objectnr) {
   }
 }
 
-Catalog& Frame::getCatalog() {
+const Catalog& Frame::getCatalog() {
   return catalog;
 }
 

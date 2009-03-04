@@ -30,8 +30,8 @@ namespace shapelens {
 /// Frame* f = new Frame(fitsfile);
 /// f->subtractBackground();
 /// f->findObjects();
-/// Catalog& cat = f->getCatalog();
-/// Catalog::iterator iter;
+/// const Catalog& cat = f->getCatalog();
+/// Catalog::const_iterator iter;
 /// for(iter = cat.begin(); iter != cat.end(); iter++) {
 ///   unsigned long id = (*iter).first;
 ///   Object obj;
@@ -118,7 +118,7 @@ class Frame : public Image<data_t> {
   /// The image will be cut to a region around the selected object. 
   /// If another objects is inside this region, its pixel will be replaced 
   /// by noise according to the noise statistics derived in estimateBackground().
-  void fillObject(Object& obj, Catalog::iterator& catiter);
+  void fillObject(Object& obj, Catalog::const_iterator& catiter);
   /// Get the SegmentationMap.
   /// The segmentation map defines for each pixel, if it is part of an object.
   /// The convention is:
@@ -132,7 +132,7 @@ class Frame : public Image<data_t> {
   /// fillObject(Object& obj) is called, all values of the catalog entry <tt>obj.getID()</tt>
   /// are set. Thus, if you want to save the catalog detected by Frame, 
   /// run through all detected objects before.
-  Catalog& getCatalog();
+  const Catalog& getCatalog();
   /// Get the history object of this image.
   const History& getHistory ();
   /// Compute correlation function from the pixel data of the entire Frame.
