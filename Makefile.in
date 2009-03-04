@@ -1,13 +1,12 @@
-# PATHs are filled by local.py
+# input Makefile to by used for configure.py
 ???PATHS???
-SRCPATH = $(SHAPELENSPATH)/src
-INCLPATH = $(SHAPELENSPATH)/include
+SRCPATH = ./src
+INCLPATH = ./include
 
 SUBDIR = ???SUBDIR???
-DOCPATH = $(INSTALLPATH)/docs
-LIBPATH = $(INSTALLPATH)/lib/$(SUBDIR)
-PROGSRCPATH = $(INSTALLPATH)/progs
-PROGPATH = $(INSTALLPATH)/bin/$(SUBDIR)
+LIBPATH = ./lib/$(SUBDIR)
+PROGSRCPATH = ./progs
+PROGPATH = ./bin/$(SUBDIR)
 
 LIBNAME = shapelens
 
@@ -102,6 +101,14 @@ lib: $(LIBPATH)/lib$(LIBNAME).a
 shared: $(LIBPATH)/lib$(LIBNAME).so
 
 progs: $(PROGSOBJECTS)
+
+install: lib shared progs
+	mkdir -p $(PREFIX)/lib
+	cp $(LIBPATH)/lib$(LIBNAME).a $(PREFIX)/lib/
+	cp $(LIBPATH)/lib$(LIBNAME).so $(PREFIX)/lib/
+	cp -r $(INCLPATH) $(PREFIX)/include/$(LIBNAME)
+	mkdir -p $(PREFIX)/bin
+	cp $(PROGPATH)/* $(PREFIX)/bin/
 
 ???DOCTARGET???
 

@@ -3,33 +3,43 @@ import os,sys
 
 # change this according to your machine and paths
 # compiled lib and progs will go into lib/$SUBDIR and progs/$SUBDIR
-INSTALLPATH = "."
-SUBDIR = "i686/develop"
+# do not use "/" in SUBDIR (no hierarchy of directories)
+SUBDIR = "develop"
 
-# give the name of the file which lists the header and library directories
-# if this file does not exist, it will be created
-CONFIGFILE = "PATHS"
+# path prefix for installation location
+# typical choices are "$(HOME)" or "/usr"
+# it is only used for finding the paths when doing a 'make install'
+# libshapelens.[a,so] will go to PREFIX/lib
+# contents of include will go to PREFIX/include/shapelens
+# contents of bin/SUBDIR will go to PREFIX/bin
+PREFIX = "$(HOME)"
 
 # choose the appropriate values for the compiler and flags
 COMPILER = "g++"
 FLAGS = "-ansi -g -DNDEBUG -Wno-deprecated -O3 -march=pentium4 -I$(HOME)/include"
-LIBS = "-lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio -lmysqlclient"
+LIBS = "-lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio"
 
 # create shared library
 SHARED = True
 
 # set this to False if you don't want an automatically generated documentation
-# if set to True, doxygen should be installed on your machine.
+# if you set it to True, doxygen should be installed on your machine.
 DOCUMENTATION = True
 
-# set this to MySQL if you want to have to MySQL backend compiled
-# otherwise set it to False
-SHAPELETDB = "MySQL"
+# set this to False if you do not have FFTW3 installed on the machine,
+# otherwise set it to True
+FFTW3 = True
 
+# set this to False if you don't want a data base backend compiled,
+# set it to "MySQL" if you want to have to MySQL backend compiled
+SHAPELETDB = "MySQL"
 
 ##########################################
 # no changes necessary beyond this point #
 ##########################################
+
+CONFIGFILE = "PATHS."+SUBDIR
+MAKEFILE = "Makefile."+SUBDIR
 
 # return copy of inlist where every entry is unique
 def unique(inlist, keepstr=True):
@@ -75,7 +85,12 @@ def checkWithLocate(locate, patterns, library, cutdirs=0):
 			paths.append(pathTruncated(filename,cutdirs))
 		uniquepaths = unique(paths)
 		if len(uniquepaths) >= 1:
-			path = pathTruncated(files[0],cutdirs)
+			minpath = len(files[0].split("/"))
+			nr = 0
+			for i in range(1,len(files)):
+				if minpath > len(files[i].split("/")):
+					nr = i
+			path = pathTruncated(files[nr],cutdirs)
 		if len(uniquepaths) > 1:
 			print "WARNING: " + library + " directory ambiguous:"
 			for uniquepath in uniquepaths:
@@ -90,7 +105,6 @@ def createConfig(filename):
 	print "@@@ Searching for include and library directories @@@"
 	# set up necessary paths (and searchkeys)
 	paths = {}
-	paths["SHAPELENSPATH"] = ""
 	paths["NUMLAPATH"] = ""
 	paths["GSLINCLPATH"] = ""
 	paths["GSLLIBPATH"] = ""
@@ -101,14 +115,16 @@ def createConfig(filename):
 	paths["G2CLIBPATH"] = ""
 	paths["CFITSIOINCLPATH"] = ""
 	paths["CFITSIOLIBPATH"] = ""
-	if SHAPELETDB != False:
+	if SHAPELETDB == "MySQL":
 		paths["DBINCLPATH"] = ""
 		paths["DBLIBPATH"] = ""
+	if FFTW3:
+		paths["FFTWINCLPATH"] = ""
+		paths["FFTWLIBPATH"] = ""
 	# check for locate on the system
 	locate = os.popen("which locate").readlines()
 	if len(locate) == 1:
 		locate = locate[0].strip()
-		paths["SHAPELENSPATH"] = checkWithLocate(locate, ["shapelens/include/ShapeLens.h"], "ShapeLens++ headers",1)
 		paths["NUMLAPATH"] = checkWithLocate(locate, ["numla/NumMatrix.h"], "numla headers")
 		paths["GSLINCLPATH"] = checkWithLocate(locate, ["gsl/gsl_math.h"], "GSL headers",1)
 		paths["GSLLIBPATH"] = checkWithLocate(locate, ["libgsl.so","libgsl.a"], "GSL library")
@@ -122,6 +138,9 @@ def createConfig(filename):
 		if SHAPELETDB == "MySQL":
 			paths["DBINCLPATH"] = checkWithLocate(locate,["mysql.h"],"MySQL headers")
 			paths["DBLIBPATH"] = checkWithLocate(locate,["libmysqlclient.so"],"MySQL client library")
+		if FFTW3:
+			paths["FFTWINCLPATH"] = checkWithLocate(locate,["fftw3.h"],"FFTW3 headers")
+			paths["FFTWLIBPATH"] = checkWithLocate(locate,["libfftw3.so"],"FFTW3 library")
 		print "\n\nPlease check the directories for headers and libraries in the file " + filename + "\n"
 	else:
 		print "\n\nLocate does not exist on this system."
@@ -169,19 +188,21 @@ def openConfig(filename, numentries):
 
 # first of all: create/open the configuration file, which lists the include and lib directories
 if os.path.isfile(CONFIGFILE):
-	if SHAPELETDB == False:
-		config = openConfig(CONFIGFILE,11)
-	else:
-		config = openConfig(CONFIGFILE,13)
+	lines = 10
+	if SHAPELETDB != False:
+		lines = lines + 2
+	if FFTW3:
+		lines = lines + 2
+	config = openConfig(CONFIGFILE,lines)
 else:
 	createConfig(CONFIGFILE)
 
 # insert PATH and CFLAGS in Makefile
-print "@@@ Creating new Makefile @@@"
+print "@@@ Creating new "+ MAKEFILE +" @@@"
 infile = open('Makefile.in','r') 
 makefile = infile.read()
 infile.close()
-paths = "INSTALLPATH = "+INSTALLPATH+"\nSHAPELENSPATH = "+config["SHAPELENSPATH"]+"\nNUMLAPATH = "+config["NUMLAPATH"]
+paths = "NUMLAPATH = "+config["NUMLAPATH"] + "\nPREFIX = " + PREFIX + "\n"
 
 targets = "all: lib"
 doctarget = ""
@@ -191,8 +212,12 @@ if (DOCUMENTATION == True):
 	targets = targets + " docs"
 	doctarget = "docs: $(HEADERS)\n\tdoxygen Doxyfile"
 targets = targets + " progs"
-if (SHAPELETDB != False):
+if (SHAPELETDB == "MySQL"):
 	FLAGS = FLAGS + " -DBIG_JOINS=1 -DSHAPELETDB=" + SHAPELETDB
+	LIBS = LIBS + " -lmysqlclient"
+if (FFTW3 == True):
+	FLAGS = FLAGS + " -DHAS_FFTW3"
+	LIBS = LIBS + " -lfftw3"
 
 # loop thru paths and append avery occurence of "LIBPATH" to otherlib (same for "INCLPATH")
 otherincl = []
@@ -219,7 +244,7 @@ makefile = makefile.replace("???LIBS???",LIBS)
 makefile = makefile.replace("???TARGETS???",targets)
 makefile = makefile.replace("???DOCTARGET???",doctarget)	
 
-outfile = open('Makefile','w')
+outfile = open(MAKEFILE,'w')
 outfile.write(makefile)
 outfile.close()
 
@@ -230,7 +255,7 @@ if (DOCUMENTATION == True):
 	doxyfile = infile.read()
 	infile.close()
 
-	input = config["NUMLAPATH"]+" "+config["SHAPELENSPATH"]+"/include"
+	input = config["NUMLAPATH"]+" ./include"
 	doxyfile = doxyfile.replace("???INPUT???",input)
 
 	outfile = open('Doxyfile','w')
@@ -238,20 +263,20 @@ if (DOCUMENTATION == True):
 	outfile.close()
 
 # create directories
-if not os.path.isdir("progs/"+SUBDIR):
-	print "@@@ Creating directory progs/"+SUBDIR + " @@@"
-	os.system("mkdir -p progs/"+SUBDIR)
+if not os.path.isdir("bin/"+SUBDIR):
+	print "@@@ Creating directory bin/"+SUBDIR + " @@@"
+	os.system("mkdir -p bin/"+SUBDIR)
 if not os.path.isdir("lib/"+SUBDIR):
 	print "@@@ Creating directory lib/"+SUBDIR + " @@@"
 	os.system("mkdir -p lib/"+SUBDIR)
 if DOCUMENTATION == True and not os.path.isdir("docs"):
-	print "@@@ Creating directory docs @@@"
+	print "@@@ Creating directory doc @@@"
 	os.system("mkdir -p docs")
 
 # check environment variable PATH and LD_LIBRARY_PATH
 pwd = os.getcwd()
-if os.environ["PATH"].find(pwd +"/progs/" + SUBDIR) == -1:
-	print "CAUTION: "+ pwd +"/progs/" + SUBDIR + " not in $PATH"
+if os.environ["PATH"].find(pwd +"/bin/" + SUBDIR) == -1:
+	print "CAUTION: "+ pwd +"/bin/" + SUBDIR + " not in $PATH"
 if SHARED== True and os.environ["LD_LIBRARY_PATH"].find(pwd +"/lib/" + SUBDIR) == -1:
 	print "CAUTION: "+ pwd +"/lib/" + SUBDIR + " not in $LD_LIBRARY_PATH"
 	print "\t Please set the environment variable LD_LIBRARY_PATH for using the shared library"
