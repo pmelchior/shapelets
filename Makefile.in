@@ -1,12 +1,9 @@
 # input Makefile to by used for configure.py
-???PATHS???
+???GENERAL???
 SRCPATH = ./src
 INCLPATH = ./include
 
-SUBDIR = ???SUBDIR???
 LIBPATH = ./lib/$(SUBDIR)
-PROGSRCPATH = ./progs
-PROGPATH = ./bin/$(SUBDIR)
 
 LIBNAME = shapelens
 
@@ -38,15 +35,10 @@ UTILSINCLPATH = $(INCLPATH)/utils
 UTILSSRC = $(wildcard $(SRCPATH)/utils/*.cc)
 UTILSOBJECTS = $(UTILSSRC:$(SRCPATH)/utils/%.cc=$(LIBPATH)/%.o)
 
-PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
-PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
-
-HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(MODELFITINCLPATH)/*.h) $(wildcard $(NUMLAPATH)/*.h) $(wildcard $(UTILSINCLPATH)/*.h)
+HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(MODELFITINCLPATH)/*.h) $(wildcard $(UTILSINCLPATH)/*.h)
 
 CC = ???COMPILER???
-CFLAGS = ???CFLAGS??? -I$(NUMLAPATH) -I$(INCLPATH) ???OTHERINCL???
-CFLAG_LIBS = -L$(LIBPATH) ???OTHERLIB???
-LIBS = -l$(LIBNAME) ???LIBS???
+CFLAGS = ???CFLAGS??? -I$(INCLPATH) ???OTHERINCL???
 
 AR = ar
 ARFLAGS = -sr
@@ -100,15 +92,11 @@ lib: $(LIBPATH)/lib$(LIBNAME).a
 
 shared: $(LIBPATH)/lib$(LIBNAME).so
 
-progs: $(PROGSOBJECTS)
-
 install: lib shared progs
-	mkdir -p $(PREFIX)/lib
-	cp $(LIBPATH)/lib$(LIBNAME).a $(PREFIX)/lib/
-	cp $(LIBPATH)/lib$(LIBNAME).so $(PREFIX)/lib/
+	mkdir -p $(PREFIX)/lib/$(SUBDIR)
+	cp $(LIBPATH)/lib$(LIBNAME).a $(PREFIX)/lib/$(SUBDIR)
+	cp $(LIBPATH)/lib$(LIBNAME).so $(PREFIX)/lib/$(SUBDIR)
 	cp -r $(INCLPATH) $(PREFIX)/include/$(LIBNAME)
-	mkdir -p $(PREFIX)/bin
-	cp $(PROGPATH)/* $(PREFIX)/bin/
 
 ???DOCTARGET???
 
@@ -135,7 +123,3 @@ $(LIBPATH)/%.o: $(UTILSSRCPATH)/%.cc
 
 $(LIBPATH)/%.o: $(SRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
-
-$(PROGPATH)/%: $(PROGSRCPATH)/%.cc
-	$(CC) $(CFLAGS) $(CFLAG_LIBS) $< -o $@ $(LIBS)
-
