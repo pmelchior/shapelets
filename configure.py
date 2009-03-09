@@ -12,9 +12,10 @@ PREFIX = "$(HOME)"
 COMPILER = "g++"
 FLAGS = "-ansi -g -DNDEBUG -Wno-deprecated -O3 -march=pentium4"
 
-# specify non-standard include locations for headers
+# specify non-standard include locations for headers and libraries
 # in particular, give location of numla headers
-INCLUDES = ["/usr/include/mysql","$(HOME)/include/numla","$(HOME)/include/atlas"]
+INCLUDES = ["/usr/include/mysql","$(HOME)/include/numla","$(HOME)/include/atlas","$(HOME)/include"]
+LIBS = []
 
 # create shared library
 SHARED = True
@@ -63,13 +64,23 @@ if (FFTW3 == True):
 
 # loop thru paths and append every memeber of INCLUDES to otherincl
 otherincl = ""
+otherlibs = ""
+speciallibs = ""
 for i in INCLUDES:
 	otherincl = otherincl + " -I"+i
+for l in LIBS:
+	otherlibs = otherlibs + " -L"+l
+if FFTW3:
+	speciallibs = speciallibs + " -lfftw3"
+if SHAPELETDB == "MySQL":
+	speciallibs = speciallibs + " -lmysqlclient"
 
 makefile = makefile.replace("???GENERAL???",general)
 makefile = makefile.replace("???COMPILER???",COMPILER)
 makefile = makefile.replace("???CFLAGS???",FLAGS)
 makefile = makefile.replace("???OTHERINCL???",otherincl)
+makefile = makefile.replace("???OTHERLIBS???",otherlibs)
+makefile = makefile.replace("???SPECIALLIBS???",speciallibs)
 makefile = makefile.replace("???TARGETS???",targets)
 makefile = makefile.replace("???DOCTARGET???",doctarget)	
 
