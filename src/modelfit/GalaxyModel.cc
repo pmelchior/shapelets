@@ -13,7 +13,7 @@ void GalaxyModel::setObject(Object& obj, data_t normalization, bool add) const {
     if (add)
       obj(i) += getValue(x_rel,y_rel)/normalization;
     else
-      obj(i) = getValue(x_rel,y_rel/normalization);
+      obj(i) = getValue(x_rel,y_rel)/normalization;
   }
 }
 
