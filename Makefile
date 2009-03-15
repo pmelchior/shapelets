@@ -1,11 +1,11 @@
-# input Makefile to be used for configure.py
-???GENERAL???
-SRCPATH = ./src
 INCLPATH = ./include
-PROGSRCPATH = ./progs
-
+SRCPATH = ./src
 LIBPATH = ./lib/$(SUBDIR)
+PROGSRCPATH = ./progs
 LIBNAME = shapelens
+
+NUMLAPATH = $(ITALIBSPATH)/include/numla
+ATLASLIBPATH = $(ITALIBSPATH)/lib/$(SUBDIR)
 
 SHAPELETSSRCPATH = $(SRCPATH)/shapelets
 SHAPELETSINCLPATH = $(INCLPATH)/shapelets
@@ -35,16 +35,17 @@ UTILSINCLPATH = $(INCLPATH)/utils
 UTILSSRC = $(wildcard $(SRCPATH)/utils/*.cc)
 UTILSOBJECTS = $(UTILSSRC:$(SRCPATH)/utils/%.cc=$(LIBPATH)/%.o)
 
-PROGPATH = $(PREFIX)/bin/$(SUBDIR)
+ITALIBSLIBPATH = $(ITALIBSPATH)/lib/$(SUBDIR)
+PROGPATH = $(ITALIBSPATH)/bin/$(SUBDIR)
 PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
 PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
 HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(MODELFITINCLPATH)/*.h) $(wildcard $(UTILSINCLPATH)/*.h)
 
-CC = ???COMPILER???
-CFLAGS = ???CFLAGS??? -I$(INCLPATH) ???OTHERINCL???
-CFLAG_LIBS = -L$(PREFIX)/lib/$(SUBDIR) ???OTHERLIBS???
-LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio ???SPECIALLIBS???
+CC = g++
+CFLAGS = -ansi -g $(SPECIALFLAGS) -DBIG_JOINS=1 -DSHAPELETDB=MySQL -DHAS_FFTW3 -I$(INCLPATH)  -I/usr/include/mysql -I$(NUMLAPATH)
+CFLAG_LIBS = -I$(HOME)/include -L$(ATLASLIBPATH) -L$(LIBPATH)
+LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio  -lfftw3 -lmysqlclient
 
 AR = ar
 ARFLAGS = -sr
@@ -54,7 +55,7 @@ SHAREDFLAGS = -shared -fPIC
 
 .PHONY: clean
 
-???TARGETS???
+all: lib shared
 
 clean:
 	rm -f $(LIBPATH)/*
@@ -95,16 +96,17 @@ lib: $(LIBPATH)/lib$(LIBNAME).a
 shared: $(LIBPATH)/lib$(LIBNAME).so
 
 install: lib shared
-	mkdir -p $(PREFIX)/lib/$(SUBDIR)
-	cp $(LIBPATH)/lib$(LIBNAME).a $(PREFIX)/lib/$(SUBDIR)
-	cp $(LIBPATH)/lib$(LIBNAME).so $(PREFIX)/lib/$(SUBDIR)
-	mkdir  -p $(PREFIX)/include/$(LIBNAME)
-	cd $(INCLPATH) && find . -type f -name '*.h' -exec  cp --parents {} $(PREFIX)/include/$(LIBNAME)/ \; && cd ../
+	mkdir -p $(ITALIBSLIBPATH)
+	cp $(LIBPATH)/lib$(LIBNAME).a $(ITALIBSLIBPATH)
+	cp $(LIBPATH)/lib$(LIBNAME).so $(ITALIBSLIBPATH)
+	mkdir  -p $(ITALIBSPATH)/include/$(LIBNAME)
+	cd $(INCLPATH) && find . -type f -name '*.h' -exec  cp --parents {} $(ITALIBSPATH)/include/$(LIBNAME)/ \; && cd ../
 	mkdir -p $(PROGPATH)
 
 progs: $(PROGSOBJECTS)
 
-???DOCTARGET???
+docs: $(HEADERS)
+	doxygen Doxyfile
 
 $(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	$(AR) $(ARFLAGS) $@ $?
