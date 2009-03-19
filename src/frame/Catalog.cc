@@ -65,7 +65,7 @@ void Catalog::read(string catfile) {
       so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
       so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
       so.FLUX = boost::lexical_cast<data_t>(column[format.FLUX].c_str());
-      so.FLAGS = boost::lexical_cast<unsigned char>(column[format.FLAGS].c_str());
+      so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
       if (present.test(9))
 	so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
       else

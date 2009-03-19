@@ -149,19 +149,19 @@ inline int GridT<T>::getNeighborPixel(unsigned int pixel, int x, int y, unsigned
     index = pixel;
     break;
   case 1: 
-    if (y<N1) index = (y+1)*N0 + x ;  // top
+    if (y<N1-1) index = (y+1)*N0 + x ;  // top
     else index = -1;
     break;
   case 2:
-    if (y<N1 && x<N0) index = (y+1)*N0 + x + 1;  // top right
+    if (y<N1-1 && x<N0-1) index = (y+1)*N0 + x + 1;  // top right
     else index = -1;
     break;
   case 3:
-    if (x<N0) index = y*N0 + x + 1;  // right neighbour
+    if (x<N0-1) index = y*N0 + x + 1;  // right neighbour
     else index = -1;
     break;
   case 4: 
-    if (y>0 && x<N0) index = (y-1)*N0 + x + 1;  // bottom right
+    if (y>0 && x<N0-1) index = (y-1)*N0 + x + 1;  // bottom right
     else index = -1;
     break;  
   case 5: 
@@ -177,7 +177,7 @@ inline int GridT<T>::getNeighborPixel(unsigned int pixel, int x, int y, unsigned
     else index = -1;
     break;
   case 8: 
-    if (y<N1 && x>0) index = (y+1)*N0 + x - 1;  // top left
+    if (y<N1-1 && x>0) index = (y+1)*N0 + x - 1;  // top left
     else index = -1;
     break;  
   }
