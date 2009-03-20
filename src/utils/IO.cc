@@ -12,22 +12,13 @@ using namespace shapelens;
 namespace ublas = boost::numeric::ublas;
 
 fitsfile* IO::openFITSFile(std::string filename, bool write) {
-  // check if file alredy exists
-  // if not: call createFITSFile()
-  bool exists = 0;
-  std::ifstream fin;
-  fin.open(filename.c_str());
-  if(fin.is_open())
-    exists = 1;
-  fin.close();
-  
   int status = 0;
   fitsfile* outfptr;
-  if (exists) {
-    fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
-  } 
-  else if (write)
-    outfptr = createFITSFile(filename);
+  fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
+  if (status != 0) {
+    std::cerr << "IO: " << filename << " does not exist." << std::endl;
+    std::terminate();
+  }
   return outfptr;
 }
 
