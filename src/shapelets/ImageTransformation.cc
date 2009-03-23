@@ -428,7 +428,7 @@ void ImageTransformation::shear(CoefficientVector<data_t>& cartesianCoeffs, Comp
 
 void ImageTransformation::shear(CoefficientVector<data_t>& cartesianCoeffs, const NumMatrix<data_t>& M, NumMatrix<data_t>* cov,  History* history) {
   if (history != NULL)
-    (*history) << "# Applying shear gamma = " << gamma << endl;
+    (*history) << "# Applying shear via given transformation matrix" << endl;
   cartesianCoeffs = M * cartesianCoeffs;
   if (cov != NULL && cov->getColumns() == cartesianCoeffs.getNCoeffs())
     *cov = (M*(*cov)*M.transpose());
