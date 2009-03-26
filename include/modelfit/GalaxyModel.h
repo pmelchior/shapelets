@@ -76,13 +76,15 @@ class MoffatModel : public GalaxyModel {
 class InterpolatedModel : public GalaxyModel {
 public:
   /// Constructor.
-  InterpolatedModel(Object& obj);
+  /// \p order defines order of interpolation (see Image::interpolate()).
+  InterpolatedModel(Object& obj, int order = 1);
   /// Sample model at \f$(x,y)\f$.
   virtual data_t getValue(data_t x, data_t y) const;
   /// Get Object::flux.
   virtual data_t getFlux() const;
 private:
   const Object& obj;
+  int order;
 };
 
 /// Model from ShapeletObject.

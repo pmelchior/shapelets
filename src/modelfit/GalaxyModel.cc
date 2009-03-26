@@ -90,26 +90,10 @@ data_t MoffatModel::getFlux() const {
 
 
 // ##### Interpolated Model ##### //
-InterpolatedModel::InterpolatedModel(Object& obj) : obj(obj) {}
+InterpolatedModel::InterpolatedModel(Object& obj, int order) : obj(obj), order(order) {}
 
 data_t InterpolatedModel::getValue(data_t x, data_t y) const {
-  data_t f11, f12, f21, f22,val = 0;
-  int x1,x2,y1,y2;
-  x += obj.centroid(0);
-  y += obj.centroid(1);
-  x1 = (int) floor(x);
-  x2 = x1+1;
-  y1 = (int) floor(y);
-  y2 = y1+1;
-  if (x1 >= 0 && x2 < obj.getSize(0) && y1 >= 0 && y2 < obj.getSize(1)) {
-    f11 = obj(x1,y1);
-    f12 = obj(x1,y2);
-    f21 = obj(x2,y1);
-    f22 = obj(x2,y2);
-      
-    val = f11*(x2-x)*(y2-y) + f12*(x2-x)*(y-y1) + f21*(x-x1)*(y2-y) + f22*(x-x1)*(y-y1);
-  }
-  return val;
+  return obj.interpolate(x+obj.centroid(0),y+obj.centroid(1),order);
 }
 
 data_t InterpolatedModel::getFlux() const {

@@ -61,6 +61,18 @@ class Image : public NumVector<T> {
   const T& operator()(unsigned long x, unsigned long y) const {
     return NumVector<T>::operator()(y*Image::getSize(0) + x);
   }
+  /// Get value at arbitrary position <tt>(x,y)</tt>.
+  /// If <tt>(x,y)</tt> is outside the image, returns \p 0.
+  T get(data_t x, data_t y) const {
+    int x_,y_;
+    x_ = (int) floor(x);
+    y_ = (int) floor(y);
+    if (x_ < 0 || x_ >= getSize(0) || y_ < 0 || y_ >= getSize(1))
+      return T(0);
+    else
+      return operator()(x_,y_);
+  }
+
   NumVector<T>& accessNumVector() {
     return *this;
   }
@@ -126,10 +138,37 @@ class Image : public NumVector<T> {
     sampled.history.setSilent();
     sampled.history << "# Downsampled from " << basefilename << " by factor " << sampling << std::endl;
   }
+
+  /// Interpolate image at arbitrary position <tt>(x,y)</tt>.
+  /// \p order is the polynomial order of the interpolation:
+  /// - \p 0: direct sampling
+  /// - \p 1: bi-linear interpolation
+  /// 
+  /// If <tt>(x,y)</tt> is outside the image, returns \p 0.
+  T interpolate(data_t x, data_t y, int order = 1) const {
+    int x1 = (int) floor(x), y1 = (int) floor(y);
+    if (x1 < 0 || x1 >= getSize(0) || y1 < 0 || y1 >= getSize(1))
+      return T(0);
+    else{
+      switch (order) {
+      case 0: return operator()(x1,y1); // this is certainly in image
+      case 1:
+	T f11,f12,f21,f22;
+	int x2 = x1+1, y2 = y1+1;
+	f11 = operator()(x1,y1); // this is certainly in image
+	f12 = get(x1,y2);        // for the others, we have to check
+	f21 = get(x2,y1);
+	f22 = get(x2,y2);
+	return f11*(x2-x)*(y2-y) + f12*(x2-x)*(y-y1) + f21*(x-x1)*(y2-y) + f22*(x-x1)*(y-y1);
+      } 
+    }
+  }
+
   /// Get axis size of the whole image in given direction.
   unsigned int getSize(bool direction) const {
     return grid.getSize(direction);
   }
+
   /// Get the filename of the Fits file.
   std::string getFilename() const {
     return basefilename;
@@ -161,6 +200,8 @@ class Image : public NumVector<T> {
   void read() {
     fitsfile *fptr = IO::openFITSFile(basefilename);
     int status = IO::readFITSImage(fptr,grid,*this);
+    if (status == 0)
+      history << "# Opening image " + basefilename << std::endl;
     status = IO::closeFITSFile(fptr);
   }
 };
