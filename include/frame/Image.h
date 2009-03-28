@@ -139,28 +139,21 @@ class Image : public NumVector<T> {
     sampled.history << "# Downsampled from " << basefilename << " by factor " << sampling << std::endl;
   }
 
-  /// Interpolate image at arbitrary position <tt>(x,y)</tt>.
-  /// \p order is the polynomial order of the interpolation:
-  /// - \p 0: direct sampling
-  /// - \p 1: bi-linear interpolation
-  /// 
+  /// Bi-linear interpolation at arbitrary position <tt>(x,y)</tt>.
   /// If <tt>(x,y)</tt> is outside the image, returns \p 0.
-  T interpolate(data_t x, data_t y, int order = 1) const {
+  /// For more elaborate types of interpolation, use Interpolation methods.
+  T interpolate(data_t x, data_t y) const {
     int x1 = (int) floor(x), y1 = (int) floor(y);
     if (x1 < 0 || x1 >= getSize(0) || y1 < 0 || y1 >= getSize(1))
       return T(0);
     else{
-      switch (order) {
-      case 0: return operator()(x1,y1); // this is certainly in image
-      case 1:
-	T f11,f12,f21,f22;
-	int x2 = x1+1, y2 = y1+1;
-	f11 = operator()(x1,y1); // this is certainly in image
-	f12 = get(x1,y2);        // for the others, we have to check
-	f21 = get(x2,y1);
-	f22 = get(x2,y2);
-	return f11*(x2-x)*(y2-y) + f12*(x2-x)*(y-y1) + f21*(x-x1)*(y2-y) + f22*(x-x1)*(y-y1);
-      } 
+      T f11,f12,f21,f22;
+      int x2 = x1+1, y2 = y1+1;
+      f11 = operator()(x1,y1); // this is certainly in image
+      f12 = get(x1,y2);        // for the others, we have to check
+      f21 = get(x2,y1);
+      f22 = get(x2,y2);
+      return f11*(x2-x)*(y2-y) + f12*(x2-x)*(y-y1) + f21*(x-x1)*(y2-y) + f22*(x-x1)*(y-y1);
     }
   }
 

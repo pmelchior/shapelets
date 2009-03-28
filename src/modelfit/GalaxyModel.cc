@@ -1,4 +1,5 @@
 #include <modelfit/GalaxyModel.h>
+#include <utils/Interpolation.h>
 
 using namespace shapelens;
 
@@ -93,7 +94,14 @@ data_t MoffatModel::getFlux() const {
 InterpolatedModel::InterpolatedModel(Object& obj, int order) : obj(obj), order(order) {}
 
 data_t InterpolatedModel::getValue(data_t x, data_t y) const {
-  return obj.interpolate(x+obj.centroid(0),y+obj.centroid(1),order);
+  switch (order) {
+  case 1: // simple bi-linear interpolation
+    return obj.interpolate(x+obj.centroid(0),y+obj.centroid(1));
+  case -3: // bi-cubic interpolation
+    return Interpolation::bicubic(obj,x+obj.centroid(0),y+obj.centroid(1));
+  default: // nth-order polynomial interpolation
+    return Interpolation::polynomial(obj,x+obj.centroid(0),y+obj.centroid(1),order);
+  }
 }
 
 data_t InterpolatedModel::getFlux() const {

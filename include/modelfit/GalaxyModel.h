@@ -71,12 +71,17 @@ class MoffatModel : public GalaxyModel {
 };
 
 /// Model from interpolated pixel data.
-/// The class provides a bilinear interpolation of the Object given 
+/// The class provides several interpolation types for the Object given 
 /// at construction time.
 class InterpolatedModel : public GalaxyModel {
 public:
   /// Constructor.
-  /// \p order defines order of interpolation (see Image::interpolate()).
+  /// \p order defines order of interpolation.
+  /// - <tt>1</tt>: bi-linear
+  /// - <tt>n > 1</tt>: polynomial
+  /// - <tt>-3</tt>: bi-cubic
+  ///
+  /// For more details, see Interpolation.
   InterpolatedModel(Object& obj, int order = 1);
   /// Sample model at \f$(x,y)\f$.
   virtual data_t getValue(data_t x, data_t y) const;
