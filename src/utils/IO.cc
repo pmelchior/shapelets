@@ -7,6 +7,7 @@
 #include <sys/timeb.h>
 #include <boost/tokenizer.hpp>
 #include <fstream>
+#include <stdexcept>
 
 using namespace shapelens;
 namespace ublas = boost::numeric::ublas;
@@ -15,10 +16,8 @@ fitsfile* IO::openFITSFile(std::string filename, bool write) {
   int status = 0;
   fitsfile* outfptr;
   fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
-  if (status != 0) {
-    std::cerr << "IO: " << filename << " does not exist." << std::endl;
-    std::terminate();
-  }
+  if (status != 0)
+    throw std::invalid_argument("IO: Cannot open " + filename);
   return outfptr;
 }
 
@@ -27,7 +26,9 @@ fitsfile* IO::createFITSFile(std::string filename) {
   fitsfile *outfptr;
   filename = "!"+filename; // overwrite existing file if necessary
   // create fits file
-  fits_create_file(&outfptr,filename.c_str(), &status); 
+  fits_create_file(&outfptr,filename.c_str(), &status);
+  if (status != 0)
+    throw std::invalid_argument("IO: Cannot create " + filename);
   return outfptr;
 }
 
