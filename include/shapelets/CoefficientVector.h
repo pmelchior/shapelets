@@ -2,6 +2,7 @@
 #define COEFFICIENTVECTOR_H
 
 #include <NumMatrix.h>
+#include <NumMatrixDiagonal.h>
 #include <NumVector.h>
 #include <Typedef.h>
 #include <shapelets/IndexVectorCartesian.h>
@@ -192,6 +193,14 @@ template <class T>
 NumVector<T> operator*(const NumMatrix<T>& M, const CoefficientVector<T>& cv) {
   return M*cv.getNumVector();
 }
+template <class T>
+NumVector<T> operator*(const NumMatrixDiagonal<T>& D, const CoefficientVector<T>& cv) {
+  return D*cv.getNumVector();
+}
+template <class T>
+  T operator*(const NumVector<T>& v, const CoefficientVector<T>& cv) {
+  return v*cv.getNumVector();
+ }
 
 } // end namespace
 #endif

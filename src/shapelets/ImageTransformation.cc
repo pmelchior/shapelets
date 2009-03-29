@@ -110,7 +110,7 @@ void ImageTransformation::circularize(CoefficientVector<Complex>& polarCoeffs, N
     (*history) << "# Circularizing image" << endl;
   NumMatrixDiagonal<Complex> M = getCircularizationMatrix(polarCoeffs.getIndexVector());
   // perform transformation
-  polarCoeffs = M*polarCoeffs.getNumVector();
+  polarCoeffs = M*polarCoeffs;
   // as M is diagonal use a simpler form of M*cov*M^T
   if (cov != NULL) {
     for (unsigned int i=0; i<cov->getRows(); i++)
@@ -122,7 +122,7 @@ void ImageTransformation::circularize(CoefficientVector<Complex>& polarCoeffs, N
 void ImageTransformation::circularize(CoefficientVector<Complex>& polarCoeffs, const NumMatrixDiagonal<Complex>& M, NumMatrix<Complex>* cov, History* history) {
   if (history != NULL)
     (*history) << "# Circularizing image" << endl;
-  polarCoeffs = M*polarCoeffs.getNumVector();
+  polarCoeffs = M*polarCoeffs;
   // as M is diagonal use a simpler form of M*cov*M^T
   if (cov != NULL) {
     for (unsigned int i=0; i<cov->getRows(); i++)
@@ -143,7 +143,7 @@ void ImageTransformation::flipX(CoefficientVector<Complex>& polarCoeffs,  NumMat
     (*history) << "# Flipping image arround its X-axis" << endl;
   NumMatrixDiagonal<Complex> M = getFlipMatrix(polarCoeffs);
   // perform transformation
-  polarCoeffs = M*polarCoeffs.getNumVector();
+  polarCoeffs = M*polarCoeffs;
   if (cov != NULL) {
     for (unsigned int i=0; i<cov->getRows(); i++)
       for (unsigned int j=0; j<cov->getColumns(); j++)	
@@ -155,7 +155,7 @@ void ImageTransformation::flipX(CoefficientVector<Complex>& polarCoeffs,  const 
   if (history != NULL)
     (*history) << "# Flipping image arround its X-axis" << endl;
   // perform transformation
-  polarCoeffs = M*polarCoeffs.getNumVector();
+  polarCoeffs = M*polarCoeffs;
   if (cov != NULL) {
     for (unsigned int i=0; i<cov->getRows(); i++)
       for (unsigned int j=0; j<cov->getColumns(); j++)	

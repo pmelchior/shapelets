@@ -6,7 +6,6 @@
 #include <Typedef.h>
 #include <frame/Image.h>
 #include <frame/Moments.h>
-#include <shapelets/Shapelets2D.h>
 #include <shapelets/CoefficientVector.h>
 
 namespace shapelens {
@@ -30,17 +29,13 @@ namespace shapelens {
 /// The example calculates the integral \f$\int dx\ f(x)\f$ without and the quadrupole 
 /// moment \f$Q\f$ with the respective covariance matrix.
 
-class Composite2D : private Shapelets2D {
+class Composite2D {
  public:
   /// Default constructor.
   /// Don't use it for explicit composition.
   Composite2D();
   /// Argumented constructor.
   Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D<data_t>& xcentroid);
-  /// Copy constructor.
-  Composite2D(const Composite2D &source);
-  /// Copy operator
-  Composite2D & operator = (const Composite2D &source);
   /// Get cartesian shapelet coefficients.
   const CoefficientVector<data_t>& getCoeffs() const;
   /// Set cartesian shapelet coefficients.
@@ -73,15 +68,15 @@ class Composite2D : private Shapelets2D {
   const Image<data_t>& getModel();
   /// Evaluate \f$f(x)\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$f(x)\f$.
-  data_t eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov = NULL);
+  data_t eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov = NULL) const;
   /// Integrate \f$f(x)\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
   /// \f$\int\ dx\ f(x)\f$.
-  data_t integrate(NumMatrix<data_t>* cov = NULL);
+  data_t integrate(NumMatrix<data_t>* cov = NULL) const;
   /// Integrate \f$f(x)\f$ in the area bounded by \f$(x_1^{min},x_2^{min})..(x_1^{max},x_2^{max})\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
   /// \f$\int_{x_1^{min},x_2^{min}}^{x_1^{max},x_2^{max}}\ dx_1\ dx_2\ f(x)\f$
-  data_t integrate(data_t x1min, data_t x1max, data_t x2min,data_t x2max, NumMatrix<data_t>* cov = NULL);
+  data_t integrate(data_t x1min, data_t x1max, data_t x2min,data_t x2max, NumMatrix<data_t>* cov = NULL) const;
   /// Calculate the object flux \f$F\f$ from the coefficients.
   /// cf. Paper I, eq. 26.\n
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$F\f$
@@ -103,6 +98,8 @@ class Composite2D : private Shapelets2D {
   friend class Decomposite2D;
 
  protected:
+  /// The scale size
+  data_t beta;
   /// The shapelet coefficients.
   CoefficientVector<data_t> coeffs;
   /// The shapelet design matrix.
