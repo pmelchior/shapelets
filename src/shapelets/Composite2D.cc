@@ -163,20 +163,67 @@ data_t Composite2D::integrate(NumMatrix<data_t>* cov_est) const {
   return result;
 }
 
-data_t Composite2D::integrate(data_t xmin, data_t xmax, data_t ymin,data_t ymax, NumMatrix<data_t>* cov_est) const {
-  xmin -= xcentroid(0);
-  xmax -= xcentroid(0);
-  ymin -= xcentroid(1);
-  ymax -= xcentroid(1);
-  // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
+data_t Composite2D::integrate(const Point2D<data_t>& Pa, const Point2D<data_t>& Pb, NumMatrix<data_t>* cov_est) const {
+  Point2D<data_t> xdiffa(Pa(0) - xcentroid(0), Pa(1) - xcentroid(1));
+  Point2D<data_t> xdiffb(Pb(0) - xcentroid(0), Pb(1) - xcentroid(1));
   const IndexVector& nVector = coeffs.getIndexVector();
-  NumVector<data_t> Int(nVector.getNCoeffs());
-  // this call is inefficient, because hermite polynomial are computed
-  Shapelets2D s2d(beta);
-  for (unsigned int i = 0; i < nVector.getNCoeffs(); i++) 
-    Int(i) = s2d.integrate(nVector.getState1(i), nVector.getState2(i), xmin, xmax, ymin, ymax); 
+  int nmax = nVector.getNMax();
+  int nCoeffs = nVector.getNCoeffs();
+  // stores basis function values at xdiffa and xdiffb
+  NumMatrix<data_t> M0(nmax+1,2), M1(nmax+1,2);
+  // stores integral between a and b
+  NumVector<data_t> I0(nmax+1), I1(nmax+1);
+  data_t x0_scaled_a = xdiffa(0)/beta, x1_scaled_a = xdiffa(1)/beta;
+  data_t x0_scaled_b = xdiffb(0)/beta, x1_scaled_b = xdiffb(1)/beta;
+  data_t factor0 = 1./sqrt(M_SQRTPI*beta);
+  data_t factor0_int = sqrt(beta*M_SQRTPI/2);
+  data_t factor1, factor2;
+  data_t factor1_int = -M_SQRT2*beta, factor2_int;
+    
+  // start with 0th and 1st order shapelets in each direction
+  M0(0,0) = factor0*exp(-x0_scaled_a*x0_scaled_a/2);
+  M0(0,1) = factor0*exp(-x0_scaled_b*x0_scaled_b/2);
+  I0(0) = factor0_int*(gsl_sf_erf(x0_scaled_b) - gsl_sf_erf(x0_scaled_a));
+  if (nmax > 0) {
+    M0(1,0) = M_SQRT2*x0_scaled_a*M0(0,0);
+    M0(1,1) = M_SQRT2*x0_scaled_b*M0(0,1);
+    I0(1) = factor1_int*(M0(0,1) - M0(0,0));
+  }
+  M1(0,0) = factor0*exp(-x1_scaled_a*x1_scaled_a/2);
+  M1(0,1) = factor0*exp(-x1_scaled_b*x1_scaled_b/2);
+  I1(0) = factor0_int*(gsl_sf_erf(x1_scaled_b) - gsl_sf_erf(x1_scaled_a));
+  if (nmax > 0) {
+    M1(1,0) = M_SQRT2*x1_scaled_a*M1(0,0);
+    M1(1,1) = M_SQRT2*x1_scaled_b*M1(0,1);
+    I1(1) = factor1_int*(M1(0,1) - M1(0,0));
+  }
 
-  data_t result = Int*coeffs;
+  // use recurrance relation to compute higher orders
+  for (int n=2; n<=nmax; n++) {
+    factor1 = sqrt(1./(2*n));
+    factor1_int = -beta*sqrt(2./n);
+    factor2 = factor2_int = sqrt((n-1.)/n); 
+    M0(n,0) = 2*xdiffa(0)/beta*factor1*M0(n-1,0) - factor2*M0(n-2,0);
+    M0(n,1) = 2*xdiffb(0)/beta*factor1*M0(n-1,1) - factor2*M0(n-2,1);
+    M1(n,0) = 2*xdiffa(1)/beta*factor1*M1(n-1,0) - factor2*M1(n-2,0);
+    M1(n,1) = 2*xdiffb(1)/beta*factor1*M1(n-1,1) - factor2*M1(n-2,1);
+    I0(n) = factor1_int*(M0(n-1,1) - M0(n-1,0)) + factor2_int*I0(n-2);
+    I1(n) = factor1_int*(M1(n-1,1) - M1(n-1,0)) + factor2_int*I1(n-2);
+  }
+
+  // build tensor product of I0 and I1
+  NumVector<data_t> Int(nCoeffs);
+  int n0, n1;
+  for (int l = 0; l < nCoeffs; l++) {
+    n0 = nVector.getState1(l);
+    n1 = nVector.getState2(l);
+    Int(l) = I0(n0)*I1(n1);
+  }
+  
+  // multiply with coeffs
+  data_t result = Int * coeffs;
+
+  // calculate covariance matrix
   if (cov_est != NULL) {
     cov_est->resize(1,1);
     cov_est->operator()(0,0) = Int * (cov * Int);

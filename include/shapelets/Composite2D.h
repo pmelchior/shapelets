@@ -73,10 +73,10 @@ class Composite2D {
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
   /// \f$\int\ dx\ f(x)\f$.
   data_t integrate(NumMatrix<data_t>* cov = NULL) const;
-  /// Integrate \f$f(x)\f$ in the area bounded by \f$(x_1^{min},x_2^{min})..(x_1^{max},x_2^{max})\f$.
+  /// Integrate \f$f(x)\f$ in the area bounded by \p P1 and \p P2.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
-  /// \f$\int_{x_1^{min},x_2^{min}}^{x_1^{max},x_2^{max}}\ dx_1\ dx_2\ f(x)\f$
-  data_t integrate(data_t x1min, data_t x1max, data_t x2min,data_t x2max, NumMatrix<data_t>* cov = NULL) const;
+  /// the integral.
+  data_t integrate(const Point2D<data_t>& P1,const Point2D<data_t>& P2,  NumMatrix<data_t>* cov = NULL) const;
   /// Calculate the object flux \f$F\f$ from the coefficients.
   /// cf. Paper I, eq. 26.\n
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$F\f$
