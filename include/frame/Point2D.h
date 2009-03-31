@@ -34,6 +34,12 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
     else
       return false;
   }
+  T* c_array() {
+    return boost::numeric::bindings::traits::vector_storage(*this);
+  }
+  const T* c_array() const {
+    return boost::numeric::bindings::traits::vector_storage(*this);
+  }
 };
 } // end namespace
 #endif
