@@ -1,25 +1,25 @@
-#ifndef GALAXYMODEL_H
-#define GALAXYMODEL_H
+#ifndef SHAPELENS_SOURCEMODEL_H
+#define SHAPELENS_SOURCEMODEL_H
 
 #include <frame/Object.h>
 #include <shapelets/ShapeletObject.h>
 
 namespace shapelens {
 
-/// Base class for idealized galaxy models.
+/// Base class for idealized source models.
 /// A galaxy model is a idealized representation of a two-dimensional shape.
 /// It's bigget advantage: It can be sampled at any resolution.\n\n
-/// For classes which derive from GalaxyModel, it is assumed that
+/// For classes which derive from SourceModel, it is assumed that
 /// - they provide a well-defined value at any position \f$(x,y)\f$
 /// - their centroids are set to \f$(0,0)\f$
 /// - their total integrated flux is finite.
 
-class GalaxyModel {
+class SourceModel {
 public:
   /// Destructor.
-  virtual ~GalaxyModel();
-  /// Sample model at \f$(x,y)\f$.
-  virtual data_t getValue(data_t x, data_t y) const = 0;
+  virtual ~SourceModel();
+  /// Sample model at \p P.
+  virtual data_t getValue(const Point2D<data_t>& P) const = 0;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const = 0;
   /// Populate \p obj by sampling from the model.
@@ -29,6 +29,8 @@ public:
   void setObject(Object& obj, data_t normalization, bool add = false) const;
   /// Populate \p obj by sampling from a sheared model.
   void setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add = false) const;
+ private:
+  Point2D<data_t> centroid;
 };
 
 /// Sersic model class.
@@ -40,12 +42,12 @@ public:
 /// \f$5R_e\f$ and the appropriate value at that position is subtracted from 
 /// \f$I_S\f$.\n\n
 /// Details can be seen in Graham & Driver, 2005, PASA, 22, 118-127.
-class SersicModel : public GalaxyModel {
+class SersicModel : public SourceModel {
  public:
   /// Constructor with Sersic index \p n and effective radius \p Re.
   SersicModel(data_t n, data_t Re);
-  /// Sample model at \f$(x,y)\f$.
-  virtual data_t getValue(data_t x, data_t y) const;
+  /// Sample model at \p P.
+  virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
 private:
@@ -58,12 +60,12 @@ private:
 /// The ensure vanishing flux at large radii, the profile is truncated at
 /// \f$5FWHM\f$ and the appropriate value at that position is subtracted from 
 /// \f$I_M\f$.
-class MoffatModel : public GalaxyModel {
+class MoffatModel : public SourceModel {
  public:
   /// Constructor with Moffat index \p beta and width \p FWHM.
   MoffatModel(data_t beta, data_t FWHM);
-  /// Sample model at \f$(x,y)\f$.
-  virtual data_t getValue(data_t x, data_t y) const;
+  /// Sample model at \p P.
+  virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
  private:
@@ -73,7 +75,7 @@ class MoffatModel : public GalaxyModel {
 /// Model from interpolated pixel data.
 /// The class provides several interpolation types for the Object given 
 /// at construction time.
-class InterpolatedModel : public GalaxyModel {
+class InterpolatedModel : public SourceModel {
 public:
   /// Constructor.
   /// \p order defines order of interpolation.
@@ -83,8 +85,8 @@ public:
   ///
   /// For more details, see Interpolation.
   InterpolatedModel(Object& obj, int order = 1);
-  /// Sample model at \f$(x,y)\f$.
-  virtual data_t getValue(data_t x, data_t y) const;
+  /// Sample model at \p P.
+  virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Get Object::flux.
   virtual data_t getFlux() const;
 private:
@@ -94,12 +96,12 @@ private:
 
 /// Model from ShapeletObject.
 /// The class provides convenient sampling from a ShapeletObject.
-class ShapeletModel : public GalaxyModel {
+class ShapeletModel : public SourceModel {
 public:
   /// Constructor.
   ShapeletModel(ShapeletObject& sobj);
-  /// Sample model at \f$(x,y)\f$.
-  virtual data_t getValue(data_t x, data_t y) const;
+  /// Sample model at \p P.
+  virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Return ShapeletObject::getShapeletFlux().
   virtual data_t getFlux() const;
 private:

@@ -13,7 +13,7 @@
 #include <shapelets/ShapeletObjectDB.h>
 
 #include <lensing/LensingEstimator.h>
-#include <modelfit/GalaxyModel.h>
+#include <modelfit/SourceModel.h>
 
 /// Namespace for ShapeLens++
 namespace shapelens {

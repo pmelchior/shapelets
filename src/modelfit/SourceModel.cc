@@ -1,27 +1,29 @@
-#include <modelfit/GalaxyModel.h>
+#include <modelfit/SourceModel.h>
 #include <utils/Interpolation.h>
 
 using namespace shapelens;
 
-GalaxyModel::~GalaxyModel() {}
-void GalaxyModel::setObject(Object& obj, data_t normalization, bool add) const {
+SourceModel::~SourceModel() {}
+
+void SourceModel::setObject(Object& obj, data_t normalization, bool add) const {
   int x,y;
-  data_t x_rel, y_rel;
+  Point2D<data_t> P;
   for(int i=0; i < obj.size(); i++) {
     obj.grid.getCoords(i,x,y);
-    x_rel = x - obj.centroid(0);  // coords must be around (0,0)
-    y_rel = y - obj.centroid(1);
+    P(0) = x - obj.centroid(0);  // coords must be around (0,0)
+    P(1) = y - obj.centroid(1);
     if (add)
-      obj(i) += getValue(x_rel,y_rel)/normalization;
+      obj(i) += getValue(P)/normalization;
     else
-      obj(i) = getValue(x_rel,y_rel)/normalization;
+      obj(i) = getValue(P)/normalization;
   }
 }
 
-void GalaxyModel::setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add) const {
+void SourceModel::setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add) const {
   NumVector<data_t> sourceCoords(2), lensCoords(2);
   NumMatrix<data_t> A(2,2);
   int x,y;
+  Point2D<data_t> P;
   A(0,0) = 1-real(gamma);
   A(0,1) = -imag(gamma);
   A(1,0) = -imag(gamma);
@@ -31,10 +33,12 @@ void GalaxyModel::setObjectSheared(Object& obj, complex<data_t> gamma, data_t no
     lensCoords(0) = x - obj.centroid(0);
     lensCoords(1) = y - obj.centroid(1);
     sourceCoords = A*lensCoords;
+    P(0) = sourceCoords(0);
+    P(1) = sourceCoords(1);
     if (add)
-      obj(i) += getValue(sourceCoords(0),sourceCoords(1)) * (1 - gsl_pow_2(abs(gamma))) / normalization; // shear changes size and thus also flux
+      obj(i) += getValue(P) * (1 - gsl_pow_2(abs(gamma))) / normalization; // shear changes size and thus also flux
     else
-      obj(i) = getValue(sourceCoords(0),sourceCoords(1)) * (1 - gsl_pow_2(abs(gamma))) / normalization;
+      obj(i) = getValue(P) * (1 - gsl_pow_2(abs(gamma))) / normalization;
   }
 }
 
@@ -52,8 +56,8 @@ SersicModel::SersicModel(data_t n, data_t Re) :
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
 }
 
-data_t SersicModel::getValue(data_t x, data_t y) const {
-  data_t radius = sqrt(gsl_pow_2(x) + gsl_pow_2(y));
+data_t SersicModel::getValue(const Point2D<data_t>& P) const {
+  data_t radius = sqrt(gsl_pow_2(P(0)) + gsl_pow_2(P(1)));
   if (radius < limit)
     return exp(-b*(pow(radius/Re,1./n) -1)) - flux_limit;
   else
@@ -77,8 +81,8 @@ MoffatModel::MoffatModel(data_t beta, data_t FWHM) :
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
 }
 
-data_t MoffatModel::getValue(data_t x, data_t y) const {
-  data_t radius = sqrt(gsl_pow_2(x) + gsl_pow_2(y));
+data_t MoffatModel::getValue(const Point2D<data_t>& P) const {
+  data_t radius = sqrt(gsl_pow_2(P(0)) + gsl_pow_2(P(1)));
   if (radius < limit)
     return pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit;
   else
@@ -93,14 +97,14 @@ data_t MoffatModel::getFlux() const {
 // ##### Interpolated Model ##### //
 InterpolatedModel::InterpolatedModel(Object& obj, int order) : obj(obj), order(order) {}
 
-data_t InterpolatedModel::getValue(data_t x, data_t y) const {
+data_t InterpolatedModel::getValue(const Point2D<data_t>& P) const {
   switch (order) {
   case 1: // simple bi-linear interpolation
-    return obj.interpolate(x+obj.centroid(0),y+obj.centroid(1));
+    return obj.interpolate(P(0)+obj.centroid(0),P(1)+obj.centroid(1));
   case -3: // bi-cubic interpolation
-    return Interpolation::bicubic(obj,x+obj.centroid(0),y+obj.centroid(1));
+    return Interpolation::bicubic(obj,P(0)+obj.centroid(0),P(1)+obj.centroid(1));
   default: // nth-order polynomial interpolation
-    return Interpolation::polynomial(obj,x+obj.centroid(0),y+obj.centroid(1),order);
+    return Interpolation::polynomial(obj,P(0)+obj.centroid(0),P(1)+obj.centroid(1),order);
   }
 }
 
@@ -111,10 +115,9 @@ data_t InterpolatedModel::getFlux() const {
 // ##### Shapelet Model ##### //
 ShapeletModel::ShapeletModel(ShapeletObject& sobj) : sobj(sobj) {}
 
-data_t ShapeletModel::getValue(data_t x, data_t y) const {
+data_t ShapeletModel::getValue(const Point2D<data_t>& P) const {
   Point2D<data_t> centroid = sobj.getCentroid();
-  centroid(0) += x;
-  centroid(1) += y;
+  centroid += P;
   return sobj.eval(centroid);
 }
 
