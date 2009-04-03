@@ -178,6 +178,37 @@ void Object::computeCentroid() {
   }
 }
 
+void Object::computeFluxCentroid() {
+  const NumVector<data_t>& data = *this;
+  const Grid& grid = Image<data_t>::grid;
+  flux = 0;
+  centroid(0) = centroid(1) = 0;
+  // check if weights are available: if yes, use them
+  if (weight.size() != 0) {
+    data_t sum_weights = 0;
+    for (int i=0; i< grid.size(); i++) {
+      if (weight(i) > 0) {
+	flux += data(i) * weight(i);
+	centroid(0) += data(i) * grid(i,0) * weight(i);
+	centroid(0) += data(i) * grid(i,1) * weight(i);
+	sum_weights += weight(i);
+      }
+    }
+    flux /= sum_weights;
+    centroid(0) /= flux * sum_weights;
+    centroid(1) /= flux * sum_weights;
+  }
+  else { // unweigthed
+    for (int i=0; i< grid.size(); i++) {
+      flux += data(i);
+      centroid(0) += grid(i,0) * data(i);
+      centroid(1) += grid(i,1) * data(i);
+    }
+    centroid(0) /= flux;
+    centroid(1) /= flux;
+  }
+}
+
 void Object::computeQuadrupole() {
   const NumVector<data_t>& data = *this;
   const Grid& grid = Image<data_t>::grid;

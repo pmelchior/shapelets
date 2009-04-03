@@ -54,6 +54,9 @@ class Object : public Image<data_t> {
   /// If Object::weight is non-empty, the pixel weights are considered.\n
   /// \b CAUTION: The results depends on the value of Object::flux.
   void computeCentroid();
+  /// Computes Object::flux and Object::centroid from pixel data.
+  /// If Object::weight is non-empty, the pixel weights are considered.
+  void computeFluxCentroid();
   /// Computes the quadrupole moment Object::Q from pixel data.
   /// If Object::weight is non-empty, the pixel weights are considered.\n
   /// \b CAUTION: The results depends on the value of Object::flux and 

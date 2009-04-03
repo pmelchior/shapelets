@@ -425,8 +425,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 
     // Fill other quantities into Object
     O.flags = flags;
-    O.computeFlux();
-    O.computeCentroid();
+    O.computeFluxCentroid();
 
     // Update catalog with object values
     // therefore we need a iterator from the const_iterator
