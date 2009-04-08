@@ -5,6 +5,10 @@ using namespace shapelens;
 
 SourceModel::~SourceModel() {}
 
+const Rectangle<data_t>& SourceModel::getSupport() const {
+  return support;
+}
+
 void SourceModel::setObject(Object& obj, data_t normalization, bool add) const {
   int x,y;
   Point2D<data_t> P;
@@ -46,6 +50,9 @@ void SourceModel::setObjectSheared(Object& obj, complex<data_t> gamma, data_t no
 SersicModel::SersicModel(data_t n, data_t Re) : 
   n(n), Re(Re) {
   limit = 5*Re;
+  // define area of support
+  support.ll(0) = support.ll(1) = -limit;
+  support.tr(0) = support.tr(1) = limit;
   b = 1.9992*n - 0.3271;
   data_t RRe1n = pow(limit/Re,1./n);
   // flux at limit
@@ -73,6 +80,9 @@ MoffatModel::MoffatModel(data_t beta, data_t FWHM) :
   beta(beta) {
   alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
   limit = 5*FWHM;
+  // define area of support
+  support.ll(0) = support.ll(1) = -limit;
+  support.tr(0) = support.tr(1) = limit;
   // flux at limit
   flux_limit = pow(1+alpha*gsl_pow_2(limit),-beta);
   // compute total flux of model (considering the truncation at limit)
@@ -95,7 +105,11 @@ data_t MoffatModel::getFlux() const {
 
 
 // ##### Interpolated Model ##### //
-InterpolatedModel::InterpolatedModel(Object& obj, int order) : obj(obj), order(order) {}
+InterpolatedModel::InterpolatedModel(Object& obj, int order) : obj(obj), order(order) {
+  // define area of support
+  support.ll = Point2D<data_t>(obj.grid.getStartPosition(0),obj.grid.getStartPosition(1));
+  support.tr = Point2D<data_t>(obj.grid.getStopPosition(0),obj.grid.getStopPosition(1));
+}
 
 data_t InterpolatedModel::getValue(const Point2D<data_t>& P) const {
   switch (order) {
@@ -113,7 +127,12 @@ data_t InterpolatedModel::getFlux() const {
 }
 
 // ##### Shapelet Model ##### //
-ShapeletModel::ShapeletModel(ShapeletObject& sobj) : sobj(sobj) {}
+ShapeletModel::ShapeletModel(const ShapeletObject& sobj) : sobj(sobj) {
+  // define area of support
+  const Grid& grid = sobj.getGrid();
+  support.ll = Point2D<data_t>(grid.getStartPosition(0),grid.getStartPosition(1));
+  support.tr = Point2D<data_t>(grid.getStopPosition(0),grid.getStopPosition(1));
+}
 
 data_t ShapeletModel::getValue(const Point2D<data_t>& P) const {
   Point2D<data_t> centroid = sobj.getCentroid();

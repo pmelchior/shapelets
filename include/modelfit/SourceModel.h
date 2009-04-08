@@ -5,14 +5,23 @@
 #include <shapelets/ShapeletObject.h>
 
 namespace shapelens {
+  /// Defines local support of SourceModel.
+  template<class T>
+  struct Rectangle {
+    /// Lower-left boundary point.
+    Point2D<T> ll;
+    /// Top-right boundary point.
+    Point2D<T> tr;
+  };
 
 /// Base class for idealized source models.
 /// A galaxy model is a idealized representation of a two-dimensional shape.
-/// It's bigget advantage: It can be sampled at any resolution.\n\n
+/// It's main advantage: It can be sampled at any resolution.\n\n
 /// For classes which derive from SourceModel, it is assumed that
-/// - they provide a well-defined value at any position \f$(x,y)\f$
-/// - their centroids are set to \f$(0,0)\f$
-/// - their total integrated flux is finite.
+/// - they provide a well-defined value at any position \f$(x,y)\f$,
+/// - their centroids are set to \f$(0,0)\f$,
+/// - their total integrated flux is finite,
+/// - they define an finite area of support.
 
 class SourceModel {
 public:
@@ -22,6 +31,8 @@ public:
   virtual data_t getValue(const Point2D<data_t>& P) const = 0;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const = 0;
+  /// Get rectangluar support area of the model.
+  const Rectangle<data_t>& getSupport() const;
   /// Populate \p obj by sampling from the model.
   /// The model is placed at the centroid of \p obj.\n
   /// The sampled model points are divided by \p normalization.\n
@@ -29,8 +40,8 @@ public:
   void setObject(Object& obj, data_t normalization, bool add = false) const;
   /// Populate \p obj by sampling from a sheared model.
   void setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add = false) const;
- private:
-  Point2D<data_t> centroid;
+ protected:
+  Rectangle<data_t> support;
 };
 
 /// Sersic model class.
@@ -99,13 +110,13 @@ private:
 class ShapeletModel : public SourceModel {
 public:
   /// Constructor.
-  ShapeletModel(ShapeletObject& sobj);
+  ShapeletModel(const ShapeletObject& sobj);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Return ShapeletObject::getShapeletFlux().
   virtual data_t getFlux() const;
 private:
-  ShapeletObject& sobj;
+  const ShapeletObject& sobj;
 };
 } // end namespace
 #endif
