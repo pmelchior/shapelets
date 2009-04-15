@@ -46,6 +46,25 @@ namespace shapelens {
   public:
     /// Constructor.
     Polygon() {};
+    /// Constructor from a list of Point2D.
+    /// It is assumed that points form a closed polygon, that means
+    /// the end of the edge chain is defined by the frist point in the list.
+    Polygon(const std::list<Point2D<T> >& points) {
+      if (points.size() < 3)
+	throw std::invalid_argument("Polygon: List of edge points must contain at least 3 points");
+      
+      Edge<T> e;
+      typename std::list<Point2D<T> >::const_iterator iter = points.begin();
+      e.p1 = *iter;
+      e.p2 = *(iter++);
+      edges.push_back(e);
+      while (iter != points.end()) {
+	e.moveTo(*(iter++));
+	edges.push_back(e);
+      }
+      e.moveTo(points.front());
+      edges.push_back(e);
+    }
     /// Add edge to polygon.
     /// The starting point of \p e must be identical to the end-point of the
     /// prior edge.
