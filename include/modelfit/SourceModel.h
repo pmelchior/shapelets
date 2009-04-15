@@ -1,19 +1,11 @@
 #ifndef SHAPELENS_SOURCEMODEL_H
 #define SHAPELENS_SOURCEMODEL_H
 
+#include <frame/Shapes2D.h>
 #include <frame/Object.h>
 #include <shapelets/ShapeletObject.h>
 
 namespace shapelens {
-  /// Defines local support of SourceModel.
-  template<class T>
-  struct Rectangle {
-    /// Lower-left boundary point.
-    Point2D<T> ll;
-    /// Top-right boundary point.
-    Point2D<T> tr;
-  };
-
 /// Base class for idealized source models.
 /// A galaxy model is a idealized representation of a two-dimensional shape.
 /// It's main advantage: It can be sampled at any resolution.\n\n

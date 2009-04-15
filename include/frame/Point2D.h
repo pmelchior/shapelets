@@ -13,20 +13,27 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
 {
   typedef boost::numeric::ublas::vector<T, boost::numeric::ublas::bounded_array<T,2> > Base_vector;
  public:
+  /// Constructor.
   Point2D () : Base_vector(2) {}
+  /// Constructor with given coordinates.
   template <class R> Point2D (R x0, R x1) : Base_vector(2) {
     Base_vector::operator()(0) = x0;
     Base_vector::operator()(1) = x1;
   }
+  /// Copy constructor from base class.
   template <class R> Point2D (boost::numeric::ublas::vector_expression<R>& r) : Base_vector(r) { }
+  /// Copy operator from base class.
   template <class R> void operator=(boost::numeric::ublas::vector_expression<R>& r) {
     Base_vector::operator=(r);
   }
+  /// Copy operator from base-class.
   template <class R> void operator=( Base_vector& r) {
     Base_vector::operator=(r);
   }
-  // comparison operator for sorted containers of the STL
-  // 2nd dimension first ensures efficient lookup for images
+  /// Comparison operator.
+  /// This is important for sorted containers of the STL.
+  /// To ensure efficient lookups for image-type data, the points are
+  /// ordered according to their 2nd dimension
   template <class R>
     bool operator<(const Point2D<R>& b) const {
     if (Base_vector::operator()(1) < b(1) || (Base_vector::operator()(1) == b(1) && Base_vector::operator()(0) < b(0)))
@@ -34,9 +41,19 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
     else
       return false;
   }
+  /// Equality operator.
+  template <class R>
+    bool operator==(const Point2D<R>& b) const {
+    if (Base_vector::operator()(0) == b(0) && Base_vector::operator()(1) == b(1))
+      return true;
+    else
+      return false;
+  }
+  /// Return pointer to data storage.
   T* c_array() {
     return boost::numeric::bindings::traits::vector_storage(*this);
   }
+  /// Return pointer to data storage.
   const T* c_array() const {
     return boost::numeric::bindings::traits::vector_storage(*this);
   }
