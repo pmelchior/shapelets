@@ -45,22 +45,25 @@ namespace shapelens {
   class Polygon {
   public:
     /// Constructor.
-    Polygon() {};
+    Polygon() {
+    };
     /// Constructor from a list of Point2D.
     /// It is assumed that points form a closed polygon, that means
     /// the end of the edge chain is defined by the frist point in the list.
     Polygon(const std::list<Point2D<T> >& points) {
       if (points.size() < 3)
 	throw std::invalid_argument("Polygon: List of edge points must contain at least 3 points");
-      
       Edge<T> e;
       typename std::list<Point2D<T> >::const_iterator iter = points.begin();
       e.p1 = *iter;
-      e.p2 = *(iter++);
+      iter++;
+      e.p2 = *iter;
+      iter++;
       edges.push_back(e);
       while (iter != points.end()) {
-	e.moveTo(*(iter++));
+	e.moveTo(*iter);
 	edges.push_back(e);
+	iter++;
       }
       e.moveTo(points.front());
       edges.push_back(e);
@@ -76,6 +79,9 @@ namespace shapelens {
       else
 	throw std::invalid_argument("Polygon: Edges do not match");
     }
+    /// Compute area of polygon.
+    /// Returns \f$\frac{1}{2}\sum_{i=1}^{N}\bigl(x_i y_{i+1} - x_{i+1} y_i\bigr)\f$,
+    /// where the \f$N\f$ edge points are given by \f$(x_i,y_i)\f$.
     data_t getArea() const {
       data_t a = 0;
       for (typename std::list<Edge<T> >::const_iterator iter = edges.begin(); iter != edges.end(); iter++) {
@@ -147,6 +153,37 @@ namespace shapelens {
     /// Clear all edges of this polygon.
     void clear() {
       edges.clear();
+    }
+    /// Rescale all coordinates.
+    void rescale(T scale) {
+      for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++) {
+	(iter->p1)*=scale;
+	(iter->p2)*=scale;
+      }
+    }
+    /// Ostream from Polygon
+    friend std::ostream& operator<<(std::ostream& os, const Polygon<T>& p) {
+      os << "//" << std::endl;
+      for (typename std::list<Edge<T> >::const_iterator iter = p.edges.begin(); iter != p.edges.end(); iter++)
+	os << iter->p1(0) << " " << iter->p1(1) << std::endl;
+      return os;
+    }
+    /// Istream to Polygon
+    friend std::istream& operator>>(std::istream& is, Polygon<T>& p) {
+      if (is.bad())
+	std::ios_base::failure("Polygon: Cannot read from istream");
+      
+      std::list<Point2D<T> > points;
+      std::string delimiter;
+      T x,y;
+      is >> delimiter;
+      while (is >> x >> y)
+	points.push_back(Point2D<T>(x,y));
+      if(points.size() > 0) {
+        is.clear();
+        p = Polygon<T>(points);
+      }
+      return is;
     }
   private:
     std::list<Edge<T> > edges;
