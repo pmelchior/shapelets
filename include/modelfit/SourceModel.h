@@ -4,6 +4,8 @@
 #include <frame/Shapes2D.h>
 #include <frame/Object.h>
 #include <shapelets/ShapeletObject.h>
+#include <boost/shared_ptr.hpp>
+#include <vector>
 
 namespace shapelens {
 /// Base class for idealized source models.
@@ -33,8 +35,15 @@ public:
   /// Populate \p obj by sampling from a sheared model.
   void setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add = false) const;
  protected:
+  /// Rectangluar support area.
   Rectangle<data_t> support;
+  /// Centroid position.
+  Point2D<data_t> centroid;
 };
+ 
+/// Collection of SourceModel entities.
+ class SourceModelList : public std::vector<boost::shared_ptr<SourceModel> > {
+ };
 
 /// Sersic model class.
 /// The model has the form
@@ -47,14 +56,16 @@ public:
 /// Details can be seen in Graham & Driver, 2005, PASA, 22, 118-127.
 class SersicModel : public SourceModel {
  public:
-  /// Constructor with Sersic index \p n and effective radius \p Re.
-  SersicModel(data_t n, data_t Re);
+  /// Constructor with Sersic index \p n, effective radius \p Re and
+  /// intrinsic ellipticity \p eps.
+  SersicModel(data_t n, data_t Re, complex<data_t> eps, const Point2D<data_t>& centroid);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
 private:
   data_t n, Re, b,limit,flux,flux_limit;
+  complex<data_t> eps;
 };
 
 /// Sersic model class.
@@ -65,14 +76,16 @@ private:
 /// \f$I_M\f$.
 class MoffatModel : public SourceModel {
  public:
-  /// Constructor with Moffat index \p beta and width \p FWHM.
-  MoffatModel(data_t beta, data_t FWHM);
+  /// Constructor with Moffat index \p beta, width \p FWHM and
+  /// intrinsic ellipticity \p eps. 
+  MoffatModel(data_t beta, data_t FWHM, complex<data_t> eps, const Point2D<data_t>& centroid);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
  private:
   data_t beta, alpha, limit, flux_limit, flux;
+  complex<data_t> eps;
 };
 
 /// Model from interpolated pixel data.
@@ -87,7 +100,7 @@ public:
   /// - <tt>-3</tt>: bi-cubic
   ///
   /// For more details, see Interpolation.
-  InterpolatedModel(Object& obj, int order = 1);
+  InterpolatedModel(const Object& obj, int order = 1);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
   /// Get Object::flux.
