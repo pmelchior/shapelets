@@ -39,6 +39,9 @@ public:
   Rectangle<data_t> support;
   /// Centroid position.
   Point2D<data_t> centroid;
+  /// Compute rectangular support for ellpitical SourceModel.
+  /// Dpends on the position of centroid.
+  void setEllipticalSupport(data_t radius, const complex<data_t>& eps);
 };
  
 /// Collection of SourceModel entities.
@@ -64,11 +67,11 @@ class SersicModel : public SourceModel {
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
 private:
-  data_t n, Re, b,limit,flux,flux_limit;
+  data_t n, Re, b,limit,flux,flux_limit,shear_norm;
   complex<data_t> eps;
 };
 
-/// Sersic model class.
+/// Moffat model class.
 /// The model has the form
 ///\f[I_M\bigl((x,y)\bigl) = \bigl(1+\alpha r^2\bigr)^{-\beta}\ \text{with}\ r=\sqrt{x^2 + y^2}\ \text{and}\ \alpha = \frac{2^{1/\beta}-1}{(FWHM/2)^2}.\f]
 /// The ensure vanishing flux at large radii, the profile is truncated at
@@ -84,7 +87,7 @@ class MoffatModel : public SourceModel {
   /// Get total integrated flux of model.
   virtual data_t getFlux() const;
  private:
-  data_t beta, alpha, limit, flux_limit, flux;
+  data_t beta, alpha, limit, flux_limit, flux,shear_norm;
   complex<data_t> eps;
 };
 

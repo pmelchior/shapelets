@@ -46,16 +46,42 @@ void SourceModel::setObjectSheared(Object& obj, complex<data_t> gamma, data_t no
   }
 }
 
+void SourceModel::setEllipticalSupport(data_t radius, const complex<data_t>& eps) {
+  // compute orientation angle
+  data_t theta;
+  if (real(eps)!=0)
+    theta = 0.5*atan(imag(eps)/real(eps));
+  else
+    theta = 0;
+  // theta can not distinguish between vertical and horizontal orientation:
+  // theta = 0 in both cases
+  // since we want to have angle to x-Axis, map theta onto unbroken range of 180 deg
+  if (real(eps) < 0)
+    theta += M_PI_2;
+  // compute size of semi-major and semi-minor axis (axis-parallel system)
+  data_t a = (1 + fabs(real(eps)))*radius;
+  data_t b = (1 - fabs(real(eps)))*radius;
+  // compute curve parameter t which maximizes x or y
+  data_t tx = atan(-b*tan(theta)/a);
+  data_t ty = atan(b/(tan(theta)*a));
+  // insert in parametric equation for rotated ellipse
+  data_t max_x = fabs(a*cos(tx)*cos(theta) - b*sin(tx)*sin(theta));
+  data_t max_y = fabs(a*cos(ty)*sin(theta) + b*sin(ty)*cos(theta));
+  support.tr(0) = max_x;
+  support.tr(1) = max_y;
+  support.ll(0) = - support.tr(0);
+  support.ll(1) = - support.tr(1);
+  support.ll += centroid;
+  support.tr += centroid;
+}
+
 // ##### Sersic Model ##### //
 SersicModel::SersicModel(data_t n, data_t Re, complex<data_t> eps, const Point2D<data_t>& centroid) : 
   n(n), Re(Re), eps(eps) {
-  SourceModel::centroid = centroid;
   limit = 5*Re;
-  // define area of support
-  support.ll(0) = support.ll(1) = -limit;
-  support.tr(0) = support.tr(1) = limit;
-  support.ll += centroid;
-  support.tr += centroid;
+  shear_norm = 1 - gsl_pow_2(abs(eps));
+  SourceModel::centroid = centroid;
+  SourceModel::setEllipticalSupport(limit,eps);
   b = 1.9992*n - 0.3271;
   data_t RRe1n = pow(limit/Re,1./n);
   // flux at limit
@@ -65,7 +91,7 @@ SersicModel::SersicModel(data_t n, data_t Re, complex<data_t> eps, const Point2D
   // subtract level at limit such that the profile vanishes there
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
   // correct for shearing
-  flux /= (1 - gsl_pow_2(abs(eps)));
+  flux /= shear_norm;
 }
 
 data_t SersicModel::getValue(const Point2D<data_t>& P) const {
@@ -74,7 +100,7 @@ data_t SersicModel::getValue(const Point2D<data_t>& P) const {
   data_t x_ = (1-real(eps))*x - imag(eps)*y;
   data_t y_ = -imag(eps)*x + (1+real(eps))*y;
   
-  data_t radius = sqrt(x_*x_ + y_*y_);
+  data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm; // shear changes size
   if (radius < limit)
     return exp(-b*(pow(radius/Re,1./n) -1)) - flux_limit;
   else
@@ -91,11 +117,10 @@ MoffatModel::MoffatModel(data_t beta, data_t FWHM, complex<data_t> eps, const Po
   SourceModel::centroid = centroid;
   alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
   limit = 5*FWHM;
+  shear_norm = 1 - gsl_pow_2(abs(eps));
   // define area of support
-  support.ll(0) = support.ll(1) = -limit;
-  support.tr(0) = support.tr(1) = limit;
-  support.ll += centroid;
-  support.tr += centroid;
+  SourceModel::centroid = centroid;
+  SourceModel::setEllipticalSupport(limit,eps);
   // flux at limit
   flux_limit = pow(1+alpha*gsl_pow_2(limit),-beta);
   // compute total flux of model (considering the truncation at limit)
@@ -103,7 +128,7 @@ MoffatModel::MoffatModel(data_t beta, data_t FWHM, complex<data_t> eps, const Po
   // subtract level at R such that the profile vanishes there
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
   // correct for shearing
-  flux /= (1 - gsl_pow_2(abs(eps)));
+  flux /= shear_norm;
 }
 
 data_t MoffatModel::getValue(const Point2D<data_t>& P) const {
@@ -112,7 +137,7 @@ data_t MoffatModel::getValue(const Point2D<data_t>& P) const {
   data_t x_ = (1-real(eps))*x - imag(eps)*y;
   data_t y_ = -imag(eps)*x + (1+real(eps))*y;
   
-  data_t radius = sqrt(x_*x_ + y_*y_);
+  data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm;
   if (radius < limit)
     return pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit;
   else
