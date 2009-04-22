@@ -81,8 +81,7 @@ class FFT {
   /// Convolve \p data with kernel
   /// It is assumed that both \p data and \p kernel have the same sizes.
   static void convolve(Image<data_t>& data, const Image<data_t>& kernel);
- private:
-  friend class Object;
+
   static void reorder(Image<data_t>& im);
   static void conv_multiply(const FourierTransform2D& f1, const FourierTransform2D& f2, FourierTransform2D& target);
 };

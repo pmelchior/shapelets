@@ -159,7 +159,8 @@ namespace shapelens {
     /// Uses Numerical Recipes \p bcucof and finite differences for gradients
     template <class T>
       static data_t bicubic(const Image<T>& im, data_t x, data_t y) {
-      if (x >= 0 && x < im.getSize(0) && y >= 0 && y < im.getSize(1)) {
+      const Grid& grid = im.grid;
+      if (x >=  grid.getStartPosition(0) && x < grid.getStopPosition(0) && y >= grid.getStartPosition(1) && y < grid.getStopPosition(1)) {
 	int x_ = (int) floor(x);
 	int y_ = (int) floor(y);
 	NumMatrix<data_t>& w = Singleton<BicubicW>::getInstance();
