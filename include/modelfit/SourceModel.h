@@ -10,12 +10,7 @@
 namespace shapelens {
 /// Base class for idealized source models.
 /// A galaxy model is a idealized representation of a two-dimensional shape.
-/// It's main advantage: It can be sampled at any resolution.\n\n
-/// For classes which derive from SourceModel, it is assumed that
-/// - they provide a well-defined value at any position \f$(x,y)\f$,
-/// - their centroids are set to \f$(0,0)\f$,
-/// - their total integrated flux is finite,
-/// - they define an finite area of support.
+/// It's main advantage: It can be sampled at any resolution.
 
 class SourceModel {
 public:
@@ -23,24 +18,15 @@ public:
   virtual ~SourceModel();
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const = 0;
-  /// Get total integrated flux of model.
-  virtual data_t getFlux() const = 0;
   /// Get rectangluar support area of the model.
   const Rectangle<data_t>& getSupport() const;
-  /// Populate \p obj by sampling from the model.
-  /// The model is placed at the centroid of \p obj.\n
-  /// The sampled model points are divided by \p normalization.\n
-  /// If <tt>add == true</tt>, the model values are added to the entries of \p obj.
-  void setObject(Object& obj, data_t normalization, bool add = false) const;
-  /// Populate \p obj by sampling from a sheared model.
-  void setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add = false) const;
  protected:
   /// Rectangluar support area.
   Rectangle<data_t> support;
   /// Centroid position.
   Point2D<data_t> centroid;
-  /// Compute rectangular support for ellpitical SourceModel.
-  /// Dpends on the position of centroid.
+  /// Compute rectangular SourceModel::support for elliptical sources.
+  /// Considers position of SourceModel::centroid.
   void setEllipticalSupport(data_t radius, const complex<data_t>& eps);
 };
  
@@ -59,15 +45,13 @@ public:
 /// Details can be seen in Graham & Driver, 2005, PASA, 22, 118-127.
 class SersicModel : public SourceModel {
  public:
-  /// Constructor with Sersic index \p n, effective radius \p Re and
+  /// Constructor with Sersic index \p n, effective radius \p Re, \p flux, and
   /// intrinsic ellipticity \p eps.
-  SersicModel(data_t n, data_t Re, complex<data_t> eps, const Point2D<data_t>& centroid);
+  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
-  /// Get total integrated flux of model.
-  virtual data_t getFlux() const;
 private:
-  data_t n, Re, b,limit,flux,flux_limit,shear_norm;
+  data_t n, Re, b,limit,flux,flux_limit,shear_norm,flux_scale;
   complex<data_t> eps;
 };
 
@@ -79,38 +63,39 @@ private:
 /// \f$I_M\f$.
 class MoffatModel : public SourceModel {
  public:
-  /// Constructor with Moffat index \p beta, width \p FWHM and
+  /// Constructor with Moffat index \p beta, width \p FWHM, \p flux, and
   /// intrinsic ellipticity \p eps. 
-  MoffatModel(data_t beta, data_t FWHM, complex<data_t> eps, const Point2D<data_t>& centroid);
+  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
-  /// Get total integrated flux of model.
-  virtual data_t getFlux() const;
  private:
-  data_t beta, alpha, limit, flux_limit, flux,shear_norm;
+  data_t beta, alpha, limit, flux_limit, flux,shear_norm,flux_scale;
   complex<data_t> eps;
 };
 
 /// Model from interpolated pixel data.
-/// The class provides several interpolation types for the Object given 
+/// The class provides several interpolation types for the Image given 
 /// at construction time.
 class InterpolatedModel : public SourceModel {
 public:
   /// Constructor.
+  /// The image \p im is assumed to have a Grid starting at <tt>(0,0)</tt>,
+  /// by specifying \p reference, its reference point is moved to there without
+  /// altering \p im. Similarly, \p flux automatically rescales \p im
+  /// to the desired total flux.\n
   /// \p order defines order of interpolation.
   /// - <tt>1</tt>: bi-linear
   /// - <tt>n > 1</tt>: polynomial
   /// - <tt>-3</tt>: bi-cubic
   ///
   /// For more details, see Interpolation.
-  InterpolatedModel(const Object& obj, int order = 1);
+  InterpolatedModel(const Image<data_t>& im, data_t flux, const Point2D<data_t>& reference, int order = 1);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
-  /// Get Object::flux.
-  virtual data_t getFlux() const;
 private:
-  const Object& obj;
+  const Image<data_t>& im;
   int order;
+  data_t flux_scale;
 };
 
 /// Model from ShapeletObject.
@@ -118,13 +103,16 @@ private:
 class ShapeletModel : public SourceModel {
 public:
   /// Constructor.
-  ShapeletModel(const ShapeletObject& sobj);
+  /// By giving \p centroid, one moves \p sobj to this centroid and adjusts
+  /// the support without altering \p sobj itself. Similarly, \p flux 
+  /// automatically rescales \p sobj to the desired total flux.\n
+  ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point2D<data_t>& centroid);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
-  /// Return ShapeletObject::getShapeletFlux().
-  virtual data_t getFlux() const;
 private:
   const ShapeletObject& sobj;
+  const Point2D<data_t>& scentroid;
+  data_t flux_scale;
 };
 } // end namespace
 #endif

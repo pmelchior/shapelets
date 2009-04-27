@@ -9,43 +9,6 @@ const Rectangle<data_t>& SourceModel::getSupport() const {
   return support;
 }
 
-void SourceModel::setObject(Object& obj, data_t normalization, bool add) const {
-  int x,y;
-  Point2D<data_t> P;
-  for(int i=0; i < obj.size(); i++) {
-    obj.grid.getCoords(i,x,y);
-    P(0) = x - obj.centroid(0);  // coords must be around (0,0)
-    P(1) = y - obj.centroid(1);
-    if (add)
-      obj(i) += getValue(P)/normalization;
-    else
-      obj(i) = getValue(P)/normalization;
-  }
-}
-
-void SourceModel::setObjectSheared(Object& obj, complex<data_t> gamma, data_t normalization, bool add) const {
-  NumVector<data_t> sourceCoords(2), lensCoords(2);
-  NumMatrix<data_t> A(2,2);
-  int x,y;
-  Point2D<data_t> P;
-  A(0,0) = 1-real(gamma);
-  A(0,1) = -imag(gamma);
-  A(1,0) = -imag(gamma);
-  A(1,1) = 1+real(gamma);
-  for(int i=0; i < obj.size(); i++) {
-    obj.grid.getCoords(i,x,y);
-    lensCoords(0) = x - obj.centroid(0);
-    lensCoords(1) = y - obj.centroid(1);
-    sourceCoords = A*lensCoords;
-    P(0) = sourceCoords(0);
-    P(1) = sourceCoords(1);
-    if (add)
-      obj(i) += getValue(P) * (1 - gsl_pow_2(abs(gamma))) / normalization; // shear changes size and thus also flux
-    else
-      obj(i) = getValue(P) * (1 - gsl_pow_2(abs(gamma))) / normalization;
-  }
-}
-
 void SourceModel::setEllipticalSupport(data_t radius, const complex<data_t>& eps) {
   // compute orientation angle
   data_t theta;
@@ -76,7 +39,7 @@ void SourceModel::setEllipticalSupport(data_t radius, const complex<data_t>& eps
 }
 
 // ##### Sersic Model ##### //
-SersicModel::SersicModel(data_t n, data_t Re, complex<data_t> eps, const Point2D<data_t>& centroid) : 
+SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const Point2D<data_t>& centroid) : 
   n(n), Re(Re), eps(eps) {
   limit = 5*Re;
   shear_norm = 1 - gsl_pow_2(abs(eps));
@@ -91,7 +54,9 @@ SersicModel::SersicModel(data_t n, data_t Re, complex<data_t> eps, const Point2D
   // subtract level at limit such that the profile vanishes there
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
   // correct for shearing
-  flux /= shear_norm;
+  flux *= shear_norm;
+  // compute rescaling factor for flux
+  flux_scale = flux_eff/flux;
 }
 
 data_t SersicModel::getValue(const Point2D<data_t>& P) const {
@@ -102,17 +67,13 @@ data_t SersicModel::getValue(const Point2D<data_t>& P) const {
   
   data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm; // shear changes size
   if (radius < limit)
-    return exp(-b*(pow(radius/Re,1./n) -1)) - flux_limit;
+    return flux_scale*(exp(-b*(pow(radius/Re,1./n) -1)) - flux_limit);
   else
     return 0;
 }
 
-data_t SersicModel::getFlux() const {
-  return flux;
-}
-
 // ##### Moffat Model ##### //
-MoffatModel::MoffatModel(data_t beta, data_t FWHM, complex<data_t> eps, const Point2D<data_t>& centroid) :
+MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const Point2D<data_t>& centroid) :
   beta(beta), eps(eps) {
   SourceModel::centroid = centroid;
   alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
@@ -128,7 +89,9 @@ MoffatModel::MoffatModel(data_t beta, data_t FWHM, complex<data_t> eps, const Po
   // subtract level at R such that the profile vanishes there
   flux -= M_PI*gsl_pow_2(limit)*flux_limit;
   // correct for shearing
-  flux /= shear_norm;
+  flux *= shear_norm;
+  // compute rescaling factor for flux
+  flux_scale = flux_eff/flux;
 }
 
 data_t MoffatModel::getValue(const Point2D<data_t>& P) const {
@@ -139,51 +102,53 @@ data_t MoffatModel::getValue(const Point2D<data_t>& P) const {
   
   data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm;
   if (radius < limit)
-    return pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit;
+    return flux_scale*(pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit);
   else
     return 0;
 }
 
-data_t MoffatModel::getFlux() const {
-  return flux;
-}
-
 
 // ##### Interpolated Model ##### //
-InterpolatedModel::InterpolatedModel(const Object& obj, int order) : 
-  obj(obj), order(order) {
+InterpolatedModel::InterpolatedModel(const Image<data_t>& im, data_t flux, const Point2D<data_t>& reference, int order) : 
+  im(im), order(order) {
   // define area of support
-  support.ll = Point2D<data_t>(obj.grid.getStartPosition(0),obj.grid.getStartPosition(1));
-  support.tr = Point2D<data_t>(obj.grid.getStopPosition(0),obj.grid.getStopPosition(1));
+  // no need to defined centroid, as our reference is left-lower corner
+  SourceModel::support.ll = reference;
+  SourceModel::support.tr = Point2D<data_t>(im.getSize(0) + reference(0),im.getSize(1)+ reference(1));
+  // compute total flux from pixel values
+  data_t f = 0;
+  for (unsigned long i =0; i < im.size(); i++)
+    f += im(i);
+  // compute rescaling factor for flux
+  flux_scale = flux/f;
 }
 
 data_t InterpolatedModel::getValue(const Point2D<data_t>& P) const {
   switch (order) {
   case 1: // simple bi-linear interpolation
-    return obj.interpolate(P(0)-centroid(0),P(1)-centroid(1));
+    return flux_scale*im.interpolate(P(0)-SourceModel::support.ll(0),P(1)-SourceModel::support.ll(1));
   case -3: // bi-cubic interpolation
-    return Interpolation::bicubic(obj,P(0)-centroid(0),P(1)-centroid(1));
+    return flux_scale*Interpolation::bicubic(im,P(0)-SourceModel::support.ll(0),P(1)-SourceModel::support.ll(1));
   default: // nth-order polynomial interpolation
-    return Interpolation::polynomial(obj,P(0)-centroid(0),P(1)-centroid(1),order);
+    return flux_scale*Interpolation::polynomial(im,P(0)-SourceModel::support.ll(0),P(1)-SourceModel::support.ll(1),order);
   }
 }
 
-data_t InterpolatedModel::getFlux() const {
-  return obj.flux;
-}
-
 // ##### Shapelet Model ##### //
-ShapeletModel::ShapeletModel(const ShapeletObject& sobj) : sobj(sobj) {
+ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point2D<data_t>& centroid) : 
+  sobj(sobj), scentroid(sobj.getCentroid()) {
+  SourceModel::centroid = centroid;
   // define area of support
+  // adjust for new location of centroid
   const Grid& grid = sobj.getGrid();
-  support.ll = Point2D<data_t>(grid.getStartPosition(0),grid.getStartPosition(1));
-  support.tr = Point2D<data_t>(grid.getStopPosition(0),grid.getStopPosition(1));
+  support.ll = Point2D<data_t>(grid.getStartPosition(0)-scentroid(0)+centroid(0),grid.getStartPosition(1)-scentroid(1)+centroid(1));
+  support.tr = Point2D<data_t>(grid.getStopPosition(0)-scentroid(0)+centroid(0),grid.getStopPosition(1)-scentroid(1)+centroid(1));
+  flux_scale = flux/sobj.getShapeletFlux();
 }
 
 data_t ShapeletModel::getValue(const Point2D<data_t>& P) const {
-  return sobj.eval(centroid);
-}
-
-data_t ShapeletModel::getFlux() const {
-  return sobj.getShapeletFlux();
+  Point2D<data_t> P_ = P;
+  P_ -= centroid;
+  P_ += scentroid;
+  return flux_scale*sobj.eval(P_);
 }
