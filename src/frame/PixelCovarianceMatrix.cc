@@ -84,15 +84,15 @@ data_t PixelCovarianceMatrix::operator()(unsigned int i, unsigned int j) const {
 
 
 void PixelCovarianceMatrix::setCovarianceMatrix(const CorrelationFunction& xi, const Grid& grid) {
-  const std::map<Point2D<grid_t>, data_t>& corr = xi.getCorrelationFunction();
-  const std::map<Point2D<grid_t>, data_t>& sigma = xi.getCorrelationError();
+  const std::map<Point2D<int>, data_t>& corr = xi.getCorrelationFunction();
+  const std::map<Point2D<int>, data_t>& sigma = xi.getCorrelationError();
   uint N1 = grid.getSize(0);
   bandwidth = corr.size();
   offset.resize(bandwidth);
   entry.resize(bandwidth);
   uint band = 0;
 
-  for (std::map<Point2D<grid_t>, data_t>::const_iterator iter = corr.begin(); iter !=corr.end(); iter++) {
+  for (std::map<Point2D<int>, data_t>::const_iterator iter = corr.begin(); iter !=corr.end(); iter++) {
     offset(band) = (iter->first)(0) + (iter->first)(1)*N1;
     entry(band) = iter->second;
     band++;

@@ -80,7 +80,7 @@ class Image : public NumVector<T> {
     return *this;
   }
   /// Slice a sub-image, specified by edge-points \p P1 and \p P2.
-  void slice(Image<T>& sub, const Point2D<grid_t>& P1, const Point2D<grid_t>& P2) const {
+  void slice(Image<T>& sub, const Point2D<int>& P1, const Point2D<int>& P2) const {
     int xmin = P1(0), xmax = P2(0), ymin = P1(1), ymax = P2(1);
     int axis0 = xmax-xmin;
     sub.resize((xmax-xmin)*(ymax-ymin));

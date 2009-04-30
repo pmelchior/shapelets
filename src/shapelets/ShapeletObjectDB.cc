@@ -201,7 +201,7 @@ ShapeletObjectList ShapeletObjectDB::load(std::string where_clause) {
     tmp.setBeta(boost::lexical_cast<data_t>(row[2]));
     tmp.chisquare = boost::lexical_cast<data_t>(row[3]);
     tmp.flags = bitset<16>(boost::lexical_cast<unsigned long>(row[4]));
-    tmp.model.grid = Grid(boost::lexical_cast<grid_t>(row[5]),boost::lexical_cast<grid_t>(row[6]),boost::lexical_cast<grid_t>(row[7]),boost::lexical_cast<grid_t>(row[8]));
+    tmp.model.grid = Grid(boost::lexical_cast<int>(row[5]),boost::lexical_cast<int>(row[6]),boost::lexical_cast<int>(row[7]),boost::lexical_cast<int>(row[8]));
     tmp.xcentroid(0) = boost::lexical_cast<data_t>(row[9]);
     tmp.xcentroid(1) = boost::lexical_cast<data_t>(row[10]);
     tmp.basefilename = string(row[11]);

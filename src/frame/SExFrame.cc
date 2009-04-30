@@ -126,17 +126,18 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
     vector<uint> nearby_objects;
 
+    Point2D<int> P;
     for (int i =0; i < O.size(); i++) {
       // old coordinates derived from new pixel index i
       int axis0 = xmax-xmin;
-      int x = i%axis0 + xmin;
-      int y = i/axis0 + ymin;
-      uint j = SExFrame::grid.getPixel(x,y);
+      P(0) = i%axis0 + xmin;
+      P(1) = i/axis0 + ymin;
+      uint j = SExFrame::grid.getPixel(P);
 
       // if pixel is out of image region, fill noise from default values
       // since we fill same noise into data and into bgrms
       // the overall chi^2 (normalized by bg_rms) is unaffected by this region
-      if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
+      if (P(0) < 0 || P(1) < 0 || P(0) >= axsize0 || P(1) >= axsize1) {
 	O(i) = gsl_ran_gaussian (r, bg_rms);
 	O.segMap(i) = 0;
 	if (weight.size()!=0) 

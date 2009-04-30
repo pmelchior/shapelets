@@ -38,7 +38,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   // recover object information from header keywords
   status = IO::readFITSKeywordString(fptr,"BASEFILE",Image<data_t>::basefilename);
   status = IO::readFITSKeyword(fptr,"ID",id);
-  grid_t xmin,ymin;
+  int xmin,ymin;
   status = IO::readFITSKeyword(fptr,"XMIN",xmin);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
   Image<data_t>::grid = Grid(xmin,ymin,grid.getSize(0),grid.getSize(1));
@@ -353,7 +353,7 @@ void Object::convolve(Object& kernel) {
     }
     int xmin = (N1-N)/2, xmax = N1 + (N-N1)/2, ymin = (M1-M)/2, ymax = M1+ (M-M1)/2;
     Image<data_t> sub(xmax-xmin,ymax-ymin);
-    kernel.slice(sub,Point2D<grid_t>(xmin,ymin),Point2D<grid_t>(xmax,ymax));
+    kernel.slice(sub,Point2D<int>(xmin,ymin),Point2D<int>(xmax,ymax));
     kernel = sub;
     // compute new kernel::fourier
     kernel.computeFFT();

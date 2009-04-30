@@ -379,15 +379,16 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     vector<uint> nearby_objects;
 
     // lop over all object pixels
+    Point2D<int> P;
     for (int i =0; i < O.size(); i++) {
       // old coordinates derived from new pixel index i
       int axis0 = xmax-xmin;
-      int x = i%axis0 + xmin;
-      int y = i/axis0 + ymin;
-      uint j = Frame::grid.getPixel(x,y);
+      P(0) = i%axis0 + xmin;
+      P(1) = i/axis0 + ymin;
+      ulong j = Frame::grid.getPixel(P);
 
       // if pixel is out of image region, fill noise
-      if (x < 0 || y < 0 || x >= axsize0 || y >= axsize1) {
+      if (P(0) < 0 || P(1) < 0 || P(0) >= axsize0 || P(1) >= axsize1) {
 	O(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
 	O.segMap(i) = 0;
 	if (weight.size()!=0) 

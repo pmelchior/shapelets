@@ -21,9 +21,9 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
     Base_vector::operator()(1) = x1;
   }
   /// Copy constructor from base class.
-  template <class R> Point2D (boost::numeric::ublas::vector_expression<R>& r) : Base_vector(r) { }
+  template <class R> Point2D (const boost::numeric::ublas::vector_expression<R>& r) : Base_vector(r) { }
   /// Copy operator from base class.
-  template <class R> void operator=(boost::numeric::ublas::vector_expression<R>& r) {
+  template <class R> void operator=(const boost::numeric::ublas::vector_expression<R>& r) {
     Base_vector::operator=(r);
   }
   /// Copy operator from base-class.

@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
   obj.computeCentroid();
   if (sidelength.isSet()) {
     int L = sidelength.getValue();
-    Point2D<grid_t> p1,p2;
+    Point2D<int> p1,p2;
     p1(0) = obj.centroid(0) - L/2;
     p1(1) = obj.centroid(1) - L/2;
     p2(0) = obj.centroid(0) + L/2;

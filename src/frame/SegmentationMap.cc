@@ -32,9 +32,10 @@ void SegmentationMap::findObjectPixels(std::set<ulong>& pixelset, ulong objectnr
   const NumVector<long>& segMap = *this;
   long axsize0 = Image<long>::grid.getSize(0), axsize1 = Image<long>::grid.getSize(1);
   pixelset.clear();
-  for (long y = GSL_MAX_INT(ymin,0); y <= GSL_MIN_INT(ymax,axsize1-1); y++) {
-    for (long x = GSL_MAX_INT(xmin,0); x <= GSL_MIN_INT(xmax,axsize0-1); x++) {
-      ulong j = Image<long>::grid.getPixel(x,y);
+  Point2D<int> P;
+  for (P(1) = GSL_MAX_INT(ymin,0); P(1) <= GSL_MIN_INT(ymax,axsize1-1); P(1)++) {
+    for (P(0) = GSL_MAX_INT(xmin,0); P(0) <= GSL_MIN_INT(xmax,axsize0-1); P(0)++) {
+      ulong j = Image<long>::grid.getPixel(P);
       if (segMap(j) == objectnr)
 	pixelset.insert(j);
     }
@@ -71,9 +72,10 @@ void SegmentationMap::setSegmentBorder(int tag, long xmin, long xmax, long ymin,
 void SegmentationMap::cleanSegMapArea(long xmin, long xmax, long ymin, long ymax) {
   NumVector<long>& segMap = *this;
   long axsize0 = SegmentationMap::getSize(0), axsize1 = SegmentationMap::getSize(1);
-  for (long y = GSL_MAX_INT(ymin,0); y <= GSL_MIN_INT(ymax,axsize1-1); y++) {
-    for (long x = GSL_MAX_INT(xmin,0); x <= GSL_MIN_INT(xmax,axsize0-1); x++) {
-      ulong j = Image<long>::grid.getPixel(x,y);
+  Point2D<int> P;
+  for (P(1) = GSL_MAX_INT(ymin,0); P(1) <= GSL_MIN_INT(ymax,axsize1-1); P(1)++) {
+    for (P(0) = GSL_MAX_INT(xmin,0); P(0) <= GSL_MIN_INT(xmax,axsize0-1); P(0)++) {
+      ulong j = Image<long>::grid.getPixel(P);
       segMap(j) = 0;
     }
   }

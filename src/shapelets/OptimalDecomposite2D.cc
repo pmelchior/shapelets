@@ -475,11 +475,11 @@ void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals() {
   const CorrelationFunction& xi = (Decomposite2D::obj).xi;
   
   CorrelationFunction xi_res(Decomposite2D::getResiduals(),0,xi.getMaxLength());
-  const std::map<Point2D<grid_t>, data_t>& corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(), corr_res = xi_res.getCorrelationFunction(), sigma_res = xi_res.getCorrelationError();
+  const std::map<Point2D<int>, data_t>& corr = xi.getCorrelationFunction(), sigma = xi.getCorrelationError(), corr_res = xi_res.getCorrelationFunction(), sigma_res = xi_res.getCorrelationError();
 
   comp_corr = 0;
   comp_corr_string = "";
-  for (std::map<Point2D<grid_t>, data_t>::const_iterator iter = corr.begin(); iter != corr.end(); iter++) {
+  for (std::map<Point2D<int>, data_t>::const_iterator iter = corr.begin(); iter != corr.end(); iter++) {
     if (iter->second + sigma.find(iter->first)->second < corr_res.find(iter->first)->second - sigma_res.find(iter->first)->second) {
       comp_corr++;
       comp_corr_string += "+";
