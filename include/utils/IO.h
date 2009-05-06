@@ -1,13 +1,13 @@
-#ifndef IO_H
-#define IO_H
+#ifndef SHAPELENS_IO_H
+#define SHAPELENS_IO_H
 
 #include <fitsio.h>
 #include <iostream>
 #include <string>
 #include <map>
-#include <NumMatrix.h>
-#include <Typedef.h>
-#include <frame/Grid.h>
+#include <numla/NumMatrix.h>
+#include "../Typedef.h"
+#include "../frame/Grid.h"
 
 namespace shapelens {
 template <class T>

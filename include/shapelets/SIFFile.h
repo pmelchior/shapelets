@@ -1,15 +1,15 @@
-#ifndef SIFFILE_H
-#define SIFFILE_H
+#ifndef SHAPELENS_SIFFILE_H
+#define SHAPELENS_SIFFILE_H
 
 #include <fstream>
 #include <string>
 #include <iostream>
-#include <NumMatrix.h>
-#include <Typedef.h>
-#include <frame/Grid.h>
-#include <frame/Point2D.h>
-#include <shapelets/ShapeletObject.h>
-#include <shapelets/ShapeletObjectList.h>
+#include <numla/NumMatrix.h>
+#include "../Typedef.h"
+#include "../frame/Grid.h"
+#include "../frame/Point2D.h"
+#include "ShapeletObject.h"
+#include "ShapeletObjectList.h"
 
 namespace shapelens {
 

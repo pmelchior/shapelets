@@ -1,6 +1,6 @@
 #ifdef SHAPELETDB
 
-#include <shapelets/ShapeletObjectDB.h>
+#include "../../include/shapelets/ShapeletObjectDB.h"
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <iostream>
@@ -101,13 +101,19 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   sobj.prop.write(query,"\\n");
   query << "','";
   // for MySQL we have to convert the newline character (ASCII 10) to the string "\n"
-  // therefore we have to copy the history and replace the newlines
+  // therefore we have to copy the history and replace the newlines...
   string hist = sobj.getHistory();
   string newline = "\\n";
   string::size_type loc = hist.find(char(10),0);
   while( loc != string::npos ) {
     hist.replace(loc,1,newline,0,3);
     loc = hist.find(char(10),loc);
+  }
+  // ... and ' (ASCII 39) if they occur
+  loc = hist.find(char(39),0);
+  while( loc != string::npos ) {
+    hist.erase(loc,1);
+    loc = hist.find(char(39),loc);
   }
   query << hist << "',";
 

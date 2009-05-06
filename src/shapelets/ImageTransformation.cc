@@ -1,6 +1,6 @@
-#include <shapelets/ImageTransformation.h>
-#include <shapelets/CoefficientVector.h>
-#include <NumVector.h>
+#include "../../include/shapelets/ImageTransformation.h"
+#include "../../include/shapelets/CoefficientVector.h"
+#include <numla/NumVector.h>
 #include <math.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>

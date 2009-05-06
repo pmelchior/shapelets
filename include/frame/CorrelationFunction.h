@@ -1,12 +1,12 @@
-#ifndef CORRELATIONFUNCTION_H
-#define CORRELATIONFUNCTION_H
+#ifndef SHAPELENS_CORRELATIONFUNCTION_H
+#define SHAPELENS_CORRELATIONFUNCTION_H
 
 #include <map>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <frame/Image.h>
-#include <frame/SegmentationMap.h>
-#include <frame/Grid.h>
+#include <numla/NumVector.h>
+#include "../Typedef.h"
+#include "Image.h"
+#include "SegmentationMap.h"
+#include "Grid.h"
 
 namespace shapelens {
 /// Class for computing and storing the pixel correlation function.

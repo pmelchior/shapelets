@@ -1,10 +1,10 @@
 #ifndef SHAPELENS_SHAPES2D_H
 #define SHAPELENS_SHAPES2D_H
 
-#include <Typedef.h>
-#include <frame/Point2D.h>
 #include <list>
 #include <stdexcept>
+#include "../Typedef.h"
+#include "Point2D.h"
 
 namespace shapelens {
   /// Rectangular patch.

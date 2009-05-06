@@ -1,4 +1,4 @@
-#include <ShapeLensConfig.h>
+#include "../include/ShapeLensConfig.h"
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <fstream>

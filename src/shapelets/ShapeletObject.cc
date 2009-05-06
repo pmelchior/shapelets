@@ -1,5 +1,5 @@
-#include <shapelets/ShapeletObject.h>
-#include <shapelets/SIFFile.h>
+#include "../../include/shapelets/ShapeletObject.h"
+#include "../../include/shapelets/SIFFile.h"
 #include <stdio.h>
 #include <vector>
 #include <gsl/gsl_rng.h>

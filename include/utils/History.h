@@ -1,10 +1,10 @@
-#ifndef HISTORY_H
-#define HISTORY_H
+#ifndef SHAPELENS_HISTORY_H
+#define SHAPELENS_HISTORY_H
 
 #include <sstream>
 #include <iostream>
 #include <string>
-#include <ShapeLensConfig.h>
+#include "../ShapeLensConfig.h"
 
 namespace shapelens {
 

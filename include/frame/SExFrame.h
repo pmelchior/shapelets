@@ -1,16 +1,15 @@
-#ifndef SEXFRAME_H
-#define SEXFRAME_H
+#ifndef SHAPELENS_SEXFRAME_H
+#define SHAPELENS_SEXFRAME_H
 
 #include <vector>
 #include <list>
 #include <gsl/gsl_rng.h>
-#include <NumMatrix.h>
-#include <Typedef.h>
-#include <ShapeLensConfig.h>
-#include <frame/Grid.h>
-#include <frame/Image.h>
-#include <frame/Object.h>
-#include <frame/Catalog.h>
+#include "../Typedef.h"
+#include "../ShapeLensConfig.h"
+#include "Grid.h"
+#include "Image.h"
+#include "Object.h"
+#include "Catalog.h"
 
 namespace shapelens {
 /// Wrapper class for SExtractor.

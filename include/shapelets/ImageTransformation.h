@@ -1,15 +1,15 @@
-#ifndef IMAGETRANSFORMATION_H
-#define IMAGETRANSFORMATION_H
+#ifndef SHAPELENS_IMAGETRANSFORMATION_H
+#define SHAPELENS_IMAGETRANSFORMATION_H
 
 #include <complex.h>
 // for 3D convolution tensor
 #include <boost/multi_array.hpp>
-#include <NumMatrix.h>
-#include <NumMatrixDiagonal.h>
-#include <Typedef.h>
-#include <utils/History.h>
-#include <frame/Point2D.h>
-#include <shapelets/CoefficientVector.h>
+#include <numla/NumMatrix.h>
+#include <numla/NumMatrixDiagonal.h>
+#include "../Typedef.h"
+#include "../utils/History.h"
+#include "../frame/Point2D.h"
+#include "CoefficientVector.h"
 
 namespace shapelens {
 

@@ -1,8 +1,8 @@
-#include <ShapeLensConfig.h>
-#include <shapelets/Decomposite2D.h>
+#include "../../include/ShapeLensConfig.h"
+#include "../../include/shapelets/Decomposite2D.h"
 #include <gsl/gsl_math.h>
-#include <boost/numeric/bindings/traits/ublas_symmetric.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
+#include <numla/boost/numeric/bindings/traits/ublas_symmetric.hpp>
+#include <numla/boost/numeric/bindings/traits/ublas_vector2.hpp>
 
 using namespace shapelens;
 namespace ublas = boost::numeric::ublas;

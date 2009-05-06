@@ -1,9 +1,9 @@
-#ifndef GRID_H
-#define GRID_H
+#ifndef SHAPELENS_GRID_H
+#define SHAPELENS_GRID_H
 
 #include <math.h>
-#include <Typedef.h>
-#include <frame/Point2D.h>
+#include "../Typedef.h"
+#include "Point2D.h"
 
 namespace shapelens {
 

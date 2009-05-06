@@ -1,7 +1,7 @@
-#ifndef INDEXVECTOR_H
-#define INDEXVECTOR_H
+#ifndef SHAPELENS_INDEXVECTOR_H
+#define SHAPELENS_INDEXVECTOR_H
 
-#include <NumMatrix.h>
+#include <numla/NumMatrix.h>
 #include <map>
 
 namespace shapelens {

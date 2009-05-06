@@ -1,13 +1,13 @@
-#ifndef INTERPOLATION_H
-#define INTERPOLATION_H
+#ifndef SHAPELENS_INTERPOLATION_H
+#define SHAPELENS_INTERPOLATION_H
 
-#include <Typedef.h>
-#include <NumVector.h>
-#include <NumMatrix.h>
-#include <frame/Image.h>
+#include <numla/NumVector.h>
+#include <numla/NumMatrix.h>
 #include <gsl/gsl_sf.h>
 #include <stdexcept>
-#include <utils/Singleton.h>
+#include "../Typedef.h"
+#include "../frame/Image.h"
+#include "Singleton.h"
 
 namespace shapelens {
   // helper class: uses a singleton for matrix w in bicubic

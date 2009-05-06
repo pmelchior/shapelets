@@ -1,4 +1,4 @@
-#include <utils/MySQLDB.h>
+#include "../../include/utils/MySQLDB.h"
 #include <iostream>
 
 using namespace shapelens;

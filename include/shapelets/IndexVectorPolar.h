@@ -1,9 +1,9 @@
-#ifndef INDEXVECTORPOLAR_H
-#define INDEXVECTORPOLAR_H
+#ifndef SHAPELENS_INDEXVECTORPOLAR_H
+#define SHAPELENS_INDEXVECTORPOLAR_H
 
-#include <shapelets/IndexVector.h>
-#include <NumMatrix.h>
 #include <map>
+#include <numla/NumMatrix.h>
+#include "IndexVector.h"
 
 namespace shapelens {
 class IndexVectorPolar : public IndexVector {

@@ -1,4 +1,4 @@
-#include <lensing/LensingEstimator.h>
+#include "../../include/lensing/LensingEstimator.h"
 #include <math.h>
 #include <gsl/gsl_math.h>
 

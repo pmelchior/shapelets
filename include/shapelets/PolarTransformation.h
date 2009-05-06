@@ -1,12 +1,12 @@
-#ifndef POLARTRANSFORMATION_H
-#define POLARTRANSFORMATION_H
+#ifndef SHAPELENS_POLARTRANSFORMATION_H
+#define SHAPELENS_POLARTRANSFORMATION_H
 
 #include <gsl/gsl_sf.h>
-#include <NumVector.h>
-#include <NumMatrix.h>
-#include <Typedef.h>
-#include <frame/Grid.h>
-#include <shapelets/CoefficientVector.h>
+#include <numla/NumVector.h>
+#include <numla/NumMatrix.h>
+#include "../Typedef.h"
+#include "../frame/Grid.h"
+#include "CoefficientVector.h"
 
 namespace shapelens {
 

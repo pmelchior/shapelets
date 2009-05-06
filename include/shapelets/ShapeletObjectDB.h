@@ -1,14 +1,14 @@
 #ifdef SHAPELETDB
-#ifndef SHAPELETOBJECTDB_H
-#define SHAPELETOBJECTDB_H
+#ifndef SHAPELENS_SHAPELETOBJECTDB_H
+#define SHAPELENS_SHAPELETOBJECTDB_H
 
 #include <string>
-#include <Typedef.h>
-#include <shapelets/ShapeletObject.h>
-#include <shapelets/ShapeletObjectList.h>
+#include "../Typedef.h"
+#include "ShapeletObject.h"
+#include "ShapeletObjectList.h"
 
 #if SHAPELETDB==MySQL
-#include <utils/MySQLDB.h>
+#include "../utils/MySQLDB.h"
 #endif
 
 namespace shapelens {

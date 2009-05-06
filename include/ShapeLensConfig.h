@@ -1,8 +1,8 @@
-#ifndef SHAPELETCONFIG_H
-#define SHAPELETCONFIG_H
+#ifndef SHAPELENS_CONFIG_H
+#define SHAPELENS_CONFIG_H
 
 #include <string>
-#include <Typedef.h>
+#include "Typedef.h"
 
 namespace shapelens {
 /// Class for ShapeLens++ configuration parameters.

@@ -1,8 +1,8 @@
 #ifdef HAS_FFTW3
 
-#include <utils/FFT.h>
-#include <utils/IO.h>
-#include <frame/Object.h>
+#include <shapelens/utils/FFT.h>
+#include <shapelens/utils/IO.h>
+#include <shapelens/frame/Object.h>
 #include <tclap/CmdLine.h> 
 
 using namespace shapelens;

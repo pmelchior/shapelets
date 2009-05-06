@@ -1,4 +1,4 @@
-#include <ShapeLens.h>
+#include <shapelens/ShapeLens.h>
 #include <tclap/CmdLine.h>
 #include <fstream>
 

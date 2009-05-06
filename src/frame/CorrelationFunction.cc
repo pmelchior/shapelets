@@ -1,4 +1,4 @@
-#include <frame/CorrelationFunction.h>
+#include "../../include/frame/CorrelationFunction.h"
 #include <gsl/gsl_math.h>
 
 typedef unsigned int uint;

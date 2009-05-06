@@ -1,4 +1,4 @@
-#include <shapelets/ShapeletObjectList.h>
+#include "../../include/shapelets/ShapeletObjectList.h"
 #include <fstream>
 #include <list>
 #include <cmath>

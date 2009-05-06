@@ -1,10 +1,10 @@
-#ifndef MYSQLDB_H
-#define MYSQLDB_H
+#ifndef SHAPELENS_MYSQLDB_H
+#define SHAPELENS_MYSQLDB_H
 
 #if SHAPELETDB==MySQL
 
 #include <string>
-#include <mysql.h>
+#include <mysql/mysql.h>
 
 namespace shapelens {  
 /// MySQLDB result class.

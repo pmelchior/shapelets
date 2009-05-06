@@ -1,13 +1,13 @@
-#ifndef IMAGE_H
-#define IMAGE_H
+#ifndef SHAPELENS_IMAGE_H
+#define SHAPELENS_IMAGE_H
 
 #include <fitsio.h>
 #include <string>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <utils/History.h>
-#include <utils/IO.h>
-#include <frame/Grid.h>
+#include <numla/NumVector.h>
+#include "../Typedef.h"
+#include "../utils/History.h"
+#include "../utils/IO.h"
+#include "Grid.h"
 
 namespace shapelens {
 

@@ -1,4 +1,4 @@
-#include <shapelets/Shapelets1D.h>
+#include "../../include/shapelets/Shapelets1D.h"
 #include <gsl/gsl_sf.h>
 #include <gsl/gsl_sf_erf.h>
 #include <gsl/gsl_sf_exp.h>

@@ -1,6 +1,6 @@
-#include <shapelets/Composite2D.h>
-#include <shapelets/Shapelets2D.h>
-#include <ShapeLensConfig.h>
+#include "../../include/shapelets/Composite2D.h"
+#include "../../include/shapelets/Shapelets2D.h"
+#include "../../include/ShapeLensConfig.h"
 // for factorial and other math functions
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf.h>

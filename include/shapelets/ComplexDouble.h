@@ -1,8 +1,8 @@
-#ifndef COMPLEXDOUBLE_H
-#define COMPLEXDOUBLE_H
+#ifndef SHAPELENS_COMPLEXDOUBLE_H
+#define SHAPELENS_COMPLEXDOUBLE_H
 
 #include <complex>
-#include <Typedef.h>
+#include "../Typedef.h"
 
 namespace shapelens {
 

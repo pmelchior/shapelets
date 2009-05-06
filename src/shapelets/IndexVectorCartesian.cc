@@ -1,4 +1,4 @@
-#include <shapelets/IndexVectorCartesian.h>
+#include "../../include/shapelets/IndexVectorCartesian.h"
 
 using namespace shapelens;
 using namespace std;

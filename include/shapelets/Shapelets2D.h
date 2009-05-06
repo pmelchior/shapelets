@@ -1,10 +1,10 @@
-#ifndef SHAPELETS2D_H
-#define SHAPELETS2D_H
+#ifndef SHAPELENS_SHAPELETS2D_H
+#define SHAPELENS_SHAPELETS2D_H
 
-#include <Typedef.h>
-#include <frame/Point2D.h>
-#include <frame/Grid.h>
-#include <shapelets/Shapelets1D.h>
+#include "../Typedef.h"
+#include "../frame/Point2D.h"
+#include "../frame/Grid.h"
+#include "Shapelets1D.h"
 
 namespace shapelens {
 //

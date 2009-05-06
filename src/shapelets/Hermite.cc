@@ -1,4 +1,4 @@
-#include <shapelets/Hermite.h>
+#include "../../include/shapelets/Hermite.h"
 
 using namespace shapelens;
 using namespace boost::numeric::ublas;

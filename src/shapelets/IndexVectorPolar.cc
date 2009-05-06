@@ -1,4 +1,4 @@
-#include <shapelets/IndexVectorPolar.h>
+#include "../../include/shapelets/IndexVectorPolar.h"
 
 using namespace shapelens;
 using namespace std;

@@ -1,17 +1,16 @@
-#ifndef FRAME_H
-#define FRAME_H
+#ifndef SHAPELENS_FRAME_H
+#define SHAPELENS_FRAME_H
 
 #include <vector>
 #include <set>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <ShapeLensConfig.h>
-#include <utils/tree.hh>
-#include <frame/Grid.h>
-#include <frame/Image.h>
-#include <frame/Object.h>
-#include <frame/SegmentationMap.h>
-#include <frame/Catalog.h>
+#include "../Typedef.h"
+#include "../ShapeLensConfig.h"
+#include "../utils/tree.hh"
+#include "Grid.h"
+#include "Image.h"
+#include "Object.h"
+#include "SegmentationMap.h"
+#include "Catalog.h"
 
 namespace shapelens {
 /// Image preprocessing class.

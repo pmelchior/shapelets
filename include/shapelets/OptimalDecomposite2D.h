@@ -1,15 +1,15 @@
-#ifndef OPTIMAL_DECOMPOSITE2D_H
-#define OPTIMAL_DECOMPOSITE2D_H
+#ifndef SHAPELENS_OPTIMALDECOMPOSITE2D_H
+#define SHAPELENS_OPTIMALDECOMPOSITE2D_H
 
 #include <gsl/gsl_vector.h>
 #include <map>
 #include <bitset>
-#include <NumMatrix.h>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <frame/Grid.h>
-#include <frame/Object.h>
-#include <shapelets/Decomposite2D.h>
+#include <numla/NumMatrix.h>
+#include <numla/NumVector.h>
+#include "../Typedef.h"
+#include "../frame/Grid.h"
+#include "../frame/Object.h"
+#include "Decomposite2D.h"
 
 namespace shapelens {
 

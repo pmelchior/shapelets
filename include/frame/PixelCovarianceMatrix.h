@@ -1,11 +1,11 @@
-#ifndef PIXELCOVARIANCEMATRIX_H
-#define PIXELCOVARIANCEMATRIX_H
+#ifndef SHAPELENS_PIXELCOVARIANCEMATRIX_H
+#define SHAPELENS_PIXELCOVARIANCEMATRIX_H
 
-#include <NumVector.h>
-#include <NumMatrix.h>
-#include <Typedef.h>
-#include <frame/SegmentationMap.h>
-#include <frame/CorrelationFunction.h>
+#include <numla/NumVector.h>
+#include <numla/NumMatrix.h>
+#include "../Typedef.h"
+#include "SegmentationMap.h"
+#include "CorrelationFunction.h"
 
 namespace shapelens {
 

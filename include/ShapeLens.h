@@ -1,19 +1,19 @@
 #ifndef SHAPELENS_H
 #define SHAPELENS_H
 
-#include <Typedef.h>
-#include <ShapeLensConfig.h>
+#include "Typedef.h"
+#include "ShapeLensConfig.h"
 
-#include <frame/Frame.h>
-#include <frame/SExFrame.h>
+#include "frame/Frame.h"
+#include "frame/SExFrame.h"
 
-#include <shapelets/ShapeletObject.h>
-#include <shapelets/SIFFile.h>
-#include <shapelets/ShapeletObjectList.h>
-#include <shapelets/ShapeletObjectDB.h>
+#include "shapelets/ShapeletObject.h"
+#include "shapelets/SIFFile.h"
+#include "shapelets/ShapeletObjectList.h"
+#include "shapelets/ShapeletObjectDB.h"
 
-#include <lensing/LensingEstimator.h>
-#include <modelfit/SourceModel.h>
+#include "lensing/LensingEstimator.h"
+#include "modelfit/SourceModel.h"
 
 /// Namespace for ShapeLens++
 namespace shapelens {

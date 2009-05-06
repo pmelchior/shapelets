@@ -1,11 +1,11 @@
-#ifndef SHAPELETOBJECTLIST_H
-#define SHAPELETOBJECTLIST_H
+#ifndef SHAPELENS_SHAPELETOBJECTLIST_H
+#define SHAPELENS_SHAPELETOBJECTLIST_H
 
 #include <vector>
 #include <string>
 #include <boost/shared_ptr.hpp>
-#include <Typedef.h>
-#include <shapelets/ShapeletObject.h>
+#include "../Typedef.h"
+#include "ShapeletObject.h"
 
 namespace shapelens {
 

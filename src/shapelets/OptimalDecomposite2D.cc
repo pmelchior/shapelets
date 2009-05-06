@@ -1,7 +1,7 @@
-#include <ShapeLensConfig.h>
-#include <shapelets/OptimalDecomposite2D.h>
-#include <shapelets/CoefficientVector.h>
-#include <shapelets/ImageTransformation.h>
+#include "../../include/ShapeLensConfig.h"
+#include "../../include/shapelets/OptimalDecomposite2D.h"
+#include "../../include/shapelets/CoefficientVector.h"
+#include "../../include/shapelets/ImageTransformation.h"
 #include <math.h>
 #include <time.h>
 #include <iomanip>

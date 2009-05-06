@@ -1,13 +1,13 @@
-#ifndef FFT_H
-#define FFT_H
+#ifndef SHAPELENS_FFT_H
+#define SHAPELENS_FFT_H
 
 #ifdef HAS_FFTW3
 
-#include <Typedef.h>
 #include <fftw3.h>
-#include <NumVector.h>
-#include <NumMatrix.h>
-#include <frame/Image.h>
+#include <numla/NumVector.h>
+#include <numla/NumMatrix.h>
+#include "../Typedef.h"
+#include "../frame/Image.h"
 
 namespace shapelens {
 

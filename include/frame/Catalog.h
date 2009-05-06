@@ -1,10 +1,10 @@
-#ifndef CATALOG_H
-#define CATALOG_H
+#ifndef SHAPELENS_CATALOG_H
+#define SHAPELENS_CATALOG_H
 
 #include <map>
 #include <string>
 #include <bitset>
-#include <Typedef.h>
+#include "../Typedef.h"
 
 namespace shapelens {
 

@@ -1,10 +1,10 @@
-#ifndef LENSINGESTIMATOR_H
-#define LENSINGESTIMATOR_H
+#ifndef SHAPELENS_LENSINGESTIMATOR_H
+#define SHAPELENS_LENSINGESTIMATOR_H
 
-#include <Typedef.h>
-#include <shapelets/ShapeletObject.h>
-#include <shapelets/ShapeletObjectList.h>
 #include <complex>
+#include "../Typedef.h"
+#include "../shapelets/ShapeletObject.h"
+#include "../shapelets/ShapeletObjectList.h"
 
 namespace shapelens {
 

@@ -1,5 +1,5 @@
-#include <utils/IO.h>
-#include <frame/Point3D.h>
+#include "../../include/utils/IO.h"
+#include "../../include/frame/Point3D.h"
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>

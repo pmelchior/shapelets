@@ -4,9 +4,6 @@ LIBPATH = ./lib/$(SUBDIR)
 PROGSRCPATH = ./progs
 LIBNAME = shapelens
 
-NUMLAPATH = $(ITALIBSPATH)/include/numla
-ATLASLIBPATH = $(ITALIBSPATH)/lib/$(SUBDIR)
-
 SHAPELETSSRCPATH = $(SRCPATH)/shapelets
 SHAPELETSINCLPATH = $(INCLPATH)/shapelets
 SHAPELETSSRC = $(wildcard $(SHAPELETSSRCPATH)/*.cc)
@@ -42,14 +39,27 @@ PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
 HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(MODELFITINCLPATH)/*.h) $(wildcard $(UTILSINCLPATH)/*.h)
 
+# which OS
+UNAME := $(shell uname)
+
 CC = g++
-CFLAGS = -ansi -g $(SPECIALFLAGS) -DBIG_JOINS=1 -DSHAPELETDB=MySQL -DHAS_FFTW3 -I$(INCLPATH)  -I/usr/include/mysql -I$(NUMLAPATH)
-CFLAG_LIBS = -I$(HOME)/include -L$(ATLASLIBPATH) -L$(LIBPATH)
+#compilation flags
+CFLAGS = -ansi -g $(SPECIALFLAGS) -DBIG_JOINS=1 -DSHAPELETDB=MySQL -DHAS_FFTW3
+ifneq ($(UNAME),Linux)
+	CFLAGS = $(CFLAGS) -bind_at_load
+endif
+#CFLAG_LIBS = -L$(LIBPATH)
 LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio  -lfftw3 -lmysqlclient
 
 AR = ar
 ARFLAGS = -sr
-SHAREDFLAGS = -shared -fPIC
+ifeq ($(UNAME),Linux)
+	SHAREDFLAGS = -shared -fPIC 
+	LIBEXT = so
+else
+	SHAREDFLAGS = -dynamiclib -fPIC
+	LIBEXT = dylib
+endif
 
 .DEFAULT: all
 
@@ -57,48 +67,50 @@ SHAREDFLAGS = -shared -fPIC
 
 all: lib shared
 
-clean:
-	rm -f $(LIBPATH)/*
+clean: 
+	rm -f $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+	rm -f $(LIBPATH)/lib$(LIBNAME).a
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)	
 
 cleanshared:
-	rm -f $(LIBPATH)/lib$(LIBNAME).so
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 cleanshapelets:
 	rm -f $(SHAPELETSOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
-	rm -f $(LIBPATH)/lib$(LIBNAME).so
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 cleanlensing:
 	rm -f $(LENSINGOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
-	rm -f $(LIBPATH)/lib$(LIBNAME).so
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 cleanframe:
 	rm -f $(FRAMEOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
-	rm -f $(LIBPATH)/lib$(LIBNAME).so
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 cleanmodelfit:
 	rm -f $(MODELFITOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
-	rm -f $(LIBPATH)/lib$(LIBNAME).so
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 cleancommon:
 	rm -f $(COMMONOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
-	rm -f $(LIBPATH)/lib$(LIBNAME).so
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 cleanprogs:
 	rm -f $(PROGSOBJECTS)
 
 lib: $(LIBPATH)/lib$(LIBNAME).a
 
-shared: $(LIBPATH)/lib$(LIBNAME).so
+shared: $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 install: lib shared
 	mkdir -p $(ITALIBSLIBPATH)
 	cp $(LIBPATH)/lib$(LIBNAME).a $(ITALIBSLIBPATH)
-	cp $(LIBPATH)/lib$(LIBNAME).so $(ITALIBSLIBPATH)
+	cp $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $(ITALIBSLIBPATH)
 	mkdir  -p $(ITALIBSPATH)/include/$(LIBNAME)
 	cd $(INCLPATH) && find . -type f -name '*.h' -exec  cp --parents {} $(ITALIBSPATH)/include/$(LIBNAME)/ \; && cd ../
 	mkdir -p $(PROGPATH)
@@ -111,8 +123,13 @@ docs: $(HEADERS)
 $(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	$(AR) $(ARFLAGS) $@ $?
 
-$(LIBPATH)/lib$(LIBNAME).so: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+ifeq ($(UNAME),Linux)
+$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	$(CC) $(SHAREDFLAGS) -o $@ $?
+else
+$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+	$(CC) $(SHAREDFLAGS) $(CFLAG_LIBS) -o $@ $? $(LIBS)
+endif
 
 $(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@

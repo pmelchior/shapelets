@@ -1,4 +1,4 @@
-#include <frame/PixelCovarianceMatrix.h>
+#include "../../include/frame/PixelCovarianceMatrix.h"
 #include <map>
 #include <vector>
 #include <gsl/gsl_math.h>

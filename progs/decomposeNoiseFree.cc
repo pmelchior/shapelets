@@ -1,4 +1,4 @@
-#include <ShapeLens.h>
+#include <shapelens/ShapeLens.h>
 #include <tclap/CmdLine.h>
 
 using namespace shapelens;
@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
   TCLAP::ValueArg<int> sidelength("L","sidelength","Sidelength of object's box",false,100,"int", cmd);
   TCLAP::ValueArg<data_t> noise_rms("r","noise_rms","RMS of noise for normalizing chi2",false,1e-10,"data_t",cmd);
   TCLAP::ValueArg<int> nmax("n","n_max","Maximum shapelet order",false,24,"int",cmd);
-  TCLAP::ValueArg<std::string> config("c","config","ShapeLens configuration file",false,"","string", cmd);
+  TCLAP::ValueArg<std::string> config("c","config","shapelens/ShapeLens configuration file",false,"","string", cmd);
   cmd.parse(argc,argv);
   
   // if a configuration file is provide, use it

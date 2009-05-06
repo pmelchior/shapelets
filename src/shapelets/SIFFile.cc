@@ -1,6 +1,6 @@
-#include <shapelets/SIFFile.h>
-#include <utils/IO.h>
-#include <ShapeLensConfig.h>
+#include "../../include/shapelets/SIFFile.h"
+#include "../../include/utils/IO.h"
+#include "../../include/ShapeLensConfig.h"
 #include <bitset>
 #include <fstream>
 

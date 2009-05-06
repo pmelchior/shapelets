@@ -1,6 +1,6 @@
 // the central header file for shapelet related work.
 // you will need this almost always when working with the 'shapelens' library.
-#include <ShapeLens.h>
+#include <shapelens/ShapeLens.h>
 #include <tclap/CmdLine.h>
 
 using namespace shapelens;
@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   TCLAP::CmdLine cmd("Decompose FITS file into shapelets", ' ', "0.5");
   TCLAP::UnlabeledValueArg<std::string> input("file","FITS file to analyze",true,"","string", cmd);
   TCLAP::ValueArg<std::string> prefix("p","prefix","Prefix of SIF files",true,"","string", cmd);
-  TCLAP::ValueArg<std::string> config("c","config","ShapeLens configuration file",false,"","string", cmd);
+  TCLAP::ValueArg<std::string> config("c","config","shapelens/ShapeLens configuration file",false,"","string", cmd);
   TCLAP::ValueArg<std::string> list("l","list","Name of file which lists the saved SIF files",false,"","string", cmd);
   TCLAP::ValueArg<std::string> catalog("C","catalog","Name of catalog file (saved as ASCII file)",false,"","string",cmd);
   TCLAP::ValueArg<std::string> segmap("s","segmap","Name of segmentation map (stored as FITS file)",false,"","string", cmd);

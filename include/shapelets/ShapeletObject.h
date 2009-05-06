@@ -1,19 +1,19 @@
-#ifndef SHAPELETOBJECT_H
-#define SHAPELETOBJECT_H
+#ifndef SHAPELENS_SHAPELETOBJECT_H
+#define SHAPELENS_SHAPELETOBJECT_H
 
 #include <fstream>
 #include <string>
 #include <bitset>
-#include <NumMatrix.h>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <ShapeLensConfig.h>
-#include <utils/Property.h>
-#include <frame/Object.h>
-#include <shapelets/Composite2D.h>
-#include <shapelets/OptimalDecomposite2D.h>
-#include <shapelets/PolarTransformation.h>
-#include <shapelets/ImageTransformation.h>
+#include <numla/NumMatrix.h>
+#include <numla/NumVector.h>
+#include "../Typedef.h"
+#include "../ShapeLensConfig.h"
+#include "../utils/Property.h"
+#include "../frame/Object.h"
+#include "Composite2D.h"
+#include "OptimalDecomposite2D.h"
+#include "PolarTransformation.h"
+#include "ImageTransformation.h"
 
 namespace shapelens {
 

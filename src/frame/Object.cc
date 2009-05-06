@@ -1,4 +1,4 @@
-#include <frame/Object.h>
+#include "../../include/frame/Object.h"
 #include <sstream>
 #include <gsl/gsl_math.h>
 

@@ -1,10 +1,10 @@
-#ifndef HERMITE_H
-#define HERMITE_H
+#ifndef SHAPELENS_HERMITE_H
+#define SHAPELENS_HERMITE_H
 
 #include <stdio.h>
 #include <gsl/gsl_math.h>
 #include <boost/numeric/ublas/triangular.hpp>
-#include <Typedef.h>
+#include "../Typedef.h"
 
 namespace shapelens {
 

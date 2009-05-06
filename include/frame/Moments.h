@@ -1,7 +1,7 @@
-#ifndef MOMENTS_H
-#define MOMENTS_H
+#ifndef SHAPELENS_MOMENTS_H
+#define SHAPELENS_MOMENTS_H
 
-#include <Typedef.h>
+#include "../Typedef.h"
 
 namespace shapelens {
 //

@@ -1,5 +1,5 @@
-#include <modelfit/SourceModel.h>
-#include <utils/Interpolation.h>
+#include "../../include/modelfit/SourceModel.h"
+#include "../../include/utils/Interpolation.h"
 
 using namespace shapelens;
 

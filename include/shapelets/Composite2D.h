@@ -1,12 +1,12 @@
-#ifndef COMPOSITE2D_H
-#define COMPOSITE2D_H
+#ifndef SHAPELENS_COMPOSITE2D_H
+#define SHAPELENS_COMPOSITE2D_H
 
-#include <NumMatrix.h>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <frame/Image.h>
-#include <frame/Moments.h>
-#include <shapelets/CoefficientVector.h>
+#include <numla/NumMatrix.h>
+#include <numla/NumVector.h>
+#include "../Typedef.h"
+#include "../frame/Image.h"
+#include "../frame/Moments.h"
+#include "CoefficientVector.h"
 
 namespace shapelens {
 

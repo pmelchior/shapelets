@@ -1,12 +1,12 @@
-#ifndef PROPERTY_H
-#define PROPERTY_H
+#ifndef SHAPELENS_PROPERTY_H
+#define SHAPELENS_PROPERTY_H
 
-#include <Typedef.h>
 #include <vector>
 #include <map>
 #include <string>
 #include <iostream>
 #include <boost/variant.hpp>
+#include "../Typedef.h"
 
 namespace shapelens {
 /// Allowed types for usage in Property.

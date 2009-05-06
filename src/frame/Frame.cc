@@ -1,5 +1,5 @@
-#include <frame/Frame.h>
-#include <NumVectorMasked.h>
+#include "../../include/frame/Frame.h"
+#include <numla/NumVectorMasked.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_statistics.h>

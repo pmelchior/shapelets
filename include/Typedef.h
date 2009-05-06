@@ -1,5 +1,5 @@
-#ifndef TYPEDEF_H
-#define TYPEDEF_H
+#ifndef SHAPELENS_TYPEDEF_H
+#define SHAPELENS_TYPEDEF_H
 
 namespace shapelens {
 /// Floating point format for (almost) all data used in ShapeLens++.

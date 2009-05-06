@@ -1,9 +1,9 @@
-#ifndef SEGMENTATION_MAP
-#define SEGMENTATION_MAP
+#ifndef SHAPELENS_SEGMENTATION_MAP
+#define SHAPELENS_SEGMENTATION_MAP
 
 #include <set>
-#include <Typedef.h>
-#include <frame/Image.h>
+#include "../Typedef.h"
+#include "Image.h"
 
 namespace shapelens {
 

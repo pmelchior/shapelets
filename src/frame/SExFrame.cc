@@ -1,5 +1,5 @@
-#include <frame/SExFrame.h>
-#include <NumVectorMasked.h>
+#include "../../include/frame/SExFrame.h"
+#include <numla/NumVectorMasked.h>
 #include <boost/tokenizer.hpp>
 #include <fstream>
 #include <gsl/gsl_math.h>

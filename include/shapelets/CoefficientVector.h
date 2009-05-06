@@ -1,12 +1,12 @@
-#ifndef COEFFICIENTVECTOR_H
-#define COEFFICIENTVECTOR_H
+#ifndef SHAPELENS_COEFFICIENTVECTOR_H
+#define SHAPELENS_COEFFICIENTVECTOR_H
 
-#include <NumMatrix.h>
-#include <NumMatrixDiagonal.h>
-#include <NumVector.h>
-#include <Typedef.h>
-#include <shapelets/IndexVectorCartesian.h>
-#include <shapelets/IndexVectorPolar.h>
+#include <numla/NumMatrix.h>
+#include <numla/NumMatrixDiagonal.h>
+#include <numla/NumVector.h>
+#include "../Typedef.h"
+#include "../shapelets/IndexVectorCartesian.h"
+#include "../shapelets/IndexVectorPolar.h"
 
 namespace shapelens {
 

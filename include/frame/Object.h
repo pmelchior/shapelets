@@ -1,13 +1,13 @@
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef SHAPELENS_OBJECT_H
+#define SHAPELENS_OBJECT_H
 
-#include <Typedef.h>
-#include <frame/Image.h>
-#include <frame/SegmentationMap.h>
-#include <frame/PixelCovarianceMatrix.h>
-#include <frame/CorrelationFunction.h>
-#include <frame/Moments.h>
-#include <utils/FFT.h>
+#include "../Typedef.h"
+#include "Image.h"
+#include "SegmentationMap.h"
+#include "PixelCovarianceMatrix.h"
+#include "CorrelationFunction.h"
+#include "Moments.h"
+#include "../utils/FFT.h"
 #include <bitset>
 
 namespace shapelens {

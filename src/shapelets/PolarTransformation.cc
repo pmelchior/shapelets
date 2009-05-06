@@ -1,5 +1,5 @@
-#include <shapelets/PolarTransformation.h>
-#include <shapelets/CoefficientVector.h>
+#include "../../include/shapelets/PolarTransformation.h"
+#include "../../include/shapelets/CoefficientVector.h"
 
 using namespace shapelens;
 typedef complex<data_t> Complex;

@@ -1,7 +1,7 @@
-#ifndef POINT2D_H
-#define POINT2D_H
+#ifndef SHAPELENS_POINT2D_H
+#define SHAPELENS_POINT2D_H
 
-#include <boost/numeric/bindings/traits/ublas_vector.hpp>
+#include <numla/boost/numeric/bindings/traits/ublas_vector.hpp>
 
 namespace shapelens {
 

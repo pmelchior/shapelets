@@ -1,8 +1,8 @@
-#ifndef SHAPELETS1D_H
-#define SHAPELETS1D_H
+#ifndef SHAPELENS_SHAPELETS1D_H
+#define SHAPELENS_SHAPELETS1D_H
 
-#include <Typedef.h>
-#include <shapelets/Hermite.h>
+#include "../Typedef.h"
+#include "Hermite.h"
 
 namespace shapelens {
 

@@ -1,11 +1,11 @@
 #ifndef SHAPELENS_SOURCEMODEL_H
 #define SHAPELENS_SOURCEMODEL_H
 
-#include <frame/Shapes2D.h>
-#include <frame/Object.h>
-#include <shapelets/ShapeletObject.h>
 #include <boost/shared_ptr.hpp>
 #include <vector>
+#include "../frame/Shapes2D.h"
+#include "../frame/Object.h"
+#include "../shapelets/ShapeletObject.h"
 
 namespace shapelens {
 /// Base class for idealized source models.

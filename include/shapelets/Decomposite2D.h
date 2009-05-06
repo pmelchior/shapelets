@@ -1,16 +1,16 @@
-#ifndef DECOMPOSITE2D_H
-#define DECOMPOSITE2D_H
+#ifndef SHAPELENS_DECOMPOSITE2D_H
+#define SHAPELENS_DECOMPOSITE2D_H
 
 #include <string>
-#include <NumMatrix.h>
-#include <NumVector.h>
-#include <NumMatrixDiagonal.h>
-#include <Typedef.h>
-#include <frame/Point2D.h>
-#include <frame/Grid.h>
-#include <frame/Image.h>
-#include <frame/Object.h>
-#include <shapelets/Composite2D.h>
+#include <numla/NumMatrix.h>
+#include <numla/NumVector.h>
+#include <numla/NumMatrixDiagonal.h>
+#include "../Typedef.h"
+#include "../frame/Point2D.h"
+#include "../frame/Grid.h"
+#include "../frame/Image.h"
+#include "../frame/Object.h"
+#include "Composite2D.h"
 
 namespace shapelens {
 

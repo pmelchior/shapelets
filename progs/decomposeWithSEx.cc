@@ -1,4 +1,4 @@
-#include <ShapeLens.h>
+#include <shapelens/ShapeLens.h>
 #include <tclap/CmdLine.h>
 #include <fstream>
 
@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   TCLAP::CmdLine cmd("Perform shapelet decomposition of input file, save results and output shape catalog", ' ', "0.3");
   TCLAP::ValueArg<std::string> input("f","file","FITS file to analyze",true,"","string", cmd);
   TCLAP::ValueArg<std::string> prefix("p","prefix","Prefix of SIF files",true,"","string", cmd);
-  TCLAP::ValueArg<std::string> config("c","config","ShapeLens configuration file",false,"","string", cmd);
+  TCLAP::ValueArg<std::string> config("c","config","shapelens/ShapeLens configuration file",false,"","string", cmd);
   TCLAP::ValueArg<std::string> catalog("C","catalog","SExtractor catalog file",true,"","string", cmd);
   TCLAP::ValueArg<std::string> segmap("s","segmap","Name of segmentation map FITS file",true,"","string", cmd);
   TCLAP::ValueArg<std::string> weightmap("w","weightmap","Name of weight map FITS file",false,"","string", cmd);

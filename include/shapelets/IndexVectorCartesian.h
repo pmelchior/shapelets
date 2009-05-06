@@ -1,9 +1,9 @@
-#ifndef INDEXVECTORCARTESIAN_H
-#define INDEXVECTORCARTESIAN_H
+#ifndef SHAPELENS_INDEXVECTORCARTESIAN_H
+#define SHAPELENS_INDEXVECTORCARTESIAN_H
 
-#include <shapelets/IndexVector.h>
-#include <NumMatrix.h>
 #include <map>
+#include <numla/NumMatrix.h>
+#include "IndexVector.h"
 
 namespace shapelens {
 class IndexVectorCartesian : public IndexVector {
