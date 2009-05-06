@@ -1,7 +1,5 @@
 #include "../../include/utils/FFT.h"
 
-#ifdef HAS_FFTW3
-
 using namespace shapelens;
 typedef complex<data_t> Complex;
 
@@ -225,7 +223,3 @@ void FFT::conv_multiply(const FourierTransform2D& f1, const FourierTransform2D& 
     for (int j=0; j<N/2+1; j++)
       target(i,j) = f1(i,j)*f2(i,j);
 }
-
-
-
-#endif

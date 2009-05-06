@@ -81,7 +81,6 @@ class Object : public Image<data_t> {
   /// \p threshold is the minimum significance of the correlation to
   /// to be considered (reasonable value are around 2).
   void computeCorrelationFunction(data_t threshold);
-#ifdef HAS_FFTW3
   /// Compute Fourier transform Object::fourier from pixel data.
   void computeFFT();
   /// Convolve with given \p kernel.
@@ -89,7 +88,6 @@ class Object : public Image<data_t> {
   /// If this is not the case, it will be resized accordingly.
   /// Also, kernel::fourier will be computed if the present.
   void convolve(Object& kernel);
-#endif
 
 
   /// The \p id of the Object.
@@ -125,10 +123,8 @@ class Object : public Image<data_t> {
   SegmentationMap segMap;
   /// The correlation function.
   CorrelationFunction xi;
-#ifdef HAS_FFTW3
   /// The Fourier transform of the pixel data.
   FourierTransform2D fourier;
-#endif  
 };
 } // end namespace
 #endif

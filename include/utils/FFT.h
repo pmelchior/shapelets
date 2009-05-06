@@ -1,8 +1,6 @@
 #ifndef SHAPELENS_FFT_H
 #define SHAPELENS_FFT_H
 
-#ifdef HAS_FFTW3
-
 #include <fftw3.h>
 #include <numla/NumVector.h>
 #include <numla/NumMatrix.h>
@@ -86,5 +84,4 @@ class FFT {
   static void conv_multiply(const FourierTransform2D& f1, const FourierTransform2D& f2, FourierTransform2D& target);
 };
 } // end namespace
-#endif // HAS_FFTW3
 #endif // FFT_H

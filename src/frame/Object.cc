@@ -327,7 +327,6 @@ void Object::computeCorrelationFunction(data_t threshold) {
     xi = CorrelationFunction(*this,threshold);
 }
 
-#ifdef HAS_FFTW3
 void Object::computeFFT() {
   FFT::transform(*this,fourier);
 }
@@ -367,4 +366,3 @@ void Object::convolve(Object& kernel) {
   FFT::transform(fourier,*this);
   FFT::reorder(*this);
 }
-#endif

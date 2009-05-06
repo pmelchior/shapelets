@@ -44,12 +44,12 @@ UNAME := $(shell uname)
 
 CC = g++
 #compilation flags
-CFLAGS = -ansi -g $(SPECIALFLAGS) -DBIG_JOINS=1 -DSHAPELETDB=MySQL -DHAS_FFTW3
+CFLAGS = -ansi -g $(SPECIALFLAGS) -DBIG_JOINS=1 -DSHAPELETDB=MySQL
 ifneq ($(UNAME),Linux)
 	CFLAGS = $(CFLAGS) -bind_at_load
 endif
 #CFLAG_LIBS = -L$(LIBPATH)
-LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio  -lfftw3 -lmysqlclient
+LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio -lfftw3 -lmysqlclient
 
 AR = ar
 ARFLAGS = -sr

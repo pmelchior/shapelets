@@ -2,7 +2,6 @@
 
 using namespace shapelens;
 
-
 Grid::Grid() :
   N0(0),
   N1(0)
@@ -116,3 +115,4 @@ long Grid::getNeighborPixel(unsigned long pixel, unsigned char direction) const 
   else
     return getNeighborPixel(getCoords(pixel),direction);
 }
+
