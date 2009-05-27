@@ -142,7 +142,7 @@ ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const Poin
   // adjust for new location of centroid
   const Grid& grid = sobj.getGrid();
   support.ll = Point2D<data_t>(grid.getStartPosition(0)-scentroid(0)+centroid(0),grid.getStartPosition(1)-scentroid(1)+centroid(1));
-  support.tr = Point2D<data_t>(grid.getStopPosition(0)-scentroid(0)+centroid(0),grid.getStopPosition(1)-scentroid(1)+centroid(1));
+  support.tr = Point2D<data_t>(grid.getStopPosition(0)-scentroid(0)+centroid(0)-1,grid.getStopPosition(1)-scentroid(1)+centroid(1)-1);
   flux_scale = flux/sobj.getShapeletFlux();
 }
 

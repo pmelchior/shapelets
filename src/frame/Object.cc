@@ -73,11 +73,12 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
     std::string extname;
     IO::readFITSKeywordString(fptr, "EXTNAME", extname);
-    if (extname == "WEIGTH") {
+    if (extname == "WEIGHT") {
       history << " and weight map";
       Grid weightgrid;
       IO::readFITSImage(fptr, weightgrid, weight);
     } else if (extname == "CORRELATION") {
+      history << " and correlation function";
       NumMatrix<data_t> corr;
       IO::readFITSImage(fptr, corr);
       xi = CorrelationFunction(corr);
