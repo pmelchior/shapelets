@@ -103,8 +103,29 @@ void OptimalDecomposite2D::optimize() {
        else 
 	 optimalNMax = oldoptimalNMax;
      }
+     // step 5a) if chi^2 < 0 at nmax = 0: try what happens with chi2
+     // if we set the only shapelet coefficient to zero: no model = pure data
+     if (optimalNMax == 0 && optimalChiSquare < 1) {
+       history << "#" << endl << "# Testing model evidence: ";
+       CoefficientVector<data_t> coeffs = Decomposite2D::C2D.getCoeffs();
+       data_t c0 = coeffs(0);
+       coeffs(0) = 0;
+       Decomposite2D::setCoeffs(coeffs);
+       Decomposite2D::fixCoeffs(true);
+       data_t newChi2 = Decomposite2D::getChiSquare();
+       if (newChi2 < 1) {
+	 history << "model insignificant and set to zero" << endl;
+	 flags[7] = 1;
+       }
+       else { // go back to old coeffs again
+	 history << "model significant" << endl;
+	 coeffs(0) = c0;
+	 Decomposite2D::setCoeffs(coeffs);
+       }
+       Decomposite2D::fixCoeffs(false);
+     }
    }
-   // step 7) when we use the correlation function of the residuals as termination criterium
+   // step 6) when we use the correlation function of the residuals as termination criterium
    // during 2) or 3) we have found chi^2>1 but corr_res < corr.
    // search for nmax and beta such that corr_res >= corr
    else {
@@ -126,8 +147,8 @@ void OptimalDecomposite2D::optimize() {
      }
    }
  }
-  t1 = time(NULL);
-  history << "#" << endl << "# Computation time for decomposition: " << t1 - t0 << " seconds" << endl;
+ t1 = time(NULL);
+ history << "#" << endl << "# Computation time for decomposition: " << t1 - t0 << " seconds" << endl;
 }
 
 
@@ -233,16 +254,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
     // don't do this during the refinement procedure when chi^2 was already low
 
     if (step != 5) {
-      // flattening: chi^2 does improves less than sigma(chi^2)
-      if (ShapeLensConfig::ALLOW_FLATTENING && !nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
-	  bestChiSquare = chisquare = newChisquare;
-	  optimalNMax = Decomposite2D::getNMax();
-	  history << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
-	  flags[1] = 1;
-	  break;
-      }
-
-      // now decomposition get worse, not a good sign
+      // decomposition get worse, not a good sign
       // save best nmax and chi2
       if (!nmaxTrouble && newChisquare > chisquare) {
 	nmaxTrouble = 1;
@@ -289,6 +301,14 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	history << "# Returning to best fit n_max = " << optimalNMax << endl;
 	flags[3] = 1;
 	break;
+      }
+      // flattening: chi^2 does improves less than sigma(chi^2)
+      if (ShapeLensConfig::ALLOW_FLATTENING && !nmaxTrouble && fabs(newChisquare - chisquare)/increment < variance) {
+	  bestChiSquare = chisquare = newChisquare;
+	  optimalNMax = Decomposite2D::getNMax();
+	  history << "# chi^2 becomes flat. Stopping search at n_max = " << optimalNMax << "." << endl;
+	  flags[1] = 1;
+	  break;
       }
     }
     // we have to continue...
@@ -400,7 +420,7 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
     gsl_multimin_fminimizer *s = NULL;
     gsl_vector *ss, *x, *min;
-    parameters params = { *this, ShapeLensConfig::BETA_LOW, ShapeLensConfig::BETA_HIGH };
+    parameters params = { *this, betaMin, betaMax };
     gsl_multimin_function F;
 
     // define initial vertex vector
@@ -493,9 +513,6 @@ void OptimalDecomposite2D::checkCorrelationFunctionFromResiduals() {
   }
 }
 
-data_t OptimalDecomposite2D::getOptimalBeta() {
-  return optimalBeta;
-}
 data_t OptimalDecomposite2D::getOptimalChiSquare() {
   return optimalChiSquare;
 }
@@ -504,8 +521,8 @@ const bitset<8>& OptimalDecomposite2D::getDecompositionFlags() {
   return flags;
 }
 
-std::string OptimalDecomposite2D::getHistory() {
-  return history.str();
+const History& OptimalDecomposite2D::getHistory() {
+  return history;
 }
 
 

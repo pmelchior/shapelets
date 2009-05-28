@@ -93,10 +93,9 @@ Composite2D(), coeffs(Composite2D::coeffs), cov(Composite2D::cov) {
   // correctCovarianceMatrix();
 
   history.clear();
-  history.setSilent();
   history = obj.history;
-  history << optimalDecomp.getHistory();
-  history.unsetSilent();
+  history+= optimalDecomp.getHistory();
+
   // joint detection and decomposition flags to form a 16 bit set
   flags.reset();
   const bitset<8>& fitsFlags = obj.flags;

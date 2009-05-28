@@ -54,8 +54,6 @@ class OptimalDecomposite2D : private Decomposite2D {
  public:
   /// Constructor for decomposing an Object.
   OptimalDecomposite2D(const Object& obj, Composite2D& model);
-  /// Return best fit  \f$\beta\f$
-  data_t getOptimalBeta();
   /// Return best fit \f$\chi^2\f$.
   data_t getOptimalChiSquare();
   /// Return the decomposition flags.
@@ -75,7 +73,7 @@ class OptimalDecomposite2D : private Decomposite2D {
   /// - <tt>i = 7</tt>: \f$\chi^2(\beta) \bigl|_{n_{max}=2}\f$ does not have a useful minimum.
   const std::bitset<8>& getDecompositionFlags();
   /// Get the decomposition History.
-  std::string getHistory();
+  const History& getHistory();
 
 private:
   int npixels, optimalNMax;

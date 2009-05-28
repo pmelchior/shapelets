@@ -27,10 +27,16 @@ class History {
     silent = h.silent;
   }
   /// Copy operator.
-  void operator=(const History& h) {
+  History& operator=(const History& h) {
     s.clear();
     s << h.s.str();
     silent = h.silent;
+    return *this;
+  }
+  /// Addition operator.
+  History& operator+=(const History& h) {
+    s << h.s.str();
+    return *this;
   }
   /// Overloaded operator<<.
   /// With this operator, History behaves like a std::ostringstream.
