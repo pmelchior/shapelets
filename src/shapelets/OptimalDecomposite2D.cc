@@ -115,6 +115,7 @@ void OptimalDecomposite2D::optimize() {
        data_t newChi2 = Decomposite2D::getChiSquare();
        if (newChi2 < 1) {
 	 history << "model insignificant and set to zero" << endl;
+	 Decomposite2D::C2D.setCovarianceMatrix(NumMatrix<data_t>(1,1));
 	 flags[7] = 1;
        }
        else { // go back to old coeffs again
