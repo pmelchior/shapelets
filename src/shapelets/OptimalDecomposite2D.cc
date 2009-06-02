@@ -59,7 +59,7 @@ void OptimalDecomposite2D::optimize() {
     Decomposite2D::setNMax(Decomposite2D::getNMax()+2);
     status = findOptimalBeta(1);
     if (status != 0) {
-      history << "Minimization doesn't converge (well), probably due to image distortions close to the object." <<  endl;
+      history << "Minimization doesn't converge! Check image!" <<  endl;
       flags[7] = 1;
     }
   }
@@ -82,7 +82,7 @@ void OptimalDecomposite2D::optimize() {
    // step 5) opposite: if chisquare is too good, reduce nmax
    // and increase in steps of 1 to find fit with chisquare close to 1
    if (!noise_correlated) {
-     while (optimalChiSquare < 1) {
+     while (optimalChiSquare < 1 + Decomposite2D::getChiSquareVariance()) {
        int oldoptimalNMax = Decomposite2D::getNMax();
        int newNMAX = (int) floor(0.75*oldoptimalNMax) - 1;
        if (newNMAX < 0) break;
@@ -105,7 +105,7 @@ void OptimalDecomposite2D::optimize() {
      }
      // step 5a) if chi^2 < 0 at nmax = 0: try what happens with chi2
      // if we set the only shapelet coefficient to zero: no model = pure data
-     if (optimalNMax == 0 && optimalChiSquare < 1) {
+     if (optimalNMax == 0 && optimalChiSquare < 1 + Decomposite2D::getChiSquareVariance()) {
        history << "#" << endl << "# Testing model evidence: ";
        CoefficientVector<data_t> coeffs = Decomposite2D::C2D.getCoeffs();
        data_t c0 = coeffs(0);
@@ -113,7 +113,7 @@ void OptimalDecomposite2D::optimize() {
        Decomposite2D::setCoeffs(coeffs);
        Decomposite2D::fixCoeffs(true);
        data_t newChi2 = Decomposite2D::getChiSquare();
-       if (newChi2 < 1) {
+       if (newChi2 < 1 + Decomposite2D::getChiSquareVariance()) {
 	 history << "model insignificant and set to zero" << endl;
 	 Decomposite2D::C2D.setCovarianceMatrix(NumMatrix<data_t>(1,1));
 	 flags[7] = 1;
@@ -182,12 +182,12 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
   if (step == 5) increment = 1;
   else increment = 2;
   
-  if (chisquare <= 1) {
+  if (chisquare <= 1 + variance) {
     optimalNMax = Decomposite2D::getNMax();
     history << "# Optimal decomposition order n_max = " << optimalNMax;
     history << " already reached" << endl;
   }
-  while (chisquare > 1) {
+  while (chisquare > 1 + variance) {
     // break during step 2 if order gets too high
     // for a relatively fast findOptimalBeta() here
     if (step == 2 && (Decomposite2D::getNMax() == 6 || Decomposite2D::getNMax()%12 == 0)) {
@@ -238,7 +238,7 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 
     // depending on result of chi^2:
     // chisquare is smaller than 1: we've reached the goal
-    if (newChisquare <= 1 && newChisquare > 0) {
+    if (newChisquare <= 1 + variance && newChisquare > 0) {
       optimalNMax = Decomposite2D::getNMax();
       history << "# Optimal decomposition order n_max = " << optimalNMax << endl;
       break;
@@ -261,8 +261,11 @@ void OptimalDecomposite2D::findOptimalNMax(unsigned char step) {
 	nmaxTrouble = 1;
 	bestChiSquare = chisquare;
 	optimalNMax = Decomposite2D::getNMax() - increment;
-	derivative_chi2 = (newChisquare - chisquare)/increment;
-	history << "# chi^2 becomes worse! Saving best fit n_max = " << optimalNMax << " now." << endl;
+	// derivative_chi2 = (newChisquare - chisquare)/increment;
+// 	history << "# chi^2 becomes worse! Saving best fit n_max = " << optimalNMax << " now." << endl;
+	history << "# chi^2 becomes worse! Stopping at best fit n_max = " << optimalNMax << "." << endl;
+	Decomposite2D::setNMax(optimalNMax);
+	break;
       }
       // if chi2 becomes better again remember new best values
       if (nmaxTrouble && newChisquare >= 0 && newChisquare < bestChiSquare) {
@@ -338,7 +341,7 @@ double getChiSquare_Beta (const gsl_vector *v, void *p) {
     decomp->d.setBeta(beta);
     result =  decomp->d.getChiSquare();
   } else
-    result = INFINITY ; // make chi^2 worse if beta is out of bounds
+    result = 1e100 ; // make chi^2 worse if beta is out of bounds
    return result;
 }
 
@@ -350,7 +353,7 @@ data_t OptimalDecomposite2D::getBetaLimit(bool upper) {
     return GSL_MAX(undersampling,ShapeLensConfig::BETA_LOW);
   } else {
     // geometric is maximum beta to avoid theta_max > image_dimension
-    data_t geometric = 0.5*image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
+    data_t geometric = 0.33*image_dimension/sqrt(Decomposite2D::getNMax() +1.0);
     return GSL_MIN(geometric,ShapeLensConfig::BETA_HIGH);
   }
 }
@@ -408,6 +411,12 @@ int OptimalDecomposite2D::findOptimalBeta(unsigned char step) {
     case 3: stepsize = 0.1 * beta; break;
     case 6: stepsize = 0.05 * beta; break;
     case 7: stepsize = 0.05 * beta; break;
+    }
+    // check if beta is within limits
+    if (beta > betaMax || beta < betaMin) {
+      data_t newBeta = 0.5*(betaMax + betaMin);
+      history << "# Beta = " << beta << " not within limits, resetting to " << newBeta << endl;
+      beta = newBeta;
     }
     data_t accuracy = ShapeLensConfig::DELTA_BETA * beta;
 

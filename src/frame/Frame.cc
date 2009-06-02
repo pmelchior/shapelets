@@ -18,7 +18,6 @@ typedef unsigned long ulong;
 
 Frame::Frame(string filename) : 
 Image<data_t>(filename), segMap(), weight(), history(segMap.history) {
-  history << "# Reading FITS file " << filename << endl;
   history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl;
   segMap.resize(Frame::getSize(0)*Frame::getSize(1));
   segMap.clear();
