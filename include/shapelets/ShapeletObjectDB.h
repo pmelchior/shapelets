@@ -58,24 +58,9 @@ class ShapeletObjectDB {
  public:
   /// Default constructor.
   /// The required connection details are stored in a file whose
-  /// path has to be set in the environment variable \p SHAPELENSDBCONF.\n\n
-  /// The file contains the following connection details
-  /// and the appropriate values in format of ShapeLensConfig files 
-  /// (one keyword/value pair per line, separated by one or more tab characters):
-  /// \code
-  /// HOST      localhost
-  /// USER      username
-  /// PASSWORD  pass
-  /// DATABASE  shapelets
-  /// TABLE     tablename
-  /// \endcode
-  ///
-  /// As \p DATABASE and \p TABLE can be set later
-  /// and \p PASSWORD is not always required, these
-  /// three keywords are optional, the others mandatory.\n\n
-  /// \b CAUTION: If the password is written in this file, make sure to change 
-  /// the file permissions such that \p username is the only user who can read 
-  /// this file.  
+  /// path has to be set in the environment variable \p SHAPELENSDBCONF.\n
+  /// see MySQLDB::connect() for details.
+  
   ShapeletObjectDB();
   /// Change the table within the database.
   void selectTable(std::string table);
@@ -90,7 +75,7 @@ class ShapeletObjectDB {
   /// \endcode
   /// would open a \p DB connection and load all objects with \f$\chi^2 < 1\f$ and
   /// \f$n_{max}\geq 8\f$.
-  ShapeletObjectList load(std::string where_clause = "");
+  ShapeletObjectList load(std::string where_clause = "", std::string join_clause = "");
   /// Save all ShapeletObject entities in \p sl to the current \p table.
   /// This call requires the permission to execute a \p INSERT statement.
   void save(const ShapeletObjectList& sl);
@@ -104,13 +89,19 @@ class ShapeletObjectDB {
   /// Submit query to \p DB.
   /// The call requires permissions to execute the specified statement.
   DBResult query(std::string query);
+  /// Load history for ShapeletObject during load().
+  /// Using <tt>use==false</tt> lowers DB traffic and memory consumption.
+  void useHistory(bool use);
+  /// Load coefficient covariance matrix for ShapeletObject during load().
+  /// Using <tt>use==false</tt> lowers DB traffic and memory consumption.
+  void useCovariance(bool use);
 
  private:
   std::string table;
-  void checkConnectionDetails(std::string host, std::string user, std::string password, std::string database, std::string table);
   void createTable();
   void checkForTable();
-  bool exists;
+  std::string ref(std::string col);
+  bool exists, loadHistory, loadCovariance;
 #if SHAPELETDB==MySQL
   MySQLDB db;
 #endif
