@@ -5,6 +5,7 @@
 #include <vector>
 #include "../frame/Shapes2D.h"
 #include "../frame/Object.h"
+#include "../frame/Catalog.h"
 #include "../shapelets/ShapeletObject.h"
 
 namespace shapelens {
@@ -20,11 +21,21 @@ public:
   virtual data_t getValue(const Point2D<data_t>& P) const = 0;
   /// Get rectangluar support area of the model.
   const Rectangle<data_t>& getSupport() const;
+  /// Get centroid of model.
+  const Point2D<data_t>& getCentroid() const;
+  /// Get total flux of model.
+  virtual data_t getFlux() const = 0;
+  /// Get type of model.
+  virtual char getModelType() const = 0;
+  /// Get reference ID of model.
+  unsigned long getID() const;
  protected:
   /// Rectangluar support area.
   Rectangle<data_t> support;
   /// Centroid position.
   Point2D<data_t> centroid;
+  /// Reference id.
+  unsigned long id;
   /// Compute rectangular SourceModel::support for elliptical sources.
   /// Considers position of SourceModel::centroid.
   void setEllipticalSupport(data_t radius, const complex<data_t>& eps);
@@ -32,6 +43,9 @@ public:
  
 /// Collection of SourceModel entities.
  class SourceModelList : public std::vector<boost::shared_ptr<SourceModel> > {
+ public:
+  /// Create catalog from all entries of SourceModelList.
+  Catalog getCatalog() const;
  };
 
 /// Sersic model class.
@@ -47,9 +61,13 @@ class SersicModel : public SourceModel {
  public:
   /// Constructor with Sersic index \p n, effective radius \p Re, \p flux, and
   /// intrinsic ellipticity \p eps.
-  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid);
+  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
+  /// Get total flux of model.
+  virtual data_t getFlux() const;
+  /// Get type of model.
+  virtual char getModelType() const;
 private:
   data_t n, Re, b,limit,flux,flux_limit,shear_norm,flux_scale;
   complex<data_t> eps;
@@ -65,9 +83,13 @@ class MoffatModel : public SourceModel {
  public:
   /// Constructor with Moffat index \p beta, width \p FWHM, \p flux, and
   /// intrinsic ellipticity \p eps. 
-  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid);
+  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
+  /// Get total flux of model.
+  virtual data_t getFlux() const;
+  /// Get type of model.
+  virtual char getModelType() const;
  private:
   data_t beta, alpha, limit, flux_limit, flux,shear_norm,flux_scale;
   complex<data_t> eps;
@@ -89,13 +111,17 @@ public:
   /// - <tt>-3</tt>: bi-cubic
   ///
   /// For more details, see Interpolation.
-  InterpolatedModel(const Image<data_t>& im, data_t flux, const Point2D<data_t>& reference, int order = 1);
+  InterpolatedModel(const Image<data_t>& im, data_t flux, const Point2D<data_t>& reference, int order = 1, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
+  /// Get total flux of model.
+  virtual data_t getFlux() const;
+  /// Get type of model.
+  virtual char getModelType() const;
 private:
   const Image<data_t>& im;
   int order;
-  data_t flux_scale;
+  data_t flux,flux_scale;
 };
 
 /// Model from ShapeletObject.
@@ -109,6 +135,10 @@ public:
   ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point2D<data_t>& centroid);
   /// Sample model at \p P.
   virtual data_t getValue(const Point2D<data_t>& P) const;
+  /// Get total flux of model.
+  virtual data_t getFlux() const;
+  /// Get type of model.
+  virtual char getModelType() const;
 private:
   const ShapeletObject& sobj;
   const Point2D<data_t>& scentroid;

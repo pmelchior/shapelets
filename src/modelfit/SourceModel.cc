@@ -9,6 +9,14 @@ const Rectangle<data_t>& SourceModel::getSupport() const {
   return support;
 }
 
+const Point2D<data_t>& SourceModel::getCentroid() const {
+  return centroid;
+}
+
+unsigned long SourceModel::getID() const {
+  return id;
+}
+
 void SourceModel::setEllipticalSupport(data_t radius, const complex<data_t>& eps) {
   // compute orientation angle
   data_t theta;
@@ -38,13 +46,38 @@ void SourceModel::setEllipticalSupport(data_t radius, const complex<data_t>& eps
   support.tr += centroid;
 }
 
+// ##### SourceModelList ##### //
+Catalog SourceModelList::getCatalog() const {
+  Catalog cat;
+  CatObject co;
+  co.FLAGS = 0;
+  for (unsigned long i=0; i < SourceModelList::size(); i++) {
+    const SourceModel& sm = *SourceModelList::operator[](i);
+    const Rectangle<data_t>& support = sm.getSupport();
+    const Point2D<data_t>& centroid = sm.getCentroid();
+    co.XMIN = support.ll(0);
+    co.YMIN = support.ll(1);
+    co.XMAX = support.tr(0);
+    co.YMAX = support.tr(1);
+    co.XCENTROID = centroid(0);
+    co.YCENTROID = centroid(1);
+    co.FLUX = sm.getFlux();
+    co.CLASSIFIER = sm.getModelType();
+    co.PARENT = sm.getID();
+    cat[i] = co;
+  }
+  return cat;
+}
+
+
 // ##### Sersic Model ##### //
-SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const Point2D<data_t>& centroid) : 
+SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const Point2D<data_t>& centroid, unsigned long id) : 
   n(n), Re(Re), eps(eps) {
   limit = 5*Re;
   shear_norm = 1 - gsl_pow_2(abs(eps));
   SourceModel::centroid = centroid;
   SourceModel::setEllipticalSupport(limit,eps);
+  SourceModel::id = id;
   b = 1.9992*n - 0.3271;
   data_t RRe1n = pow(limit/Re,1./n);
   // flux at limit
@@ -72,15 +105,23 @@ data_t SersicModel::getValue(const Point2D<data_t>& P) const {
     return 0;
 }
 
+data_t SersicModel::getFlux() const {
+  return flux_scale*flux;
+}
+
+char SersicModel::getModelType() const {
+  return 0;
+}
+
 // ##### Moffat Model ##### //
-MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const Point2D<data_t>& centroid) :
+MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const Point2D<data_t>& centroid, unsigned long id) :
   beta(beta), eps(eps) {
   SourceModel::centroid = centroid;
+  SourceModel::id = id;
   alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
   limit = 5*FWHM;
   shear_norm = 1 - gsl_pow_2(abs(eps));
   // define area of support
-  SourceModel::centroid = centroid;
   SourceModel::setEllipticalSupport(limit,eps);
   // flux at limit
   flux_limit = pow(1+alpha*gsl_pow_2(limit),-beta);
@@ -107,14 +148,22 @@ data_t MoffatModel::getValue(const Point2D<data_t>& P) const {
     return 0;
 }
 
+data_t MoffatModel::getFlux() const {
+  return flux_scale*flux;
+}
+
+char MoffatModel::getModelType() const {
+  return 3;
+}
 
 // ##### Interpolated Model ##### //
-InterpolatedModel::InterpolatedModel(const Image<data_t>& im, data_t flux, const Point2D<data_t>& reference, int order) : 
-  im(im), order(order) {
+InterpolatedModel::InterpolatedModel(const Image<data_t>& im, data_t flux, const Point2D<data_t>& reference, int order, unsigned long id) : 
+  im(im), order(order),flux(flux) {
   // define area of support
   // no need to defined centroid, as our reference is left-lower corner
   SourceModel::support.ll = reference;
   SourceModel::support.tr = Point2D<data_t>(im.getSize(0) + reference(0),im.getSize(1)+ reference(1));
+  SourceModel::id = id;
   // compute total flux from pixel values
   data_t f = 0;
   for (unsigned long i =0; i < im.size(); i++)
@@ -134,10 +183,19 @@ data_t InterpolatedModel::getValue(const Point2D<data_t>& P) const {
   }
 }
 
+data_t InterpolatedModel::getFlux() const {
+  return flux;
+}
+
+char InterpolatedModel::getModelType() const {
+  return 2;
+}
+
 // ##### Shapelet Model ##### //
 ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point2D<data_t>& centroid) : 
   sobj(sobj), scentroid(sobj.getCentroid()) {
   SourceModel::centroid = centroid;
+  SourceModel::id = sobj.getObjectID();
   // define area of support
   // adjust for new location of centroid
   const Grid& grid = sobj.getGrid();
@@ -151,4 +209,12 @@ data_t ShapeletModel::getValue(const Point2D<data_t>& P) const {
   P_ -= centroid;
   P_ += scentroid;
   return flux_scale*sobj.eval(P_);
+}
+
+data_t ShapeletModel::getFlux() const {
+  return flux_scale*sobj.getShapeletFlux();
+}
+
+char ShapeletModel::getModelType() const {
+  return 1;
 }

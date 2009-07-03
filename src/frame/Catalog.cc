@@ -21,7 +21,7 @@ void Catalog::read(string catfile) {
   // reset bitset that indicates which data are given in catalog
   // in other words: which of the format fields are set
   present.reset();
-  formatChecked = 0;
+  formatChecked = true;
   // open cat file
   ifstream catalog (catfile.c_str());
   if (catalog.fail()) {
