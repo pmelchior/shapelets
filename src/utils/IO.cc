@@ -1,5 +1,4 @@
 #include "../../include/utils/IO.h"
-#include "../../include/frame/Point3D.h"
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
@@ -213,6 +212,22 @@ void IO::convolveGaussian(const NumVector<data_t>& image, NumVector<data_t>& res
   }
 }
 
+
+// ******* PPM stuff *********
+
+// helper class: points in RGB
+class PointRGB : public boost::numeric::ublas::vector<int, boost::numeric::ublas::bounded_array<int,3> >
+{
+  typedef boost::numeric::ublas::vector<int, boost::numeric::ublas::bounded_array<int,3> > Base_vector;
+ public:
+  PointRGB () : Base_vector(3) {}
+  PointRGB (int x0, int x1, int x2) : Base_vector(3) {
+    Base_vector::operator()(0) = x0;
+    Base_vector::operator()(1) = x1;
+    Base_vector::operator()(2) = x2;
+  }
+};
+
 int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
   // convert colorscheme into appropriate parameters
   // default parameters are "SPECTRUM"
@@ -254,7 +269,7 @@ int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
 
   
 
-  Point3D<int> start, diff, color;
+  PointRGB start, diff, color;
   for (int k=0; k < C; k++) {
     int i = k/M;
     int j = k%M;
@@ -263,43 +278,43 @@ int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
       switch (i) {
       case 0:
 	if (j==0) {
-	  start = Point3D<int>(0,0,0);
-	  diff = Point3D<int>(0,0,255);
+	  start = PointRGB(0,0,0);
+	  diff = PointRGB(0,0,255);
 	  diff -= start;
 	}
 	break;
       case 1:
 	if (j==0) {
-	  start = Point3D<int>(0,0,255);
-	  diff = Point3D<int>(0,255,255);
+	  start = PointRGB(0,0,255);
+	  diff = PointRGB(0,255,255);
 	  diff -= start;
 	}
 	break;
       case 2:
 	if (j==0) {
-	  start = Point3D<int>(0,255,255);
-	  diff = Point3D<int>(0,255,0);
+	  start = PointRGB(0,255,255);
+	  diff = PointRGB(0,255,0);
 	  diff -= start;
 	}
 	break;
       case 3:
 	if (j==0) {
-	  start = Point3D<int>(0,255,0);
-	  diff = Point3D<int>(255,255,0);
+	  start = PointRGB(0,255,0);
+	  diff = PointRGB(255,255,0);
 	  diff -= start;
 	}
 	break;
       case 4:
 	if (j==0) {
-	  start = Point3D<int>(255,255,0);
-	  diff = Point3D<int>(255,0,0);
+	  start = PointRGB(255,255,0);
+	  diff = PointRGB(255,0,0);
 	  diff -= start;
 	}
 	break;
       case 5:
 	if (j==0) {
-	  start = Point3D<int>(255,0,0);
-	  diff = Point3D<int>(255,255,255);
+	  start = PointRGB(255,0,0);
+	  diff = PointRGB(255,255,255);
 	  diff -= start;
 	}
 	break;
@@ -309,15 +324,15 @@ int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
       switch (i) {
       case 0:
 	if (j==0) {
-	  start = Point3D<int>(0,0,0);
-	  diff = Point3D<int>(255,0,0);
+	  start = PointRGB(0,0,0);
+	  diff = PointRGB(255,0,0);
 	  diff -= start;
 	}
 	break;
       case 1:
 	if (j==0) {
-	  start = Point3D<int>(255,0,0);
-	  diff = Point3D<int>(255,255,255);
+	  start = PointRGB(255,0,0);
+	  diff = PointRGB(255,255,255);
 	  diff -= start;
 	}
 	break;
@@ -327,15 +342,15 @@ int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
       switch (i) {
       case 0:
 	if (j==0) {
-	  start = Point3D<int>(0,0,0);
-	  diff = Point3D<int>(64,64,255);
+	  start = PointRGB(0,0,0);
+	  diff = PointRGB(64,64,255);
 	  diff -= start;
 	}
 	break;
       case 1:
 	if (j==0) {
-	  start = Point3D<int>(64,64,255);
-	  diff = Point3D<int>(255,255,255);
+	  start = PointRGB(64,64,255);
+	  diff = PointRGB(255,255,255);
 	  diff -= start;
 	}
 	break;
@@ -345,14 +360,14 @@ int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
       switch (i) {
       case 0:
 	if (j==0) {
-	  start = Point3D<int>(0,0,0);
-	  diff = Point3D<int>(0,255,0);
+	  start = PointRGB(0,0,0);
+	  diff = PointRGB(0,255,0);
 	}
 	break;
       case 1:
 	if (j==0) {
-	  start = Point3D<int>(0,255,0);
-	  diff = Point3D<int>(255,255,255);
+	  start = PointRGB(0,255,0);
+	  diff = PointRGB(255,255,255);
 	  diff -= start;
 	}
 	break;
@@ -360,8 +375,8 @@ int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
       break;
     case 4: // "GRAY"
       if (j==0) {
-	start = Point3D<int>(0,0,0);
-	diff = Point3D<int>(255,255,255);
+	start = PointRGB(0,0,0);
+	diff = PointRGB(255,255,255);
 	diff -= start;
       }
       break;
@@ -369,29 +384,29 @@ int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
       switch (i) {
       case 0:
 	if (j==0) {
-	  start = Point3D<int>(0,0,0);
-	  diff = Point3D<int>(192,0,0);
+	  start = PointRGB(0,0,0);
+	  diff = PointRGB(192,0,0);
 	  diff -= start;
 	}
 	break;
       case 1:
 	if (j==0) {
-	  start = Point3D<int>(192,0,0);
-	  diff = Point3D<int>(255,127,0);
+	  start = PointRGB(192,0,0);
+	  diff = PointRGB(255,127,0);
 	  diff -= start;
 	}
 	break;
       case 2:
 	if (j==0) {
-	  start = Point3D<int>(255,127,0);
-	  diff = Point3D<int>(255,255,0);
+	  start = PointRGB(255,127,0);
+	  diff = PointRGB(255,255,0);
 	  diff -= start;
 	}
 	break;
       case 3:
 	if (j==0) {
-	  start = Point3D<int>(255,255,0);
-	  diff = Point3D<int>(255,255,255);
+	  start = PointRGB(255,255,0);
+	  diff = PointRGB(255,255,255);
 	  diff -= start;
 	}
 	break;
