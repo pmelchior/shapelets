@@ -1,5 +1,5 @@
 #include "../../include/ShapeLensConfig.h"
-#include "../../include/shapelets/Decomposite2D.h"
+#include "../../include/shapelets/Decomposite.h"
 #include <gsl/gsl_math.h>
 #include <numla/boost/numeric/bindings/traits/ublas_symmetric.hpp>
 #include <numla/boost/numeric/bindings/traits/ublas_vector2.hpp>
@@ -8,7 +8,7 @@ using namespace shapelens;
 namespace ublas = boost::numeric::ublas;
 namespace atlas = boost::numeric::bindings::atlas;
 
-Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) : 
+Decomposite::Decomposite(const Object& O, Composite& C) : 
   C2D(C),
   obj(O)
 {
@@ -51,15 +51,15 @@ Decomposite2D::Decomposite2D(const Object& O, Composite2D& C) :
     Weight = obj.weight;
   }
   else {
-    std::cerr << "Decomposite2D: noise model '" << ShapeLensConfig::NOISEMODEL << "' unknown!" << std::endl;
+    std::cerr << "Decomposite: noise model '" << ShapeLensConfig::NOISEMODEL << "' unknown!" << std::endl;
     std::terminate();
   }
   fixedCoeffs = false;
 }
 
 // see Paper III, eq. 83 and following explanation
-void Decomposite2D::makeLSMatrix () {
-  // use Composite2D::makeShapeletMatrix() for computing M for which we have a reference
+void Decomposite::makeLSMatrix () {
+  // use Composite::makeShapeletMatrix() for computing M for which we have a reference
   C2D.makeShapeletMatrix();
 
   // for gaussian noise and within reasonable bounds on nmax and beta
@@ -102,10 +102,10 @@ void Decomposite2D::makeLSMatrix () {
   }
 }
 
-bool Decomposite2D::computeCoeffs() {
+bool Decomposite::computeCoeffs() {
   if (C2D.changeM) {
     makeLSMatrix();
-    // bypassing this is useful only for the regularization in OptimalDecomposite2D
+    // bypassing this is useful only for the regularization in OptimalDecomposite
     if (!fixedCoeffs) {
       // for gaussian noise (assuming a orthonormal shapelet basis)
       // we can neglect the coeff covariance matrix and perform a direct
@@ -123,7 +123,7 @@ bool Decomposite2D::computeCoeffs() {
     return false;
 }
 
-bool Decomposite2D::computeModel() {
+bool Decomposite::computeModel() {
   if (computeCoeffs() || C2D.changeModel) {
     C2D.evalGrid();
     return true;
@@ -131,7 +131,7 @@ bool Decomposite2D::computeModel() {
     return false;
 }
 
-bool Decomposite2D::computeResiduals() {
+bool Decomposite::computeResiduals() {
   if (computeModel()) {
     residual = obj;
     residual -= C2D.model;
@@ -140,14 +140,14 @@ bool Decomposite2D::computeResiduals() {
     return false;
 }
 
-const Image<data_t>& Decomposite2D::getResiduals() {
+const Image<data_t>& Decomposite::getResiduals() {
   computeResiduals();
   return residual;
 }
 
 // chi^2 for reconstruction
 // see Paper III, eq. 18
-data_t Decomposite2D::getChiSquare() {
+data_t Decomposite::getChiSquare() {
   if (computeResiduals()) {
     if (noise == 0)
       chi2 = (residual.getNumVector()*residual.getNumVector())/background_variance;
@@ -161,38 +161,38 @@ data_t Decomposite2D::getChiSquare() {
 }
 
 // see Paper III, eq. 19
-data_t Decomposite2D::getChiSquareVariance() {
+data_t Decomposite::getChiSquareVariance() {
 return M_SQRT2 /sqrt(obj.size() - C2D.coeffs.size());
 }      
   
-int Decomposite2D::getNMax() {
+int Decomposite::getNMax() {
   return C2D.getNMax();
 }
   
-void Decomposite2D::setNMax(int nmax) {
+void Decomposite::setNMax(int nmax) {
   if (C2D.coeffs.getNMax() != nmax) {
     C2D.coeffs.setNMax(nmax);
     C2D.changeM = C2D.changeModel = 1;
   }
 }
 
-data_t Decomposite2D::getBeta() {
+data_t Decomposite::getBeta() {
   return C2D.getBeta();
 }
 
-void Decomposite2D::setBeta(data_t beta) {
+void Decomposite::setBeta(data_t beta) {
   C2D.setBeta(beta);
 }
 
-void Decomposite2D::fixCoeffs(bool fixed) {
+void Decomposite::fixCoeffs(bool fixed) {
   fixedCoeffs = fixed;
 }
 
-void Decomposite2D::setCoeffs(const CoefficientVector<data_t>& coeffs) {
+void Decomposite::setCoeffs(const CoefficientVector<data_t>& coeffs) {
   C2D.setCoeffs(coeffs);
 }
 
-void Decomposite2D::updateWeightMap() {
+void Decomposite::updateWeightMap() {
   if (noise == 3 || noise == 4) {
     computeModel();
     if (noise == 3) {

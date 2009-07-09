@@ -8,7 +8,7 @@
 #include <numla/NumMatrixDiagonal.h>
 #include "../Typedef.h"
 #include "../utils/History.h"
-#include "../frame/Point2D.h"
+#include "../frame/Point.h"
 #include "CoefficientVector.h"
 
 namespace shapelens {

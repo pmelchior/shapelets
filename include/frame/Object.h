@@ -104,7 +104,7 @@ class Object : public Image<data_t> {
   /// The flux of this Object.
   data_t flux;
   /// The position of the object's centroid.
-  Point2D<data_t> centroid;
+  Point<data_t> centroid;
   /// The 2nd brightness moments, defined relative to centroid.
   Quadrupole Q;
   /// The 3rd brightness moments, defined relative to centroid.

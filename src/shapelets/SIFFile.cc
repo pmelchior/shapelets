@@ -56,7 +56,7 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   IO::updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
   IO::updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
   IO::updateFITSKeyword(outfptr,"YMAX",grid.getStopPosition(1),"min(Y) in image pixels");
-  const Point2D<data_t>& centroid = sobj.getCentroid();
+  const Point<data_t>& centroid = sobj.getCentroid();
   complex<data_t> xc(centroid(0),centroid(1));
   IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
 
@@ -141,7 +141,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   sobj.coeffs.setCoeffs(coeffs);
 
   // read shapelet parameters
-  // make use of friendship of Composite2D and ShapeletObject
+  // make use of friendship of Composite and ShapeletObject
   sobj.changeModel = sobj.changeM = true;
   data_t tmp;
   status = IO::readFITSKeyword(fptr,"BETA",tmp);

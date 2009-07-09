@@ -6,26 +6,26 @@
 #include <numla/NumVector.h>
 #include <numla/NumMatrixDiagonal.h>
 #include "../Typedef.h"
-#include "../frame/Point2D.h"
+#include "../frame/Point.h"
 #include "../frame/Grid.h"
 #include "../frame/Image.h"
 #include "../frame/Object.h"
-#include "Composite2D.h"
+#include "Composite.h"
 
 namespace shapelens {
 
 /// Shapelet decomposition class.
-/// Provides decomposition of a given Object entity into a Composite2D entity, aka
-/// a shapelet model. All protected data members of Composite2D are populated during the
+/// Provides decomposition of a given Object entity into a Composite entity, aka
+/// a shapelet model. All protected data members of Composite are populated during the
 /// decomposition, such that after the decomposition (which requires at least one call to 
-/// getChiSquare()) one obtains a fully functional shapelet model. Thus, Decomposite2D behaves like
+/// getChiSquare()) one obtains a fully functional shapelet model. Thus, Decomposite behaves like
 /// an image filter.
 ///
 /// The coefficients are calculated as the \em Least-Squares solution of the equation
 /// \f$obj = M \cdot coeffs + noise\f$,
 /// where \f$M\f$ is the design matrix of the problem (e.g. \f$M_{2,0}(\beta)\f$ is the value of the 
 /// basis function \f$B_{0,0}(x_2;\beta)\f$ at pixel \f$x_2\f$ of the image) which is provided by 
-/// the Composite2D entity.\n
+/// the Composite entity.\n
 /// For obtaining the shapelet coefficients, we construct the pseudo-inverse 
 /// \f$M^\dagger\equiv\bigl(M^T V^{-1} M\bigr)^{-1} M^T V^{-1}\f$ of \f$M\f$ subject to the pixel
 /// covariance matrix \f$V\f$ and solve for the coefficients, \f$coeffs = M^\dagger \cdot data\f$
@@ -54,10 +54,10 @@ namespace shapelens {
 /// \f$reco' = M\cdot coeff'\f$. For this to happen, one must explicitly fix the coefficients (in
 /// contrast to computing those coefficients which minimize\f$\chi^2\f$) by calling fixCoeffs().
 
-class Decomposite2D {
+class Decomposite {
  public:
   /// Contructor for decomposing a Object into shapelets of maximum order \f$n_{max}\f$.
-  Decomposite2D(const Object& obj, Composite2D& C2D);
+  Decomposite(const Object& obj, Composite& C2D);
   /// Get the current decomposition scale.
   data_t getBeta();
   /// Set scale size \f$\beta\f$ for decomposition.
@@ -95,8 +95,8 @@ class Decomposite2D {
   bool computeResiduals();
 
  protected:
-  /// Reference to Composite2D entity.
-  Composite2D& C2D;
+  /// Reference to Composite entity.
+  Composite& C2D;
   /// Reference to Object entity.
   const Object& obj;
   void makeLSMatrix ();

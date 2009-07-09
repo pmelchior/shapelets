@@ -9,7 +9,7 @@
 #include "../Typedef.h"
 #include "../frame/Grid.h"
 #include "../frame/Object.h"
-#include "Decomposite2D.h"
+#include "Decomposite.h"
 
 namespace shapelens {
 
@@ -18,7 +18,7 @@ namespace shapelens {
 /// This class delivers best fit \f$\beta\f$ and \f$n_{max}\f$, assuming a known position
 /// of the centroid \f$x_c\f$.\n\n
 /// The procedure:
-/// - Create Decomposite2D object with \f$n_{max}=2\f$ as starting point.
+/// - Create Decomposite object with \f$n_{max}=2\f$ as starting point.
 /// - Search for \f$\beta\f$ that minimizes \f$\chi^2\f$.
 /// - If above minimizations does not converge, increase \f$n_{max}\f$ by 2.\n
 ///   If this is still not sufficient, there are probably image distortions
@@ -50,10 +50,10 @@ namespace shapelens {
 ///
 /// See Paper III, sect. 3.4 and 7.5, and Paper IV, sect. 4.3, for details.
 
-class OptimalDecomposite2D : private Decomposite2D {
+class OptimalDecomposite : private Decomposite {
  public:
   /// Constructor for decomposing an Object.
-  OptimalDecomposite2D(const Object& obj, Composite2D& model);
+  OptimalDecomposite(const Object& obj, Composite& model);
   /// Return best fit \f$\chi^2\f$.
   data_t getOptimalChiSquare();
   /// Return the decomposition flags.

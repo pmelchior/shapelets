@@ -1,4 +1,4 @@
-#include "../../include/shapelets/Composite2D.h"
+#include "../../include/shapelets/Composite.h"
 #include "../../include/shapelets/Shapelets2D.h"
 #include "../../include/ShapeLensConfig.h"
 // for factorial and other math functions
@@ -8,22 +8,22 @@
 using namespace shapelens;
 using namespace std;
 
-Composite2D::Composite2D() {
+Composite::Composite() {
   changeM = changeModel = true;
 }
 
-Composite2D::Composite2D(const CoefficientVector<data_t>& Coeffs, data_t Beta, Point2D<data_t>& Xcentroid) :
+Composite::Composite(const CoefficientVector<data_t>& Coeffs, data_t Beta, Point<data_t>& Xcentroid) :
   coeffs(Coeffs),
   beta(Beta),
   xcentroid(Xcentroid) {  
   changeM = changeModel = true;
 }
 
-unsigned int Composite2D::getNMax() const {
+unsigned int Composite::getNMax() const {
   return coeffs.getNMax();
 }
 
-void Composite2D::setNMax(unsigned int nmax) {
+void Composite::setNMax(unsigned int nmax) {
   if (coeffs.getNMax() != nmax) {
     coeffs.setNMax(nmax);
     changeM = true;
@@ -32,61 +32,61 @@ void Composite2D::setNMax(unsigned int nmax) {
   }
 }
 
-void Composite2D::setCoeffs(const CoefficientVector<data_t>& newCoeffs ) {
+void Composite::setCoeffs(const CoefficientVector<data_t>& newCoeffs ) {
   if (coeffs.size() != newCoeffs.size())
     changeM = true;
   coeffs = newCoeffs;
   changeModel = true;
 }
 
-const CoefficientVector<data_t>& Composite2D::getCoeffs() const {
+const CoefficientVector<data_t>& Composite::getCoeffs() const {
   return coeffs;
 }
 
-void Composite2D::setCovarianceMatrix(const NumMatrix<data_t>& newCov) {
+void Composite::setCovarianceMatrix(const NumMatrix<data_t>& newCov) {
   if (coeffs.getNCoeffs() == newCov.getRows() && coeffs.getNCoeffs() == newCov.getColumns())
     cov = newCov;
   else {
-    std::cerr << "Composite2D: covariance matrix doesn not have correct dimensions!" << std::endl;
+    std::cerr << "Composite: covariance matrix doesn not have correct dimensions!" << std::endl;
     std::terminate();
   }
 }
 
-const NumMatrix<data_t>& Composite2D::getCovarianceMatrix() const {
+const NumMatrix<data_t>& Composite::getCovarianceMatrix() const {
   return cov;
 }
 
-data_t Composite2D::getBeta() const {
+data_t Composite::getBeta() const {
   return beta;
 }
 
-void Composite2D::setBeta(data_t beta_) {
+void Composite::setBeta(data_t beta_) {
   if (beta_ != beta) {
     beta = beta_;
     changeM = changeModel = true;
   }
 }
 
-const Point2D<data_t>& Composite2D::getCentroid() const {
+const Point<data_t>& Composite::getCentroid() const {
   return xcentroid;
 }
 
-void Composite2D::setCentroid(const Point2D<data_t>& inxcentroid) {
+void Composite::setCentroid(const Point<data_t>& inxcentroid) {
   xcentroid = inxcentroid;
   changeM = changeModel = true;
 }
 
-const Grid& Composite2D::getGrid() const {
+const Grid& Composite::getGrid() const {
   return model.grid;
 }
 
-void Composite2D::setGrid(const Grid& grid) {
+void Composite::setGrid(const Grid& grid) {
   model.grid = grid;
   changeM = changeModel = true;
 }
 
 
-void Composite2D::evalGrid() {
+void Composite::evalGrid() {
   if (changeModel) {
     makeShapeletMatrix();
     if (ShapeLensConfig::PIXEL_INTEGRATION)
@@ -97,13 +97,13 @@ void Composite2D::evalGrid() {
   }
 }  
 
-const Image<data_t>& Composite2D::getModel() {
+const Image<data_t>& Composite::getModel() {
   if (changeModel) evalGrid();
   return model;
 }
 
-data_t Composite2D::eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov_est) const {
-  Point2D<data_t> xdiff(x(0) - xcentroid(0), x(1) - xcentroid(1));
+data_t Composite::eval(const Point<data_t>& x, NumMatrix<data_t>* cov_est) const {
+  Point<data_t> xdiff(x(0) - xcentroid(0), x(1) - xcentroid(1));
   const IndexVector& nVector = coeffs.getIndexVector();
   int nmax = nVector.getNMax();
   int nCoeffs = nVector.getNCoeffs();
@@ -148,7 +148,7 @@ data_t Composite2D::eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov_est) c
   return result;
 }
 
-data_t Composite2D::integrate(NumMatrix<data_t>* cov_est) const {
+data_t Composite::integrate(NumMatrix<data_t>* cov_est) const {
   const IndexVector& nVector = coeffs.getIndexVector();
   NumVector<data_t> Int(nVector.getNCoeffs());
   Shapelets2D s2d(beta);
@@ -163,9 +163,9 @@ data_t Composite2D::integrate(NumMatrix<data_t>* cov_est) const {
   return result;
 }
 
-data_t Composite2D::integrate(const Point2D<data_t>& Pa, const Point2D<data_t>& Pb, NumMatrix<data_t>* cov_est) const {
-  Point2D<data_t> xdiffa(Pa(0) - xcentroid(0), Pa(1) - xcentroid(1));
-  Point2D<data_t> xdiffb(Pb(0) - xcentroid(0), Pb(1) - xcentroid(1));
+data_t Composite::integrate(const Point<data_t>& Pa, const Point<data_t>& Pb, NumMatrix<data_t>* cov_est) const {
+  Point<data_t> xdiffa(Pa(0) - xcentroid(0), Pa(1) - xcentroid(1));
+  Point<data_t> xdiffb(Pb(0) - xcentroid(0), Pb(1) - xcentroid(1));
   const IndexVector& nVector = coeffs.getIndexVector();
   int nmax = nVector.getNMax();
   int nCoeffs = nVector.getNCoeffs();
@@ -233,7 +233,7 @@ data_t Composite2D::integrate(const Point2D<data_t>& Pa, const Point2D<data_t>& 
 
 // compute flux from shapelet coeffs
 // see Paper I, eq. 26
-data_t Composite2D::getShapeletFlux(NumMatrix<data_t>* cov_est) const {
+data_t Composite::getShapeletFlux(NumMatrix<data_t>* cov_est) const {
   int n1, n2;
   // result = sum over n1,n2 (coeff_(n1,n2) * Integral of B_(n1,n2))
   const IndexVector& nVector = coeffs.getIndexVector();
@@ -257,7 +257,7 @@ data_t Composite2D::getShapeletFlux(NumMatrix<data_t>* cov_est) const {
 
 // compute centroid position from shapelet coeffs
 // see Paper I, eq. 27
-Point2D<data_t> Composite2D::getShapeletCentroid(NumMatrix<data_t>* cov_est) const {
+Point<data_t> Composite::getShapeletCentroid(NumMatrix<data_t>* cov_est) const {
   int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   NumMatrix<data_t> Centroid(2,nVector.getNCoeffs());
@@ -276,7 +276,7 @@ Point2D<data_t> Composite2D::getShapeletCentroid(NumMatrix<data_t>* cov_est) con
     }
   }
   NumVector<data_t> result = Centroid * coeffs;
-  Point2D<data_t> xc;
+  Point<data_t> xc;
   data_t flux = getShapeletFlux(); // ignore covariance of flux here
   data_t factor = M_SQRTPI*beta*beta/flux;
   xc(0) = result(0) * factor;
@@ -291,7 +291,7 @@ Point2D<data_t> Composite2D::getShapeletCentroid(NumMatrix<data_t>* cov_est) con
 }
 
 // compute 2nd brightness moments from shapelet coeffs
-Quadrupole Composite2D::getShapelet2ndMoments(NumMatrix<data_t>* cov_est) const {
+Quadrupole Composite::getShapelet2ndMoments(NumMatrix<data_t>* cov_est) const {
   data_t factor;
   int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
@@ -326,7 +326,7 @@ Quadrupole Composite2D::getShapelet2ndMoments(NumMatrix<data_t>* cov_est) const 
 }
 
 // see Paper I, eq. (28)
-data_t Composite2D::getShapeletRMSRadius(NumMatrix<data_t>* cov_est) const {
+data_t Composite::getShapeletRMSRadius(NumMatrix<data_t>* cov_est) const {
   int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
   NumVector<data_t> RMS2(nVector.getNCoeffs());
@@ -352,7 +352,7 @@ data_t Composite2D::getShapeletRMSRadius(NumMatrix<data_t>* cov_est) const {
   return sqrt(result);
 }
 
-void Composite2D::makeShapeletMatrix() {
+void Composite::makeShapeletMatrix() {
   if (changeM) {
     const Grid& grid = model.grid;
     if (M.getRows() != grid.size() || M.getColumns() != coeffs.size())
@@ -411,7 +411,7 @@ void Composite2D::makeShapeletMatrix() {
     if (ShapeLensConfig::PIXEL_INTEGRATION) {
       // it is possible to store this entire in matrix M
       // but then the basis functions are not orthonormal anymore
-      // computation of coefficients in Decomposite2D must be changed then
+      // computation of coefficients in Decomposite must be changed then
       if (MInt.getRows() != grid.size() || MInt.getColumns() != coeffs.size())
 	MInt.resize(grid.size(),coeffs.getNCoeffs());
 

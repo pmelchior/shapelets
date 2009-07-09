@@ -9,19 +9,19 @@ namespace shapelens {
 /// publicly inherited from uBLAS vectors
 
 template <class T>
-class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::bounded_array<T,2> >
+class Point : public boost::numeric::ublas::vector<T, boost::numeric::ublas::bounded_array<T,2> >
 {
   typedef boost::numeric::ublas::vector<T, boost::numeric::ublas::bounded_array<T,2> > Base_vector;
  public:
   /// Constructor.
-  Point2D () : Base_vector(2) {}
+  Point () : Base_vector(2) {}
   /// Constructor with given coordinates.
-  template <class R> Point2D (R x0, R x1) : Base_vector(2) {
+  template <class R> Point (R x0, R x1) : Base_vector(2) {
     Base_vector::operator()(0) = x0;
     Base_vector::operator()(1) = x1;
   }
   /// Copy constructor from base class.
-  template <class R> Point2D (const boost::numeric::ublas::vector_expression<R>& r) : Base_vector(r) { }
+  template <class R> Point (const boost::numeric::ublas::vector_expression<R>& r) : Base_vector(r) { }
   /// Copy operator from base class.
   template <class R> void operator=(const boost::numeric::ublas::vector_expression<R>& r) {
     Base_vector::operator=(r);
@@ -35,7 +35,7 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
   /// To ensure efficient lookups for image-type data, the points are
   /// ordered according to their 2nd dimension
   template <class R>
-    bool operator<(const Point2D<R>& b) const {
+    bool operator<(const Point<R>& b) const {
     if (Base_vector::operator()(1) < b(1) || (Base_vector::operator()(1) == b(1) && Base_vector::operator()(0) < b(0)))
       return true;
     else
@@ -43,7 +43,7 @@ class Point2D : public boost::numeric::ublas::vector<T, boost::numeric::ublas::b
   }
   /// Equality operator.
   template <class R>
-    bool operator==(const Point2D<R>& b) const {
+    bool operator==(const Point<R>& b) const {
     if (Base_vector::operator()(0) == b(0) && Base_vector::operator()(1) == b(1))
       return true;
     else

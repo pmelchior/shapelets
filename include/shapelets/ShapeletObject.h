@@ -10,8 +10,8 @@
 #include "../ShapeLensConfig.h"
 #include "../utils/Property.h"
 #include "../frame/Object.h"
-#include "Composite2D.h"
-#include "OptimalDecomposite2D.h"
+#include "Composite.h"
+#include "OptimalDecomposite.h"
 #include "PolarTransformation.h"
 #include "ImageTransformation.h"
 
@@ -21,12 +21,12 @@ namespace shapelens {
 /// Provides all functionalities related to the work with 2D shapelet objects.\n
 /// The shapelet objects can be defined by giving a SIFFile (Shapelet Image Format) name, 
 /// cartesian or polar coefficients or a Object entity, which is then decomposed into shapelets.\n\n
-/// With the coefficients one can then compose shapelet models (Composite2D entities) 
+/// With the coefficients one can then compose shapelet models (Composite entities) 
 /// and employ transformations in shapelet space.\n
 /// For efficient work with shapelet images the active set of image parameters can be saved
 /// to a SIFFile and later be loaded from that file again.
 
-class ShapeletObject : public Composite2D {
+class ShapeletObject : public Composite {
  public:
   /// Default constructor.
   ShapeletObject();
@@ -40,11 +40,11 @@ class ShapeletObject : public Composite2D {
   /// Constructor, using cartesian coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on 
   /// given grid.
-  ShapeletObject(const CoefficientVector<data_t>& cartesianCoeffs, data_t beta, const Point2D<data_t>& xcentroid = Point2D<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
+  ShapeletObject(const CoefficientVector<data_t>& cartesianCoeffs, data_t beta, const Point<data_t>& xcentroid = Point<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point2D<data_t>& xcentroid = Point2D<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
+  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point<data_t>& xcentroid = Point<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically,
@@ -140,7 +140,7 @@ class ShapeletObject : public Composite2D {
   /// Get the object extraction and decomposition flags.
   /// The extraction flags populate the lower 8 bits, the decomposition
   /// flags upper ones.\n
-  /// See OptimalDecomposite2D::getDecompositionFlag() and Object::getDetectionFlag()
+  /// See OptimalDecomposite::getDecompositionFlag() and Object::getDetectionFlag()
   /// for details.
   const std::bitset<16>& getFlags() const;
   /// Flexible storage container.

@@ -378,7 +378,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     vector<uint> nearby_objects;
 
     // lop over all object pixels
-    Point2D<int> P;
+    Point<int> P;
     for (int i =0; i < O.size(); i++) {
       // old coordinates derived from new pixel index i
       int axis0 = xmax-xmin;

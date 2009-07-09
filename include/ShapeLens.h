@@ -55,7 +55,7 @@ Object class) is the purpose of the Frame class.
 How this can be generalized to read e.g. SExtractor outputs
 is demonstrated by the SExFrame class.
 - The Object is the passed to the ShapeletObject class, which does the actual shapelet
-decomposition by calling OptimalDecomposite2D and Decomposite2D. The decomposition
+decomposition by calling OptimalDecomposite and Decomposite. The decomposition
 result can then be queried and save to a FITS-compatible SIFFile.
 - All further analysis is then done on a single ShapeletObject or on an ensemble of them,
 organized as a ShapeletObjectList.

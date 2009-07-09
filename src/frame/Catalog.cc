@@ -1,5 +1,5 @@
 #include "../../include/frame/Catalog.h"
-#include "../../include/frame/Point2D.h"
+#include "../../include/frame/Point.h"
 #include <fstream>
 #include <iostream>
 #include <set>
@@ -210,13 +210,13 @@ void Catalog::operator-= (const Catalog& c) {
 }
 
 // struct matchProps {
-//   Point2D<data_t> centroid;
+//   Point<data_t> centroid;
 //   data_t flux;
 //   data_t offset;
 // };
 
 // struct matchBundle {
-//   const Point2D<data_t>& refCentroid;
+//   const Point<data_t>& refCentroid;
 //   const Catalog& cat;
 //   map<ulong, matchProps>& matches;
 // };
@@ -224,8 +224,8 @@ void Catalog::operator-= (const Catalog& c) {
 // bool insertCatMatch(ulong id, void* params) {
 //   matchBundle* bundle = (matchBundle*) params;
 //   Catalog::const_iterator iter = bundle->cat.find(id);
-//   const Point2D<data_t>& ref = bundle->refCentroid;
-//   matchProps props = { Point2D<data_t>(iter->second.XCENTROID, iter->second.YCENTROID), iter->second.FLUX, 0};
+//   const Point<data_t>& ref = bundle->refCentroid;
+//   matchProps props = { Point<data_t>(iter->second.XCENTROID, iter->second.YCENTROID), iter->second.FLUX, 0};
 //   props.offset = sqrt(gsl_pow_2(props.centroid(0) - ref(0)) + gsl_pow_2(props.centroid(1) - ref(1)));
 //   bundle->matches[id] = props;
 //   return true;
@@ -240,7 +240,7 @@ void Catalog::operator-= (const Catalog& c) {
 //   multimap<ulong, ulong> mapping;
 //   map<ulong, matchProps> matchesC, matchesThis;
 //   int foundC, foundThis;
-//   Point2D<data_t> refCentroidC, refCentroidThis;
+//   Point<data_t> refCentroidC, refCentroidThis;
 //   matchBundle mbC { refCentroidThis, c, matchesC};
 //   matchBundle mbThis { refCentroidThis, *this, matchesThis};
 

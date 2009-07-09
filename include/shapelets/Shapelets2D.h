@@ -2,7 +2,7 @@
 #define SHAPELENS_SHAPELETS2D_H
 
 #include "../Typedef.h"
-#include "../frame/Point2D.h"
+#include "../frame/Point.h"
 #include "../frame/Grid.h"
 #include "Shapelets1D.h"
 
@@ -34,7 +34,7 @@ class Shapelets2D {
   /// see Paper III. eq. (82)
   data_t integrate(int n0, int n1, data_t x0min, data_t x0max, data_t x1min,data_t x1max);
   /// Evaluate \f$B_{n_0,n_1}((x_0,x_1);\beta)\f$.
-  data_t eval(int n0, int n1, Point2D<data_t>& x);
+  data_t eval(int n0, int n1, Point<data_t>& x);
 
 private:
   Shapelets1D S1D;

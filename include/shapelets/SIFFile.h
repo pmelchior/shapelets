@@ -7,7 +7,7 @@
 #include <numla/NumMatrix.h>
 #include "../Typedef.h"
 #include "../frame/Grid.h"
-#include "../frame/Point2D.h"
+#include "../frame/Point.h"
 #include "ShapeletObject.h"
 #include "ShapeletObjectList.h"
 

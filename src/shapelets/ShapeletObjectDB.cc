@@ -44,7 +44,7 @@ void ShapeletObjectDB::save(const ShapeletObject& sobj) {
   const Grid& grid = sobj.getGrid();
   query << grid.getStartPosition(0) << "," << grid.getStartPosition(1) << ",";
   query << grid.getSize(0) << "," << grid.getSize(1) << ",";
-  const Point2D<data_t>& centroid = sobj.getCentroid();
+  const Point<data_t>& centroid = sobj.getCentroid();
   query << centroid(0) << "," << centroid(1) << ",";
   query << "'" << sobj.getBaseFilename() << "','";
   // write sobj.prop to query with "\n" lineseparator (see below)

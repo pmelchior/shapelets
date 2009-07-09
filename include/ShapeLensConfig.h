@@ -79,7 +79,7 @@ class ShapeLensConfig {
   /// Whether the value if the shapelet basis functions should be integrated
   /// within pixels when computing the shapelet model, default = 0;
   static bool PIXEL_INTEGRATION;
-  /// The noise model employed during the decomposition (see Decomposite2D),
+  /// The noise model employed during the decomposition (see Decomposite),
   /// default = "GAUSSIAN"
   static std::string NOISEMODEL;
 

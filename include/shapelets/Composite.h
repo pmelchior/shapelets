@@ -21,7 +21,7 @@ namespace shapelens {
 ///
 /// At each evaluation, a covariance matrix of the result can be obtained:
 /// \code
-/// Composite2D model ...;
+/// Composite model ...;
 /// data_t integral = model.integrate();
 /// NumMatrix<data_t> cov_quad;
 /// NumMatrix<data_t> Q = model.getShapelet2ndMoments(&cov_quad);
@@ -29,13 +29,13 @@ namespace shapelens {
 /// The example calculates the integral \f$\int dx\ f(x)\f$ without and the quadrupole 
 /// moment \f$Q\f$ with the respective covariance matrix.
 
-class Composite2D {
+class Composite {
  public:
   /// Default constructor.
   /// Don't use it for explicit composition.
-  Composite2D();
+  Composite();
   /// Argumented constructor.
-  Composite2D(const CoefficientVector<data_t>& Coeffs, data_t beta, Point2D<data_t>& xcentroid);
+  Composite(const CoefficientVector<data_t>& Coeffs, data_t beta, Point<data_t>& xcentroid);
   /// Get cartesian shapelet coefficients.
   const CoefficientVector<data_t>& getCoeffs() const;
   /// Set cartesian shapelet coefficients.
@@ -54,9 +54,9 @@ class Composite2D {
   /// Set new \f$\beta\f$ for basis functions.
   void setBeta(data_t beta);
   /// Get centroid position \f$x_c\f$
-  const Point2D<data_t>& getCentroid() const;
+  const Point<data_t>& getCentroid() const;
   /// Set centroid position \f$x_c\f$
-  void setCentroid(const Point2D<data_t>& inxcentroid);
+  void setCentroid(const Point<data_t>& inxcentroid);
   /// Get current Grid.
   const Grid& getGrid() const;
   /// Set new Grid.
@@ -68,7 +68,7 @@ class Composite2D {
   const Image<data_t>& getModel();
   /// Evaluate \f$f(x)\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$f(x)\f$.
-  data_t eval(const Point2D<data_t>& x, NumMatrix<data_t>* cov = NULL) const;
+  data_t eval(const Point<data_t>& x, NumMatrix<data_t>* cov = NULL) const;
   /// Integrate \f$f(x)\f$.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
   /// \f$\int\ dx\ f(x)\f$.
@@ -76,7 +76,7 @@ class Composite2D {
   /// Integrate \f$f(x)\f$ in the area bounded by \p P1 and \p P2.
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of 
   /// the integral.
-  data_t integrate(const Point2D<data_t>& P1,const Point2D<data_t>& P2,  NumMatrix<data_t>* cov = NULL) const;
+  data_t integrate(const Point<data_t>& P1,const Point<data_t>& P2,  NumMatrix<data_t>* cov = NULL) const;
   /// Calculate the object flux \f$F\f$ from the coefficients.
   /// cf. Paper I, eq. 26.\n
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$F\f$
@@ -84,7 +84,7 @@ class Composite2D {
   /// Get the object centroid \f$\vec{x}_c\f$ from the coefficients.
   /// cf. Paper I, eq. 27\n
   /// When given, \p cov will be the (2,2) covariance matrix of \f$\vec{x}_c\f$.
-  Point2D<data_t> getShapeletCentroid(NumMatrix<data_t>* cov = NULL) const;
+  Point<data_t> getShapeletCentroid(NumMatrix<data_t>* cov = NULL) const;
   /// Get 2nd brightness moments \f$Q_{ij}\f$.
   /// When given, \p cov will be the (3,3) covariance matrix of \f$Q_{ij}\f$, ordered as
   /// \f$Q_{11},\ Q_{12},\ Q_{22}\f$.
@@ -95,7 +95,7 @@ class Composite2D {
   data_t getShapeletRMSRadius(NumMatrix<data_t>* cov = NULL) const;
 
   friend class SIFFile;
-  friend class Decomposite2D;
+  friend class Decomposite;
 
  protected:
   /// The scale size
@@ -109,7 +109,7 @@ class Composite2D {
   /// The shapelet model (which contains the Grid).
   Image<data_t> model;
   /// The centroid position.
-  Point2D<data_t> xcentroid;
+  Point<data_t> xcentroid;
   /// Whether M must be updated.
   bool changeM;
   /// Wheter model must be updated.

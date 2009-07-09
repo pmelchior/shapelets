@@ -353,7 +353,7 @@ void Object::convolve(Object& kernel) {
     }
     int xmin = (N1-N)/2, xmax = N1 + (N-N1)/2, ymin = (M1-M)/2, ymax = M1+ (M-M1)/2;
     Image<data_t> sub(xmax-xmin,ymax-ymin);
-    kernel.slice(sub,Point2D<int>(xmin,ymin),Point2D<int>(xmax,ymax));
+    kernel.slice(sub,Point<int>(xmin,ymin),Point<int>(xmax,ymax));
     kernel = sub;
     // compute new kernel::fourier
     kernel.computeFFT();

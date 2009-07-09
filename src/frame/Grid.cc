@@ -28,8 +28,8 @@ data_t Grid::operator() (unsigned long index, bool direction) const {
   }
 }
 
-Point2D<data_t> Grid::operator() (unsigned long i) const {
-  return Point2D<data_t>(operator()(i,0),operator()(i,1));
+Point<data_t> Grid::operator() (unsigned long i) const {
+  return Point<data_t>(operator()(i,0),operator()(i,1));
 }
 
 int Grid::getStartPosition(bool direction) const {
@@ -57,15 +57,15 @@ unsigned long Grid::size() const {
   return N0*N1;
 }
 
-Point2D<int> Grid::getCoords(unsigned long pixel) const {
-  return Point2D<int>(start0 + pixel%N0,start1 + pixel/N0);
+Point<int> Grid::getCoords(unsigned long pixel) const {
+  return Point<int>(start0 + pixel%N0,start1 + pixel/N0);
 }
 
-unsigned long Grid::getPixel(const Point2D<int>& P) const {
+unsigned long Grid::getPixel(const Point<int>& P) const {
   return (unsigned long) (P(0)-start0) + (P(1)-start1)*N0;
 }
 
-long Grid::getNeighborPixel(const Point2D<int>& P, unsigned char direction) const {
+long Grid::getNeighborPixel(const Point<int>& P, unsigned char direction) const {
   long index;
   int x = P(0), y = P(1);
   switch(direction) {

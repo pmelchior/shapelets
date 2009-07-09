@@ -3,7 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <vector>
-#include "../frame/Shapes2D.h"
+#include "../frame/Shapes.h"
 #include "../frame/Object.h"
 #include "../frame/Catalog.h"
 #include "../shapelets/ShapeletObject.h"
@@ -18,11 +18,11 @@ public:
   /// Destructor.
   virtual ~SourceModel();
   /// Sample model at \p P.
-  virtual data_t getValue(const Point2D<data_t>& P) const = 0;
+  virtual data_t getValue(const Point<data_t>& P) const = 0;
   /// Get rectangluar support area of the model.
   const Rectangle<data_t>& getSupport() const;
   /// Get centroid of model.
-  const Point2D<data_t>& getCentroid() const;
+  const Point<data_t>& getCentroid() const;
   /// Get total flux of model.
   virtual data_t getFlux() const = 0;
   /// Get type of model.
@@ -33,7 +33,7 @@ public:
   /// Rectangluar support area.
   Rectangle<data_t> support;
   /// Centroid position.
-  Point2D<data_t> centroid;
+  Point<data_t> centroid;
   /// Reference id.
   unsigned long id;
   /// Compute rectangular SourceModel::support for elliptical sources.
@@ -61,9 +61,9 @@ class SersicModel : public SourceModel {
  public:
   /// Constructor with Sersic index \p n, effective radius \p Re, \p flux, and
   /// intrinsic ellipticity \p eps.
-  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid, unsigned long id=0);
+  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const Point<data_t>& centroid, unsigned long id=0);
   /// Sample model at \p P.
-  virtual data_t getValue(const Point2D<data_t>& P) const;
+  virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
   virtual data_t getFlux() const;
   /// Get type of model.
@@ -83,9 +83,9 @@ class MoffatModel : public SourceModel {
  public:
   /// Constructor with Moffat index \p beta, width \p FWHM, \p flux, and
   /// intrinsic ellipticity \p eps. 
-  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const Point2D<data_t>& centroid, unsigned long id=0);
+  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const Point<data_t>& centroid, unsigned long id=0);
   /// Sample model at \p P.
-  virtual data_t getValue(const Point2D<data_t>& P) const;
+  virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
   virtual data_t getFlux() const;
   /// Get type of model.
@@ -111,9 +111,9 @@ public:
   /// - <tt>-3</tt>: bi-cubic
   ///
   /// For more details, see Interpolation.
-  InterpolatedModel(const Image<data_t>& im, data_t flux, const Point2D<data_t>& reference, int order = 1, unsigned long id=0);
+  InterpolatedModel(const Image<data_t>& im, data_t flux, const Point<data_t>& reference, int order = 1, unsigned long id=0);
   /// Sample model at \p P.
-  virtual data_t getValue(const Point2D<data_t>& P) const;
+  virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
   virtual data_t getFlux() const;
   /// Get type of model.
@@ -132,16 +132,16 @@ public:
   /// By giving \p centroid, one moves \p sobj to this centroid and adjusts
   /// the support without altering \p sobj itself. Similarly, \p flux 
   /// automatically rescales \p sobj to the desired total flux.\n
-  ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point2D<data_t>& centroid);
+  ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point<data_t>& centroid);
   /// Sample model at \p P.
-  virtual data_t getValue(const Point2D<data_t>& P) const;
+  virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
   virtual data_t getFlux() const;
   /// Get type of model.
   virtual char getModelType() const;
 private:
   const ShapeletObject& sobj;
-  const Point2D<data_t>& scentroid;
+  const Point<data_t>& scentroid;
   data_t flux_scale;
 };
 } // end namespace

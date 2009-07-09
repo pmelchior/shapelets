@@ -126,7 +126,7 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
     vector<uint> nearby_objects;
 
-    Point2D<int> P;
+    Point<int> P;
     for (int i =0; i < O.size(); i++) {
       // old coordinates derived from new pixel index i
       int axis0 = xmax-xmin;
@@ -179,7 +179,7 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     // Fill other quantities into Object
     O.history << "# Segment:" << endl;
     O.flux = catiter->second.FLUX;
-    O.centroid = Point2D<data_t>(catiter->second.XCENTROID,catiter->second.YCENTROID);
+    O.centroid = Point<data_t>(catiter->second.XCENTROID,catiter->second.YCENTROID);
     O.history << "# Setting catalog values: Flux = " << O.flux << ", Centroid = ("<< O.centroid(0) << "/" << O.centroid(1) << ")" << std::endl; 
     O.flags = std::bitset<8>(catiter->second.FLAGS);
     O.classifier = catiter->second.CLASSIFIER;

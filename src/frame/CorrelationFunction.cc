@@ -50,7 +50,7 @@ CorrelationFunction::CorrelationFunction(const NumMatrix<data_t>& corr)  {
     std::terminate();
   }
   maxLength = (corr.getColumns() - 1)/2;
-  Point2D<int> p;
+  Point<int> p;
   int i,j;
   for (int i=0; i < corr.getRows(); i++) {
     for (int j =0; j < corr.getColumns(); j++) {
@@ -64,7 +64,7 @@ CorrelationFunction::CorrelationFunction(const NumMatrix<data_t>& corr)  {
 
 void CorrelationFunction::compute(const Image<data_t>& im, const SegmentationMap& segMap) {
   int i,j;
-  Point2D<int> p,p0,p1;
+  Point<int> p,p0,p1;
   setPoints();
   int startx = im.grid.getStartPosition(0), starty = im.grid.getStartPosition(1), stopx = im.grid.getStopPosition(0), stopy = im.grid.getStopPosition(1);
 
@@ -90,7 +90,7 @@ void CorrelationFunction::compute(const Image<data_t>& im, const SegmentationMap
     }
   }
   // normalize values by numbers of pixels counted per entry
-  std::map<Point2D<int>, data_t>::iterator iter;
+  std::map<Point<int>, data_t>::iterator iter;
   for (iter = xi.begin(); iter != xi.end(); iter++) {
     uint n = num[iter->first];
     if (n > 0)
@@ -127,7 +127,7 @@ void CorrelationFunction::compute(const Image<data_t>& im, const SegmentationMap
 
 void CorrelationFunction::compute (const Image<data_t>& im) {
   int i,j;
-  Point2D<int> p,p0,p1;
+  Point<int> p,p0,p1;
   setPoints();
   int startx = im.grid.getStartPosition(0), starty = im.grid.getStartPosition(1), stopx = im.grid.getStopPosition(0), stopy = im.grid.getStopPosition(1);
 
@@ -147,7 +147,7 @@ void CorrelationFunction::compute (const Image<data_t>& im) {
     }
   }
   // normalize values by numbers of pixels counted per entry
-  std::map<Point2D<int>, data_t>::iterator iter;
+  std::map<Point<int>, data_t>::iterator iter;
   for (iter = xi.begin(); iter != xi.end(); iter++) {
     uint n = num[iter->first];
     //std::cout << iter->first << "\t" << iter->second << "\t" << n << std::endl;
@@ -180,7 +180,7 @@ void CorrelationFunction::compute (const Image<data_t>& im) {
 
 NumMatrix<data_t> CorrelationFunction::getCorrelationMatrix() const {
   NumMatrix<data_t> corr(2*maxLength+1, 2*maxLength+1);
-  std::map<Point2D<int>, data_t>::const_iterator iter;
+  std::map<Point<int>, data_t>::const_iterator iter;
   int i,j;
   for (iter = xi.begin(); iter != xi.end(); iter++) {
     i = iter->first(0) + maxLength;
@@ -190,15 +190,15 @@ NumMatrix<data_t> CorrelationFunction::getCorrelationMatrix() const {
   return corr;
 }
 
-const std::map<Point2D<int>, data_t>& CorrelationFunction::getCorrelationFunction() const {
+const std::map<Point<int>, data_t>& CorrelationFunction::getCorrelationFunction() const {
   return xi;
 }
-const std::map<Point2D<int>, data_t>& CorrelationFunction::getCorrelationError() const {
+const std::map<Point<int>, data_t>& CorrelationFunction::getCorrelationError() const {
   return sigma;
 }
   
 void CorrelationFunction::setPoints() {
-  Point2D<int> p;
+  Point<int> p;
   for (int i = -maxLength; i <= maxLength; i++) {
     for (int j = -maxLength; j <= maxLength; j++) {
       p(0) = i;
@@ -210,7 +210,7 @@ void CorrelationFunction::setPoints() {
 }
 
 void CorrelationFunction::applyThreshold(data_t thresh) {
-  Point2D<int> p;
+  Point<int> p;
   // don't use iterators here because the erase messes them up
   for (int i = -maxLength; i <= maxLength; i++) {
     for (int j = -maxLength; j <= maxLength; j++) {

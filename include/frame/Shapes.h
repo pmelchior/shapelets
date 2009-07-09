@@ -1,10 +1,10 @@
-#ifndef SHAPELENS_SHAPES2D_H
-#define SHAPELENS_SHAPES2D_H
+#ifndef SHAPELENS_SHAPES_H
+#define SHAPELENS_SHAPES_H
 
 #include <list>
 #include <stdexcept>
 #include "../Typedef.h"
-#include "Point2D.h"
+#include "Point.h"
 
 namespace shapelens {
   /// Rectangular patch.
@@ -12,9 +12,9 @@ namespace shapelens {
     class Rectangle {
   public:
     /// Lower-left boundary point.
-    Point2D<T> ll;
+    Point<T> ll;
     /// Top-right boundary point.
-    Point2D<T> tr;
+    Point<T> tr;
   };
   
   /// Edge of Polygon.
@@ -22,12 +22,12 @@ namespace shapelens {
     class Edge {
   public:
     /// First point of edge.
-    Point2D<T> p1;
+    Point<T> p1;
     /// Second point of edge.
-    Point2D<T> p2;
+    Point<T> p2;
     /// Move edge to next point \p p.
     /// Replace p1 by p2 and sets p2 to \p p.
-    void moveTo(const Point2D<T>& p) {
+    void moveTo(const Point<T>& p) {
       p1 = p2;
       p2 = p;
     }
@@ -47,14 +47,14 @@ namespace shapelens {
     /// Constructor.
     Polygon() {
     };
-    /// Constructor from a list of Point2D.
+    /// Constructor from a list of Point.
     /// It is assumed that points form a closed polygon, that means
     /// the end of the edge chain is defined by the frist point in the list.
-    Polygon(const std::list<Point2D<T> >& points) {
+    Polygon(const std::list<Point<T> >& points) {
       if (points.size() < 3)
 	throw std::invalid_argument("Polygon: List of edge points must contain at least 3 points");
       Edge<T> e;
-      typename std::list<Point2D<T> >::const_iterator iter = points.begin();
+      typename std::list<Point<T> >::const_iterator iter = points.begin();
       e.p1 = *iter;
       iter++;
       e.p2 = *iter;
@@ -92,7 +92,7 @@ namespace shapelens {
     /// Checks whether \p p is inside the polygon.
     /// Uses crossing test: If a ray originating from \p into positive y-direction
     /// crosses an odd number of edges, its inside the polygon.
-    bool isInside(const Point2D<T>& p) const {
+    bool isInside(const Point<T>& p) const {
       unsigned int crossings = 0;
       for (typename std::list<Edge<T> >::const_iterator iter = edges.begin(); iter != edges.end(); iter++) {
 	// x-cordinate of edge-points above and below p
@@ -113,7 +113,7 @@ namespace shapelens {
     }
     /// Return Rectangle which bounds the polygon.
     Rectangle<T> getBoundingRectangle() const {
-      shapelens::Point2D<double> min,max;
+      shapelens::Point<double> min,max;
       T mx,my,MX,MY;
       for (typename std::list<Edge<T> >::const_iterator iter = edges.begin(); iter != edges.end(); iter++) {
 	mx = std::min(iter->p1(0),iter->p2(0));
@@ -173,12 +173,12 @@ namespace shapelens {
       if (is.bad())
 	std::ios_base::failure("Polygon: Cannot read from istream");
       
-      std::list<Point2D<T> > points;
+      std::list<Point<T> > points;
       std::string delimiter;
       T x,y;
       is >> delimiter;
       while (is >> x >> y)
-	points.push_back(Point2D<T>(x,y));
+	points.push_back(Point<T>(x,y));
       if(points.size() > 0) {
         is.clear();
         p = Polygon<T>(points);

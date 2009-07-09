@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
   
   int nmax;
   data_t beta, chi2, flux, e1,e2,e,theta, RMS, Rs;
-  Point2D<data_t> scentroid;
+  Point<data_t> scentroid;
   Quadrupole Q;
   for (ShapeletObjectList::iterator iter = sl.begin(); iter != sl.end() ; iter++) {
     // deconvolve if demanded

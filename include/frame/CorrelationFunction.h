@@ -23,8 +23,8 @@ namespace shapelens {
 ///
 /// CorrelationFunction corr(*f,f->getSegmentationMap(),5,true);
 /// corr.applyThreshold(2);
-/// const std::map<Point2D<grid_t>, data_t>& xi = corr.getCorrelationFunction();
-/// for (std::map<Point2D<grid_t>, data_t>::const_iterator iter = xi.begin(); iter != xi.end(); iter++)
+/// const std::map<Point<grid_t>, data_t>& xi = corr.getCorrelationFunction();
+/// for (std::map<Point<grid_t>, data_t>::const_iterator iter = xi.begin(); iter != xi.end(); iter++)
 ///   std::cout << iter->first << "\t" << iter->second << std::endl;
 /// ...
 ///  delete f;
@@ -61,13 +61,13 @@ class CorrelationFunction {
   /// The pixel with \f$\xi_{\vec 0}\f$ is in the center.
   NumMatrix<data_t> getCorrelationMatrix() const;
   /// Get correlation function \f$\xi\f$.
-  const std::map<Point2D<int>, data_t>& getCorrelationFunction() const;
+  const std::map<Point<int>, data_t>& getCorrelationFunction() const;
   /// Get the error \f$\sigma(\xi)\f$ of the correlation function.
   /// The error provided here is the standard deviation of the mean of the correlation
   /// at the considered displacements, 
   /// \f$\sigma(\xi)_{\vec\Delta} = \bigl[\sqrt{N(N-1)}\bigr]^{-1}\bigl[\sum_{i,j}{[I(\vec{x}_i) I(\vec{x}_j)-\xi_{\vec\Delta}]^2}\bigr]^{\frac{1}{2}}\f$ 
   /// with  \f$\vec\Delta\f$ and \f$N_{\vec\Delta}\f$ as defined above.
-  const std::map<Point2D<int>, data_t>& getCorrelationError() const;
+  const std::map<Point<int>, data_t>& getCorrelationError() const;
   /// Apply significance threshold to entries of \f$\xi\f$.
   /// Keep only entries, where \f$\xi_i \geq \tau \sigma(\xi)_i\f$.
   void applyThreshold(data_t tau);
@@ -78,8 +78,8 @@ class CorrelationFunction {
  private:
   void compute(const Image<data_t>& data);
   void compute(const Image<data_t>& im, const SegmentationMap& segMap);
-  std::map<Point2D<int>, data_t> xi, sigma;
-  std::map<Point2D<int>, unsigned int> num;
+  std::map<Point<int>, data_t> xi, sigma;
+  std::map<Point<int>, unsigned int> num;
   int maxLength;
   void setPoints();
 };
