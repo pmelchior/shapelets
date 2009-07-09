@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include "../Typedef.h"
 #include "Point.h"
+#include "CoordinateTransformation.h"
 
 namespace shapelens {
   /// Rectangular patch.
@@ -15,6 +16,11 @@ namespace shapelens {
     Point<T> ll;
     /// Top-right boundary point.
     Point<T> tr;
+    /// Apply coordinate transformation.
+    void apply(const CoordinateTransformation<T>& C) {
+      C.transform(ll);
+      C.transform(tr);
+    }
   };
   
   /// Edge of Polygon.
@@ -30,6 +36,11 @@ namespace shapelens {
     void moveTo(const Point<T>& p) {
       p1 = p2;
       p2 = p;
+    }
+    /// Apply coordinate transformation.
+    void apply(const CoordinateTransformation<T>& C) {
+      C.transform(p1);
+      C.transform(p1);
     }
   };
 
@@ -150,17 +161,12 @@ namespace shapelens {
       else
 	return false;
     }
-    /// Clear all edges of this polygon.
-    void clear() {
-      edges.clear();
+    /// Apply coordinate transformation.
+    void apply(const CoordinateTransformation<T>& C) {
+      for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++)
+	iter->apply(C);
     }
-    /// Rescale all coordinates.
-    void rescale(T scale) {
-      for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++) {
-	(iter->p1)*=scale;
-	(iter->p2)*=scale;
-      }
-    }
+
     /// Ostream from Polygon
     friend std::ostream& operator<<(std::ostream& os, const Polygon<T>& p) {
       os << "//" << std::endl;
@@ -185,7 +191,7 @@ namespace shapelens {
       }
       return is;
     }
-  private:
+    /// List of edges.
     std::list<Edge<T> > edges;
   };
 

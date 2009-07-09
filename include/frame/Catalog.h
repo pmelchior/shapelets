@@ -5,6 +5,7 @@
 #include <string>
 #include <bitset>
 #include "../Typedef.h"
+#include "CoordinateTransformation.h"
 
 namespace shapelens {
 
@@ -71,7 +72,8 @@ class Catalog : public std::map<unsigned long, CatObject> {
   /// Save Catalog to file.
   /// The file will be stored in ASCII and conform with the SExtractor format.
   void save(std::string catfile) const;
-
+  /// Apply coordinate transformation to all entries.
+  void apply(const CoordinateTransformation<data_t>& C);
   /// Add a catalog to another.
   /// Entries are identified by map index. Thus, if an entry from \p *this has the same index as
   /// one from \p c, it will be overwritten.
@@ -129,44 +131,7 @@ class Catalog : public std::map<unsigned long, CatObject> {
   bool formatChecked;
   bool checkFormat();
   void setFormatField(std::string name, unsigned short colnr);
-  template <class T>
-  class Rectangle {
-  public: 
-    Rectangle() {
-      min[0] = max[0] = min[0] = max[0] = T(0);
-    }
-    Rectangle (const T& xmin, const T& xmax, const T& ymin, const T& ymax) {
-      setCoords(xmin,xmax,ymin,ymax);
-    }
-    void setCoords(const T& xmin, const T& xmax, const T& ymin, const T& ymax) {
-      min[0] = xmin;
-      min[1] = ymin;
-      max[0] = xmax;
-      max[1] = ymax;
-    }
-    void setCoords(Catalog::const_iterator& iter) {
-      min[0] = iter->second.XMIN;
-      min[1] = iter->second.YMIN;
-      max[0] = iter->second.XMAX;
-      max[1] = iter->second.YMAX;
-    }
-    T* getMin() {
-      return min;
-    }
-    T* getMax() {
-      return max;
-    }
-  private:
-    T min[2];
-    T max[2];
-  };
-  //void buildRTree(RTree<unsigned long, unsigned long, 2, data_t>& rtree, const Catalog& c) {
-  //  Catalog::Rectangle<unsigned long> rect;
-  //  for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++) {
-  //    rect.setCoords(iter->second.XMIN,iter->second.XMAX,iter->second.YMIN,iter->second.YMAX);
-  //    rtree.Insert(rect.getMin(),rect.getMax(),iter->first);
-  //  }
-  //}
+  int round(data_t x);
 };
 } // end namespace
 #endif

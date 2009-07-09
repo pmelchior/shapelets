@@ -180,7 +180,40 @@ bool Catalog::checkFormat() {
   else
     formatChecked = 1;
 }
+  
 
+int Catalog::round(data_t x) {
+  if (x-floor(x)>=0.5)
+    return (int) ceil(x);
+  else
+    return (int) floor(x);
+}
+
+void Catalog::apply(const CoordinateTransformation<data_t>& C) {
+  Point<data_t> P;
+  for (Catalog::iterator iter = Catalog::begin(); iter != Catalog::end(); iter++) {
+    CatObject& ci = iter->second;
+    // transform centroid
+    P(0) = ci.XCENTROID;
+    P(1) = ci.YCENTROID;
+    C.transform(P);
+    ci.XCENTROID = P(0);
+    ci.YCENTROID = P(1);
+    // transform XMIN ...
+    P(0) = ci.XMIN;
+    P(1) = ci.YMIN;
+    C.transform(P);
+    ci.XMIN = round(P(0));
+    ci.YMIN = round(P(1));
+    // transform XMAX ...
+    P(0) = ci.XMAX;
+    P(1) = ci.YMAX;
+    C.transform(P);
+    ci.XMAX = round(P(0));
+    ci.YMAX = round(P(1));
+  }
+}
+  
 Catalog Catalog::operator+ (const Catalog& c) {
   Catalog newCat = *this;
   for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++)
@@ -208,55 +241,4 @@ void Catalog::operator-= (const Catalog& c) {
       Catalog::erase(key);
   }
 }
-
-// struct matchProps {
-//   Point<data_t> centroid;
-//   data_t flux;
-//   data_t offset;
-// };
-
-// struct matchBundle {
-//   const Point<data_t>& refCentroid;
-//   const Catalog& cat;
-//   map<ulong, matchProps>& matches;
-// };
-
-// bool insertCatMatch(ulong id, void* params) {
-//   matchBundle* bundle = (matchBundle*) params;
-//   Catalog::const_iterator iter = bundle->cat.find(id);
-//   const Point<data_t>& ref = bundle->refCentroid;
-//   matchProps props = { Point<data_t>(iter->second.XCENTROID, iter->second.YCENTROID), iter->second.FLUX, 0};
-//   props.offset = sqrt(gsl_pow_2(props.centroid(0) - ref(0)) + gsl_pow_2(props.centroid(1) - ref(1)));
-//   bundle->matches[id] = props;
-//   return true;
-// }
-
-// Catalog Catalog::operator* (const Catalog& c) {
-//   RTree<unsigned long,unsigned long,2,data_t> thisTree, cTree;
-//   buildRTree(thisTree,*this);
-//   buildRTree(cTree,c);
-  
-//   // set up structures
-//   multimap<ulong, ulong> mapping;
-//   map<ulong, matchProps> matchesC, matchesThis;
-//   int foundC, foundThis;
-//   Point<data_t> refCentroidC, refCentroidThis;
-//   matchBundle mbC { refCentroidThis, c, matchesC};
-//   matchBundle mbThis { refCentroidThis, *this, matchesThis};
-
-//   // iterate through objects of the smaller catalog
-//   Catalog::Rectangle<ulong> searchRectC, searchRectThis;
-//   if (Catalog::size() < c.size()) {
-//     for (Catalog::const_iterator iter = Catalog::begin(); iter != Catalog::end(); iter++) {
-//       refCentroidThis(0) = iter->second.XCENTROID;
-//       refCentroidThis(1) = iter->second.YCENTROID;
-//       matchesC.clear();
-//       searchRectThis.setCoords(iter);
-//       foundC = cTree.Search(searchRectThis.getMin(), searchRectThis.getMax(), &insertCatMatch, &matchesC);
-//     }
-//   } else {
-//     for (Catalog::const_iterator iter = c.begin(); iter != c.end(); iter++) {
-//     }
-//   }
-// }
 

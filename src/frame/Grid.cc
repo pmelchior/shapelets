@@ -4,7 +4,8 @@ using namespace shapelens;
 
 Grid::Grid() :
   N0(0),
-  N1(0)
+  N1(0),
+  pos_set(false)
 {
 }
 
@@ -12,24 +13,42 @@ Grid::Grid(int start0, int start1, unsigned int N0, unsigned int N1) :
   start0(start0),
   start1(start1),
   N0(N0),
-  N1(N1)
+  N1(N1),
+  pos_set(false)
 {
 }
 
-data_t Grid::operator() (unsigned long index, bool direction) const {
-  long offset;
-  if (direction) {
-    offset = index/N0;
-    return data_t(start1 + offset);
-  }
-  else {
-    offset = index%N0;
-    return data_t(start0 + offset);
+data_t Grid::operator() (unsigned long i, bool direction) const {
+  if (pos_set) {
+    return pos[i](direction);
+  } else {
+    long offset;
+    if (direction) {
+      offset = i/N0;
+      return data_t(start1 + offset);
+    }
+    else {
+      offset = i%N0;
+      return data_t(start0 + offset);
+    }
   }
 }
 
 Point<data_t> Grid::operator() (unsigned long i) const {
-  return Point<data_t>(operator()(i,0),operator()(i,1));
+  if (pos_set)
+    return pos[i];
+  else
+    return Point<data_t>(operator()(i,0),operator()(i,1));
+}
+
+void Grid::apply(const CoordinateTransformation<data_t>& C) {
+  Point<data_t> P;
+  for (unsigned long i=0; i < Grid::size(); i++) {
+    P = Grid::operator()(i);
+    C.transform(P);
+    pos.push_back(P);
+  }
+  pos_set = true;
 }
 
 int Grid::getStartPosition(bool direction) const {

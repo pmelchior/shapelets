@@ -4,6 +4,7 @@
 #include <math.h>
 #include "../Typedef.h"
 #include "Point.h"
+#include "CoordinateTransformation.h"
 
 namespace shapelens {
 
@@ -26,6 +27,9 @@ class Grid {
   data_t operator() (unsigned long index, bool direction) const;
   /// Return the ith point as a Point.
   Point<data_t> operator() (unsigned long index) const;
+  /// Apply coordinate transformation to grid points returned 
+  /// by Grid::operator().
+  void apply(const CoordinateTransformation<data_t>& C);
   /// Return starting position in given direction.
   int getStartPosition(bool direction) const;
   /// Return stopping position in given direction.
@@ -52,6 +56,8 @@ class Grid {
  private:
   unsigned int N0, N1;
   int start0,start1;
+  std::vector<Point<data_t> > pos;
+  bool pos_set;
 };
 } // end namespace
 
