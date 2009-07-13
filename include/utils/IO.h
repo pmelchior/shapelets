@@ -226,7 +226,7 @@ class IO {
     }
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
-    grid = Grid(0,0,naxes[0],naxes[1]);
+    grid.setSize(0,0,naxes[0],naxes[1]);
     v.resize(grid.size());
     long firstpix[2] = {1,1};
     T val;
@@ -249,7 +249,7 @@ class IO {
     }
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
-    im.grid = Grid(0,0,naxes[0],naxes[1]);
+    im.grid.setSize(0,0,naxes[0],naxes[1]);
     im.resize(im.grid.size());
     long firstpix[2] = {1,1};
     T val;

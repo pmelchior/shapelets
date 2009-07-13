@@ -3,6 +3,7 @@
 
 #include "Point.h"
 #include <numla/NumMatrix.h>
+#include <boost/shared_ptr.hpp>
 
 namespace shapelens {
   /// Base class for coordinate transformations in 2D.
@@ -13,17 +14,11 @@ namespace shapelens {
     class CoordinateTransformation {
   public:
     /// Apply transformation to \p P.
-    virtual void transform(Point<T>& P) const = 0;
-    /// Multiply with another transformation from the right.
-    /// This allows to form arbitrary products of transformations.
-    CoordinateTransformation& operator*=(const CoordinateTransformation& C) {
-      if (right == NULL)
-	right = const_cast<CoordinateTransformation*>(&C);
-      else
-	right->right = const_cast<CoordinateTransformation*>(&C);
-    }
-  protected:
-    CoordinateTransformation* right;
+    virtual void transform(Point<T>& P) const {} // do nothing
+    /// Get a deep copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation<T> > clone() const = 0;
+    /// Get a deep copy of this inverse of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation<T> > getInverse() const  = 0;
   };
 
   /// Class for rescaling transformations in 2D.
@@ -34,17 +29,18 @@ namespace shapelens {
   public:
     /// Constructor.
     ScalarTransformation(T scale): s(scale) {
-      CoordinateTransformation<T>::right = NULL;
     }
     /// Apply transformation to \p P.
     virtual void transform(Point<T>& P) const {
-      if (CoordinateTransformation<T>::right != NULL)
-	CoordinateTransformation<T>::right->transform(P);
       P *= s;
     }
-    /// Get inverse transformation.
-    ScalarTransformation getInverse() const {
-      return ScalarTransformation(1./s);
+    /// Get a deep copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation<T> > clone() const {
+      return boost::shared_ptr<CoordinateTransformation<T> > (new ScalarTransformation(s));
+    }
+    /// Get a deep copy of this inverse of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation<T> > getInverse() const {
+      return boost::shared_ptr<CoordinateTransformation<T> > (new ScalarTransformation(1./s));
     }
   private:
     T s;
@@ -59,20 +55,21 @@ namespace shapelens {
   public:
     /// Constructor.
   AffineTransformation(const NumMatrix<T>& M, const Point<T>& Rin, const Point<T>& Rout = Point<T>(0,0)) : M(M), Rin(Rin), Rout(Rout) {
-      CoordinateTransformation<T>::right = NULL; 
     }
     /// Apply transformation to \p P.
     virtual void transform(Point<T>& P) const {
-      if (CoordinateTransformation<T>::right != NULL)
-	CoordinateTransformation<T>::right->transform(P);
       // store temporarily
       T p0 = P(0);
       P(0) = Rout(0) + M(0,0)*(P(0)-Rin(0)) + M(0,1)*(P(1)-Rin(1));
       P(1) = Rout(1) + M(1,0)*( p0 -Rin(0)) + M(1,1)*(P(1)-Rin(1));
     }
-    /// Get inverse transformation.
-    AffineTransformation getInverse() const {
-      return AffineTransformation(M.invert(),Rout,Rin);
+    /// Get a deep copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation<T> > clone() const {
+      return boost::shared_ptr<CoordinateTransformation<T> >(new AffineTransformation(*this));
+    }
+    /// Get a deep copy of this inverse of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation<T> > getInverse() const {
+      return boost::shared_ptr<CoordinateTransformation<T> >(new AffineTransformation(M.invert(),Rout,Rin));
     }
   private:
     NumMatrix<T> M;

@@ -41,6 +41,7 @@ class Point : public boost::numeric::ublas::vector<T, boost::numeric::ublas::bou
     else
       return false;
   }
+
   /// Equality operator.
   template <class R>
     bool operator==(const Point<R>& b) const {

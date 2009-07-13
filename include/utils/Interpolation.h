@@ -138,30 +138,56 @@ namespace shapelens {
       } else
 	throw std::invalid_argument("Interpolation: x is not within xx");
     }
-    /// 2D polynomial interpolation of order \p n of \p im at <tt>(x,y)</tt>.
+    /// 2D polynomial interpolation of order \p n of \p im at 
+    /// a World coordinate point \p P.
     /// Uses a series of 1D interpolations of order \p n.
     template <class T>
-      static T polynomial(const Image<T>& im, data_t x, data_t y, int n) {
-      if (x >= 0 && x < im.getSize(0) && y >= 0 && y < im.getSize(1)) {
+      static T polynomial(const Image<T>& im, const Point<data_t>& P, int n) {
+      const Grid& grid = im.grid;
+      Point<int> IC = grid.getCoords(P);
+      if (grid.getPixel(IC) != -1) { // P inside im
+	data_t x,y;
+	if (grid.hasWCS()) {
+	  const WCS& wcs = grid.getWCS();
+	  Point<data_t> P_ = P;
+	  wcs.CT_->transform(P_); // World -> pixel
+	  x = P_(0);
+	  y = P_(1);
+	} else {
+	  x = P(0);
+	  y = P(1);
+	}
 	NumVector<T> first_run(n+1),row(n+1);
 	int x_ = (int) floor(x);
 	int y_ = (int) floor(y);
 	for (int i=0; i <= n; i++) {
 	  int y__ = y_ + i - n/2;
 	  for (int j=0; j <= n; j++)
-	    row(j) = im.get(x_ + j - n/2, y__);
+	    row(j) = im.get(Point<int>(x_ + j - n/2, y__));
 	  first_run(i) = polynomial(row,x-(x_ - n/2),n);
 	}
 	return polynomial(first_run,y-(y_ - n/2),n);
       } else
 	throw std::invalid_argument("Interpolation: (x/y) is not within image");
     }
-    /// Bi-cubic interpolation of \p im at at <tt>(x,y)</tt>.
+    /// Bi-cubic interpolation of \p im at a World coordinate point \p P.
     /// Uses Numerical Recipes \p bcucof and finite differences for gradients
     template <class T>
-      static T bicubic(const Image<T>& im, data_t x, data_t y) {
+      static T bicubic(const Image<T>& im, const Point<data_t>& P) {
       const Grid& grid = im.grid;
-      if (x >=  grid.getStartPosition(0) && x < grid.getStopPosition(0) && y >= grid.getStartPosition(1) && y < grid.getStopPosition(1)) {
+      Point<int> IC = grid.getCoords(P);
+      if (grid.getPixel(IC) != -1) { // P inside im
+	data_t x,y;
+	if (grid.hasWCS()) {
+	  const WCS& wcs = grid.getWCS();
+	  Point<data_t> P_ = P;
+	  wcs.CT_->transform(P_); // World -> pixel
+	  x = P_(0);
+	  y = P_(1);
+	} else {
+	  x = P(0);
+	  y = P(1);
+	}
 	int x_ = (int) floor(x);
 	int y_ = (int) floor(y);
 	NumMatrix<T>& w = Singleton<BicubicW<T> >::getInstance();
@@ -175,12 +201,16 @@ namespace shapelens {
 	  case 3: x__ = x_ + 1; y__ = y_ + 1; break;
 	  case 4: x__ = x_; y__ = y_ + 1; break;
 	  }
-	  yy(i-1) = im.get(x__,y__);
+	  yy(i-1) = im.get(Point<int>(x__,y__));
 	  // finite differences (centered)
-	  y1(i-1) = 0.5*(im.get(x__+1,y__) - im.get(x__-1,y__));
-	  y2(i-1) = 0.5*(im.get(x__,y__+1) - im.get(x__,y__-1));
-	  y12(i-1) = 0.25*(im.get(x__+1,y__+1) - im.get(x__+1,y__-1) - 
-			   im.get(x__-1,y__+1) - im.get(x__-1,y__-1));
+	  y1(i-1) = 0.5*(im.get(Point<int>(x__+1,y__)) - 
+			 im.get(Point<int>(x__-1,y__)));
+	  y2(i-1) = 0.5*(im.get(Point<int>(x__,y__+1)) - 
+			 im.get(Point<int>(x__,y__-1)));
+	  y12(i-1) = 0.25*(im.get(Point<int>(x__+1,y__+1)) - 
+			   im.get(Point<int>(x__+1,y__-1)) - 
+			   im.get(Point<int>(x__-1,y__+1)) - 
+			   im.get(Point<int>(x__-1,y__-1)));
 	}
 	NumVector<T> xx(16);
 	for (int i=0; i < 4; i++) {

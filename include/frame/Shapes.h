@@ -123,7 +123,7 @@ namespace shapelens {
       return bool(crossings%2);
     }
     /// Return Rectangle which bounds the polygon.
-    Rectangle<T> getBoundingRectangle() const {
+    Rectangle<T> getBoundingBox() const {
       shapelens::Point<double> min,max;
       T mx,my,MX,MY;
       for (typename std::list<Edge<T> >::const_iterator iter = edges.begin(); iter != edges.end(); iter++) {

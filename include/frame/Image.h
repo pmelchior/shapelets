@@ -29,7 +29,7 @@ class Image : public NumVector<T> {
   Image(unsigned int N, unsigned int M) : NumVector<T>(N*M) {
     basefilename = "???";
     history.clear();
-    grid = Grid(0,0,N,M);
+    grid.setSize(0,0,N,M);
   }
   /// Argumented constructor for reading from a FITS file.
   /// The extension can be given in the standard cfitsio way as
@@ -50,27 +50,99 @@ class Image : public NumVector<T> {
   T& operator()(unsigned long i) {
     return NumVector<T>::operator()(i);
   }
+  /// const access operator using pixel index.
   const T& operator()(unsigned long i) const {
     return NumVector<T>::operator()(i);
   }
   /// Access operator using pixel coordinates.
+  T& operator()(const Point<int>& P) {
+    return NumVector<T>::operator()(grid.getPixel(P));
+  }
+  /// const Access operator using pixel coordinates.
+  const T& operator()(const Point<int>& P) const {
+    return NumVector<T>::operator()(grid.getPixel(P));
+  }
+  /// Matrix-style access operator.
+  /// <tt>x,y</tt> are given as pixel offsets from the left-lower corner.
   T& operator()(unsigned long x, unsigned long y) {
-    return NumVector<T>::operator()(y*Image::getSize(0) + x);
+    Point<int>P(grid.getStartPosition(0)+x, grid.getStartPosition(1) + y);
+    return Image<T>::operator()(P);
   }
-  /// const access operator using pixel coordinates.
+  /// const Matrix-style access operator.
+  /// <tt>x,y</tt> are given as pixel offsets from the left-lower corner.
   const T& operator()(unsigned long x, unsigned long y) const {
-    return NumVector<T>::operator()(y*Image::getSize(0) + x);
+    Point<int>P(grid.getStartPosition(0)+x, grid.getStartPosition(1) + y);
+    return Image<T>::operator()(P);
   }
-  /// Get value at arbitrary position <tt>(x,y)</tt>.
-  /// If <tt>(x,y)</tt> is outside the image, returns \p 0.
-  T get(data_t x, data_t y) const {
-    int x_,y_;
-    x_ = (int) floor(x);
-    y_ = (int) floor(y);
-    if (x_ < 0 || x_ >= getSize(0) || y_ < 0 || y_ >= getSize(1))
+  
+  /// Get value at image coordinates \p P.
+  /// If \p P is outside the image, returns \p 0.
+  T get(const Point<int>& P) const {
+    long index = grid.getPixel(P);
+    if (index == -1)
       return T(0);
     else
-      return operator()(x_,y_);
+      return Image<T>::operator()(index);
+  }
+  /// Get value at arbitrary World coordinates \p P.
+  /// If \p P is outside the image, returns \p 0.
+  T get(const Point<data_t>& P) const {
+    Point<int> IC = grid.getCoords(P);
+    long index = grid.getPixel(IC);
+    if (index == -1)
+      return T(0);
+    else
+      return Image<T>::operator()(index);
+  }
+
+  /// Bi-linear interpolation at arbitrary World coordinate \p P.
+  /// If \p P is outside the image, returns \p 0.\n\n
+  /// For more elaborate types of interpolation, use Interpolation methods.
+  T interpolate(const Point<data_t>& P) const {
+    Point<int> IC = grid.getCoords(P);
+    data_t x,y;
+    if (grid.hasWCS()) {
+      const WCS& wcs = grid.getWCS();
+      Point<data_t> P_ = P;
+      wcs.CT_->transform(P_); // World -> pixel
+      x = P_(0);
+      y = P_(1);
+    } else {
+      x = P(0);
+      y = P(1);
+    }
+    int x0 = IC(0), y0 = IC(1);
+    int x1 = x0+1, y1 = y0+1; // neighborhood in image coords
+    T f00,f01,f10,f11;
+    long index = grid.getPixel(IC);
+    if (index == -1) 
+      return f00 = T(0);
+    else 
+      f00 = Image<T>::operator()(index);
+    // right
+    IC(0) = x1;
+    index = grid.getPixel(IC);
+    if (index == -1)
+      f10 = T(0);
+    else
+      f10 = Image<T>::operator()(index);
+    // top
+    IC(0) = x0;
+    IC(1) = y1;
+    index = grid.getPixel(IC);
+    if (index == -1)
+      f01 = T(0);
+    else
+      f01 = Image<T>::operator()(index);
+    // top-right
+    IC(0) = x1;
+    index = grid.getPixel(IC);
+    if (index == -1)
+      f11 = T(0);
+    else
+      f11 = Image<T>::operator()(index);
+
+    return f00*T(x1-x)*T(y1-y) + f01*T(x1-x)*T(y-y0) + f10*T(x-x0)*T(y1-y) + f11*T(x-x0)*T(y-y0);
   }
 
   NumVector<T>& accessNumVector() {
@@ -100,63 +172,8 @@ class Image : public NumVector<T> {
     sub.history << xmin << "/" << ymin << ") -> (";
     sub.history << xmax << "/" << ymax << ")" << std::endl;
   }
-  /// Create sampled version if this image by averaging over
-  /// \p sampling pixels in each direction
-  void sample(Image<T>& sampled, int sampling) {
-    T av;
-    int highres_x, highres_y;
-    if (sampled.size() != Image<T>::size()/(sampling*sampling)) {
-      sampled.resize(Image<T>::size()/(sampling*sampling));
-      sampled.grid = Grid(0,0,Image<T>::getSize(0)/sampling,Image<T>::getSize(1)/sampling);
-    }
-    for (int x=0; x < sampled.getSize(0); x++) {
-      for (int y=0; y < sampled.getSize(1); y++) {
-	av = 0;
-	// left-lower starting point for sampling
-	if (sampling%2==0) {
-	  for (int nx=0; nx<sampling; nx++)
-	    for (int ny=0; ny<sampling; ny++)
-	      av += Image<T>::operator()(x*sampling + nx, y*sampling + ny);
-	} else { // centered sampling
-	  for (int nx=-sampling/2; nx<sampling/2; nx++) {
-	    for (int ny=-sampling/2; ny<sampling/2; ny++) {
-	      highres_x = x*sampling + nx;
-	      highres_y = y*sampling + ny;
-	      // if pixel get out of bounds, mirror at the center
-	      if (highres_x < 0 || highres_x >= Image<T>::getSize(0))
-		highres_x = Image<T>::getSize(0) - abs(highres_x);
-	      if (highres_y < 0 || highres_y >= Image<T>::getSize(1))
-		highres_y = Image<T>::getSize(1) - abs(highres_y);
-	      av += Image<T>::operator()(highres_x,highres_y);
-	    }
-	  }
-	}
-	sampled(x,y) = av;
-      }
-    }
-    sampled.basefilename = basefilename;
-    sampled.history.setSilent();
-    sampled.history << "# Downsampled from " << basefilename << " by factor " << sampling << std::endl;
-  }
 
-  /// Bi-linear interpolation at arbitrary position <tt>(x,y)</tt>.
-  /// If <tt>(x,y)</tt> is outside the image, returns \p 0.
-  /// For more elaborate types of interpolation, use Interpolation methods.
-  T interpolate(data_t x, data_t y) const {
-    int x1 = (int) floor(x), y1 = (int) floor(y);
-    if (x1 < 0 || x1 >= getSize(0) || y1 < 0 || y1 >= getSize(1))
-      return T(0);
-    else{
-      T f11,f12,f21,f22;
-      int x2 = x1+1, y2 = y1+1;
-      f11 = operator()(x1,y1); // this is certainly in image
-      f12 = get(x1,y2);        // for the others, we have to check
-      f21 = get(x2,y1);
-      f22 = get(x2,y2);
-      return f11*(x2-x)*(y2-y) + f12*(x2-x)*(y-y1) + f21*(x-x1)*(y2-y) + f22*(x-x1)*(y-y1);
-    }
-  }
-
+  
   /// Get axis size of the whole image in given direction.
   unsigned int getSize(bool direction) const {
     return grid.getSize(direction);
@@ -192,7 +209,7 @@ class Image : public NumVector<T> {
  private:
   void read() {
     fitsfile *fptr = IO::openFITSFile(basefilename);
-    int status = IO::readFITSImage(fptr,grid,*this);
+    int status = IO::readFITSImage(fptr,*this);
     if (status == 0)
       history << "# Reading FITS image " + basefilename << std::endl;
     status = IO::closeFITSFile(fptr);

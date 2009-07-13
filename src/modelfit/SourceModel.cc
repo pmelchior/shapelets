@@ -158,11 +158,12 @@ char MoffatModel::getModelType() const {
 
 // ##### Interpolated Model ##### //
 InterpolatedModel::InterpolatedModel(const Image<data_t>& im, data_t flux, const Point<data_t>& reference, int order, unsigned long id) : 
-  im(im), order(order),flux(flux) {
+  im(im), order(order),flux(flux), reference(reference) {
   // define area of support
+  SourceModel::support = im.grid.getBoundingBox();
   // no need to defined centroid, as our reference is left-lower corner
-  SourceModel::support.ll = reference;
-  SourceModel::support.tr = Point<data_t>(im.getSize(0) + reference(0),im.getSize(1)+ reference(1));
+  SourceModel::support.ll -= reference;
+  SourceModel::support.tr -= reference;
   SourceModel::id = id;
   // compute total flux from pixel values
   data_t f = 0;
@@ -173,13 +174,15 @@ InterpolatedModel::InterpolatedModel(const Image<data_t>& im, data_t flux, const
 }
 
 data_t InterpolatedModel::getValue(const Point<data_t>& P) const {
+  Point<data_t> P_ = P;
+  P_ -= reference;
   switch (order) {
   case 1: // simple bi-linear interpolation
-    return flux_scale*im.interpolate(P(0)-SourceModel::support.ll(0),P(1)-SourceModel::support.ll(1));
+    return flux_scale*im.interpolate(P_);
   case -3: // bi-cubic interpolation
-    return flux_scale*Interpolation::bicubic(im,P(0)-SourceModel::support.ll(0),P(1)-SourceModel::support.ll(1));
+    return flux_scale*Interpolation::bicubic(im,P_);
   default: // nth-order polynomial interpolation
-    return flux_scale*Interpolation::polynomial(im,P(0)-SourceModel::support.ll(0),P(1)-SourceModel::support.ll(1),order);
+    return flux_scale*Interpolation::polynomial(im,P_,order);
   }
 }
 

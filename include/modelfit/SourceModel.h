@@ -122,6 +122,7 @@ private:
   const Image<data_t>& im;
   int order;
   data_t flux,flux_scale;
+  Point<data_t> reference;
 };
 
 /// Model from ShapeletObject.
