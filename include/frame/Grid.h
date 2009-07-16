@@ -24,7 +24,7 @@ namespace shapelens {
 /// The class defines the Grid on which an Image entity is defined.\n\n
 /// The class distinguishes between 
 /// - \b pixel coordinates (\p int numbers, defined at construction time) and
-/// - \b World coordinates (\p data_t number, computed from eh transformation set with apply()).
+/// - \b World coordinates (\p data_t number, computed from the transformation set with apply()).
 
 class Grid {
  public:
