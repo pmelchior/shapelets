@@ -78,6 +78,7 @@ SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> e
   SourceModel::centroid = centroid;
   SourceModel::setEllipticalSupport(limit,eps);
   SourceModel::id = id;
+  
   b = 1.9992*n - 0.3271;
   data_t RRe1n = pow(limit/Re,1./n);
   // flux at limit

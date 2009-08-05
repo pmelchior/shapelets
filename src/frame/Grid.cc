@@ -2,12 +2,54 @@
 
 using namespace shapelens;
 
+// set up default (null) transformations
+// for external calls to WCS via Grid
 WCS::WCS() {
+  CT = new NullTransformation<data_t>();
+  CT_ = new NullTransformation<data_t>();
+}
+
+WCS::~WCS() {
+  if (CT!=NULL)
+    delete CT;
+  if (CT_!=NULL)
+    delete CT_;
+}
+
+WCS::WCS(const WCS& wcs) {
+  CT = wcs.CT->clone();
+  CT_ = wcs.CT_->clone();
+}
+
+WCS& WCS::operator=(const WCS& wcs) {
+  if (CT!=NULL)
+    delete CT;
+  CT = wcs.CT->clone();
+  if (CT_!=NULL)
+    delete CT_;
+  CT_ = wcs.CT_->clone();
+}
+
+void WCS::set(const CoordinateTransformation<data_t>& C) {
+  if (CT!=NULL)
+    delete CT;
+  CT = C.clone();
+  if (CT_!=NULL)
+    delete CT_;
+  CT_ = C.getInverse();
+}
+
+void WCS::reset() {
+  if (CT!=NULL)
+    delete CT;
+  if (CT_!=NULL)
+    delete CT_;
 }
 
 Grid::Grid() :
   N0(0),
-  N1(0)
+  N1(0),
+  wcs_set(false)
 {
 }
 
@@ -15,7 +57,8 @@ Grid::Grid(int start0, int start1, unsigned int N0, unsigned int N1) :
   start0(start0),
   start1(start1),
   N0(N0),
-  N1(N1)
+  N1(N1),
+  wcs_set(false)
 {
 }
 
@@ -28,7 +71,7 @@ void Grid::setSize(int start0_, int start1_, unsigned int N0_, unsigned int N1_)
 
 // this is the most often used access mode, so make it fast
 data_t Grid::operator() (unsigned long i, bool direction) const {
-  if (hasWCS()) {
+  if (wcs_set) {
     Point<data_t> P(start0 + i%N0, start1 + i/N0);
     wcs.CT->transform(P);
     return P(direction);
@@ -46,7 +89,7 @@ data_t Grid::operator() (unsigned long i, bool direction) const {
 }
 
 Point<data_t> Grid::operator() (unsigned long i) const {
-  if (hasWCS()) {
+  if (wcs_set) {
     Point<data_t> P(start0 + i%N0, start1 + i/N0);
     wcs.CT->transform(P);
     return P;
@@ -55,13 +98,14 @@ Point<data_t> Grid::operator() (unsigned long i) const {
     return Point<data_t>(operator()(i,0),operator()(i,1));
 }
 
-void Grid::apply(const CoordinateTransformation<data_t>& C) {
-  wcs.CT = C.clone();
-  wcs.CT_ = C.getInverse();
+void Grid::setWCS(const CoordinateTransformation<data_t>& C) {
+  wcs.set(C);
+  wcs_set = true;
 }
 
-bool Grid::hasWCS() const {
-  return (wcs.CT != NULL);
+void Grid::resetWCS() {
+  wcs.reset();
+  wcs_set = false;
 }
 
 const WCS& Grid::getWCS() const {
@@ -70,7 +114,7 @@ const WCS& Grid::getWCS() const {
 
 Rectangle<data_t> Grid::getBoundingBox() const {
   Rectangle<data_t> bbox;
-  if (hasWCS()) {
+  if (wcs_set) {
     bbox.ll = bbox.tr = operator()(0);
     Point<int> IC;
     Point<data_t> P;
@@ -157,7 +201,7 @@ Point<int> Grid::getCoords(unsigned long pixel) const {
 }
 
 Point<int> Grid::getCoords(const Point<data_t>& P) const {
-  if (hasWCS()) {
+  if (wcs_set) {
     Point<data_t> P_ = P;
     wcs.CT_->transform(P_);
     return Point<int>((int)floor(P_(0)),(int)floor(P_(1)));

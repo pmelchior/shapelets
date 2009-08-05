@@ -12,11 +12,24 @@ namespace shapelens {
   /// WCS class.
   class WCS {
   public:
+    /// Constructor.
     WCS();
+    /// Copy constructor.
+    WCS(const WCS& wcs);
+    /// Destructor.
+    ~WCS();
+    /// Copy operator.
+    WCS& operator=(const WCS& wcs);
+    /// Set WCS from a CoordindateTransformation.
+    void set(const CoordinateTransformation<data_t>& C);
+    /// Reset WCS.
+    void reset();
+    /// Has non-trivial Word Coordinates
+    bool isSet();
     /// CoordindateTransformation from pixel to World coordinates
-    boost::shared_ptr<CoordinateTransformation<data_t> > CT;
+    CoordinateTransformation<data_t>* CT;
     /// Inverse transformation, from World to pixel coordinates
-    boost::shared_ptr<CoordinateTransformation<data_t> > CT_;
+    CoordinateTransformation<data_t>* CT_;
   };
 
 
@@ -42,11 +55,12 @@ class Grid {
   /// Return World coordinates from pixel \p index.
   /// The World coordinate system ist set by calling apply().
   Point<data_t> operator() (unsigned long index) const;
-  /// Apply coordinate transformation to grid points returned 
+  /// Set a coordinate transformation to grid points returned 
   /// by Grid::operator().
-  void apply(const CoordinateTransformation<data_t>& C);
-  /// Return whether WCS information is set.
-  bool hasWCS() const;
+  void setWCS(const CoordinateTransformation<data_t>& C);
+  /// Reset to coordinate transformation.
+  /// After a call to this function, World coordinates are image coordinates.
+  void resetWCS();
   /// Get WCS transformation.
   const WCS& getWCS() const;
   /// Return starting position in given direction.
@@ -85,6 +99,7 @@ class Grid {
   unsigned int N0, N1;
   int start0,start1;
   WCS wcs;
+  bool wcs_set;
   int round(data_t x) const;
 };
 } // end namespace

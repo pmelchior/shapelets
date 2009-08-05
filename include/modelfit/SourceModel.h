@@ -21,7 +21,7 @@ public:
   virtual data_t getValue(const Point<data_t>& P) const = 0;
   /// Get rectangluar support area of the model.
   const Rectangle<data_t>& getSupport() const;
-  /// Get centroid of model.
+  /// Get controid of model.
   const Point<data_t>& getCentroid() const;
   /// Get total flux of model.
   virtual data_t getFlux() const = 0;
@@ -32,7 +32,7 @@ public:
  protected:
   /// Rectangluar support area.
   Rectangle<data_t> support;
-  /// Centroid position.
+  /// Centroid.
   Point<data_t> centroid;
   /// Reference id.
   unsigned long id;
