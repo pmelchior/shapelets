@@ -163,7 +163,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   status = IO::readFITSKeyword(fptr,"XMAX",xmax);
   status = IO::readFITSKeyword(fptr,"YMIN",ymin);
   status = IO::readFITSKeyword(fptr,"YMAX",ymax);
-  sobj.model.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+  sobj.model.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
   complex<data_t> xc;
   status = IO::readFITSKeyword(fptr,"CENTROID",xc);
   sobj.xcentroid(0) = real(xc);
@@ -219,10 +219,9 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   fits_movnam_hdu(fptr,IMAGE_HDU,const_cast<char*>(string("PROPS").c_str()),0,&status);
   if (status != BAD_HDU_NUM) {
     int dim;
-    NumVector<char> v;
-    Grid g;
-    status = IO::readFITSImage(fptr,g,v);
-    std::istringstream is(v.c_array());
+    NumMatrix<char> M;
+    status = IO::readFITSImage(fptr,M);
+    std::istringstream is(M.c_array());
     sobj.prop.read(is);
   }
   IO::closeFITSFile(fptr);

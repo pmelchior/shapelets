@@ -27,8 +27,14 @@ namespace shapelens {
     /// Has non-trivial Word Coordinates
     bool isSet();
     /// CoordindateTransformation from pixel to World coordinates
-    CoordinateTransformation<data_t>* CT;
+    const CoordinateTransformation<data_t>& getPC2WC() const;
     /// Inverse transformation, from World to pixel coordinates
+    const CoordinateTransformation<data_t>& getWC2PC() const;
+    
+    friend class Grid;
+
+  private:
+    CoordinateTransformation<data_t>* CT;
     CoordinateTransformation<data_t>* CT_;
   };
 

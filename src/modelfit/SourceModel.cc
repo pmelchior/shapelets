@@ -42,8 +42,6 @@ void SourceModel::setEllipticalSupport(data_t radius, const complex<data_t>& eps
   support.tr(1) = max_y;
   support.ll(0) = - support.tr(0);
   support.ll(1) = - support.tr(1);
-  support.ll += centroid;
-  support.tr += centroid;
 }
 
 // ##### SourceModelList ##### //
@@ -71,12 +69,22 @@ Catalog SourceModelList::getCatalog() const {
 
 
 // ##### Sersic Model ##### //
-SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const Point<data_t>& centroid, unsigned long id) : 
+SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation<data_t>* CT, unsigned long id) : 
   n(n), Re(Re), eps(eps) {
   limit = 5*Re;
   shear_norm = 1 - gsl_pow_2(abs(eps));
-  SourceModel::centroid = centroid;
+  // set the WCS from CT
+  if (CT!=NULL)
+    SourceModel::wcs.set(*CT);
+  // compute WC of centroid (which is 0/0 in image coords)
+  SourceModel::centroid(0) = 0;
+  SourceModel::centroid(1) = 0;
+  const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
+  p2w.transform(SourceModel::centroid);
+  // compute support size from Re and eps
   SourceModel::setEllipticalSupport(limit,eps);
+  // compute WC of support
+  SourceModel::support.apply(p2w);
   SourceModel::id = id;
   
   b = 1.9992*n - 0.3271;
@@ -94,10 +102,12 @@ SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> e
 }
 
 data_t SersicModel::getValue(const Point<data_t>& P) const {
-  data_t x = P(0) - centroid(0);
-  data_t y = P(1) - centroid(1);
-  data_t x_ = (1-real(eps))*x - imag(eps)*y;
-  data_t y_ = -imag(eps)*x + (1+real(eps))*y;
+  // get image coords from WC
+  Point<data_t> P_ = P;
+  wcs.getWC2PC().transform(P_);
+  // additionally apply shear transformation for an elliptical profile
+  data_t x_ = (1-real(eps))*P_(0) - imag(eps)*P_(1);
+  data_t y_ = -imag(eps)*P_(0) + (1+real(eps))*P_(1);
   
   data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm; // shear changes size
   if (radius < limit)
@@ -115,15 +125,27 @@ char SersicModel::getModelType() const {
 }
 
 // ##### Moffat Model ##### //
-MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const Point<data_t>& centroid, unsigned long id) :
+MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation<data_t>* CT, unsigned long id) :
   beta(beta), eps(eps) {
-  SourceModel::centroid = centroid;
-  SourceModel::id = id;
+
   alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
   limit = 5*FWHM;
   shear_norm = 1 - gsl_pow_2(abs(eps));
-  // define area of support
+
+  // set the WCS from CT
+  if (CT!=NULL)
+    SourceModel::wcs.set(*CT);
+  // compute WC of centroid (which is 0/0 in image coords)
+  SourceModel::centroid(0) = 0;
+  SourceModel::centroid(1) = 0;
+  const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
+  p2w.transform(SourceModel::centroid);
+  // compute support size from Re and eps
   SourceModel::setEllipticalSupport(limit,eps);
+  // compute WC of support
+  SourceModel::support.apply(p2w);
+  SourceModel::id = id;
+
   // flux at limit
   flux_limit = pow(1+alpha*gsl_pow_2(limit),-beta);
   // compute total flux of model (considering the truncation at limit)
@@ -137,11 +159,13 @@ MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data
 }
 
 data_t MoffatModel::getValue(const Point<data_t>& P) const {
-  data_t x = P(0) - centroid(0);
-  data_t y = P(1) - centroid(1);
-  data_t x_ = (1-real(eps))*x - imag(eps)*y;
-  data_t y_ = -imag(eps)*x + (1+real(eps))*y;
-  
+  // get image coords from WC
+  Point<data_t> P_ = P;
+  wcs.getWC2PC().transform(P_);
+  // additionally apply shear transformation for an elliptical profile
+  data_t x_ = (1-real(eps))*P_(0) - imag(eps)*P_(1);
+  data_t y_ = -imag(eps)*P_(0) + (1+real(eps))*P_(1);
+
   data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm;
   if (radius < limit)
     return flux_scale*(pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit);
@@ -158,32 +182,41 @@ char MoffatModel::getModelType() const {
 }
 
 // ##### Interpolated Model ##### //
-InterpolatedModel::InterpolatedModel(const Image<data_t>& im, data_t flux, const Point<data_t>& reference, int order, unsigned long id) : 
-  im(im), order(order),flux(flux), reference(reference) {
-  // define area of support
-  SourceModel::support = im.grid.getBoundingBox();
-  // no need to defined centroid, as our reference is left-lower corner
-  SourceModel::support.ll -= reference;
-  SourceModel::support.tr -= reference;
+InterpolatedModel::InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation<data_t>* CT, int order, unsigned long id) : 
+  obj(obj), order(order),flux(flux) {
+  // set the WCS from CT
+  if (CT!=NULL)
+    SourceModel::wcs.set(*CT);
+  // compute WC of centroid (which is 0/0 in image coords)
+  SourceModel::centroid(0) = 0;
+  SourceModel::centroid(1) = 0;
+  const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
+  p2w.transform(SourceModel::centroid);
+  // compute WC of support
+  SourceModel::support = obj.grid.getBoundingBox();
+  // account of centroid offset of obj
+  SourceModel::support.ll -= obj.centroid;
+  SourceModel::support.tr -= obj.centroid;
+  SourceModel::support.apply(p2w);
   SourceModel::id = id;
-  // compute total flux from pixel values
-  data_t f = 0;
-  for (unsigned long i =0; i < im.size(); i++)
-    f += im(i);
+  
   // compute rescaling factor for flux
-  flux_scale = flux/f;
+  flux_scale = flux/obj.flux;
 }
 
 data_t InterpolatedModel::getValue(const Point<data_t>& P) const {
+  // get image coords from WC
   Point<data_t> P_ = P;
-  P_ -= reference;
+  wcs.getWC2PC().transform(P_);
+  // account of centroid offset of obj
+  P_ += obj.centroid;
   switch (order) {
   case 1: // simple bi-linear interpolation
-    return flux_scale*im.interpolate(P_);
+    return flux_scale*obj.interpolate(P_);
   case -3: // bi-cubic interpolation
-    return flux_scale*Interpolation::bicubic(im,P_);
+    return flux_scale*Interpolation::bicubic(obj,P_);
   default: // nth-order polynomial interpolation
-    return flux_scale*Interpolation::polynomial(im,P_,order);
+    return flux_scale*Interpolation::polynomial(obj,P_,order);
   }
 }
 
@@ -196,21 +229,33 @@ char InterpolatedModel::getModelType() const {
 }
 
 // ##### Shapelet Model ##### //
-ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point<data_t>& centroid) : 
+ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation<data_t>* CT) : 
   sobj(sobj), scentroid(sobj.getCentroid()) {
-  SourceModel::centroid = centroid;
-  SourceModel::id = sobj.getObjectID();
-  // define area of support
-  // adjust for new location of centroid
+  
+  // set the WCS from CT
+  if (CT!=NULL)
+    SourceModel::wcs.set(*CT);
+  // compute WC of centroid (which is 0/0 in image coords)
+  const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
+  SourceModel::centroid(0) = 0;
+  SourceModel::centroid(1) = 0;
+  p2w.transform(SourceModel::centroid);
+  // compute WC of support
   SourceModel::support = sobj.getGrid().getBoundingBox();
-  SourceModel::support.ll -= scentroid - centroid;
-  SourceModel::support.tr -= scentroid - centroid;
+  // account of centroid offset of sobj
+  SourceModel::support.ll -= scentroid;
+  SourceModel::support.tr -= scentroid;
+  SourceModel::support.apply(p2w);
+  SourceModel::id = sobj.getObjectID();
+
   flux_scale = flux/sobj.getShapeletFlux();
 }
 
 data_t ShapeletModel::getValue(const Point<data_t>& P) const {
+  // get image coords from WC
   Point<data_t> P_ = P;
-  P_ -= centroid;
+  wcs.getWC2PC().transform(P_);
+  // account of centroid offset of sobj
   P_ += scentroid;
   return flux_scale*sobj.eval(P_);
 }

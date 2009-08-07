@@ -147,16 +147,11 @@ namespace shapelens {
       Point<int> IC = grid.getCoords(P);
       if (grid.getPixel(IC) != -1) { // P inside im
 	data_t x,y;
-	//if (grid.hasWCS()) {
-	  const WCS& wcs = grid.getWCS();
-	  Point<data_t> P_ = P;
-	  wcs.CT_->transform(P_); // World -> pixel
-	  x = P_(0);
-	  y = P_(1);
-	  //} else {
-	  //x = P(0);
-	  //y = P(1);
-	  //}
+	const WCS& wcs = grid.getWCS();
+	Point<data_t> P_ = P;
+	wcs.getWC2PC().transform(P_); // World -> pixel
+	x = P_(0);
+	y = P_(1);
 	NumVector<T> first_run(n+1),row(n+1);
 	int x_ = (int) floor(x);
 	int y_ = (int) floor(y);
@@ -178,16 +173,11 @@ namespace shapelens {
       Point<int> IC = grid.getCoords(P);
       if (grid.getPixel(IC) != -1) { // P inside im
 	data_t x,y;
-	//if (grid.hasWCS()) {
-	  const WCS& wcs = grid.getWCS();
-	  Point<data_t> P_ = P;
-	  wcs.CT_->transform(P_); // World -> pixel
-	  x = P_(0);
-	  y = P_(1);
-	  //} else {
-	  //x = P(0);
-	  //y = P(1);
-	  //}
+	const WCS& wcs = grid.getWCS();
+	Point<data_t> P_ = P;
+	wcs.getWC2PC().transform(P_); // World -> pixel
+	x = P_(0);
+	y = P_(1);
 	int x_ = (int) floor(x);
 	int y_ = (int) floor(y);
 	NumMatrix<T>& w = Singleton<BicubicW<T> >::getInstance();

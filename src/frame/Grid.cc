@@ -10,10 +10,8 @@ WCS::WCS() {
 }
 
 WCS::~WCS() {
-  if (CT!=NULL)
-    delete CT;
-  if (CT_!=NULL)
-    delete CT_;
+  delete CT;
+  delete CT_;
 }
 
 WCS::WCS(const WCS& wcs) {
@@ -22,29 +20,35 @@ WCS::WCS(const WCS& wcs) {
 }
 
 WCS& WCS::operator=(const WCS& wcs) {
-  if (CT!=NULL)
-    delete CT;
+  delete CT;
   CT = wcs.CT->clone();
-  if (CT_!=NULL)
-    delete CT_;
+  delete CT_;
   CT_ = wcs.CT_->clone();
+  return *this;
 }
 
 void WCS::set(const CoordinateTransformation<data_t>& C) {
-  if (CT!=NULL)
-    delete CT;
+  delete CT;
   CT = C.clone();
-  if (CT_!=NULL)
-    delete CT_;
+  delete CT_;
   CT_ = C.getInverse();
 }
 
 void WCS::reset() {
-  if (CT!=NULL)
-    delete CT;
-  if (CT_!=NULL)
-    delete CT_;
+  delete CT;
+  CT = NULL;
+  delete CT_;
+  CT_ = NULL;
 }
+
+const CoordinateTransformation<data_t>& WCS::getPC2WC() const {
+  return *CT;
+}
+
+const CoordinateTransformation<data_t>& WCS::getWC2PC() const {
+  return *CT_;
+}
+
 
 Grid::Grid() :
   N0(0),

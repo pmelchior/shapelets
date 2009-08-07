@@ -18,8 +18,44 @@ namespace shapelens {
     Point<T> tr;
     /// Apply coordinate transformation.
     void apply(const CoordinateTransformation<T>& C) {
+      Point<T> lr(tr(0),ll(1)), tl(ll(0),tr(1));
       C.transform(ll);
       C.transform(tr);
+      C.transform(lr);
+      C.transform(tl);
+
+      // find bounding box of all four corner points
+      Point<T> min= ll;
+      if (tr(0) < min(0))
+	min(0) = tr(0);
+      if (lr(0) < min(0))
+	min(0) = lr(0);
+      if (tl(0) < min(0))
+	min(0) = tl(0);
+
+      if (tr(1) < min(1))
+	min(1) = tr(1);
+      if (lr(1) < min(1))
+	min(1) = lr(1);
+      if (tl(1) < min(1))
+	min(1) = tl(1);
+
+      Point<T> max = tr;
+      if (ll(0) > max(0))
+	max(0) = ll(0);
+      if (lr(0) > max(0))
+	max(0) = lr(0);
+      if (tl(0) > max(0))
+	max(0) = tl(0);
+
+      if (ll(1) > max(1))
+	max(1) = ll(1);
+      if (lr(1) > max(1))
+	max(1) = lr(1);
+      if (tl(1) > max(1))
+	max(1) = tl(1);
+      ll = min;
+      tr = max;
     }
   };
   

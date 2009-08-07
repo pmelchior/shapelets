@@ -1,8 +1,8 @@
 #ifndef SHAPELENS_SOURCEMODEL_H
 #define SHAPELENS_SOURCEMODEL_H
 
-#include <boost/shared_ptr.hpp>
 #include <vector>
+#include <boost/shared_ptr.hpp>
 #include "../frame/Shapes.h"
 #include "../frame/Object.h"
 #include "../frame/Catalog.h"
@@ -34,6 +34,8 @@ public:
   Rectangle<data_t> support;
   /// Centroid.
   Point<data_t> centroid;
+  /// Coordinate transformation for all calls to getValue().
+  WCS wcs;
   /// Reference id.
   unsigned long id;
   /// Compute rectangular SourceModel::support for elliptical sources.
@@ -61,7 +63,7 @@ class SersicModel : public SourceModel {
  public:
   /// Constructor with Sersic index \p n, effective radius \p Re, \p flux, and
   /// intrinsic ellipticity \p eps.
-  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const Point<data_t>& centroid, unsigned long id=0);
+  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const CoordinateTransformation<data_t>* CT = NULL, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -83,7 +85,7 @@ class MoffatModel : public SourceModel {
  public:
   /// Constructor with Moffat index \p beta, width \p FWHM, \p flux, and
   /// intrinsic ellipticity \p eps. 
-  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const Point<data_t>& centroid, unsigned long id=0);
+  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const CoordinateTransformation<data_t>* CT = NULL, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -101,17 +103,13 @@ class MoffatModel : public SourceModel {
 class InterpolatedModel : public SourceModel {
 public:
   /// Constructor.
-  /// The image \p im is assumed to have a Grid starting at <tt>(0,0)</tt>,
-  /// by specifying \p reference, its reference point is moved to there without
-  /// altering \p im. Similarly, \p flux automatically rescales \p im
-  /// to the desired total flux.\n
   /// \p order defines order of interpolation.
   /// - <tt>1</tt>: bi-linear
   /// - <tt>n > 1</tt>: polynomial
   /// - <tt>-3</tt>: bi-cubic
   ///
   /// For more details, see Interpolation.
-  InterpolatedModel(const Image<data_t>& im, data_t flux, const Point<data_t>& reference, int order = 1, unsigned long id=0);
+  InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation<data_t>* CT = NULL, int order = 1, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -119,7 +117,7 @@ public:
   /// Get type of model.
   virtual char getModelType() const;
 private:
-  const Image<data_t>& im;
+  const Object& obj;
   int order;
   data_t flux,flux_scale;
   Point<data_t> reference;
@@ -133,7 +131,7 @@ public:
   /// By giving \p centroid, one moves \p sobj to this centroid and adjusts
   /// the support without altering \p sobj itself. Similarly, \p flux 
   /// automatically rescales \p sobj to the desired total flux.\n
-  ShapeletModel(const ShapeletObject& sobj, data_t flux, const Point<data_t>& centroid);
+  ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation<data_t>* CT = NULL);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.

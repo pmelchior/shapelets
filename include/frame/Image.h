@@ -101,16 +101,11 @@ class Image : public NumVector<T> {
   T interpolate(const Point<data_t>& P) const {
     Point<int> IC = grid.getCoords(P);
     data_t x,y;
-    //    if (grid.hasWCS()) {
-      const WCS& wcs = grid.getWCS();
-      Point<data_t> P_ = P;
-      wcs.CT_->transform(P_); // World -> pixel
-      x = P_(0);
-      y = P_(1);
-      //} else {
-      //x = P(0);
-      //y = P(1);
-      //}
+    const WCS& wcs = grid.getWCS();
+    Point<data_t> P_ = P;
+    wcs.getWC2PC().transform(P_); // World -> pixel
+    x = P_(0);
+    y = P_(1);
     int x0 = IC(0), y0 = IC(1);
     int x1 = x0+1, y1 = y0+1; // neighborhood in image coords
     T f00,f01,f10,f11;

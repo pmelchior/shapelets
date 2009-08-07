@@ -68,7 +68,7 @@ namespace shapelens {
 
   /// Class for translation transformations in 2D.
   /// A Point \f$P\f$ will be transformed according to
-  /// \f$P^\prime=P- \Delta P\f$ with some shift direction \f$\Delta P\f$.
+  /// \f$P^\prime=P+ \Delta P\f$ with some shift direction \f$\Delta P\f$.
   template <class T>
     class ShiftTransformation : public CoordinateTransformation<T> {
   public:
@@ -77,7 +77,7 @@ namespace shapelens {
     }
     /// Apply transformation to \p P.
     virtual void transform(Point<T>& P) const {
-      P -= dP;
+      P += dP;
     }
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const {
