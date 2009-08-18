@@ -76,7 +76,7 @@ namespace shapelens {
     /// Apply coordinate transformation.
     void apply(const CoordinateTransformation<T>& C) {
       C.transform(p1);
-      C.transform(p1);
+      C.transform(p2);
     }
   };
 
@@ -87,7 +87,7 @@ namespace shapelens {
   /// with checkEdges().
   ///
   /// \b CAUTION: For integer-typed polygons, edge-artefacts can occur
-  /// when testing isInside().
+  /// when testing contains().
   template <class T>
   class Polygon {
   public:
@@ -139,7 +139,7 @@ namespace shapelens {
     /// Checks whether \p p is inside the polygon.
     /// Uses crossing test: If a ray originating from \p into positive y-direction
     /// crosses an odd number of edges, its inside the polygon.
-    bool isInside(const Point<T>& p) const {
+    bool contains(const Point<T>& p) const {
       unsigned int crossings = 0;
       for (typename std::list<Edge<T> >::const_iterator iter = edges.begin(); iter != edges.end(); iter++) {
 	// x-cordinate of edge-points above and below p
@@ -201,6 +201,55 @@ namespace shapelens {
     void apply(const CoordinateTransformation<T>& C) {
       for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++)
 	iter->apply(C);
+      remap();
+    }
+
+    void remap() {
+      // list of edge points
+      std::list<Point<T> > points;
+      for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++)
+	points.push_back(iter->p1);
+      edges.clear();
+      // find shortest path thru list of edge points
+      Edge<T> e;
+      e.p1 = points.front();
+      typename std::list<Point<T> >::iterator iter = points.begin(), nearest_iter;
+      points.erase(iter);
+      while (points.size() > 0) {
+	data_t dist = distance(e.p1,points.front());
+	iter = nearest_iter = points.begin();
+	iter++;
+	for(iter; iter != points.end(); iter++) {
+	  data_t d = distance(e.p1,*iter);
+	  if (d < dist) {
+	    dist = d;
+	    nearest_iter = iter;
+	  }
+	}
+	e.p2 = *nearest_iter;
+	addEdge(e);
+	e.p1 = e.p2;
+	points.erase(nearest_iter);
+      }
+      e.p2 = edges.front().p1;
+      addEdge(e);
+    }
+
+    /// Add \p P to all Polygon edge-points
+    Polygon<T>& operator+=(const Point<T>& P) {
+      for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++) {
+	iter->p1+=(P);
+	iter->p2+=(P);
+      }
+      return *this;
+    }
+    /// Subtract \p P from all Polygon edge-points
+    Polygon<T>& operator-=(const Point<T>& P) {
+      for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++) {
+	iter->p1-=(P);
+	iter->p2-=(P);
+      }
+      return *this;
     }
 
     /// Ostream from Polygon
@@ -229,6 +278,11 @@ namespace shapelens {
     }
     /// List of edges.
     std::list<Edge<T> > edges;
+  private:
+    data_t distance(const Point<T>& p1, const Point<T>& p2) {
+      return (p1(0) - p2(0))*(p1(0) - p2(0)) + 
+	(p1(1) - p2(1))*(p1(1) - p2(1));
+    }
   };
 
   

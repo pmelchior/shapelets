@@ -116,57 +116,30 @@ const WCS& Grid::getWCS() const {
   return wcs;
 }
 
+Polygon<data_t> Grid::getSupport() const {
+  std::list<Point<data_t> > pl;
+  Point<int> IC;
+  // lower-left in image coords
+  IC(0) = start0;
+  IC(1) = start1;
+  pl.push_back(operator()(getPixel(IC))); // already in WC
+  // lower-right
+  IC(0) = start0 + N0 - 1;
+  pl.push_back(operator()(getPixel(IC)));
+  // top-left
+  IC(0) = start0;
+  IC(1) = start1 + N1 - 1;
+  pl.push_back(operator()(getPixel(IC)));
+  // top-right
+  IC(0) = start0 + N0 - 1;
+  pl.push_back(operator()(getPixel(IC)));
+  return Polygon<data_t>(pl);
+}
+
 Rectangle<data_t> Grid::getBoundingBox() const {
   Rectangle<data_t> bbox;
   if (wcs_set) {
-    bbox.ll = bbox.tr = operator()(0);
-    Point<int> IC;
-    Point<data_t> P;
-    // for regular transformations, we only have to consider edgepoints
-    for (IC(0) = start0; IC(0) < start0 + N0; IC(0)++) {
-      IC(1) = start1;
-      P = operator()(getPixel(IC)); // is always within image
-      if (P(0)<bbox.ll(0))
-	bbox.ll(0) = P(0);
-      if (P(1)<bbox.ll(1))
-	bbox.ll(1) = P(1);
-      if (P(0)>bbox.tr(0))
-	bbox.tr(0) = P(0);
-      if (P(1)>bbox.tr(1))
-	bbox.tr(1) = P(1);
-      IC(1) = start1 + N1 - 1;
-      P = operator()(getPixel(IC)); // is always within image
-      if (P(0)<bbox.ll(0))
-	bbox.ll(0) = P(0);
-      if (P(1)<bbox.ll(1))
-	bbox.ll(1) = P(1);
-      if (P(0)>bbox.tr(0))
-	bbox.tr(0) = P(0);
-      if (P(1)>bbox.tr(1))
-	bbox.tr(1) = P(1);
-    }
-    for (IC(1) = start1; IC(1) < start1 + N1; IC(1)++) {
-      IC(0) = start0;
-      P = operator()(getPixel(IC)); // is always within image
-      if (P(0)<bbox.ll(0))
-	bbox.ll(0) = P(0);
-      if (P(1)<bbox.ll(1))
-	bbox.ll(1) = P(1);
-      if (P(0)>bbox.tr(0))
-	bbox.tr(0) = P(0);
-      if (P(1)>bbox.tr(1))
-	bbox.tr(1) = P(1);
-      IC(0) = start0 + N0 - 1;
-      P = operator()(getPixel(IC)); // is always within image
-      if (P(0)<bbox.ll(0))
-	bbox.ll(0) = P(0);
-      if (P(1)<bbox.ll(1))
-	bbox.ll(1) = P(1);
-      if (P(0)>bbox.tr(0))
-	bbox.tr(0) = P(0);
-      if (P(1)>bbox.tr(1))
-	bbox.tr(1) = P(1);
-    }
+    return getSupport().getBoundingBox();
   }
   else {  
     bbox.ll = operator()(0);

@@ -77,7 +77,9 @@ class Grid {
   unsigned int getSize(bool direction) const;
   /// Return the number of grid points.
   unsigned long size() const;
-  /// Return rectangular bounding box in Woorld Coordinates.
+  /// Get Polygon which contains the grid points in World Coordinates.
+  Polygon<data_t> getSupport() const;
+  /// Return rectangular bounding box in World Coordinates.
   Rectangle<data_t> getBoundingBox() const;
   /// Find the image coordinates from the pixel index.
   /// The coordinate system is defined such, that the left lower corner of 

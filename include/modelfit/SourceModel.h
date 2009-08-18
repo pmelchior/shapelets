@@ -20,7 +20,7 @@ public:
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const = 0;
   /// Get rectangluar support area of the model.
-  const Rectangle<data_t>& getSupport() const;
+  const Polygon<data_t>& getSupport() const;
   /// Get controid of model.
   const Point<data_t>& getCentroid() const;
   /// Get total flux of model.
@@ -30,8 +30,8 @@ public:
   /// Get reference ID of model.
   unsigned long getID() const;
  protected:
-  /// Rectangluar support area.
-  Rectangle<data_t> support;
+  /// Support area.
+  Polygon<data_t> support;
   /// Centroid.
   Point<data_t> centroid;
   /// Coordinate transformation for all calls to getValue().
