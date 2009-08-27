@@ -96,11 +96,13 @@ class Grid {
   long getPixel(const Point<int>& P) const;
   /// Get the pixel index of the neighbor pixel using image coordinates \p P.
   /// Returns the pixel index or -1 if the pixel is outside the image area.\n
-  /// The directions (0..8) go clockwise from top(1) to top-left(8); 
-  /// direction 0 is the pixel itself.
+  /// For performance issues, the directions are defined as:
+  /// \f[\begin{bmatrix}6 & 7 & 8 \\ 1 & 0 & 2 \\ 3 & 4 & 5\end{bmatrix}\f]
   long getNeighborPixel(const Point<int>& P, unsigned char direction) const;
   /// Get the pixel number of the neighbor pixel using its pixel number.
-  /// Returns <tt>-1</tt> if the pixel is outside the image area.
+  /// Returns <tt>-1</tt> if the pixel is outside the image area.\n
+  /// For performance issues, the directions are defined as:
+  /// \f[\begin{bmatrix}6 & 7 & 8 \\ 1 & 0 & 2 \\ 3 & 4 & 5\end{bmatrix}\f]
   long getNeighborPixel(unsigned long pixel, unsigned char direction) const;
 
  private:

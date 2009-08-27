@@ -55,24 +55,40 @@ class Image : public NumVector<T> {
     return NumVector<T>::operator()(i);
   }
   /// Access operator using pixel coordinates.
+  /// \b NOTE: Image is stored internally in row-major scheme, 
+  /// but \p P emulates column-major as its first entry specifies the 
+  /// column in the image. Thus, loops should iterate over columns first,
+  /// then over rows.
   T& operator()(const Point<int>& P) {
     return NumVector<T>::operator()(grid.getPixel(P));
   }
   /// const Access operator using pixel coordinates.
+  /// \b NOTE: Image is stored internally in row-major scheme, 
+  /// but \p P emulates column-major as its first entry specifies the 
+  /// column in the image. Thus, loops should iterate over columns first,
+  /// then over rows.
   const T& operator()(const Point<int>& P) const {
     return NumVector<T>::operator()(grid.getPixel(P));
   }
   /// Matrix-style access operator.
   /// <tt>x,y</tt> are given as pixel offsets from the left-lower corner.
-  T& operator()(unsigned long x, unsigned long y) {
+  /// \b NOTE: Image is stored internally in row-major scheme, 
+  /// but <tt>x,y</tt> emulates column-major as \p x specifies the 
+  /// column in the image. Thus, loops should iterate over \p x first,
+  /// then over \p y.
+  T& operator()(unsigned int x, unsigned int y) {
     Point<int>P(grid.getStartPosition(0)+x, grid.getStartPosition(1) + y);
-    return Image<T>::operator()(P);
+    return NumVector<T>::operator()(grid.getPixel(P));
   }
   /// const Matrix-style access operator.
   /// <tt>x,y</tt> are given as pixel offsets from the left-lower corner.
+  /// \b NOTE: Image is stored internally in row-major scheme, 
+  /// but <tt>x,y</tt> emulates column-major as \p x specifies the 
+  /// column in the image. Thus, loops should iterate over \p x first,
+  /// then over \p y.
   const T& operator()(unsigned long x, unsigned long y) const {
     Point<int>P(grid.getStartPosition(0)+x, grid.getStartPosition(1) + y);
-    return Image<T>::operator()(P);
+    return NumVector<T>::operator()(grid.getPixel(P));
   }
   
   /// Get value at image coordinates \p P.

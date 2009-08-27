@@ -121,23 +121,25 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     // filled up with artificial noise
     const NumVector<data_t>& data = *this;
     O.resize((xmax-xmin)*(ymax-ymin));
+    // Grid will be changed but not shifted (all pixels stay at their position)
+    O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
     O.segMap.resize((xmax-xmin)*(ymax-ymin));
-    if (weight.size()!=0) 
+    O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    if (weight.size()!=0) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
+      O.weight.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    }
     vector<uint> nearby_objects;
 
     Point<int> P;
     for (int i =0; i < O.size(); i++) {
-      // old coordinates derived from new pixel index i
-      int axis0 = xmax-xmin;
-      P(0) = i%axis0 + xmin;
-      P(1) = i/axis0 + ymin;
-      uint j = SExFrame::grid.getPixel(P);
+      P = O.grid.getCoords(i);
+      long j = SExFrame::grid.getPixel(P);
 
       // if pixel is out of image region, fill noise from default values
       // since we fill same noise into data and into bgrms
       // the overall chi^2 (normalized by bg_rms) is unaffected by this region
-      if (P(0) < 0 || P(1) < 0 || P(0) >= axsize0 || P(1) >= axsize1) {
+      if (j == -1) {
 	O(i) = gsl_ran_gaussian (r, bg_rms);
 	O.segMap(i) = 0;
 	if (weight.size()!=0) 
@@ -173,9 +175,6 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       }
     }
     
-    // Grid will be changed but not shifted (all pixels stay at their position)
-    O.grid = O.weight.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
-
     // Fill other quantities into Object
     O.history << "# Segment:" << endl;
     O.flux = catiter->second.FLUX;

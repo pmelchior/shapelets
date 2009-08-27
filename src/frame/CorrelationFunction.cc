@@ -73,8 +73,8 @@ void CorrelationFunction::compute(const Image<data_t>& im, const SegmentationMap
     // choose only noise pixels
     if (segMap(i) == 0) {
       p0 = im.grid.getCoords(i);
-      for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
-	for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+      for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+	for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
 	  if (p1(0)>=startx && p1(0)<stopx && p1(1)>=starty && p1(1) < stopy) {
 	    j = im.grid.getPixel(p1);
 	    // again: choose only noise pixels
@@ -102,8 +102,8 @@ void CorrelationFunction::compute(const Image<data_t>& im, const SegmentationMap
     // choose only noise pixels
     if (segMap(i) == 0) {
       p0 = im.grid.getCoords(i);
-      for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
-	for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+      for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+	for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
 	  if (p1(0)>=startx && p1(0)<stopx && p1(1)>=starty && p1(1) < stopy) {
 	    j = im.grid.getPixel(p1);
 	    // again: choose only noise pixels
@@ -134,8 +134,8 @@ void CorrelationFunction::compute (const Image<data_t>& im) {
   // 1) compute mean of correlation
   for (i =0; i < im.size(); i++) {
     p0 = im.grid.getCoords(i);
-    for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
-      for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+    for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+      for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
 	if (p1(0)>=startx && p1(0)<stopx && p1(1)>=starty && p1(1) < stopy) {
 	  j = im.grid.getPixel(p1);
 	  p(0) = p1(0)-p0(0);
@@ -158,8 +158,8 @@ void CorrelationFunction::compute (const Image<data_t>& im) {
   // 2) compute std of correlation given mean from above
   for (i =0; i < im.size(); i++) {
     p0 = im.grid.getCoords(i);
-    for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
-      for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+    for (p1(1)= p0(1)-maxLength; p1(1) <= p0(1)+maxLength; p1(1)++) {
+      for (p1(0) = p0(0)-maxLength; p1(0) <= p0(0)+maxLength; p1(0)++) {
 	if (p1(0)>=startx && p1(0)<stopx && p1(1)>=starty && p1(1) < stopy) {
 	  j = im.grid.getPixel(p1);
 	  p(0) = p1(0)-p0(0);
@@ -185,7 +185,7 @@ NumMatrix<data_t> CorrelationFunction::getCorrelationMatrix() const {
   for (iter = xi.begin(); iter != xi.end(); iter++) {
     i = iter->first(0) + maxLength;
     j = iter->first(1) + maxLength;
-    corr(i,j) = iter->second;
+    corr(j,i) = iter->second;
   }
   return corr;
 }

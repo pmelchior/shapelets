@@ -150,7 +150,6 @@ void Frame::linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& m
   pixelset.insert(startpixel);
   // the list is necessary for the algorithm below (using an iterator)
   // the set will be used to check whether a pixels is already there
-  // in principle this could also be done with the segMap but does not have advantages
   list<ulong> pixellist;
   pixellist.push_back(startpixel);
 
@@ -335,13 +334,13 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     ymin = axsize1 = Frame::getSize(1);
     ymax = 0;
     // loop over all pixels of current object
+    Point<int> P;
     for(set<ulong>::iterator iter = pixelset.begin(); iter != pixelset.end(); iter++ ) {
-	uint x = (*iter)%axsize0;
-	uint y = (*iter)/axsize0;
-	if (x < xmin) xmin = x;
-	if (y < ymin) ymin = y;
-	if (x > xmax) xmax = x;
-	if (y > ymax) ymax = y;
+      P = Frame::grid.getCoords(*iter);
+      if (P(0) < xmin) xmin = P(0);
+      if (P(0) > xmax) xmax = P(0);
+      if (P(1) < ymin) ymin = P(1);
+      if (P(1) > ymax) ymax = P(1);
     }
 
     O.history << "# Extracting Object " << catiter->first;
@@ -369,25 +368,26 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     // fill the object pixel data
     const NumVector<data_t>& data = *this;
     O.resize((xmax-xmin)*(ymax-ymin));
+    // Grid will be changed but not shifted (all pixels stay at their position)
+    O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
     O.segMap.history.setSilent();
     O.segMap.history = history;
     O.segMap.history.unsetSilent();
     O.segMap.resize((xmax-xmin)*(ymax-ymin));
-    if (weight.size()!=0) 
+    O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    if (weight.size()!=0) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
+      O.weight.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    }
     vector<uint> nearby_objects;
 
     // lop over all object pixels
-    Point<int> P;
     for (int i =0; i < O.size(); i++) {
-      // old coordinates derived from new pixel index i
-      int axis0 = xmax-xmin;
-      P(0) = i%axis0 + xmin;
-      P(1) = i/axis0 + ymin;
-      ulong j = Frame::grid.getPixel(P);
+      P = O.grid.getCoords(i);
+      long j = Frame::grid.getPixel(P);
 
       // if pixel is out of image region, fill noise
-      if (P(0) < 0 || P(1) < 0 || P(0) >= axsize0 || P(1) >= axsize1) {
+      if (j == -1) {
 	O(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
 	O.segMap(i) = 0;
 	if (weight.size()!=0) 
@@ -420,9 +420,6 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 
     gsl_rng_free (r);
 
-    // Grid will be changed but not shifted (all pixels stay at their position)
-    O.grid = O.weight.grid = O.segMap.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
-
     // Fill other quantities into Object
     O.flags = flags;
     O.computeFluxCentroid();
@@ -451,8 +448,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.segMap = segMap;
     if (weight.size()!=0)
       O.weight = weight;
-    O.computeFlux();
-    O.computeCentroid();
+    O.computeFluxCentroid();
   } else {
     std::cerr << "# Frame: This Object does not exist!" << endl;
     terminate();
