@@ -1,4 +1,5 @@
 #include "../../include/utils/FFT.h"
+#include <stdexcept>
 
 using namespace shapelens;
 typedef complex<data_t> Complex;
@@ -96,7 +97,8 @@ void FFT::transform(const NumVector<data_t>& f, FourierTransform1D& F) {
     fftw_plan p = fftw_plan_dft_r2c_1d(N,const_cast<data_t*>(f.c_array()),reinterpret_cast<data_t(*)[2]>(F.c_array()),FFTW_ESTIMATE);
     fftw_execute(p);
     fftw_destroy_plan(p);
-  }
+  } else 
+    throw std::length_error("FFT: NumVector has odd number of entries");
 }
 
 void FFT::transform(const FourierTransform1D& F, NumVector<data_t>& f) {
@@ -112,7 +114,8 @@ void FFT::transform(const FourierTransform1D& F, NumVector<data_t>& f) {
     fftw_execute(p);
     fftw_destroy_plan(p);
     f /= N;
-  }
+  } else 
+    throw std::length_error("FFT: FourierTransform1D has odd number of entries");
 }
 
 void FFT::transform(const NumMatrix<data_t>& f, FourierTransform2D& F) {
@@ -127,7 +130,8 @@ void FFT::transform(const NumMatrix<data_t>& f, FourierTransform2D& F) {
     fftw_plan p = fftw_plan_dft_r2c_2d(N,J,const_cast<data_t*>(f.c_array()),reinterpret_cast<data_t(*)[2]>(F.c_array()),FFTW_ESTIMATE);
     fftw_execute(p);
     fftw_destroy_plan(p);
-  }
+  } else 
+    throw std::length_error("FFT: NumMatrix has odd number of columns");
 }
 
 void FFT::transform(const FourierTransform2D& F, NumMatrix<data_t>& f) {
@@ -142,7 +146,8 @@ void FFT::transform(const FourierTransform2D& F, NumMatrix<data_t>& f) {
     fftw_destroy_plan(p);
     // normalization
     f /= N*J;
-  }
+  } else 
+    throw std::length_error("FFT: FourierTransform2D has odd number of columns");
 }
 
 void FFT::transform(const Image<data_t>& f, FourierTransform2D& F) {
@@ -157,7 +162,9 @@ void FFT::transform(const Image<data_t>& f, FourierTransform2D& F) {
     fftw_plan p = fftw_plan_dft_r2c_2d(N,J,const_cast<data_t*>(f.c_array()),reinterpret_cast<data_t(*)[2]>(F.c_array()),FFTW_ESTIMATE);
     fftw_execute(p);
     fftw_destroy_plan(p);
-  }
+  } else 
+    throw std::length_error("FFT: Image has odd number of columns");
+  
 }
 
 void FFT::transform(const FourierTransform2D& F, Image<data_t>& f) {
@@ -174,7 +181,8 @@ void FFT::transform(const FourierTransform2D& F, Image<data_t>& f) {
     fftw_destroy_plan(p);
     // normalization
     f /= N*J;
-  }
+  } else 
+    throw std::length_error("FFT: FourierTransform2D has odd number of columns");
 }
 
 void FFT::convolve(Image<data_t>& data, const Image<data_t>& kernel) {
