@@ -22,8 +22,12 @@ class FourierTransform1D : public NumVector<complex<data_t> > {
   /// Constructor for real vector of size \f$N\f$.
   FourierTransform1D(unsigned int N);
   /// Access operator.
+  /// \b CAUTION: If \f$i>N/2\f$, the result is not conjugated
+  /// as required by the Hermiticity condition.
   complex<data_t>& operator()(unsigned int i);
-  /// Access operator.
+  /// const access operator.
+  /// \b CAUTION: If \f$i>N/2\f$, the result is not conjugated
+  /// as required by the Hermiticity condition.
   const complex<data_t>& operator()(unsigned int i) const;
   /// Get wavenumber of index \p i of the transform.
   data_t getWavenumber(int i) const;
@@ -47,8 +51,12 @@ class FourierTransform2D : public NumMatrix<complex<data_t> > {
   /// Constructor for real matrix of size \f$N\times J\f$.
   FourierTransform2D(unsigned int N, unsigned int J);
   /// Access operator.
+  /// \b CAUTION: If \f$j>J/2\f$, the result is not conjugated
+  /// as required by the Hermiticity condition.
   complex<data_t>& operator()(unsigned int i, unsigned int j);
-  /// Access operator.
+  /// const access operator.
+  /// \b CAUTION: If \f$j>J/2\f$, the result is not conjugated
+  /// as required by the Hermiticity condition.
   const complex<data_t>& operator()(unsigned int i, unsigned int j) const;
   /// Get wavenumber of index \p i of the transform.
   complex<data_t> getWavenumber(int i, int j) const;

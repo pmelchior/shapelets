@@ -51,7 +51,6 @@ CorrelationFunction::CorrelationFunction(const NumMatrix<data_t>& corr)  {
   }
   maxLength = (corr.getColumns() - 1)/2;
   Point<int> p;
-  int i,j;
   for (int i=0; i < corr.getRows(); i++) {
     for (int j =0; j < corr.getColumns(); j++) {
       p(0) = i - maxLength;

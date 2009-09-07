@@ -77,7 +77,7 @@ class Image : public NumVector<T> {
   /// column in the image. Thus, loops should iterate over \p x first,
   /// then over \p y.
   T& operator()(unsigned int x, unsigned int y) {
-    Point<int>P(grid.getStartPosition(0)+x, grid.getStartPosition(1) + y);
+    Point<int>P(grid.getStartPosition(0)+int(x), grid.getStartPosition(1) + int(y));
     return NumVector<T>::operator()(grid.getPixel(P));
   }
   /// const Matrix-style access operator.
@@ -86,8 +86,8 @@ class Image : public NumVector<T> {
   /// but <tt>x,y</tt> emulates column-major as \p x specifies the 
   /// column in the image. Thus, loops should iterate over \p x first,
   /// then over \p y.
-  const T& operator()(unsigned long x, unsigned long y) const {
-    Point<int>P(grid.getStartPosition(0)+x, grid.getStartPosition(1) + y);
+  const T& operator()(unsigned int x, unsigned int y) const {
+    Point<int>P(grid.getStartPosition(0)+int(x), grid.getStartPosition(1) + int(y));
     return NumVector<T>::operator()(grid.getPixel(P));
   }
   

@@ -133,7 +133,11 @@ Polygon<data_t> Grid::getSupport() const {
   // top-right
   IC(0) = start0 + N0 - 1;
   pl.push_back(operator()(getPixel(IC)));
-  return Polygon<data_t>(pl);
+  Polygon<data_t> p(pl);
+  // as support may have flipped edges, we need to remap it
+  if (wcs_set)
+    p.remap();
+  return p;
 }
 
 Rectangle<data_t> Grid::getBoundingBox() const {
@@ -187,8 +191,8 @@ Point<int> Grid::getCoords(const Point<data_t>& P) const {
 }
 
 long Grid::getPixel(const Point<int>& P) const {
-  if (P(0) >= start0 && P(0) < start0 + N0 && P(1) >= start1 && P(1) < start1 + N1)
-    return (P(0)-start0) + long(P(1)-start1)*N0;
+  if (P(0) >= start0 && P(0) < start0 + int(N0) && P(1) >= start1 && P(1) < start1 + int(N1))
+    return (P(0)-start0) + long(P(1)-start1)*int(N0);
   else
     return -1;
 }

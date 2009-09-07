@@ -204,6 +204,12 @@ namespace shapelens {
       remap();
     }
 
+    /// Remap the support after application of a CoordinateTransformation.
+    /// As a CoordinateTransformation can create crossing edges (and thus
+    /// complex polygons), the list of points must be reconnected with
+    /// a new set of edges.\n
+    /// \b CAUTION: remap() assumes the Polygon to be convex, i.e. the 
+    /// chain of edges has minimal length.
     void remap() {
       // list of edge points
       std::list<Point<T> > points;

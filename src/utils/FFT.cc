@@ -14,14 +14,14 @@ complex<data_t>& FourierTransform1D::operator()(unsigned int i) {
   if (i <= N/2)
     return NumVector<Complex>::operator()(i);
   else
-    return NumVector<Complex>::operator()(N/2-i);
+    return NumVector<Complex>::operator()(N-(int)i);
     
 }
 const complex<data_t>& FourierTransform1D::operator()(unsigned int i) const {
   if (i <= N/2)
     return NumVector<Complex>::operator()(i);
   else
-    return NumVector<Complex>::operator()(N/2-i);
+    return NumVector<Complex>::operator()(N-(int)i);
 }
 data_t FourierTransform1D::getWavenumber(int i) const {
   if (i >= 0 && i < N/2) return 2*M_PI*i/N;
@@ -44,18 +44,17 @@ FourierTransform2D::FourierTransform2D(unsigned int N, unsigned int J) :
   NumMatrix<Complex> (N,J/2+1),N(N),J(J) {}
 
 complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j) {
-  if (j <= N/2)
+  if (j <= J/2)
     return NumMatrix<Complex>::operator()(i,j);
   else
-    return NumMatrix<Complex>::operator()(i,N/2-j);
-    
+    return NumMatrix<Complex>::operator()(i,J-(int)j);
 }
 
 const complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j)  const {
-  if (j <= N/2)
+  if (j <= J/2)
     return NumMatrix<Complex>::operator()(i,j);
   else
-    return NumMatrix<Complex>::operator()(i,N/2-j);
+    return NumMatrix<Complex>::operator()(i,J-(int)j);
 }
 
 int FourierTransform2D::getRealSize(bool dimension) const {
