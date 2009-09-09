@@ -1,5 +1,5 @@
 #include "../../include/frame/Catalog.h"
-#include "../../include/frame/Point.h"
+#include "../../include/frame/Shapes.h"
 #include <fstream>
 #include <iostream>
 #include <set>
@@ -191,6 +191,7 @@ int Catalog::round(data_t x) {
 
 void Catalog::apply(const CoordinateTransformation<data_t>& C) {
   Point<data_t> P;
+  Rectangle<data_t> bb;
   for (Catalog::iterator iter = Catalog::begin(); iter != Catalog::end(); iter++) {
     CatObject& ci = iter->second;
     // transform centroid
@@ -199,18 +200,16 @@ void Catalog::apply(const CoordinateTransformation<data_t>& C) {
     C.transform(P);
     ci.XCENTROID = P(0);
     ci.YCENTROID = P(1);
-    // transform XMIN ...
-    P(0) = ci.XMIN;
-    P(1) = ci.YMIN;
-    C.transform(P);
-    ci.XMIN = round(P(0));
-    ci.YMIN = round(P(1));
-    // transform XMAX ...
-    P(0) = ci.XMAX;
-    P(1) = ci.YMAX;
-    C.transform(P);
-    ci.XMAX = round(P(0));
-    ci.YMAX = round(P(1));
+    // transform bounding box of (XMIN/YMIN) .. (XMAX/YMAX)
+    bb.ll(0) = ci.XMIN;
+    bb.ll(1) = ci.YMIN;
+    bb.tr(0) = ci.XMAX;
+    bb.tr(1) = ci.YMAX;
+    bb.apply(C);
+    ci.XMIN = (int) round(bb.ll(0));
+    ci.YMIN = (int) round(bb.ll(1));
+    ci.XMAX = (int) round(bb.tr(0));
+    ci.YMAX = (int) round(bb.tr(1));
   }
 }
   
