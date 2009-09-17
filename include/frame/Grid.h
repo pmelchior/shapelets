@@ -57,10 +57,10 @@ class Grid {
   void setSize(int start0, int start1, unsigned int N0, unsigned int N1);
   /// Return single World coordinate from pixel \p index.
   /// The World coordinate system ist set by calling apply().
-  data_t operator() (unsigned long index, bool direction) const;
+  data_t operator() (long index, bool direction) const;
   /// Return World coordinates from pixel \p index.
   /// The World coordinate system ist set by calling apply().
-  Point<data_t> operator() (unsigned long index) const;
+  Point<data_t> operator() (long index) const;
   /// Set a coordinate transformation to grid points returned 
   /// by Grid::operator().
   void setWCS(const CoordinateTransformation<data_t>& C);
@@ -85,7 +85,7 @@ class Grid {
   /// The coordinate system is defined such, that the left lower corner of 
   /// the image has the coordinates \f$(start_0,start_1)\f$ (defined at 
   /// construction time).
-  Point<int> getCoords(unsigned long pixel) const;
+  Point<int> getCoords(long pixel) const;
   /// Find the image coordinates from the World coordinates.
   /// The pixel coordinates are converted to \p int by rounding off,
   /// so the denote the left-lower corner of the pixel associated with \p P.\n\n
@@ -103,7 +103,7 @@ class Grid {
   /// Returns <tt>-1</tt> if the pixel is outside the image area.\n
   /// For performance issues, the directions are defined as:
   /// \f[\begin{bmatrix}6 & 7 & 8 \\ 1 & 0 & 2 \\ 3 & 4 & 5\end{bmatrix}\f]
-  long getNeighborPixel(unsigned long pixel, unsigned char direction) const;
+  long getNeighborPixel(long pixel, unsigned char direction) const;
 
  private:
   unsigned int N0, N1;

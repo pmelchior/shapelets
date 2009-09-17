@@ -92,7 +92,11 @@ void Frame::subtractBackground() {
 data_t Frame::getThreshold(unsigned long pixel, data_t factor) {
   if (weight.size()==0) {
     if (!estimatedBG) estimateNoise();
-    return noise_mean + factor*noise_rms;
+    // for noise-free images
+    if (noise_rms == 0)
+      return noise_mean + factor;
+    else
+      return noise_mean + factor*noise_rms;
   }
   else
     return noise_mean + factor*sqrt(1./weight(pixel));
@@ -384,6 +388,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.resize((xmax-xmin)*(ymax-ymin));
     // Grid will be changed but not shifted (all pixels stay at their position)
     O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.grid.setWCS(Image<data_t>::grid.getWCS().getPC2WC());
     O.segMap.history.setSilent();
     O.segMap.history = history;
     O.segMap.history.unsetSilent();

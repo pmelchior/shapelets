@@ -74,13 +74,13 @@ void Grid::setSize(int start0_, int start1_, unsigned int N0_, unsigned int N1_)
 }
 
 // this is the most often used access mode, so make it fast
-data_t Grid::operator() (unsigned long i, bool direction) const {
+data_t Grid::operator() (long i, bool direction) const {
   if (wcs_set) {
     Point<data_t> P(start0 + i%N0, start1 + i/N0);
     wcs.CT->transform(P);
     return P(direction);
   } else {
-    long offset;
+    int offset;
     if (direction) {
       offset = i/N0;
       return data_t(start1 + offset);
@@ -92,7 +92,7 @@ data_t Grid::operator() (unsigned long i, bool direction) const {
   }
 }
 
-Point<data_t> Grid::operator() (unsigned long i) const {
+Point<data_t> Grid::operator() (long i) const {
   if (wcs_set) {
     Point<data_t> P(start0 + i%N0, start1 + i/N0);
     wcs.CT->transform(P);
@@ -103,8 +103,11 @@ Point<data_t> Grid::operator() (unsigned long i) const {
 }
 
 void Grid::setWCS(const CoordinateTransformation<data_t>& C) {
-  wcs.set(C);
-  wcs_set = true;
+  NullTransformation<data_t> N;
+  if (typeid(N) != typeid(C)) {
+    wcs.set(C);
+    wcs_set = true;
+  }
 }
 
 void Grid::resetWCS() {
@@ -177,7 +180,7 @@ unsigned long Grid::size() const {
   return N0*N1;
 }
 
-Point<int> Grid::getCoords(unsigned long pixel) const {
+Point<int> Grid::getCoords(long pixel) const {
   return Point<int>(start0 + pixel%N0,start1 + pixel/N0);
 }
 
@@ -241,7 +244,7 @@ long Grid::getNeighborPixel(const Point<int>& P, unsigned char direction) const 
   return index;
 }
 
-long Grid::getNeighborPixel(unsigned long pixel, unsigned char direction) const {
+long Grid::getNeighborPixel(long pixel, unsigned char direction) const {
   if (direction==0)
     return pixel;
   else

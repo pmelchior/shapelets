@@ -139,7 +139,7 @@ void Object::computeFlux() {
   // check if weights are available: if yes, use them
   if (weight.size() != 0) {
     data_t sum_weights = 0;
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       if (weight(i) > 0) {
 	flux += data(i) * weight(i);
 	sum_weights += weight(i);
@@ -148,7 +148,7 @@ void Object::computeFlux() {
     flux /= sum_weights;
   }
   else // unweigthed
-    for (int i=0; i< grid.size(); i++)
+    for (long i=0; i< grid.size(); i++)
       flux += data(i);
 }
 
@@ -159,10 +159,10 @@ void Object::computeCentroid() {
   // check if weights are available: if yes, use them
   if (weight.size() != 0) {
     data_t sum_weights = 0;
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       if (weight(i) > 0) {
 	centroid(0) += data(i) * grid(i,0) * weight(i);
-	centroid(0) += data(i) * grid(i,1) * weight(i);
+	centroid(1) += data(i) * grid(i,1) * weight(i);
 	sum_weights += weight(i);
       }
     }
@@ -170,7 +170,7 @@ void Object::computeCentroid() {
     centroid(1) /= flux * sum_weights;
   }
   else { // unweighted
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       centroid(0) += grid(i,0) * data(i);
       centroid(1) += grid(i,1) * data(i);
     }
@@ -187,11 +187,11 @@ void Object::computeFluxCentroid() {
   // check if weights are available: if yes, use them
   if (weight.size() != 0) {
     data_t sum_weights = 0;
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       if (weight(i) > 0) {
 	flux += data(i) * weight(i);
 	centroid(0) += data(i) * grid(i,0) * weight(i);
-	centroid(0) += data(i) * grid(i,1) * weight(i);
+	centroid(1) += data(i) * grid(i,1) * weight(i);
 	sum_weights += weight(i);
       }
     }
@@ -200,7 +200,7 @@ void Object::computeFluxCentroid() {
     centroid(1) /= flux * sum_weights;
   }
   else { // unweigthed
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       flux += data(i);
       centroid(0) += grid(i,0) * data(i);
       centroid(1) += grid(i,1) * data(i);
@@ -217,7 +217,7 @@ void Object::computeQuadrupole() {
   // check if weights are available: if yes, use them
   if (weight.size() != 0) {
     data_t sum_weights = 0;
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       if (weight(i) > 0) {
 	Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i) * weight(i);
 	Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i) * weight(i);
@@ -230,7 +230,7 @@ void Object::computeQuadrupole() {
     Q(1,1) /= flux * sum_weights;
   }
   else { // unweighted
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       Q(0,0) += gsl_pow_2(grid(i,0)-centroid(0)) * data(i);
       Q(0,1) += (grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
       Q(1,1) += gsl_pow_2(grid(i,1)-centroid(1)) * data(i);
@@ -248,7 +248,7 @@ void Object::computeOctupole() {
   // check if weights are available: if yes, use them
   if (weight.size() != 0) {
     data_t sum_weights = 0;
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       if (weight(i) > 0) {
 	O(0,0,0) += gsl_pow_3(grid(i,0)-centroid(0)) * data(i) * weight(i);
 	O(0,0,1) += gsl_pow_2(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i) * weight(i);
@@ -263,7 +263,7 @@ void Object::computeOctupole() {
     O(1,1,1) /= flux * sum_weights;
   }
   else { // unweighted
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       O(0,0,0) += gsl_pow_3(grid(i,0)-centroid(0)) * data(i);
       O(0,0,1) += gsl_pow_2(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
       O(0,1,1) += (grid(i,0)-centroid(0))*gsl_pow_2(grid(i,1)-centroid(1)) * data(i);
@@ -283,7 +283,7 @@ void Object::computeHexadecupole() {
   // check if weights are available: if yes, use them
   if (weight.size() != 0) {
     data_t sum_weights = 0;
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       if (weight(i) > 0) {
 	H(0,0,0,0) += gsl_pow_4(grid(i,0)-centroid(0)) * data(i) * weight(i);
 	H(0,0,0,1) += gsl_pow_3(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i) * weight(i);
@@ -300,7 +300,7 @@ void Object::computeHexadecupole() {
     H(1,1,1,1) /= flux * sum_weights;
   }
   else { // unweighted
-    for (int i=0; i< grid.size(); i++) {
+    for (long i=0; i< grid.size(); i++) {
       H(0,0,0,0) += gsl_pow_4(grid(i,0)-centroid(0)) * data(i);
       H(0,0,0,1) += gsl_pow_3(grid(i,0)-centroid(0))*(grid(i,1)-centroid(1)) * data(i);
       H(0,0,1,1) += gsl_pow_2(grid(i,0)-centroid(0))*gsl_pow_2(grid(i,1)-centroid(1)) * data(i);
