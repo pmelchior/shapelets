@@ -16,6 +16,12 @@ using namespace std;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
+Frame::Frame() : Image<data_t>(), segMap(), weight(), history(segMap.history) {
+  subtractedBG = estimatedBG = 0;
+  noise_rms = noise_mean = 0;
+  catalog.clear();
+}
+
 Frame::Frame(string filename) : 
 Image<data_t>(filename), segMap(), weight(), history(segMap.history) {
   history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl;
@@ -103,6 +109,14 @@ void Frame::findObjects() {
     catalog.clear();
     segMap.clear();
   }  
+
+  // if segmap is not initialized (default constructor):
+  // allocate the required space
+  if (segMap.size() == 0) {
+    segMap.resize(Frame::getSize(0)*Frame::getSize(1));
+    segMap.clear();
+    segMap.grid = Frame::grid;
+  }
 
   // set up pixellist and objectsPixels
   set<ulong> pixelset;

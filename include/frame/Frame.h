@@ -71,6 +71,8 @@ namespace shapelens {
 
 class Frame : public Image<data_t> {
  public:
+  /// Default constructor.
+  Frame();
   /// Argumented constructor.
   /// <tt>filename</tt> is the name of the Fits file.\n Extensions or other selections can be 
   // passed in the standard cfitsio way: <tt>filename[extension]</tt>.
