@@ -1,3 +1,6 @@
+#ifdef SHAPELETDB
+#if SHAPELETDB==MySQL
+
 #include "../../include/utils/MySQLDB.h"
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
@@ -109,3 +112,6 @@ DBResult MySQLDB::query(std::string query) {
     throw std::invalid_argument(mysql_error(conn));
   return DBResult(conn);
 }
+
+#endif // SHAPELETDB==MySQL
+#endif // SHAPELETDB
