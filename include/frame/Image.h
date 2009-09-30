@@ -197,7 +197,7 @@ class Image : public NumVector<T> {
   /// Save as FITS file.
   void save(std::string filename) const {
     fitsfile* fptr = IO::createFITSFile(filename);
-    IO::writeFITSImage(fptr,grid,*this);
+    IO::writeFITSImage(fptr,*this);
     // if history is not empty, append history to FITS header
     if (!history.isEmpty())
       IO::appendFITSHistory(fptr,history.str());

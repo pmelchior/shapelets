@@ -115,41 +115,68 @@ class IO {
   /// Read FITS keyword cards directly.
   static int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
 
-  /// Write FITS image from a NumVector and an appropriate Grid.
-  /// The datatype will be automatically adjusted, based on the
-  /// result of getFITSImageFormat() and getFITSDataType().
-  /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
-  template <class T>
-    static int writeFITSImage(fitsfile *outfptr, const Grid& grid, const NumVector<T>& data, std::string extname="") {
-    int dim0 = grid.getSize(0);
-    int dim1 = grid.getSize(1);
-    long naxis = 2;      
-    long naxes[2] = { dim0, dim1 };
-    long npixels = dim0*dim1;
-
-    // define image format and dataformat according to cfitsio definitions
-    int imageformat = getFITSImageFormat(data(0));
-    int datatype = getFITSDataType(data(0));
-    // create HDU
-    int status = 0;
-    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
-    // write pixel data
-    long firstpix[2] = {1,1};
-    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(data.c_array()), &status);
-    // insert creator and extname keywords
-    if (extname != "")
-      status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
-    status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
-    return status;
-  }
-
   /// Write FITS image from an Image<T>.
   /// The datatype will be automatically adjusted, based on the
   /// result of getFITSImageFormat() and getFITSDataType().
   /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
     static int writeFITSImage(fitsfile *outfptr, const Image<T>& image, std::string extname="") {
-    return writeFITSImage(outfptr,image.grid,image,extname);
+    int dim0 = image.grid.getSize(0);
+    int dim1 = image.grid.getSize(1);
+    long naxis = 2;      
+    long naxes[2] = { dim0, dim1 };
+    long npixels = dim0*dim1;
+
+    // define image format and dataformat according to cfitsio definitions
+    int imageformat = getFITSImageFormat(image(0));
+    int datatype = getFITSDataType(image(0));
+    // create HDU
+    int status = 0;
+    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    // write pixel data
+    long firstpix[2] = {1,1};
+    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(image.c_array()), &status);
+    // insert creator and extname keywords
+    if (extname != "")
+      status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
+    status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+    return status;
+  }
+  
+   template <class T>
+    static int writeFITSImage(fitsfile *outfptr, const Image<complex<T> >& image, std::string extname="") {
+    int dim0 = image.grid.getSize(0);
+    int dim1 = image.grid.getSize(1);
+    long naxis = 2;      
+    long naxes[2] = { dim0, dim1 };
+    long npixels = dim0*dim1;
+    long firstpix[2] = {1,1};
+
+    // define image format and dataformat according for each component
+    T val;
+    int imageformat = getFITSImageFormat(val);
+    int datatype = getFITSDataType(val);
+    NumVector<T> component(image.size());
+    // create HDU
+    int status = 0;
+    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    // write first component
+    for(unsigned long i=0; i < component.size(); i++)
+      component(i) = real(image(i));
+    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(component.c_array()), &status);
+
+    // insert creator and extname keywords
+    if (extname != "")
+      status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
+    status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+
+    // write second component
+    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    for(unsigned long i=0; i < component.size(); i++)
+      component(i) = imag(image(i));
+    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(component.c_array()), &status);
+
+    return status;
   }
 
   /// Write FITS image from an NumMatrix<T>.
@@ -211,29 +238,6 @@ class IO {
     return status;
   }
 
-  /// Read FITS image into NumVector<T> and a Grid.
-  /// \p v is adjusted to hold the contents of the image; the image value are 
-  /// automatically casted to the type \p T of \p v.\n
-  /// \p grid is set to Grid(0,0,N,M), where \p N and \p M are the row and
-  /// column numbers of the FITS image.
-  template <class T>
-    static int readFITSImage(fitsfile *fptr, Grid& grid, NumVector<T>& v) {
-    int naxis, status = 0;
-    fits_get_img_dim(fptr, &naxis, &status);
-    if (naxis!=2) {
-      std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
-      std::terminate();
-    }
-    long naxes[2] = {1,1};
-    fits_get_img_size(fptr, naxis, naxes, &status);
-    grid.setSize(0,0,naxes[0],naxes[1]);
-    v.resize(grid.size());
-    long firstpix[2] = {1,1};
-    T val;
-    int datatype = getFITSDataType(val);
-    fits_read_pix(fptr, datatype, firstpix, grid.size(), NULL, v.c_array(), NULL, &status);
-    return status;
-  }
   /// Read FITS image into Image<T>.
   /// \p im is adjusted to hold the contents of the image; the image value are 
   /// automatically casted to the type \p T of \p im.\n
@@ -254,7 +258,35 @@ class IO {
     long firstpix[2] = {1,1};
     T val;
     int datatype = getFITSDataType(val);
-    fits_read_pix(fptr, datatype, firstpix, im.grid.size(), NULL, im.c_array(), NULL, &status);
+    fits_read_pix(fptr, datatype, firstpix, im.size(), NULL, im.c_array(), NULL, &status);
+    return status;
+  }
+
+  template <class T>
+    static int readFITSImage(fitsfile *fptr, Image<complex<T> >& im) {
+    int naxis, status = 0;
+    fits_get_img_dim(fptr, &naxis, &status);
+    if (naxis!=2) {
+      std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
+      std::terminate();
+    }
+    long naxes[2] = {1,1};
+    fits_get_img_size(fptr, naxis, naxes, &status);
+    im.grid.setSize(0,0,naxes[0],naxes[1]);
+    im.resize(im.grid.size());
+    long firstpix[2] = {1,1};
+    T val;
+    int datatype = getFITSDataType(val);
+    NumVector<T> component(im.size());
+    fits_read_pix(fptr, datatype, firstpix, im.size(), NULL, component.c_array(), NULL, &status);
+    // copy 1st component
+    for(unsigned long i=0; i < component.size(); i++)
+      im(i) = component(i);
+    int hdutype;
+    fits_movrel_hdu(fptr, 1, &hdutype, &status);
+    fits_read_pix(fptr, datatype, firstpix, im.size(), NULL, component.c_array(), NULL, &status);
+    for(unsigned long i=0; i < component.size(); i++)
+      im(i) += complex<T>(0,component(i));
     return status;
   }
 

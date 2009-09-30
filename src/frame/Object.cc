@@ -33,7 +33,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
 
   // reading objects pixel data
   history << "# Reading object's pixel data";
-  IO::readFITSImage(fptr,grid,Object::accessNumVector());
+  IO::readFITSImage(fptr,*this);
   
   // recover object information from header keywords
   status = IO::readFITSKeywordString(fptr,"BASEFILE",Image<data_t>::basefilename);
@@ -67,7 +67,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   history << ", segmentation map";
   // move to 1st extHDU for the segmentation map
   fits_movabs_hdu(fptr, 2, &hdutype, &status);
-  IO::readFITSImage(fptr, segMap.grid, segMap);
+  IO::readFITSImage(fptr, segMap);
 
   // check if there is 2nd extHDU: the weight map or correlation
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
@@ -75,8 +75,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
     IO::readFITSKeywordString(fptr, "EXTNAME", extname);
     if (extname == "WEIGHT") {
       history << " and weight map";
-      Grid weightgrid;
-      IO::readFITSImage(fptr, weightgrid, weight);
+      IO::readFITSImage(fptr, weight);
     } else if (extname == "CORRELATION") {
       history << " and correlation function";
       NumMatrix<data_t> corr;
@@ -96,17 +95,15 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
 
 void Object::save(std::string filename) {
   // write pixel data
-  const NumVector<data_t>& data = *this;
-  const Grid& grid = Image<data_t>::grid;
   int status = 0;
   fitsfile *outfptr = IO::createFITSFile(filename);
-  status = IO::writeFITSImage(outfptr,grid,data);
+  status = IO::writeFITSImage(outfptr,*this);
 
   // add object information to header
   status = IO::updateFITSKeywordString(outfptr,"BASEFILE",Image<data_t>::basefilename,"name of source file");
   status = IO::updateFITSKeyword(outfptr,"ID",id,"object id");
-  status = IO::updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
-  status = IO::updateFITSKeyword(outfptr,"YMIN",grid.getStartPosition(1),"min(Y) in image pixels");
+  status = IO::updateFITSKeyword(outfptr,"XMIN",Image<data_t>::grid.getStartPosition(0),"min(X) in image pixels");
+  status = IO::updateFITSKeyword(outfptr,"YMIN",Image<data_t>::grid.getStartPosition(1),"min(Y) in image pixels");
   status = IO::updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
   complex<data_t> xc(centroid(0),centroid(1));
   status = IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
@@ -114,17 +111,17 @@ void Object::save(std::string filename) {
   status = IO::updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
   status = IO::updateFITSKeyword(outfptr,"FLAG",flags.to_ulong(),"extraction flags");
   status = IO::updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
-  status = IO::appendFITSHistory(outfptr,history.str());
+  status = IO::appendFITSHistory(outfptr,Image<data_t>::history.str());
 
   // save segMap
   if (segMap.size() != 0) {
-    status = IO::writeFITSImage(outfptr,grid,segMap,"SEGMAP");
+    status = IO::writeFITSImage(outfptr,segMap,"SEGMAP");
     status = IO::appendFITSHistory(outfptr,segMap.history.str());
   }
 
   //if weight map provided, save it too
   if (weight.size() != 0)
-    status = IO::writeFITSImage(outfptr,grid,weight,"WEIGHT");
+    status = IO::writeFITSImage(outfptr,weight,"WEIGHT");
   //if correlationFunction is provided, save it
   if (xi.getCorrelationFunction().size() > 0)
     status = IO::writeFITSImage(outfptr,xi.getCorrelationMatrix(),"CORRELATION");
