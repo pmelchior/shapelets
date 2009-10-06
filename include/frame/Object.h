@@ -6,7 +6,6 @@
 #include "SegmentationMap.h"
 #include "PixelCovarianceMatrix.h"
 #include "CorrelationFunction.h"
-#include "Moments.h"
 #include "../utils/FFT.h"
 #include <bitset>
 
@@ -57,26 +56,6 @@ class Object : public Image<data_t> {
   /// Computes Object::flux and Object::centroid from pixel data.
   /// If Object::weight is non-empty, the pixel weights are considered.
   void computeFluxCentroid();
-  /// Computes the quadrupole moment Object::Q from pixel data.
-  /// If Object::weight is non-empty, the pixel weights are considered.\n
-  /// \b CAUTION: The results depends on the value of Object::flux and 
-  /// Object::centroid.
-  void computeQuadrupole();
-  /// Computes the octupole moment Object::O from pixel data.
-  /// If Object::weight is non-empty, the pixel weights are considered.\n
-  /// \b CAUTION: The results depends on the value of Object::flux and 
-  /// Object::centroid.
-  void computeOctupole();
-  /// Computes the hexadecupole moment Object::H from pixel data.
-  /// If Object::weight is non-empty, the pixel weights are considered.\n
-  /// \b CAUTION: The results depends on the value of Object::flux and 
-  /// Object::centroid.
-  void computeHexadecupole();
-  /// Short-hand for computing Object::Q, Object::O, and Object::H.
-  /// If Object::weight is non-empty, the pixel weights are considered.\n
-  /// \b CAUTION: The results depends on the value of Object::flux and
-  /// Object::centroid.
-  void computeMoments();
   /// Compute correlation function Object::xi from pixel data.
   /// \p threshold is the minimum significance of the correlation to
   /// to be considered (reasonable value are around 2).
@@ -105,12 +84,6 @@ class Object : public Image<data_t> {
   data_t flux;
   /// The position of the object's centroid.
   Point<data_t> centroid;
-  /// The 2nd brightness moments, defined relative to centroid.
-  Quadrupole Q;
-  /// The 3rd brightness moments, defined relative to centroid.
-  Octupole O;
-  /// The 3rd brightness moments, defined relative to centroid.
-  Hexadecupole H;
   /// The detection flags.
   /// They indicates problems during the various procedures and are filled by a frameing class.
   /// Thus, look at Frame or SExFrame for the meaning of the individual bits.

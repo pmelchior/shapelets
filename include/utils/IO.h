@@ -25,32 +25,13 @@ class IO {
   /// - <tt>unsigned long -> ULONG_IMG</tt>
   /// - <tt>float -> FLOAT_IMG</tt>
   /// - <tt>double -> DOUBLE_IMG</tt>
-  template <class T> 
-    static  int getFITSImageFormat(T entry) {
-    char tc;
-    unsigned char tuc;
-    int ti;
-    unsigned int tui;
-    long tl;
-    unsigned long tul;
-    float tf;
-    double td;
-    if (typeid(entry) == typeid(tc) || typeid(entry) == typeid(tuc))
-      return BYTE_IMG;
-    if (typeid(entry) == typeid(ti))
-      return SHORT_IMG;
-    if (typeid(entry) == typeid(tui))
-      return USHORT_IMG;
-    if (typeid(entry) == typeid(tl))
-      return LONG_IMG;
-    if (typeid(entry) == typeid(tul))
-      return ULONG_IMG;
-    if (typeid(entry) == typeid(tf))
-      return FLOAT_IMG;
-    if (typeid(entry) == typeid(td))
-      return DOUBLE_IMG;
+  template <typename T> inline
+    static int getFITSImageFormat(const T& entry) {
+    // default type, uses template specialization for other types
+    // see below
+    return BYTE_IMG;
   }
-  
+
   /// Return FITS Image format definition, based on the type of \p entry.
   /// - <tt>bool, char, unsigned char -> TBYTE</tt>
   /// - <tt>int -> TINT</tt>
@@ -62,40 +43,11 @@ class IO {
   /// - <tt>complex<float> -> TCOMPLEX</tt>
   /// - <tt>complex<double> -> TDBLCOMPLEX</tt>
   /// - <tt>std::string -> TSTRING</tt>
-  template <class T>
-    static int getFITSDataType(T entry) {
-    bool tb;
-    char tc;
-    unsigned char tuc;
-    int ti;
-    unsigned int tui;
-    long tl;
-    unsigned long tul;
-    float tf;
-    double td;
-    complex<float> tcf;
-    complex<double> tcd;
-    std::string ts;
-    if (typeid(entry) == typeid(tb) || typeid(entry) == typeid(tc) || typeid(entry) == typeid(tuc))
-      return TBYTE;
-    if (typeid(entry) == typeid(ti))
-      return TINT;
-    if (typeid(entry) == typeid(tui))
-      return TUINT;
-    if (typeid(entry) == typeid(tl))
-      return TLONG;
-    if (typeid(entry) == typeid(tul))
-      return TULONG;
-    if (typeid(entry) == typeid(tf))
-      return TFLOAT;
-    if (typeid(entry) == typeid(td))
-      return TDOUBLE;
-    if (typeid(entry) == typeid(tcf))
-      return TCOMPLEX;
-    if (typeid(entry) == typeid(tcd))
-      return TDBLCOMPLEX;
-    if (typeid(entry) == typeid(ts))
-      return TSTRING;
+  template <typename T> inline
+    static int getFITSDataType(const T& entry) {
+    // default type, uses template specialization for other types
+    // see below
+    return TBYTE;
   }
 
   /// Open FITS file.
@@ -337,5 +289,66 @@ class IO {
   static int makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme);
   static unsigned int getScaledValue(data_t value, int maxcolors, data_t min, data_t max, char scaling);
 };
+
+// template specializations
+  template<> inline
+    int IO::getFITSImageFormat<unsigned int>(const unsigned int& entry) {
+    return USHORT_IMG;
+  }
+  template<> inline
+    int IO::getFITSImageFormat<long>(const long& entry) {
+    return LONG_IMG;
+  }
+  template<> inline
+    int IO::getFITSImageFormat<unsigned long>(const unsigned long& entry) {
+    return SHORT_IMG;
+  }
+  template<> inline
+    int IO::getFITSImageFormat<float>(const float& entry) {
+    return FLOAT_IMG;
+  }
+  template<> inline
+    int IO::getFITSImageFormat<double>(const double& entry) {
+    return DOUBLE_IMG;
+  }
+  
+
+  template<> inline
+    int IO::getFITSDataType<int>(const int& entry) {
+    return TINT;
+  }
+  template<> inline
+    int IO::getFITSDataType<unsigned int>(const unsigned int& entry) {
+    return TUINT;
+  }
+  template<> inline
+    int IO::getFITSDataType<long>(const long& entry) {
+    return TLONG;
+  }
+  template<> inline
+    int IO::getFITSDataType<unsigned long>(const unsigned long& entry) {
+    return TULONG;
+  }
+  template<> inline
+    int IO::getFITSDataType<float>(const float& entry) {
+    return TFLOAT;
+  }
+  template<> inline
+    int IO::getFITSDataType<double>(const double& entry) {
+    return TDOUBLE;
+  }
+  template<> inline
+    int IO::getFITSDataType<complex<float> >(const complex<float>& entry) {
+    return TCOMPLEX;
+  }
+  template<> inline
+    int IO::getFITSDataType<complex<double> >(const complex<double>& entry) {
+    return TDBLCOMPLEX;
+  }
+  template<> inline
+    int IO::getFITSDataType<std::string>(const std::string& entry) {
+    return TSTRING;
+  }
+  
 } // end namespace
 #endif

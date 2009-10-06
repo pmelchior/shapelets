@@ -291,7 +291,7 @@ Point<data_t> Composite::getShapeletCentroid(NumMatrix<data_t>* cov_est) const {
 }
 
 // compute 2nd brightness moments from shapelet coeffs
-Quadrupole Composite::getShapelet2ndMoments(NumMatrix<data_t>* cov_est) const {
+Moment2 Composite::getShapelet2ndMoments(NumMatrix<data_t>* cov_est) const {
   data_t factor;
   int n1, n2;
   const IndexVector& nVector = coeffs.getIndexVector();
@@ -314,7 +314,7 @@ Quadrupole Composite::getShapelet2ndMoments(NumMatrix<data_t>* cov_est) const {
   NumVector<data_t> result = Moment * coeffs;
   data_t flux = getShapeletFlux();
   factor = M_SQRTPI * beta*beta*beta / flux;
-  Quadrupole Q;
+  Moment2 Q;
   Q(0,0) = result(0) * factor;
   Q(0,1) = result(1) * factor;
   Q(1,1) = result(2) * factor;

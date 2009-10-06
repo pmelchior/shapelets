@@ -88,7 +88,7 @@ class Composite {
   /// Get 2nd brightness moments \f$Q_{ij}\f$.
   /// When given, \p cov will be the (3,3) covariance matrix of \f$Q_{ij}\f$, ordered as
   /// \f$Q_{11},\ Q_{12},\ Q_{22}\f$.
-  Quadrupole getShapelet2ndMoments(NumMatrix<data_t>* cov = NULL) const;
+  Moment2 getShapelet2ndMoments(NumMatrix<data_t>* cov = NULL) const;
   /// Get the object RMS radius \f$r\f$ from the coefficients.
   /// cf. Paper I, eq. 28\n
   /// When given, \p cov will be the (1,1) covariance matrix (= error squared) of \f$r\f$.

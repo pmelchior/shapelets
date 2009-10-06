@@ -12,7 +12,6 @@
 #include "shapelets/ShapeletObjectList.h"
 #include "shapelets/ShapeletObjectDB.h"
 
-#include "lensing/LensingEstimator.h"
 #include "modelfit/SourceModel.h"
 
 /// Namespace for ShapeLens++
