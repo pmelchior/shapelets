@@ -11,7 +11,7 @@ Object::Object() : Image<data_t>(), segMap() {
   flux = centroid(0) = centroid(1) = 0;
 }
 
-Object::Object (const Image<data_t>& base) : Image<data_t>(base), segMap() {
+Object::Object (const Image<data_t>& base) : Image<data_t>(base), segMap()  {
   id = 0;
   flags = 0;
   classifier = 0;
