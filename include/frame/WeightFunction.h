@@ -13,7 +13,7 @@ namespace shapelens {
     int getType() const;
     void setCentroid(const Point<data_t>& centroid);
     const Point<data_t>& getCentroid() const;
-    inline data_t operator()(const Point<data_t>& P) const;
+    data_t operator()(const Point<data_t>& P) const;
     data_t getScale() const;
     void setScale(data_t scale);
     void setDerivative(int n);
@@ -33,5 +33,10 @@ namespace shapelens {
     data_t Flat(const Point<data_t>& P) const;
     data_t Flat_(const Point<data_t>& P) const;
   };
+
+  inline data_t WeightFunction::operator()(const Point<data_t>& P) const {
+    return (*this.*fptr)(P);
+  }
+
 } // end namespace
 #endif

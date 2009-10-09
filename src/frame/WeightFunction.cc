@@ -81,11 +81,6 @@ namespace shapelens {
     return n;
   }
 
-
-  inline data_t WeightFunction::operator()(const Point<data_t>& P) const {
-    return (*this.*fptr)(P);
-  }
-
   data_t WeightFunction::getScale() const {
     return scale;
   }
