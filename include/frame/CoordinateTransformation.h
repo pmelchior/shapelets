@@ -149,5 +149,74 @@ namespace shapelens {
     NumMatrix<T> M;
     Point<T> Rin, Rout;
   };
+
+  /// Class for lensing transformations in 2D.
+  template <class T>
+    class LensingTransformation : public CoordinateTransformation<T> {
+  public:
+    /// Constructor.
+  LensingTransformation(data_t kappa_, complex<data_t> gamma) : 
+    kappa(kappa_), flex(false) {
+      gamma1 = real(gamma);
+      gamma2 = imag(gamma);
+    }
+    /// Constructor for 2nd order lensing transformation.
+  LensingTransformation(data_t kappa_, complex<data_t> gamma, complex<data_t> F, complex<data_t> G) : 
+    kappa(kappa_), flex(true) {
+      gamma1 = real(gamma);
+      gamma2 = imag(gamma);
+      // invert eq. (14) in Bacon et al. (2006)
+      double Gamma1_1 = 0.5*(real(F) + real(G));
+      double Gamma1_2 = 0.5*(imag(G) - imag(F));
+      double Gamma2_1 = 0.5*(imag(F) + imag(G));
+      double Gamma2_2 = 0.5*(real(F) - real(G));
+      // 1/2 of eq. (5)
+      D111 = -Gamma1_1 - 0.5*Gamma2_2;
+      D121 = -0.5*Gamma2_1;
+      D211 = -0.5*Gamma2_1;
+      D221 = -0.5*Gamma2_2;
+      D112 = -0.5*Gamma2_1;
+      D122 = -0.5*Gamma2_2;
+      D212 = -0.5*Gamma2_2;
+      D222 = Gamma1_2 - 0.5*Gamma2_1;
+      complex<data_t> F_(-D111-D221, -D121-D222);
+      complex<data_t> G_(-D111+3*D221, -3*D121+D222);
+    }
+    /// Apply transformation to \p P.
+    virtual void transform(Point<T>& P) const {
+      // store temporarily
+      T p0 = P(0), p1 = P(1);
+      // apply eq. (3)
+      P(0) = (1-kappa-gamma1)*p0 - gamma2*p1;
+      P(1) = -gamma2*p0 + (1-kappa+gamma1)*p1;
+      if (flex) {
+	P(0) += D111*p0*p0 + (D112 + D121)*p0*p1 + D122*p1*p1;
+	P(1) += D211*p0*p0 + (D212 + D221)*p0*p1 + D222*p1*p1;
+      }
+    }
+    /// Get a deep copy of \p this.
+    virtual CoordinateTransformation<T>* clone() const {
+      if (flex) {
+	complex<data_t> F(-D111-D221, -D121-D222);
+	complex<data_t> G(-D111+3*D221, -3*D121+D222);
+	return new LensingTransformation(kappa,complex<data_t>(gamma1,gamma2), F, G);
+      }
+      else
+	return new LensingTransformation(kappa,complex<data_t>(gamma1,gamma2));
+    }
+    /// Get a deep copy of this inverse of \p this.
+    virtual CoordinateTransformation<T>* getInverse() const {
+      if (flex) {
+	complex<data_t> F(D111+D221, D121+D222);
+	complex<data_t> G(D111-3*D221, 3*D121-D222);
+	return new LensingTransformation(-kappa,complex<data_t>(-gamma1,-gamma2), F, G);
+      } else
+	return new LensingTransformation(-kappa,complex<data_t>(-gamma1,-gamma2));
+    }
+  private:
+    bool flex;
+    data_t kappa, gamma1, gamma2, D111, D112, D121, D122, D211, D212, D221, D222;
+    
+  };
 } // end namespace
 #endif
