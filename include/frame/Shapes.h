@@ -57,6 +57,18 @@ namespace shapelens {
       ll = min;
       tr = max;
     }
+    /// Add \p P to \p ll and \p tr.
+    inline Rectangle<T>& operator+= (const Point<T>& P) {
+      ll -= P;
+      tr -= P;
+      return *this;
+    }
+    /// Add \p P to \p ll and \p tr.
+    inline Rectangle<T>& operator-= (const Point<T>& P) {
+      ll += P;
+      tr += P;
+      return *this;
+    }
   };
   
   /// Edge of Polygon.
@@ -201,7 +213,7 @@ namespace shapelens {
     void apply(const CoordinateTransformation<T>& C) {
       for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++)
 	iter->apply(C);
-      remap();
+      //remap();
     }
 
     /// Remap the support after application of a CoordinateTransformation.
