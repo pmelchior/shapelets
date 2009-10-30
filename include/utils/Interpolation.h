@@ -221,7 +221,7 @@ namespace shapelens {
 	}
 	return p;
       } else
-	throw std::invalid_argument("Interpolation: (x/y) is not within image");
+	return 0;//throw std::invalid_argument("Interpolation: (x/y) is not within image");
     }
   };
 } // end namespace

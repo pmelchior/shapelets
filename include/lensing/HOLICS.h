@@ -7,7 +7,6 @@
 namespace shapelens {
   class HOLICS {
   public :
-    /// Constructor.
     HOLICS(const Object& obj);
     complex<data_t> zeta;
     complex<data_t> delta;
@@ -16,7 +15,6 @@ namespace shapelens {
     complex<data_t> F(const HOLICS& psf) const;
     complex<data_t> G(const HOLICS& psf) const;
     
-  private:
     data_t sigma, 
       trQ, trQ_, trQ__, 
       xi, xi_, xi__, xi___, 
@@ -26,6 +24,8 @@ namespace shapelens {
       Delta_0_L,
       P_0_zeta, P_0_D, P_Delta_D, P_Delta_zeta, P_0_delta;
     
+  private:
+    ...
     data_t __trQ(const Moment2& Q) const;
     data_t __xi(const Moment4& Q) const;
     data_t __v0(const Moment6& Q) const;

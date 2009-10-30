@@ -12,7 +12,6 @@ namespace shapelens {
     sigma2 = scale*scale;
     fptr = &WeightFunction::Gauss;
   }
-  
   data_t  WeightFunction::Gauss(const Point<data_t>& P) const {
     data_t r = sqrt(gsl_pow_2(P(0)-C(0)) + gsl_pow_2(P(1)-C(1)));
     return Gauss(r);
@@ -31,7 +30,7 @@ namespace shapelens {
   }
   data_t  WeightFunction::Gauss_2(const Point<data_t>& P) const {
     data_t r = sqrt(gsl_pow_2(P(0)-C(0)) + gsl_pow_2(P(1)-C(1)));
-    return -Gauss(r)/sigma2;
+    return -Gauss(r)/(2*sigma2);
   }
   data_t  WeightFunction::Gauss__2(const Point<data_t>& P) const {
     data_t r = sqrt(gsl_pow_2(P(0)-C(0)) + gsl_pow_2(P(1)-C(1)));
@@ -69,7 +68,7 @@ namespace shapelens {
       case -2: fptr = &WeightFunction::Gauss__2; break;
       case 3: fptr = &WeightFunction::Gauss___; break;
       default: throw std::invalid_argument("WeightFunction: derivative of Gaussian invalid");
-      }
+      } break;
     default:
       if (n==0)
 	fptr = &WeightFunction::Flat;
