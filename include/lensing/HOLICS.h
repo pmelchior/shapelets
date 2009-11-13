@@ -25,7 +25,6 @@ namespace shapelens {
       P_0_zeta, P_0_D, P_Delta_D, P_Delta_zeta, P_0_delta;
     
   private:
-    ...
     data_t __trQ(const Moment2& Q) const;
     data_t __xi(const Moment4& Q) const;
     data_t __v0(const Moment6& Q) const;
