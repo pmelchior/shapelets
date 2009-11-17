@@ -56,13 +56,13 @@ namespace shapelens {
 
     R(0,0,0) = 2*real(chi)*psi__ + 4*real(chi)*psi_ - 2*lambda__ - 4*pi_;
     R(0,0,0) /= trQ;
-    R(0,0,1) = 2*real(chi)*2*mu__ + 4*real(chi)*2*mu_ - 2*4*sigma__;
+    R(0,0,1) = 2*real(chi)*2*mu__ + 4*real(chi)*2*mu_ - 4*omega__;
     R(0,0,1) /= trQ;
-    R(0,1,0) = R(0,0,1); // FIXME: correct???
+    R(0,1,0) = R(0,0,1) - 8*nu_/trQ;
     R(0,1,1) = 2*real(chi)*4*Q4__(0,0,1,1) + 4*real(chi)*4*Q4_(0,0,1,1) - 2*4*sigma__;
     R(0,1,1) /= trQ;
     
-    R(1,0,0) = 2*imag(chi)*psi__ + 4*imag(chi)*psi_ - 2*2*omega__; // FIXME: omega?
+    R(1,0,0) = 2*imag(chi)*psi__ + 4*imag(chi)*psi_ - 2*2*omega__;
     R(1,0,0) /= trQ;
     R(1,0,1) = 2*imag(chi)*2*mu__ + 4*imag(chi)*2*mu_ - 2*4*sigma__ - 4*pi_;
     R(1,0,1) /= trQ;
