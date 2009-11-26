@@ -22,11 +22,15 @@ namespace shapelens {
     data_t __lambda(const Moment6& Q) const;
     data_t __omega(const Moment6& Q) const;
     data_t __sigma(const Moment6& Q) const;
+    data_t __rho(const Moment6& Q) const;
+    data_t __ix(const Moment6& Q) const;
+    data_t __delta(const Moment6& Q) const;
+    
     complex<data_t> __p(const KSB& star) const;
 
   public:
     data_t trQ, trQ_, M,
-      mu_, mu__, psi_, psi__, pi_, pi__, nu_, nu__, lambda__, omega__, sigma__;
+      mu_, mu__, psi_, psi__, pi_, pi__, nu_, nu__, lambda__, omega__, sigma__,rho__,ix__,delta__;
     NumMatrix<data_t> P_sh, P_sm, e_sh, e_sm;
 
     // helper class for tensor of rank 3:

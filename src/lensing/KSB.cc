@@ -44,50 +44,42 @@ namespace shapelens {
 
     // measure moments with W'' (w.r.t r^2)
     obj.w.setDerivative(-2);
-    Moment4 Q4__(obj);
-    mu__ = __mu(Q4__);
-    psi__ = __psi(Q4__);
-    pi__ = __pi(Q4__);
-    nu__ = __nu(Q4__);
+    
+     Moment4 Q4__(obj);
+//     mu__ = __mu(Q4__);
+//     psi__ = __psi(Q4__);
+//     pi__ = __pi(Q4__);
+//     nu__ = __nu(Q4__);
+    
     Moment6 Q6__(obj);
     lambda__ = __lambda(Q6__);
-    omega__ =  __omega(Q6__);
-    sigma__ = __sigma(Q6__);
+    omega__  = __omega(Q6__);
+    sigma__  = __sigma(Q6__);
+    rho__    = __rho(Q6__);
+    ix__     = __ix(Q6__);
+    delta__  = __delta(Q6__);
 
-    R(0,0,0) = 2*real(chi)*psi__ + 4*real(chi)*psi_ - 2*lambda__ - 4*pi_;
-    R(0,0,0) /= trQ;
-    R(0,0,1) = 2*real(chi)*2*mu__ + 4*real(chi)*2*mu_ - 4*omega__;
-    R(0,0,1) /= trQ;
+    R(0,0,0) = (real(chi)/trQ)*(2*rho__ + 4*psi_) - 2*lambda__/trQ - 4*pi_/trQ;
+    R(0,0,1) = (real(chi)/trQ)*(4*ix__  + 8*mu_ ) - 4*omega__/trQ;
     R(0,1,0) = R(0,0,1) - 8*nu_/trQ;
-    R(0,1,1) = 2*real(chi)*4*Q4__(0,0,1,1) + 4*real(chi)*4*Q4_(0,0,1,1) - 2*4*sigma__;
-    R(0,1,1) /= trQ;
+    R(0,1,1) = (real(chi)/trQ)*(8*delta__ + 16*Q4_(0,0,1,1)) - 8*sigma__/trQ;
     
-    R(1,0,0) = 2*imag(chi)*psi__ + 4*imag(chi)*psi_ - 2*2*omega__;
-    R(1,0,0) /= trQ;
-    R(1,0,1) = 2*imag(chi)*2*mu__ + 4*imag(chi)*2*mu_ - 2*4*sigma__ - 4*pi_;
-    R(1,0,1) /= trQ;
-    R(1,1,0) = 2*imag(chi)*2*mu__ + 4*imag(chi)*2*mu_ - 2*4*sigma__;
-    R(1,1,0) /= trQ;
-    R(1,1,1) = 2*imag(chi)*4*Q4__(0,0,1,1) + 4*imag(chi)*4*Q4_(0,0,1,1) - 2*8*Q6__(0,0,0,1,1,1) - 4*2*nu_;
-    R(1,1,1) /= trQ;
-    
-    // reset obj.w
-    obj.w.setDerivative(0);
+    R(1,0,0) = (imag(chi)/trQ)*(2*rho__ + 4*psi_) - 4*omega__/trQ;
+    R(1,0,1) = (imag(chi)/trQ)*(4*ix__ + 8*mu_) - 8*sigma__/trQ - 4*pi_/trQ;
+    R(1,1,0) = (imag(chi)/trQ)*(4*ix__ + 8*mu_) - 8*sigma__/trQ; 
+    R(1,1,1) = (imag(chi)/trQ)*(8*delta__ + 16*Q4_(0,0,1,1)) - 16*Q6__(0,0,0,1,1,1)/trQ - 8*nu_/trQ;
 
-    // compute P_sh
+
+    //Compute P_sh 
+
     P_sh.resize(2,2);
-    P_sh(0,0) = 2*trQ + 2*psi_;
-    P_sh(0,1) = 4*mu_;
-    P_sh(1,0) = P_sh(0,1);
-    P_sh(1,1) = 2*trQ + 8*Q4_(0,0,1,1);
-    P_sh /= trQ;
-    e_sh.resize(1,2);
-    e_sh(0,0) = 2*real(chi) + 2*pi_/trQ;
-    e_sh(0,1) = 2*imag(chi) + 4*nu_/trQ;
-    P_sh(0,0) -= real(chi)*e_sh(0,0);
-    P_sh(0,1) -= real(chi)*e_sh(0,1);
-    P_sh(1,0) -= imag(chi)*e_sh(0,0);
-    P_sh(1,1) -= imag(chi)*e_sh(0,1);
+    P_sh(0,0) = -2*real(chi)*pi_/trQ-2*real(chi)*real(chi)+2*psi_/trQ + 2 ;
+    P_sh(0,1) = -4*real(chi)*nu_/trQ-2*imag(chi)*real(chi)+4*mu_/trQ;
+    P_sh(1,0) = -2*imag(chi)*pi_/trQ-2*imag(chi)*real(chi)+4*mu_/trQ;
+    P_sh(1,1) = -4*imag(chi)*nu_/trQ-2*imag(chi)*imag(chi)+8*Q4_(0,0,1,1)/trQ+2;
+					 
+    
+    obj.w.setDerivative(0);
 
     // compute P_sm
     P_sm.resize(2,2);
@@ -127,10 +119,19 @@ namespace shapelens {
     return Q(0,0,0,0,0,0) - 3*Q(0,0,0,0,1,1) + 3*Q(0,0,1,1,1,1) - Q(1,1,1,1,1,1);
   }
   data_t KSB::__omega(const Moment6& Q) const {
-    return Q(0,0,0,0,0,1) + Q(0,1,1,1,1,1) + 2*Q(0,0,0,1,1,1);
+    return Q(0,0,0,0,0,1) + Q(0,1,1,1,1,1) - 2*Q(0,0,0,1,1,1);
   }
   data_t KSB::__sigma(const Moment6& Q) const {
     return Q(0,0,0,0,1,1) - Q(0,0,1,1,1,1);
+  }
+  data_t KSB::__rho(const Moment6& Q) const {
+    return Q(0,0,0,0,0,0) - Q(0,0,0,0,1,1) - Q(0,0,1,1,1,1) + Q(1,1,1,1,1,1);
+  }
+  data_t KSB::__ix(const Moment6& Q) const {
+    return Q(0,0,0,0,0,1) - Q(0,1,1,1,1,1);
+  }
+  data_t KSB::__delta(const Moment6& Q) const {
+    return Q(0,0,0,0,1,1) + Q(0,0,1,1,1,1);
   }
 
   // eq. (22)
