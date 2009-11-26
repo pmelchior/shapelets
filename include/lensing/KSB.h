@@ -11,7 +11,9 @@ namespace shapelens {
     complex<data_t> chi;
     complex<data_t> gamma() const;
     complex<data_t> gamma(const KSB& psf) const;
-    
+    complex<data_t> gamma_nl(data_t accuracy = 0.001) const;
+    complex<data_t> gamma_nl(const KSB& psf, data_t accuracy = 0.001) const;
+
   private:
     complex<data_t> __chi(const Moment2& Q) const;
     data_t __trQ(const Moment2& Q) const;
