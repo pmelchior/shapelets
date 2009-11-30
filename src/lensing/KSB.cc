@@ -197,7 +197,7 @@ namespace shapelens {
     complex<data_t> chi_sh = __chi_sh_nl(kt->ksb1,*gamma);
     complex<data_t> chi_sm = __chi_sm(kt->ksb1,kt->ksb2);
     complex<data_t> chi_g = __chi_g(kt->ksb1,kt->ksb2,*gamma);
-    std::cout << real(*gamma) << "\t" << imag(*gamma) << "\t" << abs(kt->ksb1.chi - (chi_sh + chi_sm - chi_g)) << std::endl;
+    //std::cout << real(*gamma) << "\t" << imag(*gamma) << "\t" << abs(kt->ksb1.chi - (chi_sh + chi_sm - chi_g)) << std::endl;
     return abs(kt->ksb1.chi - (chi_sh + chi_sm - chi_g));
   }
 
