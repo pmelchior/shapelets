@@ -147,30 +147,69 @@ namespace shapelens {
     return P_gamma.invert()*(chi - P_sm*p);
   }
 
-  complex<data_t> chiNonLinear(const KSB& ksb, const complex<data_t>& gamma) {
-    complex<data_t> chi(
-			real(gamma)*(ksb.P_sh(0,0)+real(gamma)*ksb.R(0,0,0)+1*imag(gamma)*ksb.R(0,0,1))+
-			imag(gamma)*(ksb.P_sh(0,1)+1*real(gamma)*ksb.R(0,1,0)+imag(gamma)*ksb.R(0,1,1))+
-			2*real(ksb.chi)*(imag(gamma)*imag(gamma))-
-			2*real(gamma)*imag(gamma)*imag(ksb.chi),
-			
-			real(gamma)*(ksb.P_sh(1,0)+real(gamma)*ksb.R(1,0,0)+1*imag(gamma)*ksb.R(1,0,1))+
-			imag(gamma)*(ksb.P_sh(1,1)+1*real(gamma)*ksb.R(1,1,0)+imag(gamma)*ksb.R(1,1,1))+
-			2*imag(ksb.chi)*(real(gamma)*real(gamma))-
-			2*real(gamma)*imag(gamma)*real(ksb.chi));
-    return chi;
+
+  // *** KSB goes non-linear here ! ***
+
+  complex<data_t> __chi_sh_nl(const KSB& ksb, const complex<data_t>& gamma) {
+    return complex<data_t>(// 1st component
+			   real(gamma)*(ksb.P_sh(0,0)+real(gamma)*ksb.R(0,0,0)+1*imag(gamma)*ksb.R(0,0,1))+
+			   imag(gamma)*(ksb.P_sh(0,1)+1*real(gamma)*ksb.R(0,1,0)+imag(gamma)*ksb.R(0,1,1))+
+			   2*real(ksb.chi)*(imag(gamma)*imag(gamma))-
+			   2*real(gamma)*imag(gamma)*imag(ksb.chi),
+			   // 2nd component
+			   real(gamma)*(ksb.P_sh(1,0)+real(gamma)*ksb.R(1,0,0)+1*imag(gamma)*ksb.R(1,0,1))+
+			   imag(gamma)*(ksb.P_sh(1,1)+1*real(gamma)*ksb.R(1,1,0)+imag(gamma)*ksb.R(1,1,1))+
+			   2*imag(ksb.chi)*(real(gamma)*real(gamma))-
+			   2*real(gamma)*imag(gamma)*real(ksb.chi));
+  }
+  
+  complex<data_t> __chi_g(const KSB& ksb, const KSB& star, const complex<data_t>& gamma) {
+    complex<data_t> chi_sh_star = __chi_sh_nl(star,gamma);
+    return ksb.P_sm*star.P_sm.invert()*chi_sh_star;
+  }
+  
+  complex<data_t> __chi_sm(const KSB& ksb, const KSB& star) {
+    NumMatrix<data_t> P_sm_star_1 = star.P_sm.invert();
+    return complex<data_t>(// 1st component
+			   ksb.P_sm(0,0)*(P_sm_star_1(0,0)*real(star.chi) + P_sm_star_1(0,1)*imag(star.chi)) +
+			   ksb.P_sm(0,1)*(P_sm_star_1(1,0)*real(star.chi) + P_sm_star_1(1,1)*imag(star.chi)),
+			   // 2nd component
+			   ksb.P_sm(1,0)*(P_sm_star_1(0,0)*real(star.chi) + P_sm_star_1(0,1)*imag(star.chi)) +
+			   ksb.P_sm(1,1)*(P_sm_star_1(1,0)*real(star.chi) + P_sm_star_1(1,1)*imag(star.chi)));
+  }
+
+  // helper struct
+  struct KSBTuple {
+    const KSB& ksb1;
+    const KSB& ksb2;
+  };
+
+  double deltaChi_sh(const gsl_vector* v, void* p) {
+    KSBTuple* kt = reinterpret_cast<KSBTuple*>(p);
+    complex<data_t>* gamma = reinterpret_cast<complex<data_t>*>(v->data);
+    complex<data_t> chi_sh = __chi_sh_nl(kt->ksb1,*gamma);
+    return abs(kt->ksb1.chi - chi_sh);
   }
 
   double deltaChi(const gsl_vector* v, void* p) {
-    KSB* ksb = reinterpret_cast<KSB*>(p);
+    KSBTuple* kt = reinterpret_cast<KSBTuple*>(p);
     complex<data_t>* gamma = reinterpret_cast<complex<data_t>*>(v->data);
-    complex<data_t> chi_ = chiNonLinear(*ksb,*gamma);
-    return abs(ksb->chi - chi_);
+    complex<data_t> chi_sh = __chi_sh_nl(kt->ksb1,*gamma);
+    complex<data_t> chi_sm = __chi_sm(kt->ksb1,kt->ksb2);
+    complex<data_t> chi_g = __chi_g(kt->ksb1,kt->ksb2,*gamma);
+    std::cout << real(*gamma) << "\t" << imag(*gamma) << "\t" << abs(kt->ksb1.chi - (chi_sh + chi_sm - chi_g)) << std::endl;
+    return abs(kt->ksb1.chi - (chi_sh + chi_sm - chi_g));
   }
-  
-  complex<data_t> KSB::gamma_nl(data_t accuracy) const {
+
+  complex<data_t> __gamma_nl(data_t accuracy, const KSBTuple& kt, bool convolved) {
     // initial value from linear treatment
-    complex<data_t> gamma0 = gamma();
+    complex<data_t> gamma0;
+    if (convolved)
+      gamma0 = kt.ksb1.gamma(kt.ksb2);
+    else
+      gamma0 = kt.ksb1.gamma();
+    // accuracy relative w.r.t. gamma0
+    accuracy*=abs(gamma0);
   
     const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
     gsl_multimin_fminimizer *s = NULL;
@@ -192,9 +231,12 @@ namespace shapelens {
     gsl_vector_set (x, 1, imag(gamma0));
 
     // define the function which should be minimized and its parameters
-    F.f = &deltaChi;
+    if (convolved)
+      F.f = &deltaChi;
+    else
+      F.f = &deltaChi_sh;
     F.n = 2;
-    F.params = reinterpret_cast<void*>(const_cast<KSB*>(this));
+    F.params = reinterpret_cast<void*>(const_cast<KSBTuple*>(&kt));
     s = gsl_multimin_fminimizer_alloc (T, 2);
     gsl_multimin_fminimizer_set (s, &F, x, ss);
 
@@ -219,14 +261,31 @@ namespace shapelens {
     return gamma_nl;
   }
 
+  complex<data_t> KSB::gamma_nl(data_t accuracy) const {
+    const KSBTuple kt = {*this,*this};
+    return __gamma_nl(accuracy, kt, false); 
+  }
+
+//   data_t devChi(const KSB& ksb, const KSB& star, complex<data_t>& gamma) {
+//     complex<data_t> chi_sh = __chi_sh_nl(ksb,gamma);
+//     complex<data_t> chi_sm = __chi_sm(ksb,star);
+//     complex<data_t> chi_g = __chi_g(ksb,star,gamma);
+//     return abs(ksb.chi - (chi_sh + chi_sm - chi_g));
+//   }
+
   complex<data_t> KSB::gamma_nl(const KSB& psf, data_t accuracy) const {
-    complex<data_t> p = __p(psf);
-    complex<data_t> chi_aniso = chi - P_sm*p;
-
-    KSB aniso = *this;
-    aniso.chi = chi_aniso;
-
-    // FIXME: and then?
-    return aniso.gamma_nl(accuracy);
+    const KSBTuple kt = {*this,psf};
+    // complex<data_t> gamma;
+//     for (data_t g1 = -1; g1 <= 1; g1+=0.005) {
+//       real(gamma) = g1;
+//       for (data_t g2 = -1; g2 <= 1; g2+=0.005) {
+// 	imag(gamma) = g2;
+// 	if (g2 >= -sqrt(1-g1*g1) && g2 <= sqrt(1-g1*g1))
+// 	  std::cout << g1 << "\t" << g2 << "\t" << devChi(*this,psf,gamma) << std::endl;
+// 	else
+// 	  std::cout << g1 << "\t" << g2 << "\t" << 0 << std::endl;
+//       }
+//     }
+    return __gamma_nl(accuracy, kt, true); 
   }
 }

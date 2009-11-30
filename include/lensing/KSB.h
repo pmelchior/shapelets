@@ -29,7 +29,6 @@ namespace shapelens {
     data_t __delta(const Moment6& Q) const;
     
     complex<data_t> __p(const KSB& star) const;
-
   public:
     data_t trQ, trQ_, M,
       mu_, mu__, psi_, psi__, pi_, pi__, nu_, nu__, lambda__, omega__, sigma__,rho__,ix__,delta__;
