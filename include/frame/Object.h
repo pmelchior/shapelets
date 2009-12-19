@@ -64,10 +64,8 @@ class Object : public Image<data_t> {
   /// Compute Fourier transform Object::fourier from pixel data.
   void computeFFT();
   /// Convolve with given \p kernel.
-  /// For this to work, \p kernel has to have to same size as this object.
-  /// If this is not the case, it will be resized accordingly.
-  /// Also, kernel::fourier will be computed if the present.
-  void convolve(Object& kernel);
+  /// fourier and kernel::fourier will be used if present.
+  void convolve(const Object& kernel);
 
 
   /// The \p id of the Object.

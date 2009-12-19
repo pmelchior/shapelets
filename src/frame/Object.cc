@@ -218,38 +218,30 @@ void Object::computeFFT() {
   FFT::transform(*this,fourier);
 }
 
-void Object::convolve(Object& kernel) {
+void Object::convolve(const Object& kernel) {
+
   // compute fourier is not done yet
   if(fourier.getRealSize(0) == 0)
     computeFFT();
 
-  // check size of kernel
-  int N = getSize(0);
-  int M = getSize(1);
-  if (N != kernel.getSize(0)) {
-    int N1 = kernel.getSize(0);
-    int M1 = kernel.getSize(1); 
-    if (N1%2==1) {
-      N1++;
-      kernel.resize_clear(N1*M1);
-    }
-    if (M1%2==1) {
-      M1++;
-      kernel.resize_clear(N1*M1);
-    }
-    int xmin = (N1-N)/2, xmax = N1 + (N-N1)/2, ymin = (M1-M)/2, ymax = M1+ (M-M1)/2;
-    Image<data_t> sub(xmax-xmin,ymax-ymin);
-    kernel.slice(sub,Point<int>(xmin,ymin),Point<int>(xmax,ymax));
-    kernel = sub;
-    // compute new kernel::fourier
-    kernel.computeFFT();
+  // kernel.fourier does not exist but size is ok
+  if (kernel.fourier.getRealSize(0) == 0 && 
+      kernel.getSize(0) == getSize(0) && kernel.getSize(1) == getSize(1)) {
+    int M = getSize(0);
+    int N = getSize(1);
+    FourierTransform2D kernel_transformed(M,N);
+    FFT::transform(kernel,kernel_transformed);
+    FFT::conv_multiply(fourier,kernel_transformed,fourier);
+    FFT::transform(fourier,*this);
   }
-  else if(kernel.fourier.getRealSize(0) == 0)
-    kernel.computeFFT();
 
-  // actual convolution
-  FFT::conv_multiply(fourier,kernel.fourier,fourier);
-  // Transform back to real space and reorder:
-  FFT::transform(fourier,*this);
-  FFT::reorder(*this);
+  // size does not fit
+  else if (kernel.getSize(0) != getSize(0) || kernel.getSize(1) != getSize(1))
+    FFT::convolve(*this,fourier,kernel);
+
+  // everything is already set up
+  else {
+    FFT::conv_multiply(fourier,kernel.fourier,fourier);
+    FFT::transform(fourier,*this);
+  }
 }

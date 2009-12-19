@@ -1,5 +1,3 @@
-#ifdef HAS_FFTW3
-
 #include <shapelens/utils/FFT.h>
 #include <shapelens/utils/IO.h>
 #include <shapelens/frame/Object.h>
@@ -18,17 +16,14 @@ int main(int argc, char *argv[]) {
   cmd.parse(argc,argv);
 
   // Load the input FITS files for data and kernel:
-  //Image<data_t> im_input, im_kernel;
-  Object im_input, im_kernel;
-  fitsfile* fptr = IO::openFITSFile(input.getValue());
-  IO::readFITSImage(fptr,im_input);
-  IO::closeFITSFile(fptr);
-  fptr = IO::openFITSFile(kernel.getValue());
-  IO::readFITSImage(fptr,im_kernel);
-  IO::closeFITSFile(fptr);
+  Image<data_t> im_input(input.getValue()), im_kernel(kernel.getValue());
+  // Save the output to the FITS file given by user
+  fitsfile* fptr = IO::createFITSFile(output.getValue());
+  IO::writeFITSImage(fptr, im_input);
+  IO::writeFITSImage(fptr, im_kernel);
 
-  Object im_output = im_input;
-  im_output.convolve(im_kernel);
+  // convolve input with kernel
+  FFT::convolve(im_input,im_kernel);
 	
   // add noise
   if (rms.isSet() || mean.isSet()) {
@@ -38,15 +33,6 @@ int main(int argc, char *argv[]) {
       IO::addGaussianNoise(im_input,mean.getValue(),rms.getValue());
   }
 	
-  // Save the output matrix to the FITS file given by user:
-  fptr = IO::createFITSFile(output.getValue());
   IO::writeFITSImage(fptr, im_input);
-  IO::writeFITSImage(fptr, im_kernel);
-  IO::writeFITSImage(fptr, im_output);
   IO::closeFITSFile(fptr);
 }
-#else
-int main(){
-  return 0;
-}
-#endif

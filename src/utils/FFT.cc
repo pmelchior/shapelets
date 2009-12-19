@@ -188,45 +188,51 @@ void FFT::convolve(Image<data_t>& data, const Image<data_t>& kernel) {
   int M = data.getSize(0);
   int N = data.getSize(1);
 
-  // FFT the data and the convolution kernel
-  FourierTransform2D data_transformed(M,N),kernel_transformed(M,N);
+  // FFT the data
+  FourierTransform2D data_transformed(M,N);
   FFT::transform(data, data_transformed);
-  FFT::transform(kernel, kernel_transformed);
+  FFT::convolve(data,data_transformed,kernel);
+}
 
+void FFT::convolve(Image<data_t>& data, FourierTransform2D& data_transformed, const Image<data_t>& kernel) {
+  int M = data.getSize(0);
+  int N = data.getSize(1);
+
+  FourierTransform2D kernel_transformed(M,N);
+  // ...and the convolution kernel
+  // check size of kernel
+  // if is doesn't fit to data: resize it
+  if (N != kernel.getSize(0) || M != kernel.getSize(1)) {
+    int N1 = kernel.getSize(0);
+    int M1 = kernel.getSize(1); 
+    if (N1%2==1)
+      N1++;
+    if (M1%2==1)
+      M1++;
+    int xmin = (N1-N)/2, xmax = N1 + (N-N1)/2, ymin = (M1-M)/2, ymax = M1+ (M-M1)/2;
+    Image<data_t> kernel_resized(xmax-xmin,ymax-ymin);
+    kernel.slice(kernel_resized,Point<int>(xmin,ymin),Point<int>(xmax,ymax));
+    FFT::transform(kernel_resized, kernel_transformed);
+  } 
+  else
+    FFT::transform(kernel, kernel_transformed);
+    
   // make use of the convolution theorem in Fourier space:
   FFT::conv_multiply(data_transformed,kernel_transformed,data_transformed);
 	
-  // Transform back to real space and reorder:
+  // Transform back to real space
   FFT::transform(data_transformed,data);
-  FFT::reorder(data);
-}
-
-void FFT::reorder(Image<data_t>& im) {
-  int M = im.getSize(0);
-  int N = im.getSize(1);
-  data_t tmp;
-  // bottom-left <-> top-right
-  for (int i=0; i<M/2; i++) {
-    for (int j=0; j<N/2; j++) {
-      tmp = im(i+M/2,j+N/2);
-      im(i+M/2,j+N/2) = im(i,j);
-      im(i,j) = tmp;
-    }
-  }
-  // bottom-right <-> top-left
-  for (int i=M/2; i<M; i++) {
-    for (int j=0; j<N/2; j++) {
-      tmp = im(i-M/2,j+N/2);
-      im(i-M/2,j+N/2) = im(i,j);
-      im(i,j) = tmp;
-    }
-  }
 }
 
 void FFT::conv_multiply(const FourierTransform2D& f1, const FourierTransform2D& f2, FourierTransform2D& target) {
   int M = f1.getRealSize(0);
   int N = f1.getRealSize(1);
-  for (int i=0; i<M; i++)
-    for (int j=0; j<N/2+1; j++)
+  for (int i=0; i<M; i++) {
+    for (int j=0; j<N/2+1; j++) {
       target(i,j) = f1(i,j)*f2(i,j);
+      // reorder the frequencies to have centered FFT afterwards
+      if ((i+j)%2 == 1)
+	target(i,j) *= -1;
+    }
+  }
 }
