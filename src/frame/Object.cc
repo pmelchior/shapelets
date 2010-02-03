@@ -220,7 +220,7 @@ void Object::computeFFT() {
 
 void Object::convolve(const Object& kernel) {
 
-  // compute fourier is not done yet
+  // compute fourier if not done yet
   if(fourier.getRealSize(0) == 0)
     computeFFT();
 

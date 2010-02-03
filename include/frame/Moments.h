@@ -17,7 +17,7 @@ class Moment0 {
   data_t& operator()(bool i = 0);
   /// Access operator.
   const data_t& operator()(bool i=0) const;
- private:
+  //private:
   data_t M;
 };
 
@@ -35,7 +35,7 @@ class Moment1 {
   data_t& operator()(bool i);
   /// Access operator.
   const data_t& operator()(bool i) const;
- private:
+  //private:
   data_t M[2];
 };
 
@@ -53,7 +53,7 @@ class Moment2 {
   data_t& operator()(bool i, bool j);
   /// Access operator with \f$Q_{ij} = Q_{ji}\f$.
   const data_t& operator()(bool i, bool j) const;
- private:
+  //private:
   data_t M[3];
 };
 
@@ -72,7 +72,7 @@ class Moment3 {
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   const data_t& operator()(bool i, bool j, bool k) const;
- private:
+  //private:
   data_t M[4];
 };
 
@@ -91,7 +91,7 @@ class Moment4 {
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   const data_t& operator()(bool i, bool j, bool k, bool l) const;
- private:
+  //private:
   data_t M[5];
 };
 
@@ -110,7 +110,7 @@ class Moment5 {
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   const data_t& operator()(bool i, bool j, bool k, bool l, bool m) const;
- private:
+  //private:
   data_t M[6];
 };
 
@@ -129,7 +129,7 @@ class Moment6 {
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   const data_t& operator()(bool i, bool j, bool k, bool l, bool m, bool n) const;
- private:
+  //private:
   data_t M[7];
 };
 
