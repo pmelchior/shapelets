@@ -37,24 +37,24 @@ int FourierTransform1D::getRealSize() const {
   return N;
 }
 
-FourierTransform2D::FourierTransform2D() : NumMatrix<Complex> () {
+FourierTransform2D::FourierTransform2D() : NumVector<Complex> () {
   N = J = 0;
 } 
 FourierTransform2D::FourierTransform2D(unsigned int N, unsigned int J) : 
-  NumMatrix<Complex> (N,J/2+1),N(N),J(J) {}
+  NumVector<Complex> (N*(J/2+1)), N(N), J(J) {}
 
 complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j) {
   if (j <= J/2)
-    return NumMatrix<Complex>::operator()(i,j);
+    return NumVector<Complex>::operator()(i*(J/2+1) + j);
   else
-    return NumMatrix<Complex>::operator()(i,J-(int)j);
+    return NumVector<Complex>::operator()(i*(J/2+1) + (J-(int)j));
 }
 
 const complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j)  const {
   if (j <= J/2)
-    return NumMatrix<Complex>::operator()(i,j);
+    return NumVector<Complex>::operator()(i*(J/2+1) + j);
   else
-    return NumMatrix<Complex>::operator()(i,J-(int)j);
+    return NumVector<Complex>::operator()(i*(J/2+1) + (J-(int)j));
 }
 
 int FourierTransform2D::getRealSize(bool dimension) const {
@@ -82,7 +82,7 @@ data_t FourierTransform2D::wavenumber(int k, bool dimension) const {
 void FourierTransform2D::resize(unsigned int N1, unsigned int J1) {
   N = N1;
   J = J1;
-  NumMatrix<Complex>::resize(N,J/2+1);
+  NumVector<Complex>::resize(N*(J/2+1));
 }
 
 

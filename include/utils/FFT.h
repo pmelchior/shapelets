@@ -44,7 +44,7 @@ class FourierTransform1D : public NumVector<complex<data_t> > {
 /// obeys the Hermiticity condition
 /// \f[F(i,j) = F^*(i,J-j)\f]
 /// for vector indices \f$i, j\f$ and the column number  of the real matrix \f$J\f$.
-class FourierTransform2D : public NumMatrix<complex<data_t> > {
+class FourierTransform2D : public NumVector<complex<data_t> > {
  public:
   /// Constructor.
   FourierTransform2D();
