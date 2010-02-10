@@ -140,7 +140,7 @@ double functor2gsl(const gsl_vector* v, void* params) {
   return sp->func(sp->p);
 }
 
-data_t Minimizer::Simplex(Functor& func, NumVector<data_t>& p, data_t ftol, unsigned int itmax) {
+data_t Minimizer::Simplex(Functor& func, NumVector<data_t>& p, const NumVector<data_t>& steps, data_t ftol, unsigned int itmax) {
   int N = p.size();
   const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
   gsl_multimin_fminimizer *s = NULL;
@@ -155,7 +155,7 @@ data_t Minimizer::Simplex(Functor& func, NumVector<data_t>& p, data_t ftol, unsi
   // the stepsizes: 10% of p(i)
   ss = gsl_vector_alloc (N);
   for (int i=0; i < N; i++)
-    gsl_vector_set(ss,i,0.1*p(i));
+    gsl_vector_set(ss,i,steps(i));
 
   // minimization function
   gsl_multimin_function f;

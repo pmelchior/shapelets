@@ -60,10 +60,13 @@ class FourierTransform2D : public NumVector<complex<data_t> > {
   const complex<data_t>& operator()(unsigned int i, unsigned int j) const;
   /// Get wavenumber of index \p i of the transform.
   complex<data_t> getWavenumber(int i, int j) const;
+  /// Get vector index for given matrix indices
+  unsigned int getIndex(unsigned int i, unsigned int j) const;
   /// Resize transform for real matrix of size \f$N\times J\f$.
   void resize(unsigned int N, unsigned int J);
   /// Get size of real matrix in \p dimension.
   int getRealSize(bool dimension) const;
+  FourierTransform2D& operator=(const NumVector<complex<data_t> >& v);
  private:
   int N,J;
   data_t wavenumber(int k, bool dimension) const;

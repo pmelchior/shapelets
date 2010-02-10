@@ -43,18 +43,24 @@ FourierTransform2D::FourierTransform2D() : NumVector<Complex> () {
 FourierTransform2D::FourierTransform2D(unsigned int N, unsigned int J) : 
   NumVector<Complex> (N*(J/2+1)), N(N), J(J) {}
 
-complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j) {
+unsigned int FourierTransform2D::getIndex(unsigned int i, unsigned int j) const {
   if (j <= J/2)
-    return NumVector<Complex>::operator()(i*(J/2+1) + j);
+    return i*(J/2+1) + j;
   else
-    return NumVector<Complex>::operator()(i*(J/2+1) + (J-(int)j));
+    return i*(J/2+1) + (J-(int)j);
+}
+
+FourierTransform2D& FourierTransform2D::operator=(const NumVector<complex<data_t> >& v) {
+  NumVector<complex<data_t> >::operator=(v);
+  return *this;
+}
+
+complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j) {
+  return NumVector<Complex>::operator()(getIndex(i,j));
 }
 
 const complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j)  const {
-  if (j <= J/2)
-    return NumVector<Complex>::operator()(i*(J/2+1) + j);
-  else
-    return NumVector<Complex>::operator()(i*(J/2+1) + (J-(int)j));
+  return NumVector<Complex>::operator()(getIndex(i,j));
 }
 
 int FourierTransform2D::getRealSize(bool dimension) const {

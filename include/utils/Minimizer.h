@@ -44,7 +44,7 @@ namespace shapelens {
   /// line search).\n\n
   /// Employs the modified algorithm from Numerical Recipes (Press et al., 1992)
   static data_t Powell(Functor& func, NumVector<data_t>& p, data_t ftol, unsigned int itmax = 100);
-  static data_t Simplex(Functor& func, NumVector<data_t>& p, data_t ftol, unsigned int itmax = 100);
+  static data_t Simplex(Functor& func, NumVector<data_t>& p, const NumVector<data_t>& steps, data_t ftol, unsigned int itmax = 100);
   };
 } // end namespace
 
