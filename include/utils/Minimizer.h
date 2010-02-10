@@ -36,7 +36,7 @@ namespace shapelens {
     virtual data_t operator () (const NumVector<data_t>&) = 0;
   };
   
-  /// Minimize func with Powell's algorithm.
+  /// Minimize \p func with Powell's algorithm.
   /// \p p is the initial guess of the minimum of \p func and updated by
   /// the method. The return value is the found minimum of \p func within the
   /// uncertainty of \p ftol.\p itmax is the maximum number of iterations
@@ -44,6 +44,11 @@ namespace shapelens {
   /// line search).\n\n
   /// Employs the modified algorithm from Numerical Recipes (Press et al., 1992)
   static data_t Powell(Functor& func, NumVector<data_t>& p, data_t ftol, unsigned int itmax = 100);
+  /// Minimize \p func with Simplex algorithm by Nelder & Mead.
+  /// \p p is the initial guess of the minimum of \p func and updated by
+  /// the method. The return value is the found minimum of \p func within the
+  /// uncertainty of \p ftol.\p itmax is the maximum number of iterations.
+  /// \p steps is the initial stepsize of the simplex.
   static data_t Simplex(Functor& func, NumVector<data_t>& p, const NumVector<data_t>& steps, data_t ftol, unsigned int itmax = 100);
   };
 } // end namespace

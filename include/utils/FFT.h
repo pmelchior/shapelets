@@ -66,6 +66,7 @@ class FourierTransform2D : public NumVector<complex<data_t> > {
   void resize(unsigned int N, unsigned int J);
   /// Get size of real matrix in \p dimension.
   int getRealSize(bool dimension) const;
+  /// Copy operator for base-class.
   FourierTransform2D& operator=(const NumVector<complex<data_t> >& v);
  private:
   int N,J;
