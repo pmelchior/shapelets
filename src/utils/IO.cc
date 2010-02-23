@@ -6,7 +6,6 @@
 #include <sys/timeb.h>
 #include <boost/tokenizer.hpp>
 #include <fstream>
-#include <stdexcept>
 
 using namespace shapelens;
 namespace ublas = boost::numeric::ublas;
@@ -16,7 +15,7 @@ fitsfile* IO::openFITSFile(std::string filename, bool write) {
   fitsfile* outfptr;
   fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
   if (status != 0)
-    throw std::invalid_argument("IO: Cannot open " + filename);
+    throw std::runtime_error("IO: Cannot open " + filename);
   return outfptr;
 }
 
@@ -27,23 +26,25 @@ fitsfile* IO::createFITSFile(std::string filename) {
   // create fits file
   fits_create_file(&outfptr,filename.c_str(), &status);
   if (status != 0)
-    throw std::invalid_argument("IO: Cannot create " + filename);
+    throw std::runtime_error("IO: Cannot create " + filename);
   return outfptr;
 }
 
-int IO::closeFITSFile(fitsfile* fptr) {
+void IO::closeFITSFile(fitsfile* fptr) {
   int status = 0;
   fits_close_file(fptr, &status);
-  return status;
+  if (status != 0)
+    throw std::runtime_error("IO: Cannot close FITS file!");
 }
 
-int IO::updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment) {
+void IO::updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment) {
   int status = 0;
   fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
-  return status;
+  if (status != 0)
+    throw std::runtime_error("IO: Cannot update FITS keyword!");
 }
 
-int IO::appendFITSHistory(fitsfile *outfptr, std::string history) {
+void IO::appendFITSHistory(fitsfile *outfptr, std::string history) {
   // since it is too long the be saved in one shot
   // split it line by line
   // and for each line insert a HISTORY line in the header
@@ -62,19 +63,21 @@ int IO::appendFITSHistory(fitsfile *outfptr, std::string history) {
     }
     fits_write_history (outfptr,const_cast<char*>(card.c_str()), &status);
   }
-  return status;
+  if (status != 0)
+    throw std::runtime_error("IO: Cannot append FITS history!");
 }
 
-int IO::readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val) {
+void IO::readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val) {
   int status = 0;
   char* comment = NULL;
   char value[FLEN_CARD];
   fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&value, comment, &status);
   val = std::string(value);
-  return status;
+  if (status != 0)
+    throw std::invalid_argument("IO: Cannot read FITS keyword!");
 }
 
-int IO::readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
+void IO::readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
   int status = 0, nkeys, keylen=0;
   char* comment = NULL;
   char card[FLEN_CARD], keyword[FLEN_KEYWORD];
@@ -88,7 +91,8 @@ int IO::readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
       value += "\n";
     }
   }
-  return status;
+  if (status != 0)
+    throw std::invalid_argument("IO: Cannot read FITS keycards!");
 }
 
 

@@ -36,10 +36,11 @@ Image<data_t>(datafile), weight(), segMap(segmapfile) {
 
   // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
   fitsfile* fptr = IO::openFITSFile(segmapfile);
-  int status = IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
-  status = IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
-  if (status == 0)
+  try {
+    IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
+    IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
     estimatedBG = 1;
+  } catch (std::exception) {}
   IO::closeFITSFile(fptr);
 }
 
@@ -62,10 +63,11 @@ Image<data_t>(datafile), weight(weightfile), segMap(segmapfile) {
 
   // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
   fitsfile* fptr = IO::openFITSFile(segmapfile);
-  int status = IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
-  status = IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
-  if (status == 0)
+  try {
+    IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
+    IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
     estimatedBG = 1;
+  } catch (std::exception) {}
   IO::closeFITSFile(fptr);
 }
 

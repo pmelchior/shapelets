@@ -220,10 +220,9 @@ class Image : public NumVector<T> {
  private:
   void read() {
     fitsfile *fptr = IO::openFITSFile(basefilename);
-    int status = IO::readFITSImage(fptr,*this);
-    if (status == 0)
-      history << "# Reading FITS image " + basefilename << std::endl;
-    status = IO::closeFITSFile(fptr);
+    IO::readFITSImage(fptr,*this);
+    history << "# Reading FITS image " + basefilename << std::endl;
+    IO::closeFITSFile(fptr);
   }
 };
 } // end namespace

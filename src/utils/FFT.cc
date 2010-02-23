@@ -44,6 +44,8 @@ FourierTransform2D::FourierTransform2D(unsigned int N, unsigned int J) :
   NumVector<Complex> (N*(J/2+1)), N(N), J(J) {}
 
 unsigned int FourierTransform2D::getIndex(unsigned int i, unsigned int j) const {
+  // for some reason, the storage order is transposed
+  // that means, j ist the fast index
   if (j <= J/2)
     return i*(J/2+1) + j;
   else
@@ -71,7 +73,7 @@ int FourierTransform2D::getRealSize(bool dimension) const {
 }
 
 complex<data_t> FourierTransform2D::getWavenumber(int i, int j) const {
-  return complex<data_t>(wavenumber(i,0),wavenumber(j,1));
+  return complex<data_t>(wavenumber(j,1),wavenumber(i,0));
 }
 
 data_t FourierTransform2D::wavenumber(int k, bool dimension) const {

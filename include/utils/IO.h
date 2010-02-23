@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <stdexcept>
 #include <numla/NumMatrix.h>
 #include "../Typedef.h"
 #include "../frame/Grid.h"
@@ -57,22 +58,22 @@ class IO {
   /// If the file \p filename already exists, it will be overwritten.
   static fitsfile* createFITSFile(std::string filename);
   /// Close FITS file pointer.
-  static int closeFITSFile(fitsfile* fptr);
+  static void closeFITSFile(fitsfile* fptr);
   /// Set/update std::string keyword in FITS file header.
-  static int updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
+  static void updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
   /// Append \p history to FITS header histroy.
-  static int appendFITSHistory(fitsfile *outfptr, std::string history);
+  static void appendFITSHistory(fitsfile *outfptr, std::string history);
   /// Read std::string keyword from FITS header.
-  static int readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val);
+  static void readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val);
   /// Read FITS keyword cards directly.
-  static int readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
+  static void readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
 
   /// Write FITS image from an Image<T>.
   /// The datatype will be automatically adjusted, based on the
   /// result of getFITSImageFormat() and getFITSDataType().
   /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
-    static int writeFITSImage(fitsfile *outfptr, const Image<T>& image, std::string extname="") {
+    static void writeFITSImage(fitsfile *outfptr, const Image<T>& image, std::string extname="") {
     int dim0 = image.grid.getSize(0);
     int dim1 = image.grid.getSize(1);
     long naxis = 2;      
@@ -90,13 +91,14 @@ class IO {
     fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(image.c_array()), &status);
     // insert creator and extname keywords
     if (extname != "")
-      status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
-    status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
-    return status;
+      updateFITSKeywordString (outfptr, "EXTNAME", extname);
+    updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot write FITS image!");
   }
   
    template <class T>
-    static int writeFITSImage(fitsfile *outfptr, const Image<complex<T> >& image, std::string extname="") {
+    static void writeFITSImage(fitsfile *outfptr, const Image<complex<T> >& image, std::string extname="") {
     int dim0 = image.grid.getSize(0);
     int dim1 = image.grid.getSize(1);
     long naxis = 2;      
@@ -119,16 +121,16 @@ class IO {
 
     // insert creator and extname keywords
     if (extname != "")
-      status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
-    status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+      updateFITSKeywordString (outfptr, "EXTNAME", extname);
+    updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
 
     // write second component
     fits_create_img(outfptr, imageformat, naxis, naxes, &status);
     for(unsigned long i=0; i < component.size(); i++)
       component(i) = imag(image(i));
     fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(component.c_array()), &status);
-
-    return status;
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot write FITS image!");
   }
 
   /// Write FITS image from an NumMatrix<T>.
@@ -136,7 +138,7 @@ class IO {
   /// result of getFITSImageFormat() and getFITSDataType().
   /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
-    static int writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
+    static void writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
     int dim0 = M.getColumns();
     int dim1 = M.getRows();
     long naxis = 2;      
@@ -154,31 +156,32 @@ class IO {
     fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(M.c_array()), &status);
     // insert creator and extname keywords
     if (extname != "")
-      status = updateFITSKeywordString (outfptr, "EXTNAME", extname);
-    status = updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
-    return status;
+      updateFITSKeywordString (outfptr, "EXTNAME", extname);
+    updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+    if (status != 0)
+      throw std::runtime_error("IO: FITS image could not be writted!");
   }
 
   /// Set/update keyword in FITS file header.
   /// For setting string keywords, use updateFITSKeywordString() instead.
   template <class T>
-    static int updateFITSKeyword(fitsfile *outfptr, std::string keyword, T value, std::string comment="") {
+    static void updateFITSKeyword(fitsfile *outfptr, std::string keyword, T value, std::string comment="") {
     int status = 0;
     fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), &value, const_cast<char *>(comment.c_str()), &status);
-    return status;
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot update FITS keyword!");
   }
 
   /// Read FITS image into NumMatrix<T>.
   /// \p M is adjusted to hold the contents of the image; the image value are 
   /// automatically casted to the type \p T of \p M.
   template <class T>
-    static int readFITSImage(fitsfile *fptr, NumMatrix<T>& M) {
+    static void readFITSImage(fitsfile *fptr, NumMatrix<T>& M) {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
-    if (naxis!=2) {
-      std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
-      std::terminate();
-    }
+    if (naxis!=2)
+      throw std::invalid_argument("IO: naxis != 2. This is not a FITS image!");
+
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
     M.resize(naxes[1],naxes[0]);
@@ -187,7 +190,8 @@ class IO {
     int imageformat = getFITSImageFormat(val);
     int datatype = getFITSDataType(val);
     fits_read_pix(fptr, datatype, firstpix, naxes[0]*naxes[1], NULL, M.c_array(), NULL, &status);
-    return status;
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot read FITS image!");
   }
 
   /// Read FITS image into Image<T>.
@@ -196,13 +200,12 @@ class IO {
   /// \p Image<T>::grid is set to Grid(0,0,N,M), where \p N and \p M 
   /// are the row and column numbers of the FITS image.
   template <class T>
-    static int readFITSImage(fitsfile *fptr, Image<T>& im) {
+    static void readFITSImage(fitsfile *fptr, Image<T>& im) {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
-    if (naxis!=2) {
-      std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
-      std::terminate();
-    }
+    if (naxis!=2)
+      throw std::invalid_argument("IO: naxis != 2. This is not a FITS image!");
+
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
     im.grid.setSize(0,0,naxes[0],naxes[1]);
@@ -211,17 +214,17 @@ class IO {
     T val;
     int datatype = getFITSDataType(val);
     fits_read_pix(fptr, datatype, firstpix, im.size(), NULL, im.c_array(), NULL, &status);
-    return status;
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot read FITS image!");
   }
 
   template <class T>
-    static int readFITSImage(fitsfile *fptr, Image<complex<T> >& im) {
+    static void readFITSImage(fitsfile *fptr, Image<complex<T> >& im) {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
-    if (naxis!=2) {
-      std::cerr << "IO: naxis != 2. This is not a FITS image!" << std::endl;
-      std::terminate();
-    }
+    if (naxis!=2)
+      throw std::invalid_argument("IO: naxis != 2. This is not a FITS image!");
+
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
     im.grid.setSize(0,0,naxes[0],naxes[1]);
@@ -239,18 +242,19 @@ class IO {
     fits_read_pix(fptr, datatype, firstpix, im.size(), NULL, component.c_array(), NULL, &status);
     for(unsigned long i=0; i < component.size(); i++)
       im(i) += complex<T>(0,component(i));
-    return status;
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot read FITS image!");
   }
 
   /// Read in keyword from FITS header.
   /// For std::string keywords, use readFITSKeywordString() instead.
   template <class T>
-    static int readFITSKeyword(fitsfile *fptr, std::string key, T& val) {
+    static void readFITSKeyword(fitsfile *fptr, std::string key, T& val) {
     int status = 0;
     char* comment = NULL;
     fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&val,comment, &status);
-    return status;
-  }
+    if (status != 0)
+      throw std::invalid_argument("IO: Cannot read FITS keyword " + key + "!");  }
 
   /// Write PPM file from data on the given grid.
   /// Colorscheme is one of the following:

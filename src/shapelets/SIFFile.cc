@@ -32,12 +32,13 @@ void SIFFile::save(ShapeletObjectList& sl) {
 }
 
 void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
-  int status = IO::writeFITSImage(outfptr,sobj.getCoeffs().getCoeffMatrix());
+  IO::writeFITSImage(outfptr,sobj.getCoeffs().getCoeffMatrix());
 
   // add shapelet parameters and other necessary information in pHDU header
   IO::updateFITSKeyword(outfptr,"VERSION",(unsigned int) 1,"SIF version");
 
   // ** Shapelet parameters **
+  int status = 0;
   fits_write_record(outfptr,"",&status);
   fits_write_record(outfptr,"        / Shapelet parameters  /",&status);
   IO::updateFITSKeyword(outfptr,"BETA",sobj.getBeta(),"scale size in pixel units");
@@ -50,7 +51,6 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   fits_write_record(outfptr,"        / Frame parameters     /",&status);
   IO::updateFITSKeywordString(outfptr,"BASEFILE",sobj.getBaseFilename(),"originating data file");
   IO::updateFITSKeyword(outfptr,"ID",sobj.getObjectID(),"object id in BASEFILE");
-  IO::updateFITSKeyword(outfptr,"CLASSIFIER",sobj.getObjectClassifier(),"object classifier");
   const Grid& grid = sobj.getGrid();
   IO::updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
   IO::updateFITSKeyword(outfptr,"XMAX",grid.getStopPosition(0),"max(X) in image pixels");
@@ -137,52 +137,53 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // read shapelet coeff from pHDU
   fitsfile *fptr = IO::openFITSFile(filename);
   NumMatrix<data_t> coeffs;
-  status = IO::readFITSImage(fptr,coeffs);
+  IO::readFITSImage(fptr,coeffs);
   sobj.coeffs.setCoeffs(coeffs);
 
   // read shapelet parameters
   // make use of friendship of Composite and ShapeletObject
   sobj.changeModel = sobj.changeM = true;
   data_t tmp;
-  status = IO::readFITSKeyword(fptr,"BETA",tmp);
+  IO::readFITSKeyword(fptr,"BETA",tmp);
   sobj.setBeta(tmp);
-  status = IO::readFITSKeyword(fptr,"CHI2",sobj.chisquare);
+  IO::readFITSKeyword(fptr,"CHI2",sobj.chisquare);
   unsigned long flags;
-  status = IO::readFITSKeyword(fptr,"FLAGS",flags);
+  IO::readFITSKeyword(fptr,"FLAGS",flags);
   sobj.flags = std::bitset<16>(flags);
 
   // read frame parameters
-  status = IO::readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
-  status = IO::readFITSKeyword(fptr,"ID",sobj.id);
-  status = IO::readFITSKeyword(fptr,"CLASSIFIER",sobj.classifier);
-  if (status != 0)
-    sobj.classifier = 0;
+  IO::readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
+  IO::readFITSKeyword(fptr,"ID",sobj.id);
+  try {
+    IO::readFITSKeyword(fptr,"CLASSIFIER",tmp);
+    sobj.prop["classifier"] = tmp;
+  } catch(std::exception) {}
 
   int xmin,xmax,ymin,ymax;
-  status = IO::readFITSKeyword(fptr,"XMIN",xmin);
-  status = IO::readFITSKeyword(fptr,"XMAX",xmax);
-  status = IO::readFITSKeyword(fptr,"YMIN",ymin);
-  status = IO::readFITSKeyword(fptr,"YMAX",ymax);
+  IO::readFITSKeyword(fptr,"XMIN",xmin);
+  IO::readFITSKeyword(fptr,"XMAX",xmax);
+  IO::readFITSKeyword(fptr,"YMIN",ymin);
+  IO::readFITSKeyword(fptr,"YMAX",ymax);
   sobj.model.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
   complex<data_t> xc;
-  status = IO::readFITSKeyword(fptr,"CENTROID",xc);
+  IO::readFITSKeyword(fptr,"CENTROID",xc);
   sobj.xcentroid(0) = real(xc);
   sobj.xcentroid(1) = imag(xc);
  
   // shapelensconfig parameters
   // set them only if preserve_config == 0
   if (!preserve_config) {
-    status = IO::readFITSKeywordString(fptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL);
-    status = IO::readFITSKeyword(fptr," NMAX_LOW",ShapeLensConfig::NMAX_LOW);
-    status = IO::readFITSKeyword(fptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH);
-    status = IO::readFITSKeyword(fptr," BETA_LOW",ShapeLensConfig::BETA_LOW);
-    status = IO::readFITSKeyword(fptr,"BETA_HIGH",ShapeLensConfig::BETA_HIGH);
-    status = IO::readFITSKeyword(fptr,"ALLOW_FLATTENING",ShapeLensConfig::ALLOW_FLATTENING);
-    status = IO::readFITSKeyword(fptr,"FILTER_SPURIOUS",ShapeLensConfig::FILTER_SPURIOUS);
-    status = IO::readFITSKeyword(fptr,"ADD_BORDER",ShapeLensConfig::ADD_BORDER);
-    status = IO::readFITSKeyword(fptr,"MIN_PIXELS",ShapeLensConfig::MIN_PIXELS);
-    status = IO::readFITSKeyword(fptr,"MIN_THRESHOLD",ShapeLensConfig::MIN_THRESHOLD);
-    status = IO::readFITSKeyword(fptr,"DETECT_THRESHOLD",ShapeLensConfig::DETECT_THRESHOLD);
+    IO::readFITSKeywordString(fptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL);
+    IO::readFITSKeyword(fptr," NMAX_LOW",ShapeLensConfig::NMAX_LOW);
+    IO::readFITSKeyword(fptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH);
+    IO::readFITSKeyword(fptr," BETA_LOW",ShapeLensConfig::BETA_LOW);
+    IO::readFITSKeyword(fptr,"BETA_HIGH",ShapeLensConfig::BETA_HIGH);
+    IO::readFITSKeyword(fptr,"ALLOW_FLATTENING",ShapeLensConfig::ALLOW_FLATTENING);
+    IO::readFITSKeyword(fptr,"FILTER_SPURIOUS",ShapeLensConfig::FILTER_SPURIOUS);
+    IO::readFITSKeyword(fptr,"ADD_BORDER",ShapeLensConfig::ADD_BORDER);
+    IO::readFITSKeyword(fptr,"MIN_PIXELS",ShapeLensConfig::MIN_PIXELS);
+    IO::readFITSKeyword(fptr,"MIN_THRESHOLD",ShapeLensConfig::MIN_THRESHOLD);
+    IO::readFITSKeyword(fptr,"DETECT_THRESHOLD",ShapeLensConfig::DETECT_THRESHOLD);
   }
 
   // read history
@@ -196,11 +197,11 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // if errors have been saved, load them
   fits_movnam_hdu(fptr,IMAGE_HDU,const_cast<char*>(string("ERRORS").c_str()),0,&status);
   if (status != BAD_HDU_NUM) {
-    status = IO::readFITSImage(fptr,sobj.cov);
+    IO::readFITSImage(fptr,sobj.cov);
     // legacy mode: if errors are coefficient errors instead of full cov. matrix:
     // set them on diagonal of cov
     if (sobj.cov.getRows() == sobj.coeffs.getNMax() + 1) {
-      status = IO::readFITSImage(fptr,coeffs);
+      IO::readFITSImage(fptr,coeffs);
       CoefficientVector<data_t> errors(coeffs);
       sobj.setErrors(errors);
     }
@@ -220,7 +221,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   if (status != BAD_HDU_NUM) {
     int dim;
     NumMatrix<char> M;
-    status = IO::readFITSImage(fptr,M);
+    IO::readFITSImage(fptr,M);
     std::istringstream is(M.c_array());
     sobj.prop.read(is);
   }

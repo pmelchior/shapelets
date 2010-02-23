@@ -26,7 +26,6 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   int status, nkeys, keypos, hdutype;
   char card[FLEN_CARD];
   char comment[FLEN_CARD];
-  status = 0;
 
   history << "# Loading object from Fits file " << objfile << ":" << std::endl;
   fitsfile* fptr = IO::openFITSFile(objfile);
@@ -36,33 +35,31 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   IO::readFITSImage(fptr,*this);
   
   // recover object information from header keywords
-  status = IO::readFITSKeywordString(fptr,"BASEFILE",Image<data_t>::basefilename);
-  status = IO::readFITSKeyword(fptr,"ID",id);
+  IO::readFITSKeywordString(fptr,"BASEFILE",Image<data_t>::basefilename);
+  IO::readFITSKeyword(fptr,"ID",id);
   int xmin,ymin;
-  status = IO::readFITSKeyword(fptr,"XMIN",xmin);
-  status = IO::readFITSKeyword(fptr,"YMIN",ymin);
+  IO::readFITSKeyword(fptr,"XMIN",xmin);
+  IO::readFITSKeyword(fptr,"YMIN",ymin);
   Image<data_t>::grid = Grid(xmin,ymin,grid.getSize(0),grid.getSize(1));
   complex<data_t> xc;
-  status = IO::readFITSKeyword(fptr,"CENTROID",xc);
+  IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
   centroid(1) = imag(xc);
-  status = IO::readFITSKeyword(fptr,"FLUX",flux);
-  status = IO::readFITSKeyword(fptr,"BG_MEAN",noise_mean);
-  status = IO::readFITSKeyword(fptr,"BG_RMS",noise_rms);
+  IO::readFITSKeyword(fptr,"FLUX",flux);
+  IO::readFITSKeyword(fptr,"BG_MEAN",noise_mean);
+  IO::readFITSKeyword(fptr,"BG_RMS",noise_rms);
   unsigned long f;
-  status = IO::readFITSKeyword(fptr,"FLAG",f);
+  IO::readFITSKeyword(fptr,"FLAG",f);
   flags = std::bitset<8>(f);
-  status = IO::readFITSKeyword(fptr,"CLASSIFIER",classifier);
+  IO::readFITSKeyword(fptr,"CLASSIFIER",classifier);
   
   // read history
   std::string hstr;
   IO::readFITSKeyCards(fptr,"HISTORY",hstr);
 
   // check whether grid has same size as object
-  if (Object::size() != Image<data_t>::grid.size()) {
-    std::cerr << "Object: Grid size from header keywords wrong" << std::endl;
-    std::terminate();
-  }
+  if (Object::size() != Image<data_t>::grid.size())
+    throw std::invalid_argument("Object: Grid size from header keywords wrong!");
   
   history << ", segmentation map";
   // move to 1st extHDU for the segmentation map
@@ -95,38 +92,37 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
 
 void Object::save(std::string filename) {
   // write pixel data
-  int status = 0;
   fitsfile *outfptr = IO::createFITSFile(filename);
-  status = IO::writeFITSImage(outfptr,*this);
+  IO::writeFITSImage(outfptr,*this);
 
   // add object information to header
-  status = IO::updateFITSKeywordString(outfptr,"BASEFILE",Image<data_t>::basefilename,"name of source file");
-  status = IO::updateFITSKeyword(outfptr,"ID",id,"object id");
-  status = IO::updateFITSKeyword(outfptr,"XMIN",Image<data_t>::grid.getStartPosition(0),"min(X) in image pixels");
-  status = IO::updateFITSKeyword(outfptr,"YMIN",Image<data_t>::grid.getStartPosition(1),"min(Y) in image pixels");
-  status = IO::updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
+  IO::updateFITSKeywordString(outfptr,"BASEFILE",Image<data_t>::basefilename,"name of source file");
+  IO::updateFITSKeyword(outfptr,"ID",id,"object id");
+  IO::updateFITSKeyword(outfptr,"XMIN",Image<data_t>::grid.getStartPosition(0),"min(X) in image pixels");
+  IO::updateFITSKeyword(outfptr,"YMIN",Image<data_t>::grid.getStartPosition(1),"min(Y) in image pixels");
+  IO::updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
   complex<data_t> xc(centroid(0),centroid(1));
-  status = IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
-  status = IO::updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
-  status = IO::updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
-  status = IO::updateFITSKeyword(outfptr,"FLAG",flags.to_ulong(),"extraction flags");
-  status = IO::updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
-  status = IO::appendFITSHistory(outfptr,Image<data_t>::history.str());
+  IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
+  IO::updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
+  IO::updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
+  IO::updateFITSKeyword(outfptr,"FLAG",flags.to_ulong(),"extraction flags");
+  IO::updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
+  IO::appendFITSHistory(outfptr,Image<data_t>::history.str());
 
   // save segMap
   if (segMap.size() != 0) {
-    status = IO::writeFITSImage(outfptr,segMap,"SEGMAP");
-    status = IO::appendFITSHistory(outfptr,segMap.history.str());
+    IO::writeFITSImage(outfptr,segMap,"SEGMAP");
+    IO::appendFITSHistory(outfptr,segMap.history.str());
   }
 
   //if weight map provided, save it too
   if (weight.size() != 0)
-    status = IO::writeFITSImage(outfptr,weight,"WEIGHT");
+    IO::writeFITSImage(outfptr,weight,"WEIGHT");
   //if correlationFunction is provided, save it
   if (xi.getCorrelationFunction().size() > 0)
-    status = IO::writeFITSImage(outfptr,xi.getCorrelationMatrix(),"CORRELATION");
+    IO::writeFITSImage(outfptr,xi.getCorrelationMatrix(),"CORRELATION");
 
-  status = IO::closeFITSFile(outfptr);
+  IO::closeFITSFile(outfptr);
 }
 
 void Object::computeFlux() {

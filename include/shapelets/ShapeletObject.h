@@ -163,7 +163,7 @@ class ShapeletObject : public Composite {
   NumMatrix<complex<data_t> > polarCov;
   PolarTransformation c2p;
   ImageTransformation trafo;
-  data_t chisquare, classifier, tag;
+  data_t chisquare;
   bool fits, updatePolar;
   History history;
   std::bitset<16> flags;
