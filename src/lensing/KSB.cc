@@ -1,5 +1,5 @@
 #include "../../include/lensing/KSB.h"
-#include <gsl/gsl_multimin.h>
+#include "../../include/utils/Minimizer.h"
 
 namespace shapelens {
   // helper function
@@ -150,121 +150,123 @@ namespace shapelens {
 
   // *** KSB goes non-linear here ! ***
 
-  complex<data_t> __chi_sh_nl(const KSB& ksb, const complex<data_t>& gamma) {
-    return complex<data_t>(// 1st component
-			   real(gamma)*(ksb.P_sh(0,0)+real(gamma)*ksb.R(0,0,0)+1*imag(gamma)*ksb.R(0,0,1))+
-			   imag(gamma)*(ksb.P_sh(0,1)+1*real(gamma)*ksb.R(0,1,0)+imag(gamma)*ksb.R(0,1,1))+
-			   2*real(ksb.chi)*(imag(gamma)*imag(gamma))-
-			   2*real(gamma)*imag(gamma)*imag(ksb.chi),
-			   // 2nd component
-			   real(gamma)*(ksb.P_sh(1,0)+real(gamma)*ksb.R(1,0,0)+1*imag(gamma)*ksb.R(1,0,1))+
-			   imag(gamma)*(ksb.P_sh(1,1)+1*real(gamma)*ksb.R(1,1,0)+imag(gamma)*ksb.R(1,1,1))+
-			   2*imag(ksb.chi)*(real(gamma)*real(gamma))-
-			   2*real(gamma)*imag(gamma)*real(ksb.chi));
-  }
-  
-  complex<data_t> __chi_g(const KSB& ksb, const KSB& star, const complex<data_t>& gamma) {
-    complex<data_t> chi_sh_star = __chi_sh_nl(star,gamma);
-    return ksb.P_sm*star.P_sm.invert()*chi_sh_star;
-  }
-  
-  complex<data_t> __chi_sm(const KSB& ksb, const KSB& star) {
-    NumMatrix<data_t> P_sm_star_1 = star.P_sm.invert();
-    return complex<data_t>(// 1st component
-			   ksb.P_sm(0,0)*(P_sm_star_1(0,0)*real(star.chi) + P_sm_star_1(0,1)*imag(star.chi)) +
-			   ksb.P_sm(0,1)*(P_sm_star_1(1,0)*real(star.chi) + P_sm_star_1(1,1)*imag(star.chi)),
-			   // 2nd component
-			   ksb.P_sm(1,0)*(P_sm_star_1(0,0)*real(star.chi) + P_sm_star_1(0,1)*imag(star.chi)) +
-			   ksb.P_sm(1,1)*(P_sm_star_1(1,0)*real(star.chi) + P_sm_star_1(1,1)*imag(star.chi)));
-  }
-
   // helper struct
   struct KSBTuple {
     const KSB& ksb1;
     const KSB& ksb2;
   };
 
-  double deltaChi_sh(const gsl_vector* v, void* p) {
-    KSBTuple* kt = reinterpret_cast<KSBTuple*>(p);
-    complex<data_t>* gamma = reinterpret_cast<complex<data_t>*>(v->data);
-    complex<data_t> chi_sh = __chi_sh_nl(kt->ksb1,*gamma);
-    return abs(kt->ksb1.chi - chi_sh);
-  }
+  // Functor for nonlinear P_sh treatment
+  class __Psh_nl : public Minimizer::Functor {
+  public :
+    __Psh_nl(const KSBTuple& kt_, bool conv_) :
+      kt(kt_), convolved(conv_) {}
 
-  double deltaChi(const gsl_vector* v, void* p) {
-    KSBTuple* kt = reinterpret_cast<KSBTuple*>(p);
-    complex<data_t>* gamma = reinterpret_cast<complex<data_t>*>(v->data);
-    complex<data_t> chi_sh = __chi_sh_nl(kt->ksb1,*gamma);
-    complex<data_t> chi_sm = __chi_sm(kt->ksb1,kt->ksb2);
-    complex<data_t> chi_g = __chi_g(kt->ksb1,kt->ksb2,*gamma);
-    //std::cout << real(*gamma) << "\t" << imag(*gamma) << "\t" << abs(kt->ksb1.chi - (chi_sh + chi_sm - chi_g)) << std::endl;
-    return abs(kt->ksb1.chi - (chi_sh + chi_sm - chi_g));
-  }
-
-  complex<data_t> __gamma_nl(data_t accuracy, const KSBTuple& kt, bool convolved) {
-    // initial value from linear treatment
-    complex<data_t> gamma0;
-    if (convolved)
-      gamma0 = kt.ksb1.gamma(kt.ksb2);
-    else
-      gamma0 = kt.ksb1.gamma();
-    // accuracy relative w.r.t. gamma0
-    accuracy*=abs(gamma0);
-  
-    const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
-    gsl_multimin_fminimizer *s = NULL;
-    gsl_vector *ss, *x, *min;
-    gsl_multimin_function F;
-    int status;
-    data_t size;
-
-    // define initial vertex vector
-    ss = gsl_vector_alloc (2);
-    // define primary stepsize
-    // quadratic dependence on gamma0 and in opposite direction
-    gsl_vector_set (ss, 0, -0.5*real(gamma0)*fabs(real(gamma0)));
-    gsl_vector_set (ss, 1, -0.5*imag(gamma0)*fabs(imag(gamma0)));
-
-    // Starting point
-    x = gsl_vector_alloc(2);
-    gsl_vector_set (x, 0, real(gamma0));
-    gsl_vector_set (x, 1, imag(gamma0));
-
-    // define the function which should be minimized and its parameters
-    if (convolved)
-      F.f = &deltaChi;
-    else
-      F.f = &deltaChi_sh;
-    F.n = 2;
-    F.params = reinterpret_cast<void*>(const_cast<KSBTuple*>(&kt));
-    s = gsl_multimin_fminimizer_alloc (T, 2);
-    gsl_multimin_fminimizer_set (s, &F, x, ss);
-
-  
-    do {
-      status = gsl_multimin_fminimizer_iterate(s);
-      if (status)
-	break;
-
-      // the accuracy comes in here:
-      // when size is smaller than accuracy we have convergence
-      size = gsl_multimin_fminimizer_size (s);
-      status = gsl_multimin_test_size (size,accuracy);
+    data_t operator()(const NumVector<data_t>& gamma) {
+      if (convolved)
+	return deltaChi(gamma);
+      else
+	return deltaChi_sh(gamma);
     }
-    while (status == GSL_CONTINUE);
+      
+  private:
+    bool convolved;
+    const KSBTuple kt;
 
-    min = gsl_multimin_fminimizer_x(s);
-    complex<data_t> gamma_nl(gsl_vector_get(min,0), gsl_vector_get(min, 1));
-    gsl_vector_free(x);
-    gsl_vector_free(ss);
-    gsl_multimin_fminimizer_free (s);
-    return gamma_nl;
-  }
+    complex<data_t> __chi_sh_nl(const KSB& ksb, const complex<data_t>& gamma) {
+      return complex<data_t>(// 1st component
+			     real(gamma)*(ksb.P_sh(0,0)+real(gamma)*ksb.R(0,0,0)+1*imag(gamma)*ksb.R(0,0,1))+
+			     imag(gamma)*(ksb.P_sh(0,1)+1*real(gamma)*ksb.R(0,1,0)+imag(gamma)*ksb.R(0,1,1))+
+			     2*real(ksb.chi)*(imag(gamma)*imag(gamma))-
+			     2*real(gamma)*imag(gamma)*imag(ksb.chi),
+			     // 2nd component
+			     real(gamma)*(ksb.P_sh(1,0)+real(gamma)*ksb.R(1,0,0)+1*imag(gamma)*ksb.R(1,0,1))+
+			     imag(gamma)*(ksb.P_sh(1,1)+1*real(gamma)*ksb.R(1,1,0)+imag(gamma)*ksb.R(1,1,1))+
+			     2*imag(ksb.chi)*(real(gamma)*real(gamma))-
+			     2*real(gamma)*imag(gamma)*real(ksb.chi));
+    }
+  
+    complex<data_t> __chi_g(const KSB& ksb, const KSB& star, const complex<data_t>& gamma) {
+      complex<data_t> chi_sh_star = __chi_sh_nl(star,gamma);
+      return ksb.P_sm*star.P_sm.invert()*chi_sh_star;
+    }
+  
+    complex<data_t> __chi_sm(const KSB& ksb, const KSB& star) {
+      NumMatrix<data_t> P_sm_star_1 = star.P_sm.invert();
+      return complex<data_t>(// 1st component
+			     ksb.P_sm(0,0)*(P_sm_star_1(0,0)*real(star.chi) + P_sm_star_1(0,1)*imag(star.chi)) +
+			     ksb.P_sm(0,1)*(P_sm_star_1(1,0)*real(star.chi) + P_sm_star_1(1,1)*imag(star.chi)),
+			     // 2nd component
+			     ksb.P_sm(1,0)*(P_sm_star_1(0,0)*real(star.chi) + P_sm_star_1(0,1)*imag(star.chi)) +
+			     ksb.P_sm(1,1)*(P_sm_star_1(1,0)*real(star.chi) + P_sm_star_1(1,1)*imag(star.chi)));
+    }
+
+    double deltaChi_sh(const NumVector<data_t>& g) {
+      const complex<data_t>* gamma = reinterpret_cast<const complex<data_t>*>(g.c_array());
+      complex<data_t> chi_sh = __chi_sh_nl(kt.ksb1,*gamma);
+      return abs(kt.ksb1.chi - chi_sh);
+    }
+
+    double deltaChi(const NumVector<data_t>& g) {
+      const complex<data_t>* gamma = reinterpret_cast<const complex<data_t>*>(g.c_array());
+      complex<data_t> chi_sh = __chi_sh_nl(kt.ksb1,*gamma);
+      complex<data_t> chi_sm = __chi_sm(kt.ksb1,kt.ksb2);
+      complex<data_t> chi_g = __chi_g(kt.ksb1,kt.ksb2,*gamma);
+      return abs(kt.ksb1.chi - (chi_sh + chi_sm - chi_g));
+    }
+  };
+
 
   complex<data_t> KSB::gamma_nl(data_t accuracy) const {
     const KSBTuple kt = {*this,*this};
-    return __gamma_nl(accuracy, kt, false); 
+    // initial value from linear treatment
+    complex<data_t> gamma0 = kt.ksb1.gamma();
+
+    // accuracy relative w.r.t. gamma0
+    accuracy*=abs(gamma0);
+      
+    // initialize the search parameters and their stepsizes
+    NumVector<data_t> gamma(2), stepsize(2);
+    gamma(0) = real(gamma0);
+    gamma(1) = imag(gamma0);
+    // quadratic dependence on gamma0 and in opposite direction
+    stepsize(0) = -0.5*real(gamma0)*fabs(real(gamma0));
+    stepsize(1) = -0.5*imag(gamma0)*fabs(imag(gamma0));
+    
+    // set up functor
+    __Psh_nl p(kt,false);
+    // call the minimizert
+    Minimizer::Simplex(p, gamma, stepsize, accuracy);
+    real(gamma0) = gamma(0);
+    imag(gamma0) = gamma(1);
+    return gamma0;
   }
+
+  complex<data_t> KSB::gamma_nl(const KSB& psf, data_t accuracy) const {
+    const KSBTuple kt = {*this,psf};
+    // initial value from linear treatment
+    complex<data_t> gamma0 = kt.ksb1.gamma(kt.ksb2);
+
+    // accuracy relative w.r.t. gamma0
+    accuracy*=abs(gamma0);
+      
+    // initialize the search parameters and their stepsizes
+    NumVector<data_t> gamma(2), stepsize(2);
+    gamma(0) = real(gamma0);
+    gamma(1) = imag(gamma0);
+    // quadratic dependence on gamma0 and in opposite direction
+    stepsize(0) = -0.5*real(gamma0)*fabs(real(gamma0));
+    stepsize(1) = -0.5*imag(gamma0)*fabs(imag(gamma0));
+      
+    // set up functor
+    __Psh_nl p(kt,true);
+    // call the minimizert
+    Minimizer::Simplex(p, gamma, stepsize, accuracy);
+    real(gamma0) = gamma(0);
+    imag(gamma0) = gamma(1);
+    return gamma0;
+  }
+
 
 //   data_t devChi(const KSB& ksb, const KSB& star, complex<data_t>& gamma) {
 //     complex<data_t> chi_sh = __chi_sh_nl(ksb,gamma);
@@ -272,10 +274,7 @@ namespace shapelens {
 //     complex<data_t> chi_g = __chi_g(ksb,star,gamma);
 //     return abs(ksb.chi - (chi_sh + chi_sm - chi_g));
 //   }
-
-  complex<data_t> KSB::gamma_nl(const KSB& psf, data_t accuracy) const {
-    const KSBTuple kt = {*this,psf};
-    // complex<data_t> gamma;
+//     complex<data_t> gamma;
 //     for (data_t g1 = -1; g1 <= 1; g1+=0.005) {
 //       real(gamma) = g1;
 //       for (data_t g2 = -1; g2 <= 1; g2+=0.005) {
@@ -286,6 +285,5 @@ namespace shapelens {
 // 	  std::cout << g1 << "\t" << g2 << "\t" << 0 << std::endl;
 //       }
 //     }
-    return __gamma_nl(accuracy, kt, true); 
-  }
-}
+
+} // end namespace

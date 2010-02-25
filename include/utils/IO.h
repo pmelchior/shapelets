@@ -14,7 +14,9 @@ namespace shapelens {
 template <class T>
 class Image;
 
-/// Functions for reading and writing into several formats
+/// Functions for reading and writing into several formats\n\n
+/// \b NOTE: The functions will throw a instance of \p std::exception 
+/// in case of a failure.
 class IO {
   public:
 
