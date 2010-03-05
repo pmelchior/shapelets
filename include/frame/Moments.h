@@ -6,7 +6,7 @@
 
 namespace shapelens {
 
-/// Container class for monopole \f$l=0\f$ moments of two-dimensional quantity.
+/// Container class for monopole \f$l=0\f$ moments of a two-dimensional quantity.
 class Moment0 {
  public:
   /// Constructor.
@@ -22,7 +22,7 @@ class Moment0 {
 };
 
 
-/// Container class for dipole \f$l=1\f$ moments of two-dimensional quantity.
+/// Container class for dipole \f$l=1\f$ moments of a two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
 class Moment1 {
@@ -40,7 +40,7 @@ class Moment1 {
 };
 
 
-/// Container class for quadrupole \f$l=2\f$ moments of two-dimensional quantity.
+/// Container class for quadrupole \f$l=2\f$ moments of a two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
 class Moment2 {
@@ -57,7 +57,7 @@ class Moment2 {
   data_t M[3];
 };
 
-/// Container class for octupole \f$l=3\f$ moments of two-dimensional quantity.
+/// Container class for octupole \f$l=3\f$ moments of a two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
 class Moment3 {
@@ -76,7 +76,7 @@ class Moment3 {
   data_t M[4];
 };
 
-/// Container class for hexadecupole \f$l=4\f$ moments of two-dimensional quantity.
+/// Container class for hexadecupole \f$l=4\f$ moments of a two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
 class Moment4 {
@@ -95,7 +95,7 @@ class Moment4 {
   data_t M[5];
 };
 
-/// Container class for \f$l=5\f$ moments of two-dimensional quantity.
+/// Container class for \f$l=5\f$ moments of a two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
 class Moment5 {
@@ -114,7 +114,7 @@ class Moment5 {
   data_t M[6];
 };
 
-/// Container class for \f$l=6\f$ moments of two-dimensional quantity.
+/// Container class for \f$l=6\f$ moments of a two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
 class Moment6 {
@@ -133,6 +133,31 @@ class Moment6 {
   data_t M[7];
 };
 
+/// Container class for arbitrary moments of a two-dimensional quantity.
+/// Access is provided by an index or by the moment power in x and y.\n
+/// All moments are computed in one sweep over the data.
+class MomentsOrdered : public NumVector<data_t> {
+public:
+  /// Default constructor
+  MomentsOrdered();
+  /// Constructor for moments up to order \p N.
+  MomentsOrdered(int N);
+  /// Constructor for moments up to order \p N.
+  /// The moments are populated from \p obj.
+  MomentsOrdered(const Object& obj, int N);
+  /// Access operator for \f$\langle x^{p_x}\, y^{p_y}\rangle\f$.
+  data_t& operator()(unsigned int px, unsigned int py);
+  /// Access operator for \f$\langle x^{p_x}\, y^{p_y}\rangle\f$.
+  const data_t& operator()(unsigned int px, unsigned int py) const;
+  /// Get maximum moment order.
+  int getOrder() const;
+  /// Get vector index of moment \f$\langle x^{p_x}\, y^{p_y}\rangle\f$ from 
+  /// the powers.
+  int getIndex(unsigned int px, unsigned int py) const;
+ private:
+  unsigned int pyramid_num(int n) const;
+  int N;
+};
 
 
 
