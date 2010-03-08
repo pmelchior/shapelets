@@ -12,7 +12,6 @@ namespace shapelens {
 /// Base class for idealized source models.
 /// A galaxy model is a idealized representation of a two-dimensional shape.
 /// It's main advantage: It can be sampled at any resolution.
-
 class SourceModel {
 public:
   /// Destructor.
@@ -42,6 +41,17 @@ public:
   /// Considers position of SourceModel::centroid.
   void setEllipticalSupport(data_t radius, const complex<data_t>& eps);
 };
+
+/// Populated an object by sampling the SourceModel.
+/// The coordinates of \obj are taken from its Grid, hence for a perfectly
+/// centered image of size \p N, the grid should have this form:
+/// \code
+/// obj.grid.setSize(-N/2,-N/2,N,N);
+/// \endcode
+/// The model can be oversampled by the factor \p S, such that each pixel
+/// is split into \f$S\times S\f$ subpixels, and the model is evaluated at the
+/// center of each subpixel.
+ void setObject(const SourceModel& model, Object& obj, int S = 1);
  
 /// Collection of SourceModel entities.
  class SourceModelList : public std::vector<boost::shared_ptr<SourceModel> > {

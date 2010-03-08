@@ -4,7 +4,7 @@
 
 using namespace shapelens;
 
-void ellipticity(Quadrupole& Q, data_t& e1, data_t& e2, data_t& e, data_t& theta) {
+void ellipticity(Moment2& Q, data_t& e1, data_t& e2, data_t& e, data_t& theta) {
   complex<data_t> I(0,1);
   complex<data_t> Q11(Q(0,0),0),Q22(Q(1,1),0),Q12(Q(0,1),0);
   complex<data_t> denom = Q11+Q22 + 2.*sqrt(Q11*Q22-Q12*Q12);
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   int nmax;
   data_t beta, chi2, flux, e1,e2,e,theta, RMS, Rs;
   Point<data_t> scentroid;
-  Quadrupole Q;
+  Moment2 Q;
   for (ShapeletObjectList::iterator iter = sl.begin(); iter != sl.end() ; iter++) {
     // deconvolve if demanded
     if (kernel.isSet())
