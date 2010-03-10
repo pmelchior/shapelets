@@ -211,7 +211,7 @@ namespace shapelens {
     const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
     p2w.transform(SourceModel::centroid);
     // compute WC of support
-    SourceModel::support = obj.grid.getSupport().getBoundingBox();
+    SourceModel::support = obj.grid.getBoundingBox();
     // account of centroid offset of obj
     SourceModel::support -= obj.centroid;
     SourceModel::support.apply(p2w);
@@ -260,7 +260,7 @@ namespace shapelens {
     SourceModel::centroid(1) = 0;
     p2w.transform(SourceModel::centroid);
     // compute WC of support
-    SourceModel::support = sobj.getGrid().getSupport().getBoundingBox();
+    SourceModel::support = sobj.getGrid().getBoundingBox();
     // account of centroid offset of sobj
     SourceModel::support -= scentroid;
     SourceModel::support.apply(p2w);

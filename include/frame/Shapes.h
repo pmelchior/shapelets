@@ -59,14 +59,14 @@ namespace shapelens {
     }
     /// Add \p P to \p ll and \p tr.
     inline Rectangle<T>& operator+= (const Point<T>& P) {
-      ll -= P;
-      tr -= P;
+      ll += P;
+      tr += P;
       return *this;
     }
     /// Subtract \p P from \p ll and \p tr.
     inline Rectangle<T>& operator-= (const Point<T>& P) {
-      ll += P;
-      tr += P;
+      ll -= P;
+      tr -= P;
       return *this;
     }
   };
