@@ -12,12 +12,50 @@ namespace shapelens {
   template <class T>
     class CoordinateTransformation {
   public:
+    /// Destructor.
+    ~CoordinateTransformation() {
+      if (next != NULL)
+        delete next;
+    }
+    /// Chain a succeding transformation.
+    /// The new transformation will be made of the product
+    /// <tt>(*this) -> (*this) * C</tt>
+    void operator*=(const CoordinateTransformation<T>& C) {
+      CoordinateTransformation<T>* tmp = this;
+      while (tmp->next != NULL) {
+	tmp = this->next;
+	}
+      tmp->next = C.clone();
+    }
     /// Apply transformation to \p P.
-    virtual void transform(Point<T>& P) const {} // do nothing
+    virtual void transform(Point<T>& P) const = 0;
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const = 0;
     /// Get a deep copy of this inverse of \p this.
     virtual CoordinateTransformation<T>* getInverse() const  = 0;
+  protected:
+    /// Points to succeding transformation.
+    CoordinateTransformation<T>* next;
+    /// Prepare correct deep copy from clone pointer.
+    CoordinateTransformation<T>* clone_pointer(CoordinateTransformation<T>* ct)  const {
+      if (next != NULL)
+        ct->next = next->clone();
+      else
+        ct->next = NULL;
+      return ct;	
+    }
+    /// Prepare correct deep copy of inverse pointer.
+    CoordinateTransformation<T>* inverse_pointer(CoordinateTransformation<T>* inv)  const {
+      CoordinateTransformation<T>* tmp = this->clone();
+      while(tmp->next != NULL) {
+	CoordinateTransformation<T>* next_inv = tmp->next->getInverse();
+	next_inv->next = inv;
+	// traverse linked list
+	tmp = tmp->next;
+        inv = next_inv;
+      }
+      return inv;
+    }
   };
 
   /// Empty/Null transformations in 2D.
@@ -30,14 +68,16 @@ namespace shapelens {
     }
     /// Apply transformation to \p P.
     virtual void transform(Point<T>& P) const {
+      if (this->next != NULL)
+	this->next->transform(P);
     }
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const {
-      return new NullTransformation();
+      return clone_pointer(new NullTransformation());
     }
     /// Get a deep copy of this inverse of \p this.
     virtual CoordinateTransformation<T>* getInverse() const {
-      return new NullTransformation();
+      return inverse_pointer(new NullTransformation());
     }
   };
 
@@ -49,18 +89,21 @@ namespace shapelens {
   public:
     /// Constructor.
     ScalarTransformation(T scale): s(scale) {
+      this->next = NULL;
     }
     /// Apply transformation to \p P.
     virtual void transform(Point<T>& P) const {
       P *= s;
+      if (this->next != NULL)
+	this->next->transform(P);
     }
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const {
-      return new ScalarTransformation(s);
+      return clone_pointer(new ScalarTransformation(s));
     }
     /// Get a deep copy of this inverse of \p this.
     virtual CoordinateTransformation<T>* getInverse() const {
-      return new ScalarTransformation(1./s);
+      return inverse_pointer(new ScalarTransformation(1./s));
     }
   private:
     T s;
@@ -74,18 +117,21 @@ namespace shapelens {
   public:
     /// Constructor.
     ShiftTransformation(const Point<T>& delta): dP(delta) {
+      this->next = NULL;
     }
     /// Apply transformation to \p P.
     virtual void transform(Point<T>& P) const {
       P += dP;
+      if (this->next != NULL)
+	this->next->transform(P);
     }
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const {
-      return new ShiftTransformation(dP);
+      return clone_pointer(new ShiftTransformation(dP));
     }
     /// Get a deep copy of this inverse of \p this.
     virtual CoordinateTransformation<T>* getInverse() const {
-      return new ShiftTransformation(-dP);
+      return inverse_pointer(new ShiftTransformation(-dP));
     }
   private:
     Point<T> dP;
@@ -107,14 +153,16 @@ namespace shapelens {
       T p0 = P(0);
       P(0) = M(0,0)*P(0) + M(0,1)*P(1);
       P(1) = M(1,0)* p0  + M(1,1)*P(1);
+      if (this->next != NULL)
+	this->next->transform(P);
     }
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const {
-      return new LinearTransformation(M);
+      return clone_pointer(new LinearTransformation(M));
     }
     /// Get a deep copy of this inverse of \p this.
     virtual CoordinateTransformation<T>* getInverse() const {
-      return new LinearTransformation(M.invert());
+      return inverse_pointer(new LinearTransformation(M.invert()));
     }
   private:
     NumMatrix<T> M;
@@ -136,14 +184,16 @@ namespace shapelens {
       T p0 = P(0);
       P(0) = Rout(0) + M(0,0)*(P(0)-Rin(0)) + M(0,1)*(P(1)-Rin(1));
       P(1) = Rout(1) + M(1,0)*( p0 -Rin(0)) + M(1,1)*(P(1)-Rin(1));
+      if (this->next != NULL)
+	this->next->transform(P);
     }
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const {
-      return new AffineTransformation(*this);
+      return clone_pointer(new AffineTransformation(*this));
     }
     /// Get a deep copy of this inverse of \p this.
     virtual CoordinateTransformation<T>* getInverse() const {
-      return new AffineTransformation(M.invert(),Rout,Rin);
+      return inverse_pointer(new AffineTransformation(M.invert(),Rout,Rin));
     }
   private:
     NumMatrix<T> M;
@@ -193,25 +243,27 @@ namespace shapelens {
 	P(0) += D111*p0*p0 + (D112 + D121)*p0*p1 + D122*p1*p1;
 	P(1) += D211*p0*p0 + (D212 + D221)*p0*p1 + D222*p1*p1;
       }
+      if (this->next != NULL)
+	this->next->transform(P);
     }
     /// Get a deep copy of \p this.
     virtual CoordinateTransformation<T>* clone() const {
       if (flex) {
 	complex<data_t> F(-D111-D221, -D121-D222);
 	complex<data_t> G(-D111+3*D221, -3*D121+D222);
-	return new LensingTransformation(kappa,complex<data_t>(gamma1,gamma2), F, G);
+	return clone_pointer(new LensingTransformation(kappa,complex<data_t>(gamma1,gamma2), F, G));
       }
       else
-	return new LensingTransformation(kappa,complex<data_t>(gamma1,gamma2));
+	return clone_pointer(new LensingTransformation(kappa,complex<data_t>(gamma1,gamma2)));
     }
     /// Get a deep copy of this inverse of \p this.
     virtual CoordinateTransformation<T>* getInverse() const {
       if (flex) {
 	complex<data_t> F(D111+D221, D121+D222);
 	complex<data_t> G(D111-3*D221, 3*D121-D222);
-	return new LensingTransformation(-kappa,complex<data_t>(-gamma1,-gamma2), F, G);
+	return inverse_pointer(new LensingTransformation(-kappa,complex<data_t>(-gamma1,-gamma2), F, G));
       } else
-	return new LensingTransformation(-kappa,complex<data_t>(-gamma1,-gamma2));
+	return inverse_pointer(new LensingTransformation(-kappa,complex<data_t>(-gamma1,-gamma2)));
     }
   private:
     bool flex;
