@@ -2,7 +2,7 @@
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 
-using namespace shapelens;
+namespace shapelens {
 
 Property::Property() : std::map<std::string, variant_t>() {}
 
@@ -34,21 +34,22 @@ public:
   }
   void operator()(const std::vector<int>& e) const {
     out << "\tVI\t";
-    for (std::vector<int>::const_iterator iter = e.begin(); iter != e.end(); iter++) {
-      out << *iter;
-      if (iter != --e.end())
-	out  << ",";
-    }
-    if (ls.size() == 0)
-      out << std::endl;
-    else
-      out << ls;
+    writeVector(e);
   }
   void operator()(const std::vector<data_t>& e) const {
     out << "\tVD\t";
-    for (std::vector<data_t>::const_iterator iter = e.begin(); iter != e.end(); iter++) {
+    writeVector(e);
+  }
+  void operator()(const std::vector<std::string>& e) const {
+    out << "\tVS\t";
+    writeVector(e);
+  }
+private:
+  template<class T>
+  void writeVector(const std::vector<T>& v) const {
+    for (typename std::vector<T>::const_iterator iter = v.begin(); iter != v.end(); iter++) {
       out << *iter;
-      if (iter != --e.end())
+      if (iter != --v.end())
 	out  << ",";
     }
     if (ls.size() == 0)
@@ -56,7 +57,6 @@ public:
     else
       out << ls;
   }
-private:
   std::ostream & out;
   std::string  ls;
 };
@@ -76,17 +76,20 @@ void Property::read(std::istream& in) {
   boost::char_separator<char> fieldsep("\t");
   boost::char_separator<char> vectorsep(",");
   while(getline(in, line)) {
-    Tok tok(line, fieldsep);
-    int i=0;
-    for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter) {
-      switch(i) {
-      case 0: name = *tok_iter; break;
-      case 1: type = *tok_iter; break;
-      case 2: value = *tok_iter; break; 
-      }
-      i++;
-    } 
-    if (i==3) { // name, type, value filled
+    if (line[0] != '#') {
+      Tok tok(line, fieldsep);
+      int i=0;
+      for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter) {
+        switch(i) {
+        case 0: name = *tok_iter; break;
+        case 1: type = *tok_iter; break;
+        case 2: value = *tok_iter; break; 
+        }
+        i++;
+        if (i>2)
+          break;
+      } 
+      // name, type, value filled
       if (type[0] == 'V') { // vector type
 	Tok vtok(value, vectorsep);
 	if (type[1] == 'I') {
@@ -95,10 +98,15 @@ void Property::read(std::istream& in) {
 	    vi.push_back(boost::lexical_cast<int>(*tok_iter));
 	  std::map<std::string, variant_t>::insert(std::make_pair(name,vi));
 	} else if (type[1] == 'D') {
-	  std::vector<data_t> vi;
+	  std::vector<data_t> vd;
 	  for(Tok::iterator tok_iter = vtok.begin(); tok_iter != vtok.end(); ++tok_iter) 
-	    vi.push_back(boost::lexical_cast<data_t>(*tok_iter));
-	  std::map<std::string, variant_t>::insert(std::make_pair(name,vi));
+	    vd.push_back(boost::lexical_cast<data_t>(*tok_iter));
+	  std::map<std::string, variant_t>::insert(std::make_pair(name,vd));
+	} else if (type[1] == 'S') {
+	  std::vector<std::string> vs;
+	  for(Tok::iterator tok_iter = vtok.begin(); tok_iter != vtok.end(); ++tok_iter) 
+	    vs.push_back(*tok_iter);
+	  std::map<std::string, variant_t>::insert(std::make_pair(name,vs));
 	}
       } else {
 	if (type[0] == 'S')
@@ -111,3 +119,5 @@ void Property::read(std::istream& in) {
     }
   }
 }
+
+} // end namespace
