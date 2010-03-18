@@ -85,7 +85,7 @@ namespace shapelens {
   Moment2::Moment2(const Object& obj) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = 0;
-    data_t w_;
+    data_t w_, diff_x, diff_y, val;
 
     for (long i=0; i< grid.size(); i++) {
       // Point<data_t> P = obj.grid(i), P_;
@@ -103,12 +103,16 @@ namespace shapelens {
       //       }
       //     }
 
-      w_ = obj.w(grid(i));
+      val = obj(i);
+      w_ = obj.w(obj.grid(i));
+      diff_x = obj.grid(i,0)-obj.centroid(0);
+      diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
-      M[0] += gsl_pow_2(grid(i,0)-obj.centroid(0)) * obj(i) * w_;
-      M[1] += (grid(i,0)-obj.centroid(0))*(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[2] += gsl_pow_2(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
+
+      M[0] += gsl_pow_2(diff_x) * obj(i) * w_;
+      M[1] += diff_x * diff_y * obj(i) * w_;
+      M[2] += gsl_pow_2(diff_y) * obj(i) * w_;
     }
   }
   data_t& Moment2::operator()(bool i, bool j) {
@@ -126,16 +130,20 @@ namespace shapelens {
   Moment3::Moment3(const Object& obj) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = M[3] = 0;
-    data_t w_;
+    data_t w_, diff_x, diff_y, val;
   
     for (long i=0; i< grid.size(); i++) {
-      w_ = obj.w(grid(i));
+      val = obj(i);
+      w_ = obj.w(obj.grid(i));
+      diff_x = obj.grid(i,0)-obj.centroid(0);
+      diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
-      M[0] += gsl_pow_3(grid(i,0)-obj.centroid(0)) * obj(i) * w_;
-      M[1] += gsl_pow_2(grid(i,0)-obj.centroid(0))*(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[2] += (grid(i,0)-obj.centroid(0))*gsl_pow_2(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[3] += gsl_pow_3(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
+
+      M[0] += gsl_pow_3(diff_x) * obj(i) * w_;
+      M[1] += gsl_pow_2(diff_x) * diff_y * obj(i) * w_;
+      M[2] += diff_x * gsl_pow_2(diff_y) * obj(i) * w_;
+      M[3] += gsl_pow_3(diff_y) * obj(i) * w_;
     }
   }
   data_t& Moment3::operator()(bool i, bool j, bool k) {
@@ -153,32 +161,21 @@ namespace shapelens {
   Moment4::Moment4(const Object& obj) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = M[3] = M[4] = 0;
-    data_t w_;
+    data_t w_, diff_x, diff_y, val;
 
     for (long i=0; i< grid.size(); i++) {
-      //  Point<data_t> P = obj.grid(i), P_;
-      //     for (int n1 = 0; n1 < SUBPIXEL; n1++) {
-      //       P_(0) = P(0) + (0.5+n1)*offset - 0.5;
-      //       for (int n2 = 0; n2 < SUBPIXEL; n2++) {
-      // 	P_(1) = P(1) + (0.5+n2)*offset - 0.5;
-      // 	w_ = obj.w(P_)/(SUBPIXEL*SUBPIXEL);
-      // 	if (obj.weight.size() != 0)
-      // 	  w_ *= obj.weight(i);
-      // 	data_t val = obj.interpolate(P_);//Interpolation::bicubic(obj,P_);
-      // 	M[0] += w_ * val * gsl_pow_2(P_(0)-obj.centroid(0));
-      // 	M[1] += w_ * val * (P_(0)-obj.centroid(0))*(P_(1)-obj.centroid(1));
-      // 	M[2] += w_ * val * gsl_pow_2(P_(1)-obj.centroid(1));
-      //       }
-      //     }
-    
-      w_ = obj.w(grid(i));
+      val = obj(i);
+      w_ = obj.w(obj.grid(i));
+      diff_x = obj.grid(i,0)-obj.centroid(0);
+      diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
-      M[0] += gsl_pow_4(grid(i,0)-obj.centroid(0)) * obj(i) * w_;
-      M[1] += gsl_pow_3(grid(i,0)-obj.centroid(0))*(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[2] += gsl_pow_2(grid(i,0)-obj.centroid(0))*gsl_pow_2(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[3] += (grid(i,0)-obj.centroid(0))*gsl_pow_3(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[4] += gsl_pow_4(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
+
+      M[0] += gsl_pow_4(diff_x) * obj(i) * w_;
+      M[1] += gsl_pow_3(diff_x) * diff_y * obj(i) * w_;
+      M[2] += gsl_pow_2(diff_x) * gsl_pow_2(diff_y) * obj(i) * w_;
+      M[3] += diff_x * gsl_pow_3(diff_y) * obj(i) * w_;
+      M[4] += gsl_pow_4(diff_y) * obj(i) * w_;
     }
   }
   data_t& Moment4::operator()(bool i, bool j, bool k, bool l) {
@@ -190,54 +187,29 @@ namespace shapelens {
 
 
 
-  Moment5::Moment5() {
-    M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = 0;
-  }
-  Moment5::Moment5(const Object& obj) {
-    const Grid& grid = obj.grid;
-    M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = 0;
-    data_t w_;
-  
-    for (long i=0; i< grid.size(); i++) {
-      w_ = obj.w(grid(i));
-      if (obj.weight.size() != 0)
-	w_ *= obj.weight(i);
-      M[0] += gsl_pow_5(grid(i,0)-obj.centroid(0)) * obj(i) * w_;
-      M[1] += gsl_pow_4(grid(i,0)-obj.centroid(0))*(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[2] += gsl_pow_3(grid(i,0)-obj.centroid(0))*gsl_pow_2(grid(i,1)-obj.centroid(1)) * obj(i)* w_;
-      M[3] += gsl_pow_2(grid(i,0)-obj.centroid(0))*gsl_pow_3(grid(i,1)-obj.centroid(1)) * obj(i)* w_;
-      M[4] += (grid(i,0)-obj.centroid(0))*gsl_pow_4(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[5] += gsl_pow_5(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-    }
-  }
-  data_t& Moment5::operator()(bool i, bool j, bool k, bool l, bool m) {
-    return M[i+j+k+l+m];
-  }
-  const data_t& Moment5::operator()(bool i, bool j, bool k, bool l, bool m) const {
-    return M[i+j+k+l+m];
-  }
-
-
-
   Moment6::Moment6() {
     M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = 0;
   }
   Moment6::Moment6(const Object& obj) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = 0;
-    data_t w_;
+    data_t w_, diff_x, diff_y, val;
 
     for (long i=0; i< grid.size(); i++) {
-      w_ = obj.w(grid(i));
+      val = obj(i);
+      w_ = obj.w(obj.grid(i));
+      diff_x = obj.grid(i,0)-obj.centroid(0);
+      diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
-      M[0] += gsl_pow_6(grid(i,0)-obj.centroid(0)) * obj(i) * w_;
-      M[1] += gsl_pow_5(grid(i,0)-obj.centroid(0))*(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[2] += gsl_pow_4(grid(i,0)-obj.centroid(0))*gsl_pow_2(grid(i,1)-obj.centroid(1)) * obj(i)* w_;
-      M[3] += gsl_pow_3(grid(i,0)-obj.centroid(0))*gsl_pow_3(grid(i,1)-obj.centroid(1)) * obj(i)* w_;
-      M[4] += gsl_pow_2(grid(i,0)-obj.centroid(0))*gsl_pow_4(grid(i,1)-obj.centroid(1)) * obj(i)* w_;
-      M[5] += (grid(i,0)-obj.centroid(0))*gsl_pow_5(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
-      M[6] += gsl_pow_6(grid(i,1)-obj.centroid(1)) * obj(i) * w_;
+
+      M[0] += gsl_pow_6(diff_x) * obj(i) * w_;
+      M[1] += gsl_pow_5(diff_x) * diff_y * obj(i) * w_;
+      M[2] += gsl_pow_4(diff_x) * gsl_pow_2(diff_y) * obj(i)* w_;
+      M[3] += gsl_pow_3(diff_x) * gsl_pow_3(diff_y) * obj(i)* w_;
+      M[4] += gsl_pow_2(diff_x) * gsl_pow_4(diff_y) * obj(i)* w_;
+      M[5] += diff_x * gsl_pow_5(diff_y) * obj(i) * w_;
+      M[6] += gsl_pow_6(diff_y) * obj(i) * w_;
     }
   }
   data_t& Moment6::operator()(bool i, bool j, bool k, bool l, bool m, bool n) {
@@ -245,6 +217,41 @@ namespace shapelens {
   }
   const data_t& Moment6::operator()(bool i, bool j, bool k, bool l, bool m, bool n) const {
     return M[i+j+k+l+m+n];
+  }
+
+  
+  Moment8::Moment8() {
+    M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = M[7] = M[8] = 0;
+  }
+  Moment8::Moment8(const Object& obj) {
+    const Grid& grid = obj.grid;
+    M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = M[7] = M[8] = 0;
+    data_t w_, diff_x, diff_y, val;;
+  
+    for (long i=0; i< grid.size(); i++) {
+      val = obj(i);
+      w_ = obj.w(obj.grid(i));
+      diff_x = obj.grid(i,0)-obj.centroid(0);
+      diff_y = obj.grid(i,1)-obj.centroid(1);
+      if (obj.weight.size() != 0)
+	w_ *= obj.weight(i);
+
+      M[0] += gsl_pow_8(diff_x) * val * w_;
+      M[1] += gsl_pow_7(diff_x) * diff_y * val * w_;
+      M[2] += gsl_pow_6(diff_x) * gsl_pow_2(diff_y) * val * w_;
+      M[3] += gsl_pow_5(diff_x) * gsl_pow_3(diff_y) * val * w_;
+      M[4] += gsl_pow_4(diff_x) * gsl_pow_4(diff_y) * val * w_;
+      M[5] += gsl_pow_3(diff_x) * gsl_pow_5(diff_y) * val * w_;
+      M[6] += gsl_pow_2(diff_x) * gsl_pow_6(diff_y) * val * w_;
+      M[7] += diff_x * gsl_pow_7(diff_y) * val * w_;
+      M[8] += gsl_pow_8(diff_y) * val * w_;
+    }
+  }
+    data_t& Moment8::operator()(bool i, bool j, bool k, bool l, bool m, bool n, bool o, bool p) {
+    return M[i+j+k+l+m+n+o+p];
+  }
+  const data_t& Moment8::operator()(bool i, bool j, bool k, bool l, bool m, bool n, bool o, bool p) const {
+    return M[i+j+k+l+m+n+o+p];
   }
 
 

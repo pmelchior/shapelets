@@ -10,9 +10,17 @@ namespace shapelens {
     KSB(const Object& obj);
     complex<data_t> chi;
     complex<data_t> gamma() const;
+    complex<data_t> gamma_first() const;
+    complex<data_t> gammaTr() const;\
+    complex<data_t> gammaTr1() const;
     complex<data_t> gamma(const KSB& psf) const;
-    complex<data_t> gamma_nl(data_t accuracy = 0.001) const;
-    complex<data_t> gamma_nl(const KSB& psf, data_t accuracy = 0.001) const;
+    complex<data_t> gamma_first(const KSB& psf) const;
+    complex<data_t> gammaTr(const KSB& psf) const;
+    complex<data_t> gammaTr1(const KSB& psf) const;
+    complex<data_t> gamma_second(data_t accuracy = 0.001) const;
+    complex<data_t> gamma_exact(data_t accuracy = 0.0001) const;	
+    complex<data_t> gamma_nl(data_t accuracy = 0.000001) const;
+    complex<data_t> gamma_nl(const KSB& psf, data_t accuracy = 0.0001) const;
 
   private:
     complex<data_t> __chi(const Moment2& Q) const;
@@ -28,11 +36,17 @@ namespace shapelens {
     data_t __ix(const Moment6& Q) const;
     data_t __delta(const Moment6& Q) const;
     
-    complex<data_t> __p(const KSB& star) const;
+    data_t ___a1(const Moment8& Q) const;
+    data_t ___a2(const Moment8& Q) const;
+    data_t ___a3(const Moment8& Q) const;
+    data_t ___a4(const Moment8& Q) const;
+    data_t ___a5(const Moment8& Q) const;
+    
+      complex<data_t> __p(const KSB& star) const;
   public:
     data_t trQ, trQ_, M,
-      mu_, mu__, psi_, psi__, pi_, pi__, nu_, nu__, lambda__, omega__, sigma__,rho__,ix__,delta__;
-    NumMatrix<data_t> P_sh, P_sm, e_sh, e_sm;
+      mu_, mu__, psi_, psi__, pi_, pi__, nu_, nu__, lambda__, omega__, sigma__,rho__,ix__,delta__, a1___,a2___,a3___,a4___,a5___;
+    NumMatrix<data_t> P_sh, P1,P2,P_sm, e_sh, e_sm,K,B,Pa,Pb,Pc;
 
     // helper class for tensor of rank 3:
     // glue two NumMatrices togehter...
@@ -44,7 +58,9 @@ namespace shapelens {
     private:
       NumMatrix<data_t> M0, M1;
     };
-    NumTensor R;
+    NumTensor R,R1,U1,U2;
+
+    
     
   };
 

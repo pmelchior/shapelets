@@ -30,6 +30,7 @@ namespace shapelens {
     data_t Gauss___(const Point<data_t>& P) const;
     data_t Gauss_2(const Point<data_t>& P) const;
     data_t Gauss__2(const Point<data_t>& P) const;
+    data_t Gauss___2(const Point<data_t>& P) const;
     data_t Flat(const Point<data_t>& P) const;
     data_t Flat_(const Point<data_t>& P) const;
   };

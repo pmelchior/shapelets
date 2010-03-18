@@ -95,25 +95,6 @@ class Moment4 {
   data_t M[5];
 };
 
-/// Container class for \f$l=5\f$ moments of a two-dimensional quantity.
-/// The class exploits the fact, that moments are invariant under 
-/// index permutation.
-class Moment5 {
-  public:
-  /// Constructor.
-  Moment5();
-  /// Constructor from an Object.
-  Moment5(const Object& obj);
-  /// Access operator.
-  /// The access will result in the same result, when indices are only permuted.
-  data_t& operator()(bool i, bool j, bool k, bool l, bool m);
-  /// Access operator.
-  /// The access will result in the same result, when indices are only permuted.
-  const data_t& operator()(bool i, bool j, bool k, bool l, bool m) const;
-  //private:
-  data_t M[6];
-};
-
 /// Container class for \f$l=6\f$ moments of a two-dimensional quantity.
 /// The class exploits the fact, that moments are invariant under 
 /// index permutation.
@@ -131,6 +112,25 @@ class Moment6 {
   const data_t& operator()(bool i, bool j, bool k, bool l, bool m, bool n) const;
   //private:
   data_t M[7];
+};
+
+/// Container class for \f$l=8\f$ moments of a two-dimensional quantity.
+/// The class exploits the fact, that moments are invariant under
+/// index permutation.
+class Moment8 {
+  public:
+  /// Constructor.
+  Moment8();
+  /// Constructor from an Object.
+  Moment8(const Object& obj);
+  /// Access operator.
+  /// The access will result in the same result, when indices are only permuted.
+  data_t& operator()(bool i, bool j, bool k, bool l, bool m, bool n, bool o, bool p);
+  /// Access operator.
+  /// The access will result in the same result, when indices are only permuted.
+  const data_t& operator()(bool i, bool j, bool k, bool l, bool m, bool n, bool o, bool p) const;
+  //private:
+  data_t M[9];
 };
 
 /// Container class for arbitrary moments of a two-dimensional quantity.
