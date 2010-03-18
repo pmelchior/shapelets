@@ -73,7 +73,7 @@ class Catalog : public std::map<unsigned long, CatObject> {
   /// The file will be stored in ASCII and conform with the SExtractor format.
   void save(std::string catfile) const;
   /// Apply coordinate transformation to all entries.
-  void apply(const CoordinateTransformation<data_t>& C);
+  void apply(const CoordinateTransformation& C);
   /// Add a catalog to another.
   /// Entries are identified by map index. Thus, if an entry from \p *this has the same index as
   /// one from \p c, it will be overwritten.

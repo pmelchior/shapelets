@@ -189,7 +189,7 @@ int Catalog::round(data_t x) {
     return (int) floor(x);
 }
 
-void Catalog::apply(const CoordinateTransformation<data_t>& C) {
+void Catalog::apply(const CoordinateTransformation& C) {
   Point<data_t> P;
   Rectangle<data_t> bb;
   for (Catalog::iterator iter = Catalog::begin(); iter != Catalog::end(); iter++) {

@@ -9,36 +9,6 @@
 
 namespace shapelens {
 
-  /// WCS class.
-  class WCS {
-  public:
-    /// Constructor.
-    WCS();
-    /// Copy constructor.
-    WCS(const WCS& wcs);
-    /// Destructor.
-    ~WCS();
-    /// Copy operator.
-    WCS& operator=(const WCS& wcs);
-    /// Set WCS from a CoordindateTransformation.
-    void set(const CoordinateTransformation<data_t>& C);
-    /// Reset WCS.
-    void reset();
-    /// Has non-trivial Word Coordinates
-    bool isSet();
-    /// CoordindateTransformation from pixel to World coordinates
-    const CoordinateTransformation<data_t>& getPC2WC() const;
-    /// Inverse transformation, from World to pixel coordinates
-    const CoordinateTransformation<data_t>& getWC2PC() const;
-    
-    friend class Grid;
-
-  private:
-    CoordinateTransformation<data_t>* CT;
-    CoordinateTransformation<data_t>* CT_;
-  };
-
-
 /// Grid class.
 /// The class defines the Grid on which an Image entity is defined.\n\n
 /// The class distinguishes between 
@@ -63,12 +33,12 @@ class Grid {
   Point<data_t> operator() (long index) const;
   /// Set a coordinate transformation to grid points returned 
   /// by Grid::operator().
-  void setWCS(const CoordinateTransformation<data_t>& C);
+  void setWCS(const CoordinateTransformation& C);
   /// Reset to coordinate transformation.
   /// After a call to this function, World coordinates are image coordinates.
   void resetWCS();
   /// Get WCS transformation.
-  const WCS& getWCS() const;
+  const CoordinateTransformation& getWCS() const;
   /// Return starting position in given direction.
   int getStartPosition(bool direction) const;
   /// Return stopping position in given direction.
@@ -108,8 +78,7 @@ class Grid {
  private:
   unsigned int N0, N1;
   int start0,start1;
-  WCS wcs;
-  bool wcs_set;
+  CoordinateTransformation* ct;
   int round(data_t x) const;
 };
 } // end namespace

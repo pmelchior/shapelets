@@ -17,7 +17,7 @@ namespace shapelens {
     /// Top-right boundary point.
     Point<T> tr;
     /// Apply coordinate transformation.
-    void apply(const CoordinateTransformation<T>& C) {
+    void apply(const CoordinateTransformation& C) {
       Point<T> lr(tr(0),ll(1)), tl(ll(0),tr(1));
       C.transform(ll);
       C.transform(tr);
@@ -86,7 +86,7 @@ namespace shapelens {
       p2 = p;
     }
     /// Apply coordinate transformation.
-    void apply(const CoordinateTransformation<T>& C) {
+    void apply(const CoordinateTransformation& C) {
       C.transform(p1);
       C.transform(p2);
     }
@@ -210,7 +210,7 @@ namespace shapelens {
 	return false;
     }
     /// Apply coordinate transformation.
-    void apply(const CoordinateTransformation<T>& C) {
+    void apply(const CoordinateTransformation& C) {
       for (typename std::list<Edge<T> >::iterator iter = edges.begin(); iter != edges.end(); iter++)
 	iter->apply(C);
       //remap();

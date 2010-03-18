@@ -3,7 +3,9 @@
 
 namespace shapelens {
 
-  SourceModel::~SourceModel() {}
+  SourceModel::~SourceModel() {
+    delete ct;
+  }
 
   const Rectangle<data_t>& SourceModel::getSupport() const {
     return support;
@@ -87,22 +89,22 @@ namespace shapelens {
 
 
   // ##### Sersic Model ##### //
-  SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation<data_t>* CT, unsigned long id) : 
+  SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation* ct_, unsigned long id) : 
     n(n), Re(Re), eps(eps) {
     limit = 5*Re;
     shear_norm = 1 - gsl_pow_2(abs(eps));
-    // set the WCS from CT
-    if (CT!=NULL)
-      SourceModel::wcs.set(*CT);
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
-    p2w.transform(SourceModel::centroid);
     // compute support size from Re and eps
     SourceModel::setEllipticalSupport(limit,eps);
-    // compute WC of support
-    SourceModel::support.apply(p2w);
+    // set the WCS from CT
+    if (ct_!=NULL) {
+      ct = ct_->clone();
+      ct->transform(SourceModel::centroid);
+      SourceModel::support.apply(*ct);
+    } else
+      ct = NULL;
     SourceModel::id = id;
 
     b = 1.9992*n - 0.3271;
@@ -122,7 +124,9 @@ namespace shapelens {
   data_t SersicModel::getValue(const Point<data_t>& P) const {
     // get image coords from WC
     Point<data_t> P_ = P;
-    wcs.getWC2PC().transform(P_);
+    if (ct != NULL)
+      ct->inverse_transform(P_);
+
     // additionally apply shear transformation for an elliptical profile
     data_t x_ = (1-real(eps))*P_(0) - imag(eps)*P_(1);
     data_t y_ = -imag(eps)*P_(0) + (1+real(eps))*P_(1);
@@ -143,25 +147,25 @@ namespace shapelens {
   }
 
   // ##### Moffat Model ##### //
-  MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation<data_t>* CT, unsigned long id) :
+  MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation* ct_, unsigned long id) :
     beta(beta), eps(eps) {
 
     alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
     limit = 5*FWHM;
     shear_norm = 1 - gsl_pow_2(abs(eps));
 
-    // set the WCS from CT
-    if (CT!=NULL)
-      SourceModel::wcs.set(*CT);
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
-    p2w.transform(SourceModel::centroid);
     // compute support size from Re and eps
     SourceModel::setEllipticalSupport(limit,eps);
-    // compute WC of support
-    SourceModel::support.apply(p2w);
+    // set the WCS from CT
+    if (ct_!=NULL) {
+      ct = ct_->clone();
+      ct->transform(SourceModel::centroid);
+      SourceModel::support.apply(*ct);
+    } else
+      ct = NULL;
     SourceModel::id = id;
 
     // flux at limit
@@ -179,7 +183,9 @@ namespace shapelens {
   data_t MoffatModel::getValue(const Point<data_t>& P) const {
     // get image coords from WC
     Point<data_t> P_ = P;
-    wcs.getWC2PC().transform(P_);
+    if (ct != NULL)
+      ct->inverse_transform(P_);
+
     // additionally apply shear transformation for an elliptical profile
     data_t x_ = (1-real(eps))*P_(0) - imag(eps)*P_(1);
     data_t y_ = -imag(eps)*P_(0) + (1+real(eps))*P_(1);
@@ -200,21 +206,21 @@ namespace shapelens {
   }
 
   // ##### Interpolated Model ##### //
-  InterpolatedModel::InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation<data_t>* CT, int order, unsigned long id) : 
+  InterpolatedModel::InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation* ct_, int order, unsigned long id) : 
     obj(obj), order(order),flux(flux) {
-    // set the WCS from CT
-    if (CT!=NULL)
-      SourceModel::wcs.set(*CT);
+
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
-    p2w.transform(SourceModel::centroid);
-    // compute WC of support
     SourceModel::support = obj.grid.getBoundingBox();
     // account of centroid offset of obj
     SourceModel::support -= obj.centroid;
-    SourceModel::support.apply(p2w);
+    if (ct_ != NULL) {
+      ct = ct_->clone();
+      ct->transform(SourceModel::centroid);
+      SourceModel::support.apply(*ct);
+    } else
+      ct = NULL;
     SourceModel::id = id;
   
     // compute rescaling factor for flux
@@ -226,7 +232,9 @@ namespace shapelens {
     // zero anyway in this case...
     // get image coords from WC
     Point<data_t> P_ = P;
-    wcs.getWC2PC().transform(P_);
+    if (ct != NULL)
+      ct->inverse_transform(P_);
+
     // account of centroid offset of obj
     P_ += obj.centroid;
     switch (order) {
@@ -248,24 +256,24 @@ namespace shapelens {
   }
 
   // ##### Shapelet Model ##### //
-  ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation<data_t>* CT) : 
+  ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation* ct_) : 
     sobj(sobj), scentroid(sobj.getCentroid()) {
   
-    // set the WCS from CT
-    if (CT!=NULL)
-      SourceModel::wcs.set(*CT);
     // compute WC of centroid (which is 0/0 in image coords)
-    const CoordinateTransformation<data_t>& p2w = wcs.getPC2WC();
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    p2w.transform(SourceModel::centroid);
-    // compute WC of support
     SourceModel::support = sobj.getGrid().getBoundingBox();
     // account of centroid offset of sobj
     SourceModel::support -= scentroid;
-    SourceModel::support.apply(p2w);
+    if (ct_ != NULL) {
+      ct = ct_->clone();
+      ct->transform(SourceModel::centroid);
+      SourceModel::support.apply(*ct);
+    } else
+      ct = NULL;
     SourceModel::id = sobj.getObjectID();
 
+    // compute rescaling factor for flux
     flux_scale = flux/sobj.getShapeletFlux();
   }
 
@@ -273,7 +281,8 @@ namespace shapelens {
     const Grid& sobj_grid = sobj.getGrid();
     // get image coords from WC
     Point<data_t> P_ = P;
-    wcs.getWC2PC().transform(P_);
+    if (ct != NULL)
+      ct->inverse_transform(P_);
     // account of centroid offset of sobj
     P_ += scentroid;
     if (sobj_grid.getPixel(sobj_grid.getCoords(P_)) != -1)

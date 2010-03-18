@@ -117,9 +117,10 @@ class Image : public NumVector<T> {
   T interpolate(const Point<data_t>& P) const {
     Point<int> IC = grid.getCoords(P);
     data_t x,y;
-    const WCS& wcs = grid.getWCS();
+    const CoordinateTransformation& ct = grid.getWCS();
     Point<data_t> P_ = P;
-    wcs.getWC2PC().transform(P_); // World -> pixel
+    if (&ct != NULL)
+      ct.inverse_transform(P_); // World -> pixel
     x = P_(0);
     y = P_(1);
     int x0 = IC(0), y0 = IC(1);

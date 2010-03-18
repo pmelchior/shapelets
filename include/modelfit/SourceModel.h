@@ -34,7 +34,7 @@ public:
   /// Centroid.
   Point<data_t> centroid;
   /// Coordinate transformation for all calls to getValue().
-  WCS wcs;
+  CoordinateTransformation* ct;
   /// Reference id.
   unsigned long id;
   /// Compute rectangular SourceModel::support for elliptical sources.
@@ -73,7 +73,7 @@ class SersicModel : public SourceModel {
  public:
   /// Constructor with Sersic index \p n, effective radius \p Re, \p flux, and
   /// intrinsic ellipticity \p eps.
-  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const CoordinateTransformation<data_t>* CT = NULL, unsigned long id=0);
+  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const CoordinateTransformation* CT = NULL, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -95,7 +95,7 @@ class MoffatModel : public SourceModel {
  public:
   /// Constructor with Moffat index \p beta, width \p FWHM, \p flux, and
   /// intrinsic ellipticity \p eps. 
-  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const CoordinateTransformation<data_t>* CT = NULL, unsigned long id=0);
+  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const CoordinateTransformation* CT = NULL, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -119,7 +119,7 @@ public:
   /// - <tt>-3</tt>: bi-cubic
   ///
   /// For more details, see Interpolation.
-  InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation<data_t>* CT = NULL, int order = 1, unsigned long id=0);
+  InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation* CT = NULL, int order = 1, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -141,7 +141,7 @@ public:
   /// By giving \p centroid, one moves \p sobj to this centroid and adjusts
   /// the support without altering \p sobj itself. Similarly, \p flux 
   /// automatically rescales \p sobj to the desired total flux.\n
-  ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation<data_t>* CT = NULL);
+  ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation* CT = NULL);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.

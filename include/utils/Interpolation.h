@@ -147,9 +147,9 @@ namespace shapelens {
       Point<int> IC = grid.getCoords(P);
       if (grid.getPixel(IC) != -1) { // P inside im
 	data_t x,y;
-	const WCS& wcs = grid.getWCS();
+	const CoordinateTransformation& ct = grid.getWCS();
 	Point<data_t> P_ = P;
-	wcs.getWC2PC().transform(P_); // World -> pixel
+	ct.inverse_transform(P_); // World -> pixel
 	x = P_(0);
 	y = P_(1);
 	NumVector<T> first_run(n+1),row(n+1);
@@ -173,9 +173,9 @@ namespace shapelens {
       Point<int> IC = grid.getCoords(P);
       if (grid.getPixel(IC) != -1) { // P inside im
 	data_t x,y;
-	const WCS& wcs = grid.getWCS();
+	const CoordinateTransformation& ct = grid.getWCS();
 	Point<data_t> P_ = P;
-	wcs.getWC2PC().transform(P_); // World -> pixel
+	ct.inverse_transform(P_); // World -> pixel
 	x = P_(0);
 	y = P_(1);
 	int x_ = (int) floor(x);

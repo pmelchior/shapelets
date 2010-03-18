@@ -125,6 +125,7 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.resize((xmax-xmin)*(ymax-ymin));
     // Grid will be changed but not shifted (all pixels stay at their position)
     O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.grid.setWCS(Image<data_t>::grid.getWCS());
     O.segMap.resize((xmax-xmin)*(ymax-ymin));
     O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
     if (weight.size()!=0) {
