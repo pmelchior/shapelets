@@ -1,10 +1,30 @@
 #include "../../include/utils/Property.h"
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
+#include <stdexcept>
 
 namespace shapelens {
 
 Property::Property() : std::map<std::string, variant_t>() {}
+
+variant_t& Property::operator[](const std::string& key) {
+  std::map<std::string, variant_t>::iterator iter = 
+    std::map<std::string, variant_t>::find(key);
+  if (iter != std::map<std::string, variant_t>::end())
+    return iter->second;
+  else
+    throw std::invalid_argument("Property: Key " + key + " does not exist!");
+}
+
+const variant_t& Property::operator[](const std::string& key) const {
+  std::map<std::string, variant_t>::const_iterator iter = 
+    std::map<std::string, variant_t>::find(key);
+  if (iter != std::map<std::string, variant_t>::end())
+    return iter->second;
+  else
+    throw std::invalid_argument("Property: Key " + key + " does not exist!");
+}
+
 
 // Helper class for performing write()
 class OutFunctor : public boost::static_visitor<void> {

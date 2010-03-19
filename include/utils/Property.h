@@ -58,6 +58,12 @@ class Property : public std::map<std::string, variant_t> {
  public:
   /// Constructor.
   Property();
+  /// Access operator.
+  /// Throws \p std::invalid_argument if \p key is not element of the map.
+  variant_t& operator[](const std::string& key);
+  /// Const access operator.
+  /// Throws \p std::invalid_argument if \p key is not element of the map.
+  const variant_t& operator[](const std::string& key) const ;
   /// Write contents of property to \p out.
   /// If the entries should be written with a different separator than \p std::endl,
   /// specify \p linesep. This should only be used in cases where the line separator
