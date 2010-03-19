@@ -96,7 +96,7 @@ void Property::read(std::istream& in) {
   boost::char_separator<char> fieldsep("\t");
   boost::char_separator<char> vectorsep(",");
   while(getline(in, line)) {
-    if (line[0] != '#') {
+    if (line[0] != '#' && line != "") {
       Tok tok(line, fieldsep);
       int i=0;
       for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter) {
