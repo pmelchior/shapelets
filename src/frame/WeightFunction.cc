@@ -38,7 +38,7 @@ namespace shapelens {
   }
   data_t  WeightFunction::Gauss___2(const Point<data_t>& P) const {
     data_t r = sqrt(gsl_pow_2(P(0)-C(0)) + gsl_pow_2(P(1)-C(1)));
-    return Gauss(r)/gsl_pow_3(2*sigma2);
+    return -Gauss(r)/gsl_pow_3(2*sigma2);
   }
   data_t  WeightFunction::Gauss(data_t r) const {
     return exp(-r*r/(2*sigma2));
