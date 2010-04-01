@@ -206,15 +206,15 @@ namespace shapelens {
   }
 
   // ##### Interpolated Model ##### //
-  InterpolatedModel::InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation* ct_, int order, unsigned long id) : 
-    obj(obj), order(order),flux(flux) {
+  InterpolatedModel::InterpolatedModel(const boost::shared_ptr<Object>& obj_, data_t flux, const CoordinateTransformation* ct_, int order, unsigned long id) : 
+    obj(obj_), order(order),flux(flux) {
 
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    SourceModel::support = obj.grid.getBoundingBox();
+    SourceModel::support = obj->grid.getBoundingBox();
     // account of centroid offset of obj
-    SourceModel::support -= obj.centroid;
+    SourceModel::support -= obj->centroid;
     if (ct_ != NULL) {
       ct = ct_->clone();
       ct->transform(SourceModel::centroid);
@@ -224,7 +224,7 @@ namespace shapelens {
     SourceModel::id = id;
   
     // compute rescaling factor for flux
-    flux_scale = flux/obj.flux;
+    flux_scale = flux/obj->flux;
   }
 
   data_t InterpolatedModel::getValue(const Point<data_t>& P) const {
@@ -236,14 +236,14 @@ namespace shapelens {
       ct->inverse_transform(P_);
 
     // account of centroid offset of obj
-    P_ += obj.centroid;
+    P_ += obj->centroid;
     switch (order) {
     case 1: // simple bi-linear interpolation
-      return flux_scale*obj.interpolate(P_);
+      return flux_scale*obj->interpolate(P_);
     case -3: // bi-cubic interpolation
-      return flux_scale*Interpolation::bicubic(obj,P_);
+      return flux_scale*Interpolation::bicubic(*obj,P_);
     default: // nth-order polynomial interpolation
-      return flux_scale*Interpolation::polynomial(obj,P_,order);
+      return flux_scale*Interpolation::polynomial(*obj,P_,order);
     }
   }
 
@@ -256,13 +256,14 @@ namespace shapelens {
   }
 
   // ##### Shapelet Model ##### //
-  ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation* ct_) : 
-    sobj(sobj), scentroid(sobj.getCentroid()) {
+  //ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation* ct_) : 
+  ShapeletModel::ShapeletModel(const boost::shared_ptr<ShapeletObject>& sobj_, data_t flux, const CoordinateTransformation* ct_) : 
+    sobj(sobj_), scentroid(sobj_->getCentroid()) {
   
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    SourceModel::support = sobj.getGrid().getBoundingBox();
+    SourceModel::support = sobj->getGrid().getBoundingBox();
     // account of centroid offset of sobj
     SourceModel::support -= scentroid;
     if (ct_ != NULL) {
@@ -271,14 +272,14 @@ namespace shapelens {
       SourceModel::support.apply(*ct);
     } else
       ct = NULL;
-    SourceModel::id = sobj.getObjectID();
+    SourceModel::id = sobj->getObjectID();
 
     // compute rescaling factor for flux
-    flux_scale = flux/sobj.getShapeletFlux();
+    flux_scale = flux/sobj->getShapeletFlux();
   }
 
   data_t ShapeletModel::getValue(const Point<data_t>& P) const {
-    const Grid& sobj_grid = sobj.getGrid();
+    const Grid& sobj_grid = sobj->getGrid();
     // get image coords from WC
     Point<data_t> P_ = P;
     if (ct != NULL)
@@ -286,13 +287,13 @@ namespace shapelens {
     // account of centroid offset of sobj
     P_ += scentroid;
     if (sobj_grid.getPixel(sobj_grid.getCoords(P_)) != -1)
-      return flux_scale*sobj.eval(P_);
+      return flux_scale*sobj->eval(P_);
     else
       return 0;
   }
 
   data_t ShapeletModel::getFlux() const {
-    return flux_scale*sobj.getShapeletFlux();
+    return flux_scale*sobj->getShapeletFlux();
   }
 
   char ShapeletModel::getModelType() const {

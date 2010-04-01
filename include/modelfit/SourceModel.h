@@ -119,7 +119,7 @@ public:
   /// - <tt>-3</tt>: bi-cubic
   ///
   /// For more details, see Interpolation.
-  InterpolatedModel(const Object& obj, data_t flux, const CoordinateTransformation* CT = NULL, int order = 1, unsigned long id=0);
+  InterpolatedModel(const boost::shared_ptr<Object>& obj, data_t flux, const CoordinateTransformation* CT = NULL, int order = 1, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -127,7 +127,7 @@ public:
   /// Get type of model.
   virtual char getModelType() const;
 private:
-  const Object& obj;
+  boost::shared_ptr<Object> obj;
   int order;
   data_t flux,flux_scale;
   Point<data_t> reference;
@@ -141,7 +141,7 @@ public:
   /// By giving \p centroid, one moves \p sobj to this centroid and adjusts
   /// the support without altering \p sobj itself. Similarly, \p flux 
   /// automatically rescales \p sobj to the desired total flux.\n
-  ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation* CT = NULL);
+   ShapeletModel(const boost::shared_ptr<ShapeletObject>& sobj, data_t flux, const CoordinateTransformation* CT = NULL);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -149,7 +149,7 @@ public:
   /// Get type of model.
   virtual char getModelType() const;
 private:
-  const ShapeletObject& sobj;
+  boost::shared_ptr<ShapeletObject> sobj;
   const Point<data_t>& scentroid;
   data_t flux_scale;
 };
