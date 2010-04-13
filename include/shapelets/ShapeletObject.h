@@ -154,9 +154,9 @@ class ShapeletObject : public Composite {
   data_t getObjectClassifier() const;
   
   friend class SIFFile;
-  friend class ShapeletObjectDB;
+  friend class ShapeletObjectList;
 
- private:
+  private:
   CoefficientVector<data_t>& coeffs;
   NumMatrix<data_t>& cov;
   CoefficientVector<complex<data_t> > polarCoeffs;

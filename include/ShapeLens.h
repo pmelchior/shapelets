@@ -10,7 +10,6 @@
 #include "shapelets/ShapeletObject.h"
 #include "shapelets/SIFFile.h"
 #include "shapelets/ShapeletObjectList.h"
-#include "shapelets/ShapeletObjectDB.h"
 
 #include "modelfit/SourceModel.h"
 

@@ -1,44 +1,20 @@
 #ifndef SHAPELENS_MYSQLDB_H
 #define SHAPELENS_MYSQLDB_H
 
-#if SHAPELETDB==MySQL
+#ifdef MySQLDB
 
 #include <string>
 #include <mysql/mysql.h>
 
-namespace shapelens {  
-/// MySQLDB result class.
-/// This class creates and frees the memory associated with a
-/// \p MYSQL_RES instance.
-/// Single rows of the result set are obtained from getRow();
-class DBResult{
- public:
-  /// Constructor from DB connection \p conn.
-  DBResult(MYSQL* conn);
-  /// Get number of rows in DBResult.
-  unsigned int getRowCount();
-  /// Get number of fields in the result.
-  unsigned int getFieldCount();
-  /// Return field informations for result.
-  MYSQL_FIELD* getFields();
-  /// Get a row from the result set.
-  /// Returns \p NULL if there are no (more) rows.
-  MYSQL_ROW getRow();
-  /// Default destructor.
-  ~DBResult();
- private:
-  MYSQL_RES *res;
-};
-
+namespace shapelens { 
+ 
 /// DB accessor class for MySQL.
-class MySQLDB {
+ class MySQLDB {
  public:
   /// Constructor.
   MySQLDB();
   /// Destructor.
   ~MySQLDB();
-  /// Connect to DB with given details.
-  void connect(std::string host, std::string user, std::string password, std::string schema = "");
   /// Connect to DB using a connection file.
   /// The file is specified by its path which has to be set in the 
   /// environment variable \p envvar.
@@ -61,12 +37,33 @@ class MySQLDB {
   const std::string& getDatabaseName();
   /// Change the selected database.
   void selectDatabase(std::string database);
-  /// Send query to DB.
-  DBResult query(std::string query);
+  /// Execute a \p query using \p callback.
+  void exec(std::string query, DBCallback& dbc);
+  /// Retrieve data from \p query.
+  MySQLResult query(std::string query);
+  /// Type of DBHandle (returns 1).
+  int getDBType();
  private:
   MYSQL* conn;
   std::string database;
-};
+  void connect(std::string host, std::string user, std::string password, std::string schema = "");
+  
+  class MySQLResult {
+  public:
+    MySQLResult(MYSQL* conn);
+    ~MySQLResult();
+    unsigned int getRowCount();
+    unsigned int getFieldCount();
+    char* getFieldName(unsigned int i);
+    char** getRow();
+    void free();
+    friend class MySQLDB;
+  private:
+    MYSQL_RES *res;
+    MYSQL_FIELD* fields;
+  };
+  };
+
 } // end namespace
-#endif // SHAPELETDB
+#endif // MYSQLDB
 #endif // MYSQLDB_H
