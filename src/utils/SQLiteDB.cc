@@ -2,6 +2,7 @@
 #include <stdexcept>
 
 namespace shapelens {
+  SQLiteDB::SQLiteResult::SQLiteResult() : counter(0) { }
 
   unsigned int SQLiteDB::SQLiteResult::getRowCount() {
     return nrows;

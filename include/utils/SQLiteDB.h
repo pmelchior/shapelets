@@ -16,6 +16,8 @@ namespace shapelens {
     /// Result class for SQLiteDB.
     class SQLiteResult {
     public:
+      /// Constructor.
+      SQLiteResult();
       /// Destructor.
       ~SQLiteResult();
       /// Get number of rows in result set.
