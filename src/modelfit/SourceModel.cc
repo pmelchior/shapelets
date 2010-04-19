@@ -87,6 +87,9 @@ namespace shapelens {
     return cat;
   }
 
+  data_t fasterPow(data_t x, data_t y) {
+    return exp(x*log(y));
+  }
 
   // ##### Sersic Model ##### //
   SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation* ct_, unsigned long id) : 
@@ -133,7 +136,7 @@ namespace shapelens {
     
     data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm; // shear changes size
     if (radius < limit)
-      return flux_scale*(exp(-b*(pow(radius/Re,1./n) -1)) - flux_limit);
+      return flux_scale*(exp(-b*(fasterPow(radius/Re,1./n) -1)) - flux_limit);
     else
       return 0;
   }
