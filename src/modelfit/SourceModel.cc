@@ -88,7 +88,7 @@ namespace shapelens {
   }
 
   data_t fasterPow(data_t x, data_t y) {
-    return exp(x*log(y));
+    return exp(y*log(x));
   }
 
   // ##### Sersic Model ##### //
