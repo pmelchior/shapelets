@@ -34,7 +34,7 @@ public:
   /// Centroid.
   Point<data_t> centroid;
   /// Coordinate transformation for all calls to getValue().
-  CoordinateTransformation* ct;
+  boost::shared_ptr<CoordinateTransformation> ct;
   /// Reference id.
   unsigned long id;
   /// Compute rectangular SourceModel::support for elliptical sources.

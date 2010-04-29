@@ -4,7 +4,6 @@
 namespace shapelens {
 
   SourceModel::~SourceModel() {
-    delete ct;
   }
 
   const Rectangle<data_t>& SourceModel::getSupport() const {
@@ -106,8 +105,7 @@ namespace shapelens {
       ct = ct_->clone();
       ct->transform(SourceModel::centroid);
       SourceModel::support.apply(*ct);
-    } else
-      ct = NULL;
+    }
     SourceModel::id = id;
 
     b = 1.9992*n - 0.3271;
@@ -127,7 +125,7 @@ namespace shapelens {
   data_t SersicModel::getValue(const Point<data_t>& P) const {
     // get image coords from WC
     Point<data_t> P_ = P;
-    if (ct != NULL)
+    if (ct.use_count() != 0)
       ct->inverse_transform(P_);
 
     // additionally apply shear transformation for an elliptical profile
@@ -167,8 +165,7 @@ namespace shapelens {
       ct = ct_->clone();
       ct->transform(SourceModel::centroid);
       SourceModel::support.apply(*ct);
-    } else
-      ct = NULL;
+    }
     SourceModel::id = id;
 
     // flux at limit
@@ -186,7 +183,7 @@ namespace shapelens {
   data_t MoffatModel::getValue(const Point<data_t>& P) const {
     // get image coords from WC
     Point<data_t> P_ = P;
-    if (ct != NULL)
+    if (ct.use_count() != 0)
       ct->inverse_transform(P_);
 
     // additionally apply shear transformation for an elliptical profile
@@ -222,8 +219,7 @@ namespace shapelens {
       ct = ct_->clone();
       ct->transform(SourceModel::centroid);
       SourceModel::support.apply(*ct);
-    } else
-      ct = NULL;
+    }
     SourceModel::id = id;
   
     // compute rescaling factor for flux
@@ -235,7 +231,7 @@ namespace shapelens {
     // zero anyway in this case...
     // get image coords from WC
     Point<data_t> P_ = P;
-    if (ct != NULL)
+    if (ct.use_count() != 0)
       ct->inverse_transform(P_);
 
     // account of centroid offset of obj
@@ -273,8 +269,7 @@ namespace shapelens {
       ct = ct_->clone();
       ct->transform(SourceModel::centroid);
       SourceModel::support.apply(*ct);
-    } else
-      ct = NULL;
+    }
     SourceModel::id = sobj->getObjectID();
 
     // compute rescaling factor for flux
@@ -285,7 +280,7 @@ namespace shapelens {
     const Grid& sobj_grid = sobj->getGrid();
     // get image coords from WC
     Point<data_t> P_ = P;
-    if (ct != NULL)
+    if (ct.use_count() != 0)
       ct->inverse_transform(P_);
     // account of centroid offset of sobj
     P_ += scentroid;
