@@ -30,8 +30,8 @@ namespace shapelens {
     // do nothing, just go through the remainder of the stack
     stack_inverse_transform(P);
   }
-  CoordinateTransformation* NullTransformation::clone() const {
-    return new NullTransformation(*this);
+  boost::shared_ptr<CoordinateTransformation> NullTransformation::clone() const {
+    return boost::shared_ptr<CoordinateTransformation>(new NullTransformation(*this));
   }
 
   /// ScalarTransformation ...
@@ -45,8 +45,8 @@ namespace shapelens {
     stack_inverse_transform(P);
     P /= s; // inverse: this trafo comes latest
   }
-  CoordinateTransformation* ScalarTransformation::clone() const {
-    return new ScalarTransformation(*this);
+  boost::shared_ptr<CoordinateTransformation> ScalarTransformation::clone() const {
+    return boost::shared_ptr<CoordinateTransformation>(new ScalarTransformation(*this));
   }
 
   /// ShiftTransformation ...
@@ -60,8 +60,8 @@ namespace shapelens {
     stack_inverse_transform(P);
     P -= dP;
   }
-  CoordinateTransformation* ShiftTransformation::clone() const {
-    return new ShiftTransformation(*this);
+  boost::shared_ptr<CoordinateTransformation> ShiftTransformation::clone() const {
+    return boost::shared_ptr<CoordinateTransformation>(new ShiftTransformation(*this));
   }
 
   /// LinearTransformation ...
@@ -79,8 +79,8 @@ namespace shapelens {
     P(0) = M_1(0,0)*P(0) + M_1(0,1)*P(1);
     P(1) = M_1(1,0)* p0  + M_1(1,1)*P(1);
   }
-  CoordinateTransformation* LinearTransformation::clone() const {
-    return new LinearTransformation(*this);
+  boost::shared_ptr<CoordinateTransformation> LinearTransformation::clone() const {
+    return boost::shared_ptr<CoordinateTransformation>(new LinearTransformation(*this));
   }
 
   /// LensingTransformation ...
@@ -139,8 +139,8 @@ namespace shapelens {
     }
   }
 
-  CoordinateTransformation* LensingTransformation::clone() const {
-    return new LensingTransformation(*this);
+  boost::shared_ptr<CoordinateTransformation> LensingTransformation::clone() const {
+    return boost::shared_ptr<CoordinateTransformation>(new LensingTransformation(*this));
   }
 
 } // end namespace

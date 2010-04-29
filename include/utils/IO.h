@@ -171,7 +171,7 @@ class IO {
     int status = 0;
     fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), &value, const_cast<char *>(comment.c_str()), &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot update FITS keyword!");
+      throw std::runtime_error("IO: Cannot update FITS keyword " + keyword);
   }
 
   /// Read FITS image into NumMatrix<T>.

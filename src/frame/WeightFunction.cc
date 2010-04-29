@@ -8,9 +8,14 @@ namespace shapelens {
     fptr = &WeightFunction::Flat;
   }
   WeightFunction::WeightFunction(data_t scale_, const Point<data_t>& centroid_):
-    scale(scale_), C(centroid_), n(0), type(1) {
-    sigma2 = scale*scale;
-    fptr = &WeightFunction::Gauss;
+    scale(scale_), C(centroid_), n(0), sigma2(scale_*scale_) {
+    if (scale > 0) { // flat weighting
+      type = 1;
+      fptr = &WeightFunction::Gauss;
+    } else {
+      type = 0;
+      fptr = &WeightFunction::Flat;
+    }
   }
   data_t  WeightFunction::Gauss(const Point<data_t>& P) const {
     data_t r = sqrt(gsl_pow_2(P(0)-C(0)) + gsl_pow_2(P(1)-C(1)));

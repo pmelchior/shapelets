@@ -41,7 +41,7 @@ void IO::updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::st
   int status = 0;
   fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
   if (status != 0)
-    throw std::runtime_error("IO: Cannot update FITS keyword!");
+    throw std::runtime_error("IO: Cannot update FITS keyword " + keyword);
 }
 
 void IO::appendFITSHistory(fitsfile *outfptr, std::string history) {

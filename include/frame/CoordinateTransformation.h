@@ -20,8 +20,8 @@ namespace shapelens {
     virtual void transform(Point<data_t>& P) const = 0;
     /// Apply inverse transformation to \p P.
     virtual void inverse_transform(Point<data_t>& P) const = 0;
-    /// Get a deep copy of \p this.
-    virtual CoordinateTransformation* clone() const = 0;
+    /// Get a copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation> clone() const = 0;
     /// Stack of transformation to be applied after another
     std::list<boost::shared_ptr<CoordinateTransformation> > stack;
   protected:
@@ -29,8 +29,6 @@ namespace shapelens {
     void stack_transform(Point<data_t>& P) const;
     /// Apply all inverse transformation from the stack in reverse order.
     void stack_inverse_transform(Point<data_t>& P) const;
-    /// Set the stack of \p ct to \p this.stack .
-    //CoordinateTransformation* clone_stack(CoordinateTransformation* ct) const;
   };
 
   /// Empty/Null transformations in 2D.
@@ -43,8 +41,8 @@ namespace shapelens {
     virtual void transform(Point<data_t>& P) const;
     /// Apply inverse transformation to \p P.
     virtual void inverse_transform(Point<data_t>& P) const;
-    /// Get a deep copy of \p this.
-    virtual CoordinateTransformation* clone() const;
+    /// Get a copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   };
 
   /// Class for rescaling transformations in 2D.
@@ -58,8 +56,8 @@ namespace shapelens {
     virtual void transform(Point<data_t>& P) const;
     /// Apply inverse transformation to \p P.
     virtual void inverse_transform(Point<data_t>& P) const;
-    /// Get a deep copy of \p this.
-    virtual CoordinateTransformation* clone() const;
+    /// Get a copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     data_t s;
   };
@@ -75,8 +73,8 @@ namespace shapelens {
     virtual void transform(Point<data_t>& P) const;
     /// Apply inverse transformation to \p P.
     virtual void inverse_transform(Point<data_t>& P) const;
-    /// Get a deep copy of \p this.
-    virtual CoordinateTransformation* clone() const;
+    /// Get a copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     Point<data_t> dP;
   };
@@ -93,8 +91,8 @@ namespace shapelens {
     virtual void transform(Point<data_t>& P) const;
     /// Apply inverse transformation to \p P.
     virtual void inverse_transform(Point<data_t>& P) const;
-    /// Get a deep copy of \p this.
-    virtual CoordinateTransformation* clone() const;
+    /// Get a copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     NumMatrix<data_t> M, M_1;
   };
@@ -110,8 +108,8 @@ namespace shapelens {
     virtual void transform(Point<data_t>& P) const;
     /// Apply inverse transformation to \p P.
     virtual void inverse_transform(Point<data_t>& P) const;
-    /// Get a deep copy of \p this.
-    virtual CoordinateTransformation* clone() const;
+    /// Get a copy of \p this.
+    virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     bool flex;
     data_t kappa, gamma1, gamma2, D111, D112, D121, D122, D211, D212, D221, D222;

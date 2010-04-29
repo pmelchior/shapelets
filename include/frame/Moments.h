@@ -151,6 +151,8 @@ public:
   const data_t& operator()(unsigned int px, unsigned int py) const;
   /// Get maximum moment order.
   int getOrder() const;
+  /// Set the maximum order to \p N.
+  void setOrder(int N);
   /// Get vector index of moment \f$\langle x^{p_x}\, y^{p_y}\rangle\f$ from 
   /// the powers.
   int getIndex(unsigned int px, unsigned int py) const;

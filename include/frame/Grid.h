@@ -1,11 +1,11 @@
 #ifndef SHAPELENS_GRID_H
 #define SHAPELENS_GRID_H
 
-#include <math.h>
 #include "../Typedef.h"
 #include "Point.h"
 #include "Shapes.h"
 #include "CoordinateTransformation.h"
+#include <boost/shared_ptr.hpp>
 
 namespace shapelens {
 
@@ -76,9 +76,9 @@ class Grid {
   long getNeighborPixel(long pixel, unsigned char direction) const;
 
  private:
-  unsigned int N0, N1;
-  int start0,start1;
-  CoordinateTransformation* ct;
+  int N0, N1, start0,start1;
+  boost::shared_ptr<CoordinateTransformation> ct;
+  NullTransformation nt;
   int round(data_t x) const;
 };
 } // end namespace

@@ -164,10 +164,12 @@ class Image : public NumVector<T> {
     return *this;
   }
   /// Slice a sub-image, specified by edge-points \p P1 and \p P2.
-  void slice(Image<T>& sub, const Point<int>& P1, const Point<int>& P2) const {
+  template <class R>
+  void slice(Image<R>& sub, const Point<int>& P1, const Point<int>& P2) const {
     int xmin = P1(0), xmax = P2(0), ymin = P1(1), ymax = P2(1);
     int axis0 = xmax-xmin;
-    sub.resize((xmax-xmin)*(ymax-ymin));
+    if (sub.grid.getSize(0) != (xmax-xmin) || sub.grid.getSize(1) != (ymax-ymin))  
+      sub.resize((xmax-xmin)*(ymax-ymin));
 
     // lop over all object pixels
     for (int i =0; i < sub.size(); i++) {
@@ -177,7 +179,7 @@ class Image : public NumVector<T> {
       if (x>=0 && x < Image::getSize(0) && y >= 0 && y < Image::getSize(1))
 	sub(i) = Image<T>::operator()(x,y);
     }
-    sub.grid = Grid(xmin,ymin,xmax-xmin,ymax-ymin);
+    sub.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
     sub.basefilename = basefilename;
     sub.history.setSilent();
     sub.history << "# Slice from " << basefilename << " in the area (";

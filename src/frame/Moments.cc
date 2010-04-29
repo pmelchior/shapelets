@@ -263,9 +263,33 @@ namespace shapelens {
   MomentsOrdered::MomentsOrdered(int N_) : 
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) { }
+
   MomentsOrdered::MomentsOrdered(const Object& obj, int N_) :
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) {
+    int SUBPIXEL = 2;
+    data_t offset = 1./SUBPIXEL;
+    
+    // data_t w_, diff_x, diff_y, val;
+//     for (long i=0; i< obj.grid.size(); i++) {
+//       Point<data_t> P = obj.grid(i), P_;
+//       for (int n1 = 0; n1 < SUBPIXEL; n1++) {
+// 	P_(0) = P(0) + (0.5+n1)*offset - 0.5;
+// 	for (int n2 = 0; n2 < SUBPIXEL; n2++) {
+// 	  P_(1) = P(1) + (0.5+n2)*offset - 0.5;
+// 	  val = obj.interpolate(P_);
+// 	  diff_x = P_(0)-obj.centroid(0);
+// 	  diff_y = P_(1)-obj.centroid(1);
+// 	  w_ = obj.w(P_)/(SUBPIXEL*SUBPIXEL);
+// 	  if (obj.weight.size() != 0)
+// 	    w_ *= obj.weight(i);
+// 	  for(int n=0; n <= N; n++)
+// 	    for(int m=0; m <= n; m++)
+// 	      operator()(m,n-m) += gsl_pow_int(diff_x,m) * gsl_pow_int(diff_y,n-m) * val * w_;
+// 	}
+//       }
+//     }
+
     data_t w_, diff_x, diff_y, val;
     for (long i=0; i< obj.grid.size(); i++) {
       val = obj(i);
@@ -279,15 +303,24 @@ namespace shapelens {
 	  operator()(m,n-m) += gsl_pow_int(diff_x,m) * gsl_pow_int(diff_y,n-m) * val * w_;
     }
   }
+
   data_t& MomentsOrdered::operator()(unsigned int px, unsigned int py) {
     return NumVector<data_t>::operator()(pyramid_num(px+py)+py);
   }
+
   const data_t& MomentsOrdered::operator()(unsigned int px, unsigned int py) const {
     return NumVector<data_t>::operator()(pyramid_num(px+py)+py);
   }
+
   int MomentsOrdered::getOrder() const {
     return N;
   }
+
+  void MomentsOrdered::setOrder(int N_) {
+    N = N_;
+    NumVector<data_t>::resize(pyramid_num(N+1));
+  }
+  
   int MomentsOrdered::getIndex(unsigned int px, unsigned int py) const {
     return pyramid_num(px+py)+py;
   }
