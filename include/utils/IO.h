@@ -61,6 +61,10 @@ class IO {
   static fitsfile* createFITSFile(std::string filename);
   /// Close FITS file pointer.
   static void closeFITSFile(fitsfile* fptr);
+  /// Move to extension \p i in FITS file.
+  static void moveToFITSExtension(fitsfile* fptr, unsigned int i);
+  /// Move to extension \p name in FITS file.
+  static void moveToFITSExtension(fitsfile* fptr, std::string name);
   /// Set/update std::string keyword in FITS file header.
   static void updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
   /// Append \p history to FITS header histroy.
