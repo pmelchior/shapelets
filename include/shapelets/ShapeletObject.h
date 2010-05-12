@@ -150,6 +150,7 @@ class ShapeletObject : public Composite {
   void setName(std::string name);
   std::string getName() const;
   void setTag(data_t tag);
+  void setID(unsigned long id);
   data_t getTag() const;
   data_t getObjectClassifier() const;
   

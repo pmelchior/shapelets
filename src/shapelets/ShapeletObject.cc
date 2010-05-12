@@ -395,4 +395,9 @@ data_t ShapeletObject::getTag() const {
   else
     return 0;
 }
+
+void ShapeletObject::setID(unsigned long id_) {
+  id = id_;
+}
+
 // end legacy function //
