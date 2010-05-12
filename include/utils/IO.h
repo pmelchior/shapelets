@@ -61,7 +61,7 @@ class IO {
   static fitsfile* createFITSFile(std::string filename);
   /// Close FITS file pointer.
   static void closeFITSFile(fitsfile* fptr);
-  /// Move to extension \p i in FITS file.
+  /// Move to extension \p i (starting from 1) in FITS file.
   static void moveToFITSExtension(fitsfile* fptr, unsigned int i);
   /// Move to extension \p name in FITS file.
   static void moveToFITSExtension(fitsfile* fptr, std::string name);

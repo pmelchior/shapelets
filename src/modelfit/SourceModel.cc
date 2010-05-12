@@ -152,7 +152,7 @@ namespace shapelens {
     beta(beta), eps(eps) {
 
     alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
-    limit = 5*FWHM;
+    limit = 2*FWHM;
     shear_norm = 1 - gsl_pow_2(abs(eps));
 
     // compute WC of centroid (which is 0/0 in image coords)
@@ -169,7 +169,7 @@ namespace shapelens {
     SourceModel::id = id;
 
     // flux at limit
-    flux_limit = pow(1+alpha*gsl_pow_2(limit),-beta);
+    flux_limit = 0;//pow(1+alpha*gsl_pow_2(limit),-beta);
     // compute total flux of model (considering the truncation at limit)
     flux = 2*M_PI*(-1 + pow(1+alpha*gsl_pow_2(limit),1-beta))/(2*alpha - 2*alpha*beta);
     // subtract level at R such that the profile vanishes there

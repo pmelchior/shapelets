@@ -312,6 +312,14 @@ namespace shapelens {
     return NumVector<data_t>::operator()(pyramid_num(px+py)+py);
   }
 
+  data_t& MomentsOrdered::operator()(unsigned int i) {
+    return NumVector<data_t>::operator()(i);
+  }
+
+  const data_t& MomentsOrdered::operator()(unsigned int i) const {
+    return NumVector<data_t>::operator()(i);
+  }
+
   int MomentsOrdered::getOrder() const {
     return N;
   }

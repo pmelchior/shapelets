@@ -39,11 +39,12 @@ namespace shapelens {
     /// If the zeroth bit is set, the moments are deweighted, if the first
     /// one is set, they are deconvolved.
     std::bitset<2> flags;
-    friend class DEIMOSList;
-  private:
-    int N;
+    /// Object id.
     unsigned long id;
+    /// Width of the window function.
     data_t width;
+
+    friend class DEIMOSList;
   };
 
   /// Class for collections of DEIMOS instances.

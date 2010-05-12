@@ -145,6 +145,10 @@ public:
   /// Constructor for moments up to order \p N.
   /// The moments are populated from \p obj.
   MomentsOrdered(const Object& obj, int N);
+  /// Access operator for vector index.
+  data_t& operator()(unsigned int i);
+  /// Access operator for vector index.
+  const data_t& operator()(unsigned int i) const;
   /// Access operator for \f$\langle x^{p_x}\, y^{p_y}\rangle\f$.
   data_t& operator()(unsigned int px, unsigned int py);
   /// Access operator for \f$\langle x^{p_x}\, y^{p_y}\rangle\f$.

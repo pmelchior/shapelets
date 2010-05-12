@@ -2,7 +2,7 @@
 #include <shapelens/utils/IO.h>
 
 namespace shapelens {
-  DEIMOS::DEIMOS() : N(0), mo(), id(0), width(0), flags(0) {}
+  DEIMOS::DEIMOS() : mo(), id(0), width(0), flags(0) {}
 
   DEIMOS::DEIMOS(std::string filename) {
     fitsfile* fptr = IO::openFITSFile(filename);
@@ -12,7 +12,7 @@ namespace shapelens {
     mo = MomentsOrdered(N);
     for(int n1=0; n1 <= N; n1++)
       for(int n2=0; n2 <= N-n1; n2++)
-	mo(n1,n2) = M(n1,n2);
+	mo(n1,n2) = M(n2,n1);
     IO::readFITSKeyword(fptr,"ID",id);
     IO::readFITSKeyword(fptr,"WIDTH",width);
     int f;
@@ -22,7 +22,7 @@ namespace shapelens {
   }
 
   DEIMOS::DEIMOS (const Object& obj, unsigned int N_) :
-    N(N_), mo(obj,N_), id(obj.id), width(obj.w.getScale()), flags(0) {
+    mo(obj,N_), id(obj.id), width(obj.w.getScale()), flags(0) {
   }
 
   void DEIMOS::save(std::string filename) const {
@@ -31,7 +31,7 @@ namespace shapelens {
     NumMatrix<data_t> M(N+1,N+1);
     for(int n1=0; n1 <= N; n1++)
       for(int n2=0; n2 <= N-n1; n2++)
-	M(n1,n2) = mo(n1,n2);
+	M(n2,n1) = mo(n1,n2); // transpose to have correctly oriented image
     IO::writeFITSImage(fptr,M);
     IO::updateFITSKeyword(fptr,"ID",id);
     IO::updateFITSKeyword(fptr,"WIDTH",width);
@@ -48,6 +48,7 @@ namespace shapelens {
     data_t w__0 = w(zero);
     w.setDerivative(-3);
     data_t w___0 = w(zero);
+    int N = mo.getOrder();
     for (int n=0; n <= N; n++) {
       for (int m=0; m <= n; m++) {
 	if (C >= 2 && n <= N - 2)
@@ -88,20 +89,21 @@ namespace shapelens {
   void DEIMOS::deconvolve(const DEIMOS& psf, unsigned int D) {
     // set up easy access
     BinoMo b(mo), c(psf.mo);
+    int N = mo.getOrder();
     // no change for monopole: m(0,0) = b(0,0);
-    if (D > 0) {
+    if (D > 0 && N > 0) {
       mo(0,1) -= b(0,0)*c(0,1);
       mo(1,0) -= b(0,0)*c(1,0);
-      if (D > 1) {
+      if (D > 1 && N > 1) {
 	mo(0,2) -= b(0,0)*c(0,2) + 2*b(0,1)*c(0,1);
 	mo(1,1) -= 0.5*(b(0,0)*c(1,1) + 2*(b(0,1)*c(1,0) + b(1,0)*c(0,1)));
 	mo(2,0) -= b(0,0)*c(2,0) + 2*b(1,0)*c(1,0);
-	if (D > 2) {
+	if (D > 2 && N > 2) {
 	  mo(0,3) -= b(0,0)*c(0,3) + 3*b(0,1)*c(0,2) + 3*b(0,2)*c(0,1);
 	  mo(1,2) -= 1./3*(b(0,0)*c(1,2) + 3*(b(0,1)*c(1,1) + b(1,0)*c(0,2)) + 3*(b(0,2)*c(1,0) + b(1,1)*c(0,1)));
 	  mo(2,1) -= 1./3*(b(0,0)*c(2,1) + 3*(b(0,1)*c(2,0) + b(1,0)*c(1,1)) + 3*(b(1,1)*c(1,0) + b(2,0)*c(0,1)));
 	  mo(3,0) -= b(0,0)*c(3,0) + 3*b(1,0)*c(2,0) + 3*b(2,0)*c(1,0);
-	  if (D > 3) {
+	  if (D > 3 && N > 3) {
 	    mo(0,4) -= b(0,0)*c(0,4) + 4*(b(0,1)*c(0,3) + b(0,3)*c(0,1)) + 6*b(0,2)*c(0,2);
 	    mo(1,3) -= 1./4*(b(0,0)*c(1,3) + 4*(b(0,1)*c(1,2) + b(1,0)*c(0,3)) + 6*(b(0,2)*c(1,1) + b(1,1)*c(0,2)) + 4*(b(0,3)*c(1,0) + b(1,2)*c(0,1)));
 	    mo(2,2) -= 1./6*(b(0,0)*c(2,2) + 4*(b(0,1)*c(2,1) + b(1,0)*c(1,2)) + 6*(b(0,2)*c(2,0) + b(1,1)*c(1,1) + b(2,0)*c(0,2)) + 4*(b(1,2)*c(1,0) + b(2,1)*c(0,1)));
@@ -120,32 +122,44 @@ namespace shapelens {
   }
 
   complex<data_t> DEIMOS::epsilon() const {
-    complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
-    e/= (complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(complex<data_t>(mo(0,2)*mo(2,0) - gsl_pow_2(mo(1,1)))));
-    return e;
+    if (mo.getOrder() >= 2) {
+      complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
+      e/= (complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(complex<data_t>(mo(0,2)*mo(2,0) - gsl_pow_2(mo(1,1)))));
+      return e;
+    } else
+      return complex<data_t>(0,0);
   }
   
   complex<data_t> DEIMOS::chi() const {
-    complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
-    e/= mo(2,0) + mo(0,2);
-    return e;
+    if (mo.getOrder() >= 2) {
+      complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
+      e/= mo(2,0) + mo(0,2);
+      return e;
+    } else
+      return complex<data_t>(0,0);
   }
  
   // HOLICS equations from OMU 2007
   complex<data_t> DEIMOS::zeta() const {
-    data_t xi = mo(4,0) + 2*mo(2,2) + mo(0,4); // eq. 25
-    complex<data_t> zeta(mo(3,0) + mo(1,2),    // eq. 26
-			 mo(2,1) + mo(0,3));
-    zeta /= xi;
-    return zeta;
+    if (mo.getOrder() >= 4) {
+      data_t xi = mo(4,0) + 2*mo(2,2) + mo(0,4); // eq. 25
+      complex<data_t> zeta(mo(3,0) + mo(1,2),    // eq. 26
+			   mo(2,1) + mo(0,3));
+      zeta /= xi;
+      return zeta;
+    } else
+      return complex<data_t>(0,0);
   }
 
   complex<data_t> DEIMOS::delta() const {
-    data_t xi = mo(4,0) + 2*mo(2,2) + mo(0,4);  // eq. 25
-    complex<data_t> delta(mo(3,0) - 3*mo(1,2),  // eq. 27
-			  3*mo(2,1) - mo(0,3));
-    delta /= xi;
-    return delta;
+    if (mo.getOrder() >= 4) {
+      data_t xi = mo(4,0) + 2*mo(2,2) + mo(0,4);  // eq. 25
+      complex<data_t> delta(mo(3,0) - 3*mo(1,2),  // eq. 27
+			    3*mo(2,1) - mo(0,3));
+      delta /= xi;
+      return delta;
+    } else
+      return complex<data_t>(0,0);
   }
 
   

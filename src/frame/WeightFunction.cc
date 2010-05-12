@@ -4,7 +4,7 @@
 
 namespace shapelens {
 
-  WeightFunction::WeightFunction() : n(0), type(0) {
+  WeightFunction::WeightFunction() : n(0), type(0), scale(0) {
     fptr = &WeightFunction::Flat;
   }
   WeightFunction::WeightFunction(data_t scale_, const Point<data_t>& centroid_):
