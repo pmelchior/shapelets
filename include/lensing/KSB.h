@@ -6,8 +6,8 @@
 
 namespace shapelens {
   class KSB {
-  public :
-    KSB(const Object& obj);
+  public:
+    KSB(const Object& obj, data_t scale);
     complex<data_t> chi;
     complex<data_t> gamma() const;
     complex<data_t> gamma_first() const;
@@ -21,6 +21,7 @@ namespace shapelens {
     complex<data_t> gamma_exact(data_t accuracy = 0.0001) const;	
     complex<data_t> gamma_nl(data_t accuracy = 0.000001) const;
     complex<data_t> gamma_nl(const KSB& psf, data_t accuracy = 0.0001) const;
+
 
   private:
     complex<data_t> __chi(const Moment2& Q) const;

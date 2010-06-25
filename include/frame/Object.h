@@ -6,7 +6,6 @@
 #include "SegmentationMap.h"
 #include "PixelCovarianceMatrix.h"
 #include "CorrelationFunction.h"
-#include "WeightFunction.h"
 #include "../utils/FFT.h"
 #include <bitset>
 
@@ -79,8 +78,6 @@ class Object : public Image<data_t> {
   /// The weight (inverse variance) map in the region of this object.
   /// This map is employed when <tt>noisemodel==WEIGHT</tt>.
   Image<data_t> weight;
-  /// Weight/window function for noisy measurements.
-  WeightFunction w;
   /// The flux of this Object.
   data_t flux;
   /// The position of the object's centroid.

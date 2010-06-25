@@ -2,49 +2,47 @@
 #include "../../include/frame/WeightFunction.h"
 
 namespace shapelens {
-  HOLICS::HOLICS(const Object& obj_) {
-    // for changing obj.w, we need to have write permissions...
-    Object& obj = const_cast<Object&>(obj_);
-    if (obj.w.getType() == 0)
-      throw std::invalid_argument("HOLICS: usage of flat weights is not permitted");
-    sigma = obj.w.getScale();
+  HOLICS::HOLICS(const Object& obj, data_t scale) {
+    GaussianWeightFunction w(scale, obj.centroid);
+
+    sigma = w.getScale();
 
     M = obj.flux;
-    Moment2 Q2(obj);
+    Moment2 Q2(obj,w);
     trQ = __trQ(Q2);
-    Moment4 Q4(obj);
+    Moment4 Q4(obj,w);
     xi = __xi(Q4);
     // zeta and delta need xi
-    Moment3 Q3(obj);
+    Moment3 Q3(obj,w);
     zeta = __zeta(Q3);
     delta = __delta(Q3);
     
     // measure moments with W'
-    obj.w.setDerivative(1);
-    Moment0 Q0_(obj);
+    w.setDerivative(1);
+    Moment0 Q0_(obj,w);
     M_ = Q0_(0);
-    Moment2 Q2_(obj);
+    Moment2 Q2_(obj,w);
     trQ_ = __trQ(Q2_);
-    Moment4 Q4_(obj);
+    Moment4 Q4_(obj,w);
     xi_ = __xi(Q4_);
-    Moment6 Q6_(obj);
+    Moment6 Q6_(obj,w);
     v0_ = __v0(Q6_);
     
     // measure moments with W''
-    obj.w.setDerivative(2);
-    Moment2 Q__(obj);
+    w.setDerivative(2);
+    Moment2 Q__(obj,w);
     trQ__ = __trQ(Q__);
-    Moment4 Q4__(obj);
+    Moment4 Q4__(obj,w);
     xi__ = __xi(Q4__);
 
     // measure moments with W'''
-    obj.w.setDerivative(3);
-    Moment4 Q4___(obj);
+    w.setDerivative(3);
+    Moment4 Q4___(obj,w);
     xi___ = __xi(Q4___);
-    Moment6 Q6___(obj);
+    Moment6 Q6___(obj,w);
     v0___ = __v0(Q6___);
-    // reset obj.w
-    obj.w.setDerivative(0);
+    // reset w
+    w.setDerivative(0);
 
     // form high-order quantities...
     // eq. (C27)

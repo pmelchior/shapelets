@@ -1,4 +1,5 @@
 #include "../../include/lensing/KSB.h"
+#include "../../include/frame/WeightFunction.h"
 #include "../../include/utils/Minimizer.h"
 
 namespace shapelens {
@@ -22,21 +23,20 @@ namespace shapelens {
       return M0(j,k);
   }
 
-  KSB::KSB(const Object& obj_) {
-    // for changing obj.w, we need to have write permissions...
-    Object& obj = const_cast<Object&>(obj_);
-    Moment0 M0(obj);
+
+  KSB::KSB(const Object& obj, data_t scale) {
+    GaussianWeightFunction w(scale,obj.centroid);
+
+    Moment0 M0(obj,w);
     M = M0(0);
-    if (obj.w.getType() == 0)
-      throw std::invalid_argument("KSB: usage of flat weights is not permitted");
-    Moment2 Q2(obj);
+    Moment2 Q2(obj,w);
     trQ = __trQ(Q2);
     chi = __chi(Q2);
 
     // measure moments with W' (w.r.t r^2)
-    obj.w.setDerivative(-1);
-    Moment2 Q2_(obj);
-    Moment4 Q4_(obj);
+    w.setDerivative(-1);
+    Moment2 Q2_(obj,w);
+    Moment4 Q4_(obj,w);
     trQ_ = __trQ(Q2_);
     psi_ = __psi(Q4_);
     mu_ = __mu(Q4_);
@@ -44,14 +44,14 @@ namespace shapelens {
     nu_ = __nu(Q4_);
 
     // measure moments with W'' (w.r.t r^2)
-    obj.w.setDerivative(-2);
-    Moment4 Q4__(obj);
+    w.setDerivative(-2);
+    Moment4 Q4__(obj,w);
     mu__ = __mu(Q4__);
     psi__ = __psi(Q4__);
     pi__ = __pi(Q4__);
     nu__ = __nu(Q4__);
 
-    Moment6 Q6__(obj);
+    Moment6 Q6__(obj,w);
     lambda__ = __lambda(Q6__);
     omega__  = __omega(Q6__);
     sigma__  = __sigma(Q6__);
@@ -60,16 +60,16 @@ namespace shapelens {
     delta__  = __delta(Q6__);
     
     // measure moments with W''' (w.r.t r^2)
-    obj.w.setDerivative(-3);
-    Moment8 Q8___(obj);
+    w.setDerivative(-3);
+    Moment8 Q8___(obj,w);
     a1___=___a1(Q8___);
     a2___=___a2(Q8___);
     a3___=___a3(Q8___);
     a4___=___a4(Q8___);
     a5___=___a5(Q8___);
 
-    // reset to zero-th derivative since obj is const
-    obj.w.setDerivative(0);
+    // reset to zero-th derivative since w is const
+    w.setDerivative(0);
 
 
     R(0,0,0) = (real(chi)/trQ)*(2*rho__ + 4*psi_) - 2*lambda__/trQ - 4*pi_/trQ;

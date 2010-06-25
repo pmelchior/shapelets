@@ -3,6 +3,7 @@
 
 #include "../Typedef.h"
 #include "Object.h"
+#include "WeightFunction.h"
 
 namespace shapelens {
 
@@ -12,7 +13,7 @@ class Moment0 {
   /// Constructor.
   Moment0();
   /// Constructor from on Object.
-  Moment0(const Object& obj);
+  Moment0(const Object& obj, const WeightFunction& w);
   /// Access operator.
   data_t& operator()(bool i = 0);
   /// Access operator.
@@ -30,7 +31,7 @@ class Moment1 {
   /// Constructor.
   Moment1();
   /// Constructor from an Object.
-  Moment1(const Object& obj);
+  Moment1(const Object& obj, const WeightFunction& w);
   /// Access operator.
   data_t& operator()(bool i);
   /// Access operator.
@@ -48,7 +49,7 @@ class Moment2 {
   /// Constructor.
   Moment2();
   /// Constructor from an Object.
-  Moment2(const Object& obj);
+  Moment2(const Object& obj, const WeightFunction& w);
   /// Access operator with \f$Q_{ij} = Q_{ji}\f$.
   data_t& operator()(bool i, bool j);
   /// Access operator with \f$Q_{ij} = Q_{ji}\f$.
@@ -65,7 +66,7 @@ class Moment3 {
   /// Constructor.
   Moment3();
   /// Constructor from an Object.
-  Moment3(const Object& obj);
+  Moment3(const Object& obj, const WeightFunction& w);
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   data_t& operator()(bool i, bool j, bool k);
@@ -84,7 +85,7 @@ class Moment4 {
   /// Constructor.
   Moment4();
   /// Constructor from an Object.
-  Moment4(const Object& obj);
+  Moment4(const Object& obj, const WeightFunction& w);
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   data_t& operator()(bool i, bool j, bool k, bool l);
@@ -103,7 +104,7 @@ class Moment6 {
   /// Constructor.
   Moment6();
   /// Constructor from an Object.
-  Moment6(const Object& obj);
+  Moment6(const Object& obj, const WeightFunction& w);
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   data_t& operator()(bool i, bool j, bool k, bool l, bool m, bool n);
@@ -122,7 +123,7 @@ class Moment8 {
   /// Constructor.
   Moment8();
   /// Constructor from an Object.
-  Moment8(const Object& obj);
+  Moment8(const Object& obj, const WeightFunction& w);
   /// Access operator.
   /// The access will result in the same result, when indices are only permuted.
   data_t& operator()(bool i, bool j, bool k, bool l, bool m, bool n, bool o, bool p);
@@ -144,7 +145,7 @@ public:
   MomentsOrdered(int N);
   /// Constructor for moments up to order \p N.
   /// The moments are populated from \p obj.
-  MomentsOrdered(const Object& obj, int N);
+  MomentsOrdered(const Object& obj, const WeightFunction& w, int N);
   /// Access operator for vector index.
   data_t& operator()(unsigned int i);
   /// Access operator for vector index.

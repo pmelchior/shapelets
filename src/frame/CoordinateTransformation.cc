@@ -107,19 +107,17 @@ namespace shapelens {
     D122 = -0.5*Gamma2_2;
     D212 = -0.5*Gamma2_2;
     D222 = Gamma1_2 - 0.5*Gamma2_1;
-    complex<data_t> F_(-D111-D221, -D121-D222);
-    complex<data_t> G_(-D111+3*D221, -3*D121+D222);
   }
 
   void LensingTransformation::transform(Point<data_t>& P) const {
     // store temporarily
     data_t p0 = P(0), p1 = P(1);
-    // apply eq. (3)
-    P(0) = (1-kappa-gamma1)*p0 - gamma2*p1;
-    P(1) = -gamma2*p0 + (1-kappa+gamma1)*p1;
+    // apply eq. (3) in reverse direction (unlensed -> lensed)
+    P(0) = (1+kappa+gamma1)*p0 + gamma2*p1;
+    P(1) = +gamma2*p0 + (1+kappa-gamma1)*p1;
     if (flex) {
-      P(0) += D111*p0*p0 + (D112 + D121)*p0*p1 + D122*p1*p1;
-      P(1) += D211*p0*p0 + (D212 + D221)*p0*p1 + D222*p1*p1;
+      P(0) -= D111*p0*p0 + (D112 + D121)*p0*p1 + D122*p1*p1;
+      P(1) -= D211*p0*p0 + (D212 + D221)*p0*p1 + D222*p1*p1;
     }
       
     stack_transform(P);
@@ -130,12 +128,12 @@ namespace shapelens {
 
     // store temporarily
     data_t p0 = P(0), p1 = P(1);
-    // apply inverse eq. (3): gamma -> -gamma etc.
-    P(0) = (1+kappa+gamma1)*p0 + gamma2*p1;
-    P(1) = gamma2*p0 + (1+kappa-gamma1)*p1;
+    // apply eq. (3): lensed -> unlensed
+    P(0) = (1-kappa-gamma1)*p0 - gamma2*p1;
+    P(1) = -gamma2*p0 + (1-kappa+gamma1)*p1;
     if (flex) {
-      P(0) -= D111*p0*p0 + (D112 + D121)*p0*p1 + D122*p1*p1;
-      P(1) -= D211*p0*p0 + (D212 + D221)*p0*p1 + D222*p1*p1;
+      P(0) += D111*p0*p0 + (D112 + D121)*p0*p1 + D122*p1*p1;
+      P(1) += D211*p0*p0 + (D212 + D221)*p0*p1 + D222*p1*p1;
     }
   }
 

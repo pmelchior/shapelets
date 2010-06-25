@@ -7,7 +7,7 @@
 namespace shapelens {
   class HOLICS {
   public :
-    HOLICS(const Object& obj);
+    HOLICS(const Object& obj, data_t scale);
     complex<data_t> zeta;
     complex<data_t> delta;
     complex<data_t> F() const;

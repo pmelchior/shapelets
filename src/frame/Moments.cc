@@ -10,7 +10,7 @@ namespace shapelens {
     M = 0;
   }
 
-  Moment0::Moment0(const Object& obj) {
+  Moment0::Moment0(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M = 0;
     data_t w_;
@@ -20,14 +20,14 @@ namespace shapelens {
       // P_(0) = P(0) + (0.5+n1)*offset - 0.5;
       //       for (int n2 = 0; n2 < SUBPIXEL; n2++) {
       // 	P_(1) = P(1) + (0.5+n2)*offset - 0.5;
-      // 	w_ = obj.w(P_)/(SUBPIXEL*SUBPIXEL);
+      // 	w_ = w(P_)/(SUBPIXEL*SUBPIXEL);
       // 	if (obj.weight.size() != 0)
       // 	  w_ *= obj.weight(i);
       // 	M += w_ * obj.interpolate(P_);//Interpolation::bicubic(obj,P_);
       //       }
       //     }
     
-      w_ = obj.w(grid(i));
+      w_ = w(grid(i));
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
       M += obj(i) * w_;
@@ -44,7 +44,7 @@ namespace shapelens {
   Moment1::Moment1() {
     M[0] = M[1] = 0;
   }
-  Moment1::Moment1(const Object& obj) {
+  Moment1::Moment1(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = 0;
     data_t w_;
@@ -55,7 +55,7 @@ namespace shapelens {
       //       P_(0) = P(0) + (0.5+n1)*offset - 0.5;
       //       for (int n2 = 0; n2 < SUBPIXEL; n2++) {
       // 	P_(1) = P(1) + (0.5+n2)*offset - 0.5;
-      // 	w_ = obj.w(P_)/(SUBPIXEL*SUBPIXEL);
+      // 	w_ = w(P_)/(SUBPIXEL*SUBPIXEL);
       // 	if (obj.weight.size() != 0)
       // 	  w_ *= obj.weight(i);
       // 	data_t val = obj.interpolate(P_);//Interpolation::bicubic(obj,P_);
@@ -63,7 +63,7 @@ namespace shapelens {
       // 	M[1] += w_ * val * P_(1);
       //       }
       //     }
-      w_ = obj.w(grid(i));
+      w_ = w(grid(i));
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
       M[0] += obj(i) * grid(i,0) * w_;
@@ -82,7 +82,7 @@ namespace shapelens {
   Moment2::Moment2() {
     M[0] = M[1] = M[2] = 0;
   }
-  Moment2::Moment2(const Object& obj) {
+  Moment2::Moment2(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = 0;
     data_t w_, diff_x, diff_y, val;
@@ -93,7 +93,7 @@ namespace shapelens {
       //       P_(0) = P(0) + (0.5+n1)*offset - 0.5;
       //       for (int n2 = 0; n2 < SUBPIXEL; n2++) {
       // 	P_(1) = P(1) + (0.5+n2)*offset - 0.5;
-      // 	w_ = obj.w(P_)/(SUBPIXEL*SUBPIXEL);
+      // 	w_ = w(P_)/(SUBPIXEL*SUBPIXEL);
       // 	if (obj.weight.size() != 0)
       // 	  w_ *= obj.weight(i);
       // 	data_t val = obj.interpolate(P_);//Interpolation::bicubic(obj,P_);
@@ -104,7 +104,7 @@ namespace shapelens {
       //     }
 
       val = obj(i);
-      w_ = obj.w(obj.grid(i));
+      w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0)-obj.centroid(0);
       diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
@@ -127,14 +127,14 @@ namespace shapelens {
   Moment3::Moment3() {
     M[0] = M[1] = M[2] = M[3] = 0;
   }
-  Moment3::Moment3(const Object& obj) {
+  Moment3::Moment3(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = M[3] = 0;
     data_t w_, diff_x, diff_y, val;
   
     for (long i=0; i< grid.size(); i++) {
       val = obj(i);
-      w_ = obj.w(obj.grid(i));
+      w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0)-obj.centroid(0);
       diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
@@ -158,14 +158,14 @@ namespace shapelens {
   Moment4::Moment4() {
     M[0] = M[1] = M[2] = M[3] = M[4] = 0;
   }
-  Moment4::Moment4(const Object& obj) {
+  Moment4::Moment4(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = M[3] = M[4] = 0;
     data_t w_, diff_x, diff_y, val;
 
     for (long i=0; i< grid.size(); i++) {
       val = obj(i);
-      w_ = obj.w(obj.grid(i));
+      w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0)-obj.centroid(0);
       diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
@@ -190,14 +190,14 @@ namespace shapelens {
   Moment6::Moment6() {
     M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = 0;
   }
-  Moment6::Moment6(const Object& obj) {
+  Moment6::Moment6(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = 0;
     data_t w_, diff_x, diff_y, val;
 
     for (long i=0; i< grid.size(); i++) {
       val = obj(i);
-      w_ = obj.w(obj.grid(i));
+      w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0)-obj.centroid(0);
       diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
@@ -223,14 +223,14 @@ namespace shapelens {
   Moment8::Moment8() {
     M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = M[7] = M[8] = 0;
   }
-  Moment8::Moment8(const Object& obj) {
+  Moment8::Moment8(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = M[2] = M[3] = M[4] = M[5] = M[6] = M[7] = M[8] = 0;
     data_t w_, diff_x, diff_y, val;;
   
     for (long i=0; i< grid.size(); i++) {
       val = obj(i);
-      w_ = obj.w(obj.grid(i));
+      w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0)-obj.centroid(0);
       diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
@@ -264,13 +264,12 @@ namespace shapelens {
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) { }
 
-  MomentsOrdered::MomentsOrdered(const Object& obj, int N_) :
+  MomentsOrdered::MomentsOrdered(const Object& obj, const WeightFunction& w, int N_) :
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) {
-    int SUBPIXEL = 2;
-    data_t offset = 1./SUBPIXEL;
-    
-    // data_t w_, diff_x, diff_y, val;
+    //    int SUBPIXEL = 2;
+    //data_t offset = 1./SUBPIXEL;
+//     data_t w_, diff_x, diff_y, val;
 //     for (long i=0; i< obj.grid.size(); i++) {
 //       Point<data_t> P = obj.grid(i), P_;
 //       for (int n1 = 0; n1 < SUBPIXEL; n1++) {
@@ -280,7 +279,7 @@ namespace shapelens {
 // 	  val = obj.interpolate(P_);
 // 	  diff_x = P_(0)-obj.centroid(0);
 // 	  diff_y = P_(1)-obj.centroid(1);
-// 	  w_ = obj.w(P_)/(SUBPIXEL*SUBPIXEL);
+// 	  w_ = w(P_)/(SUBPIXEL*SUBPIXEL);
 // 	  if (obj.weight.size() != 0)
 // 	    w_ *= obj.weight(i);
 // 	  for(int n=0; n <= N; n++)
@@ -293,7 +292,7 @@ namespace shapelens {
     data_t w_, diff_x, diff_y, val;
     for (long i=0; i< obj.grid.size(); i++) {
       val = obj(i);
-      w_ = obj.w(obj.grid(i));
+      w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0)-obj.centroid(0);
       diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)

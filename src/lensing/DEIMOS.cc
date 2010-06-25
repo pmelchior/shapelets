@@ -2,68 +2,99 @@
 #include <shapelens/utils/IO.h>
 
 namespace shapelens {
-  DEIMOS::DEIMOS() : mo(), id(0), width(0), flags(0) {}
 
-  DEIMOS::DEIMOS(std::string filename) {
-    fitsfile* fptr = IO::openFITSFile(filename);
-    NumMatrix<data_t> M;
-    IO::readFITSImage(fptr,M);
-    int N = int(M.getRows()) - 1;
-    mo = MomentsOrdered(N);
-    for(int n1=0; n1 <= N; n1++)
-      for(int n2=0; n2 <= N-n1; n2++)
-	mo(n1,n2) = M(n2,n1);
-    IO::readFITSKeyword(fptr,"ID",id);
-    IO::readFITSKeyword(fptr,"WIDTH",width);
-    int f;
-    IO::readFITSKeyword(fptr,"FLAGS",f);
-    flags = std::bitset<2>(f);
-    IO::closeFITSFile(fptr);
+  DEIMOS::DEIMOSWeightFunction::DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid, const complex<data_t>& eps) :
+    GaussianWeightFunction(scale,centroid),
+    T(0,eps) { 
+    // no need to set centroid as it is contained in 
   }
 
-  DEIMOS::DEIMOS (const Object& obj, unsigned int N_) :
-    mo(obj,N_), id(obj.id), width(obj.w.getScale()), flags(0) {
+  data_t DEIMOS::DEIMOSWeightFunction::operator()(const Point<data_t>& P_) const {
+    Point<data_t> P = P_;
+    T.inverse_transform(P);
+    return GaussianWeightFunction::operator()(P);
   }
 
-  void DEIMOS::save(std::string filename) const {
-    fitsfile* fptr = IO::createFITSFile(filename);
-    int N = mo.getOrder();
-    NumMatrix<data_t> M(N+1,N+1);
-    for(int n1=0; n1 <= N; n1++)
-      for(int n2=0; n2 <= N-n1; n2++)
-	M(n2,n1) = mo(n1,n2); // transpose to have correctly oriented image
-    IO::writeFITSImage(fptr,M);
-    IO::updateFITSKeyword(fptr,"ID",id);
-    IO::updateFITSKeyword(fptr,"WIDTH",width);
-    IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong());
-    IO::closeFITSFile(fptr);
+  DEIMOS::DEIMOS() : id(0), flags(0) {}
+
+  // DEIMOS::DEIMOS(std::string filename) {
+//     fitsfile* fptr = IO::openFITSFile(filename);
+//     NumMatrix<data_t> M;
+//     IO::readFITSImage(fptr,M);
+//     int N = int(M.getRows()) - 1;
+//     mo = MomentsOrdered(N);
+//     for(int n1=0; n1 <= N; n1++)
+//       for(int n2=0; n2 <= N-n1; n2++)
+// 	mo(n1,n2) = M(n2,n1);
+//     IO::readFITSKeyword(fptr,"ID",id);
+//     IO::readFITSKeyword(fptr,"WIDTH",width);
+//     int f;
+//     IO::readFITSKeyword(fptr,"FLAGS",f);
+//     flags = std::bitset<2>(f);
+//     IO::closeFITSFile(fptr);
+//   }
+
+  DEIMOS::DEIMOS (const Object& obj, data_t scale_, const complex<data_t>& eps_, unsigned int N) :
+    id(obj.id), flags(0), eps(eps_), scale(scale_) {
+    DEIMOSWeightFunction w(scale, obj.centroid, eps);
+    mo = MomentsOrdered(obj,w,N);
   }
+
+  // void DEIMOS::save(std::string filename) const {
+//     fitsfile* fptr = IO::createFITSFile(filename);
+//     int N = mo.getOrder();
+//     NumMatrix<data_t> M(N+1,N+1);
+//     for(int n1=0; n1 <= N; n1++)
+//       for(int n2=0; n2 <= N-n1; n2++)
+// 	M(n2,n1) = mo(n1,n2); // transpose to have correctly oriented image
+//     IO::writeFITSImage(fptr,M);
+//     IO::updateFITSKeyword(fptr,"ID",id);
+//     IO::updateFITSKeyword(fptr,"WIDTH",width);
+//     IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong());
+//     IO::closeFITSFile(fptr);
+//   }
 
   void DEIMOS::deweight(unsigned int C) {
     Point<data_t> zero(0,0);
-    WeightFunction w(width,zero);
+    GaussianWeightFunction w(scale,zero);
     w.setDerivative(-1);
     data_t w_0 = w(zero);
     w.setDerivative(-2);
     data_t w__0 = w(zero);
-    w.setDerivative(-3);
-    data_t w___0 = w(zero);
+    //w.setDerivative(-3);
+    //data_t w___0 = w(zero);
+
+    data_t c1 = gsl_pow_2(1-real(eps)) + gsl_pow_2(imag(eps));
+    data_t c2 = gsl_pow_2(1+real(eps)) + gsl_pow_2(imag(eps));
+    data_t e2 = imag(eps);
+
     int N = mo.getOrder();
     for (int n=0; n <= N; n++) {
       for (int m=0; m <= n; m++) {
-	if (C >= 2 && n <= N - 2)
+	if (C >= 2 && n <= N - 2) 
+	  mo(m,n-m) -= w_0*(c1*mo(m+2,n-m) + c2*mo(m,n-m+2) -
+			    4*e2*mo(m+1,n-m+1));
+	if (C >= 4 && n <= N - 4)
+	  mo(m,n-m) += w__0/2*(c1*c1*mo(m+4,n-m) + 2*c1*c2*mo(m+2,n-m+2) + 
+			       c2*c2*mo(m,n-m+4) - 
+			       8*e2*(c1*c1*mo(m+3,n-m+1) + c2*c2*mo(m+1,n-m+3))+
+			       16*e2*e2*mo(m+2,n-m+2));
+
+
+	/* isotropic correction only
+        if (C >= 2 && n <= N - 2)
 	  mo(m,n-m) -= w_0*(mo(m+2,n-m) + mo(m,n-m+2));
 	if (C >= 4 && n <= N - 4)
 	  mo(m,n-m) += w__0/2*(mo(m+4,n-m) + 2*mo(m+2,n-m+2) + mo(m,n-m+4));
 	if (C >= 6 && n <= N - 6)
-	  mo(m,n-m) -= 2*w___0/15*(mo(m+6,n-m) + 3*mo(m+4,n-m+2) + 3*mo(m+2,n-m+4) + mo(m,n-m+6));
+	mo(m,n-m) -= 2*w___0/15*(mo(m+6,n-m) + 3*mo(m+4,n-m+2) + 3*mo(m+2,n-m+4) + mo(m,n-m+6)); */
       }
     }
     // note in flags
     flags.set(0);
   }
 
-  // helper cclass
+  // helper class
   class BinoMo {
   public:
     BinoMo(const MomentsOrdered& mo_) : mo(mo_) {
@@ -163,42 +194,42 @@ namespace shapelens {
   }
 
   
-  // #### DEIMOSList ####
-  DEIMOSList::DEIMOSList() : std::vector<boost::shared_ptr<DEIMOS> >() {}
+//   // #### DEIMOSList ####
+//   DEIMOSList::DEIMOSList() : std::vector<boost::shared_ptr<DEIMOS> >() {}
 
-  DEIMOSList::DEIMOSList(SQLiteDB& sql, std::string table, std::string where) :
-    std::vector<boost::shared_ptr<DEIMOS> > () {
+//   DEIMOSList::DEIMOSList(SQLiteDB& sql, std::string table, std::string where) :
+//     std::vector<boost::shared_ptr<DEIMOS> > () {
     
-  }
-  void DEIMOSList::save(SQLiteDB& sql, std::string table) const {
-    // drop table: faster than deleting its entries
-    std::string query = "DROP TABLE IF EXISTS " + table + ";";
-    sql.query(query);
+//   }
+//   void DEIMOSList::save(SQLiteDB& sql, std::string table) const {
+//     // drop table: faster than deleting its entries
+//     std::string query = "DROP TABLE IF EXISTS " + table + ";";
+//     sql.query(query);
 
-    // create it
-    query = "CREATE TABLE " + table + "(";
-    query += "`id` int NOT NULL PRIMARY KEY,";
-    query += "`width` float NOT NULL,";
-    query += "`flags` int NOT NULL,";
-    query += "`mo` blob NOT NULL);";
-    sql.query(query); 
+//     // create it
+//     query = "CREATE TABLE " + table + "(";
+//     query += "`id` int NOT NULL PRIMARY KEY,";
+//     query += "`width` float NOT NULL,";
+//     query += "`flags` int NOT NULL,";
+//     query += "`mo` blob NOT NULL);";
+//     sql.query(query); 
     
-    // create prepared statement
-    sqlite3_stmt *stmt;
-    query = "INSERT INTO `" + table + "` VALUES (?,?,?,?);";
-    sql.checkRC(sqlite3_prepare_v2(sql.db, query.c_str(), query.size(), &stmt, NULL));
-    for(DEIMOSList::const_iterator iter = DEIMOSList::begin(); iter != DEIMOSList::end(); iter++) {
-      const DEIMOS& d = *(*iter);
-      sql.checkRC(sqlite3_bind_int(stmt,1,d.id));
-      sql.checkRC(sqlite3_bind_double(stmt,2,d.width));
-      sql.checkRC(sqlite3_bind_int(stmt,3,d.flags.to_ulong()));
-      sql.checkRC(sqlite3_bind_blob(stmt,4,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
-      if(sqlite3_step(stmt)!=SQLITE_DONE)
-	throw std::runtime_error("ShapeletObjectDB: insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
-      sql.checkRC(sqlite3_reset(stmt));
-    }
-    sql.checkRC(sqlite3_finalize(stmt));
-  }
+//     // create prepared statement
+//     sqlite3_stmt *stmt;
+//     query = "INSERT INTO `" + table + "` VALUES (?,?,?,?);";
+//     sql.checkRC(sqlite3_prepare_v2(sql.db, query.c_str(), query.size(), &stmt, NULL));
+//     for(DEIMOSList::const_iterator iter = DEIMOSList::begin(); iter != DEIMOSList::end(); iter++) {
+//       const DEIMOS& d = *(*iter);
+//       sql.checkRC(sqlite3_bind_int(stmt,1,d.id));
+//       sql.checkRC(sqlite3_bind_double(stmt,2,d.width));
+//       sql.checkRC(sqlite3_bind_int(stmt,3,d.flags.to_ulong()));
+//       sql.checkRC(sqlite3_bind_blob(stmt,4,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
+//       if(sqlite3_step(stmt)!=SQLITE_DONE)
+// 	throw std::runtime_error("ShapeletObjectDB: insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
+//       sql.checkRC(sqlite3_reset(stmt));
+//     }
+//     sql.checkRC(sqlite3_finalize(stmt));
+//   }
   
 
 } // end namespace
