@@ -38,6 +38,23 @@ namespace shapelens {
     id(obj.id), flags(0), eps(eps_), scale(scale_) {
     DEIMOSWeightFunction w(scale, obj.centroid, eps);
     mo = MomentsOrdered(obj,w,N);
+
+    // compute the noise from a constant one image
+    // variance of weighted moment (i,j) is propto
+    // moment (i*2,j*2) measured with square of weighting function
+    Object noise = obj;
+    for (unsigned int i=0; i < noise.size(); i++)
+      noise(i) = obj.noise_rms*obj.noise_rms;
+    // square of Gaussian: sigma -> sigma/sqrt(2);
+    DEIMOSWeightFunction w2(scale/M_SQRT2, obj.centroid, eps);
+    mo_noise = MomentsOrdered(noise,w2,2*N);
+
+    // for convenience: copy terms from (2*i, 2*j) to (i,j)
+    for (int n=1; n <= N; n++)
+      for (int m=0; m <= n; m++)
+	mo_noise(m,n-m) = mo_noise(2*m,2*(n-m));
+    mo_noise.setOrder(N);
+    
   }
 
   // void DEIMOS::save(std::string filename) const {
@@ -54,44 +71,53 @@ namespace shapelens {
 //     IO::closeFITSFile(fptr);
 //   }
 
-  void DEIMOS::deweight(unsigned int C) {
-    Point<data_t> zero(0,0);
-    GaussianWeightFunction w(scale,zero);
-    w.setDerivative(-1);
-    data_t w_0 = w(zero);
-    w.setDerivative(-2);
-    data_t w__0 = w(zero);
-    //w.setDerivative(-3);
-    //data_t w___0 = w(zero);
+  void DEIMOS::deweight(int C) {
+    // check if already deweighted
+    if (!flags.test(0)) {
+      Point<data_t> zero(0,0);
+      GaussianWeightFunction w(scale,zero);
+      w.setDerivative(-1);
+      data_t w_0 = w(zero);
+      w.setDerivative(-2);
+      data_t w__0 = w(zero);
 
-    data_t c1 = gsl_pow_2(1-real(eps)) + gsl_pow_2(imag(eps));
-    data_t c2 = gsl_pow_2(1+real(eps)) + gsl_pow_2(imag(eps));
-    data_t e2 = imag(eps);
+      data_t c1 = gsl_pow_2(1-real(eps)) + gsl_pow_2(imag(eps));
+      data_t c2 = gsl_pow_2(1+real(eps)) + gsl_pow_2(imag(eps));
+      data_t e2 = imag(eps);
 
-    int N = mo.getOrder();
-    for (int n=0; n <= N; n++) {
-      for (int m=0; m <= n; m++) {
-	if (C >= 2 && n <= N - 2) 
-	  mo(m,n-m) -= w_0*(c1*mo(m+2,n-m) + c2*mo(m,n-m+2) -
-			    4*e2*mo(m+1,n-m+1));
-	if (C >= 4 && n <= N - 4)
-	  mo(m,n-m) += w__0/2*(c1*c1*mo(m+4,n-m) + 2*c1*c2*mo(m+2,n-m+2) + 
-			       c2*c2*mo(m,n-m+4) - 
-			       8*e2*(c1*c1*mo(m+3,n-m+1) + c2*c2*mo(m+1,n-m+3))+
-			       16*e2*e2*mo(m+2,n-m+2));
-
-
-	/* isotropic correction only
-        if (C >= 2 && n <= N - 2)
-	  mo(m,n-m) -= w_0*(mo(m+2,n-m) + mo(m,n-m+2));
-	if (C >= 4 && n <= N - 4)
-	  mo(m,n-m) += w__0/2*(mo(m+4,n-m) + 2*mo(m+2,n-m+2) + mo(m,n-m+4));
-	if (C >= 6 && n <= N - 6)
-	mo(m,n-m) -= 2*w___0/15*(mo(m+6,n-m) + 3*mo(m+4,n-m+2) + 3*mo(m+2,n-m+4) + mo(m,n-m+6)); */
+      int N = mo.getOrder();
+      for (int n=0; n <= N; n++) {
+	for (int m=0; m <= n; m++) {
+	  if (C >= 2 && n <= N - 2) { 
+	    mo(m,n-m) -= w_0*(c1*mo(m+2,n-m) + c2*mo(m,n-m+2) -
+			      4*e2*mo(m+1,n-m+1));
+	    mo_noise(m,n-m) += w_0*w_0*(c1*c2*mo_noise(m+2,n-m) + 
+					c2*c2*mo_noise(m,n-m+2) +
+					16*e2*e2*mo_noise(m+1,n-m+1));
+	  }
+	  if (C >= 4 && n <= N - 4) {
+	    mo(m,n-m) += w__0/2*(c1*c1*mo(m+4,n-m) + 2*c1*c2*mo(m+2,n-m+2) + 
+				 c2*c2*mo(m,n-m+4) - 
+				 8*e2*(c1*mo(m+3,n-m+1) + c2*mo(m+1,n-m+3))+
+				 16*e2*e2*mo(m+2,n-m+2));
+	    mo_noise(m,n-m) += w__0*w__0/4*(gsl_pow_4(c1)*mo_noise(m+4,n-m) +
+					    4*gsl_pow_2(c1*c2)*mo_noise(m+2,n-m+2) +
+					    gsl_pow_4(c2)*mo_noise(m,n-m+4) +
+					    64*e2*e2*(c1*c1*mo_noise(m+3,n-m+1)+
+						      c2*c2*mo_noise(m+1,n-m+3)) +
+					    256*gsl_pow_4(e2)*mo_noise(m+2,n-m+2));
+	  }
+	}
       }
+
+      if (C > 0) {
+	mo.setOrder(N-C);
+	mo_noise.setOrder(N-C);
+      }
+    
+      // note in flags
+      flags.set(0);
     }
-    // note in flags
-    flags.set(0);
   }
 
   // helper class

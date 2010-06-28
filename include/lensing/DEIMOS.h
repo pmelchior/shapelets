@@ -34,7 +34,7 @@ namespace shapelens {
     void save(std::string filename) const;
     /// Correct the moments for the application of \p obj.w.
     /// \p C denotes the maximal correction order.
-    void deweight(unsigned int C);
+    void deweight(int C);
     /// Deconvolve \p obj from \p psf.
     void deconvolve(const DEIMOS& psf, unsigned int P);
     /// Get complex ellipticity from mo.
@@ -59,6 +59,8 @@ namespace shapelens {
     complex<data_t> eps;
 
     friend class DEIMOSList;
+
+    MomentsOrdered mo_noise;
   };
 
 /*   /// Class for collections of DEIMOS instances. */
