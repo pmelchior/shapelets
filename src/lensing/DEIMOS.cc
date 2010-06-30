@@ -15,7 +15,14 @@ namespace shapelens {
     return GaussianWeightFunction::operator()(P);
   }
 
-  DEIMOS::DEIMOS() : id(0), flags(0) {}
+  DEIMOS::DEIMOS() : id(0), flags(0), scale(0), eps(0,0), C(0) {}
+
+  DEIMOS::DEIMOS (Object& obj, int N, int C_, data_t scale_) :
+    id(obj.id), flags(0), scale(scale_), eps(0,0), C(C_) {
+    //DEIMOSWeightFunction w(scale, obj.centroid, eps);
+    //mo = MomentsOrdered(obj,w,N);
+    focus(obj,N);
+  }
 
   // DEIMOS::DEIMOS(std::string filename) {
 //     fitsfile* fptr = IO::openFITSFile(filename);
@@ -34,30 +41,7 @@ namespace shapelens {
 //     IO::closeFITSFile(fptr);
 //   }
 
-  DEIMOS::DEIMOS (const Object& obj, data_t scale_, const complex<data_t>& eps_, unsigned int N) :
-    id(obj.id), flags(0), eps(eps_), scale(scale_) {
-    DEIMOSWeightFunction w(scale, obj.centroid, eps);
-    mo = MomentsOrdered(obj,w,N);
-
-    // compute the noise from a constant one image
-    // variance of weighted moment (i,j) is propto
-    // moment (i*2,j*2) measured with square of weighting function
-    Object noise = obj;
-    for (unsigned int i=0; i < noise.size(); i++)
-      noise(i) = obj.noise_rms*obj.noise_rms;
-    // square of Gaussian: sigma -> sigma/sqrt(2);
-    DEIMOSWeightFunction w2(scale/M_SQRT2, obj.centroid, eps);
-    mo_noise = MomentsOrdered(noise,w2,2*N);
-
-    // for convenience: copy terms from (2*i, 2*j) to (i,j)
-    for (int n=1; n <= N; n++)
-      for (int m=0; m <= n; m++)
-	mo_noise(m,n-m) = mo_noise(2*m,2*(n-m));
-    mo_noise.setOrder(N);
-    
-  }
-
-  // void DEIMOS::save(std::string filename) const {
+//   void DEIMOS::save(std::string filename) const {
 //     fitsfile* fptr = IO::createFITSFile(filename);
 //     int N = mo.getOrder();
 //     NumMatrix<data_t> M(N+1,N+1);
@@ -70,49 +54,92 @@ namespace shapelens {
 //     IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong());
 //     IO::closeFITSFile(fptr);
 //   }
+  
+  // determine optimal weighting parameters, centroid, and ellipticity
+  void DEIMOS::focus(Object& obj, int N) {
+    int iter = 0;
+    Point<data_t> centroid_shift;
+    while (true) {
+      iter++;
+      DEIMOSWeightFunction w(scale, obj.centroid, eps);
+      mo = MomentsOrdered(obj, w, N + C);
+      flags.reset(0);
+      flags.reset(1);
 
-  void DEIMOS::deweight(int C) {
+      // do initial centroiding and ellipticty estimates
+      // from weighted moments: more stable
+      centroid_shift(0) = mo(1,0)/mo(0,0);
+      centroid_shift(1) = mo(0,1)/mo(0,0);
+      obj.centroid += centroid_shift;
+      eps = epsilon();
+      data_t trQ = mo(2,0) + mo(0,2);
+      data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
+      data_t newscale = sqrt(trQs/mo(0,0));
+
+      // deweight now and check whether |ellipticity| < 1
+      // if so: use deweighted values, otherwise weighted ones
+      MomentsOrdered mo_tmp = mo;
+      deweight();
+      if (abs(epsilon()) < 0.9 && mo(2,0) > 0 && mo(0,2) > 0) {
+	// use new centroid correction, remove old one
+	obj.centroid(0) += mo(1,0)/mo(0,0) - centroid_shift(0);
+	obj.centroid(1) += mo(0,1)/mo(0,0) - centroid_shift(1);
+	eps = epsilon();
+	trQ = mo(2,0) + mo(0,2);
+	trQs = trQ*(1-gsl_pow_2(abs(eps)));
+	scale = sqrt(trQs/mo(0,0));
+      } else {
+	mo = mo_tmp;
+	mo.setOrder(N);
+	flags.set(0);
+	flags.set(1);
+	scale = newscale;
+      }
+      if (iter >= 20) // stop after 20 iterations
+	break;
+    }
+  }
+
+  void DEIMOS::deweight() {
     // check if already deweighted
     if (!flags.test(0)) {
-      Point<data_t> zero(0,0);
-      GaussianWeightFunction w(scale,zero);
-      w.setDerivative(-1);
-      data_t w_0 = w(zero);
-      w.setDerivative(-2);
-      data_t w__0 = w(zero);
 
       data_t c1 = gsl_pow_2(1-real(eps)) + gsl_pow_2(imag(eps));
       data_t c2 = gsl_pow_2(1+real(eps)) + gsl_pow_2(imag(eps));
       data_t e2 = imag(eps);
 
+      data_t s2 = gsl_pow_2(scale);
+      data_t s4 = gsl_pow_4(scale);
+      data_t s6 = gsl_pow_6(scale);
+
       int N = mo.getOrder();
       for (int n=0; n <= N; n++) {
 	for (int m=0; m <= n; m++) {
 	  if (C >= 2 && n <= N - 2) { 
-	    mo(m,n-m) -= w_0*(c1*mo(m+2,n-m) + c2*mo(m,n-m+2) -
-			      4*e2*mo(m+1,n-m+1));
-	    mo_noise(m,n-m) += w_0*w_0*(c1*c2*mo_noise(m+2,n-m) + 
-					c2*c2*mo_noise(m,n-m+2) +
-					16*e2*e2*mo_noise(m+1,n-m+1));
+	    mo(m,n-m) += (c1/2*mo(m+2,n-m) - 2*e2*mo(m+1,n-m+1) +
+			  c2/2*mo(m,n-m+2))/s2;
 	  }
 	  if (C >= 4 && n <= N - 4) {
-	    mo(m,n-m) += w__0/2*(c1*c1*mo(m+4,n-m) + 2*c1*c2*mo(m+2,n-m+2) + 
-				 c2*c2*mo(m,n-m+4) - 
-				 8*e2*(c1*mo(m+3,n-m+1) + c2*mo(m+1,n-m+3))+
-				 16*e2*e2*mo(m+2,n-m+2));
-	    mo_noise(m,n-m) += w__0*w__0/4*(gsl_pow_4(c1)*mo_noise(m+4,n-m) +
-					    4*gsl_pow_2(c1*c2)*mo_noise(m+2,n-m+2) +
-					    gsl_pow_4(c2)*mo_noise(m,n-m+4) +
-					    64*e2*e2*(c1*c1*mo_noise(m+3,n-m+1)+
-						      c2*c2*mo_noise(m+1,n-m+3)) +
-					    256*gsl_pow_4(e2)*mo_noise(m+2,n-m+2));
+	    mo(m,n-m) += (c1*c1/8*mo(m+4,n-m) - 
+			  c1*e2*mo(m+3,n-m+1)  +
+			  (c1*c2/4 + 2*e2*e2)*mo(m+2,n-m+2) -
+			  c2*e2*mo(m+1,n-m+3) +
+			  c2*c2/8*mo(m,n-m+4))/s4;
+	  }
+	  if (C >= 6 && n <= N - 6) {
+	    mo(m,n-m) += (c1*c1*c1/48*mo(m+6,n-m) -
+			  c1*c1*e2/4*mo(m+5,n-m+1) +
+			  (c1*c1*c2/16 + c1*e2*e2)*mo(m+4,n-m+2) -
+			  (c1*c2*e2/2 + 4*e2*e2*e2/3)*mo(m+3,n-m+3) +
+			  (c1*c2*c2/16 + c2*e2*e2)*mo(m+2,n-m+4) -
+			  c2*c2*e2/4*mo(m+1,n-m+5) +
+			  c2*c2*c2/48*mo(m,n-m+6))/s6;
 	  }
 	}
       }
-
+	
       if (C > 0) {
-	mo.setOrder(N-C);
-	mo_noise.setOrder(N-C);
+ 	mo.setOrder(N-C);
       }
     
       // note in flags
@@ -143,24 +170,24 @@ namespace shapelens {
     }
   };
   
-  void DEIMOS::deconvolve(const DEIMOS& psf, unsigned int D) {
+  void DEIMOS::deconvolve(const DEIMOS& psf) {
     // set up easy access
     BinoMo b(mo), c(psf.mo);
-    int N = mo.getOrder();
+    int Nmin = std::min(psf.mo.getOrder(),mo.getOrder());
     // no change for monopole: m(0,0) = b(0,0);
-    if (D > 0 && N > 0) {
+    if (Nmin > 0) {
       mo(0,1) -= b(0,0)*c(0,1);
       mo(1,0) -= b(0,0)*c(1,0);
-      if (D > 1 && N > 1) {
+      if (Nmin > 1) {
 	mo(0,2) -= b(0,0)*c(0,2) + 2*b(0,1)*c(0,1);
 	mo(1,1) -= 0.5*(b(0,0)*c(1,1) + 2*(b(0,1)*c(1,0) + b(1,0)*c(0,1)));
 	mo(2,0) -= b(0,0)*c(2,0) + 2*b(1,0)*c(1,0);
-	if (D > 2 && N > 2) {
+	if (Nmin > 2) {
 	  mo(0,3) -= b(0,0)*c(0,3) + 3*b(0,1)*c(0,2) + 3*b(0,2)*c(0,1);
 	  mo(1,2) -= 1./3*(b(0,0)*c(1,2) + 3*(b(0,1)*c(1,1) + b(1,0)*c(0,2)) + 3*(b(0,2)*c(1,0) + b(1,1)*c(0,1)));
 	  mo(2,1) -= 1./3*(b(0,0)*c(2,1) + 3*(b(0,1)*c(2,0) + b(1,0)*c(1,1)) + 3*(b(1,1)*c(1,0) + b(2,0)*c(0,1)));
 	  mo(3,0) -= b(0,0)*c(3,0) + 3*b(1,0)*c(2,0) + 3*b(2,0)*c(1,0);
-	  if (D > 3 && N > 3) {
+	  if (Nmin > 3) {
 	    mo(0,4) -= b(0,0)*c(0,4) + 4*(b(0,1)*c(0,3) + b(0,3)*c(0,1)) + 6*b(0,2)*c(0,2);
 	    mo(1,3) -= 1./4*(b(0,0)*c(1,3) + 4*(b(0,1)*c(1,2) + b(1,0)*c(0,3)) + 6*(b(0,2)*c(1,1) + b(1,1)*c(0,2)) + 4*(b(0,3)*c(1,0) + b(1,2)*c(0,1)));
 	    mo(2,2) -= 1./6*(b(0,0)*c(2,2) + 4*(b(0,1)*c(2,1) + b(1,0)*c(1,2)) + 6*(b(0,2)*c(2,0) + b(1,1)*c(1,1) + b(2,0)*c(0,2)) + 4*(b(1,2)*c(1,0) + b(2,1)*c(0,1)));

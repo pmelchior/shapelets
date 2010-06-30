@@ -29,14 +29,13 @@ namespace shapelens {
     /// Constructor from filename.
     DEIMOS(std::string filename);
     /// Constructor for building moments up to order \p N from \p obj.
-    DEIMOS (const Object& obj, data_t scale, const complex<data_t>& eps, unsigned int N);
+    DEIMOS (Object& obj, int N, int C, data_t scale);
     /// Save to a file.
     void save(std::string filename) const;
     /// Correct the moments for the application of \p obj.w.
-    /// \p C denotes the maximal correction order.
-    void deweight(int C);
+    void deweight();
     /// Deconvolve \p obj from \p psf.
-    void deconvolve(const DEIMOS& psf, unsigned int P);
+    void deconvolve(const DEIMOS& psf);
     /// Get complex ellipticity from mo.
     complex<data_t> epsilon() const;
     /// Get complex ellipticity from mo.
@@ -47,6 +46,8 @@ namespace shapelens {
     complex<data_t> delta() const;
     /// The ordered set of multipole moments.
     MomentsOrdered mo;
+    /// Deweighting order.
+    int C;
     /// The transformation flags.
     /// If the zeroth bit is set, the moments are deweighted, if the first
     /// one is set, they are deconvolved.
@@ -59,8 +60,9 @@ namespace shapelens {
     complex<data_t> eps;
 
     friend class DEIMOSList;
+  private:
+    void focus(Object& obj, int N);
 
-    MomentsOrdered mo_noise;
   };
 
 /*   /// Class for collections of DEIMOS instances. */
