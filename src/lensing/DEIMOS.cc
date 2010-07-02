@@ -19,41 +19,52 @@ namespace shapelens {
 
   DEIMOS::DEIMOS (Object& obj, int N, int C_, data_t scale_) :
     id(obj.id), flags(0), scale(scale_), eps(0,0), C(C_) {
-    //DEIMOSWeightFunction w(scale, obj.centroid, eps);
-    //mo = MomentsOrdered(obj,w,N);
+    // measure moments within optimized weighting function
     focus(obj,N);
   }
 
-  // DEIMOS::DEIMOS(std::string filename) {
-//     fitsfile* fptr = IO::openFITSFile(filename);
-//     NumMatrix<data_t> M;
-//     IO::readFITSImage(fptr,M);
-//     int N = int(M.getRows()) - 1;
-//     mo = MomentsOrdered(N);
-//     for(int n1=0; n1 <= N; n1++)
-//       for(int n2=0; n2 <= N-n1; n2++)
-// 	mo(n1,n2) = M(n2,n1);
-//     IO::readFITSKeyword(fptr,"ID",id);
-//     IO::readFITSKeyword(fptr,"WIDTH",width);
-//     int f;
-//     IO::readFITSKeyword(fptr,"FLAGS",f);
-//     flags = std::bitset<2>(f);
-//     IO::closeFITSFile(fptr);
-//   }
+  DEIMOS::DEIMOS(std::string filename) {
+    fitsfile* fptr = IO::openFITSFile(filename);
+    NumMatrix<data_t> M;
+    IO::readFITSImage(fptr,M);
+    int N = int(M.getRows()) - 1;
+    mo = MomentsOrdered(N);
+    for(int n1=0; n1 <= N; n1++)
+      for(int n2=0; n2 <= N-n1; n2++)
+	mo(n1,n2) = M(n2,n1);
+    IO::readFITSKeyword(fptr,"ID",id);
+    IO::readFITSKeyword(fptr,"WIDTH",scale);
+    try {
+      IO::readFITSKeyword(fptr,"EPS",eps);
+    } catch (std::invalid_argument) {
+      eps = complex<data_t>(0,0);
+    }
+    try {
+      IO::readFITSKeyword(fptr,"C",C);
+    } catch (std::invalid_argument) {
+      C = 0;
+    }
+    int f;
+    IO::readFITSKeyword(fptr,"FLAGS",f);
+    flags = std::bitset<2>(f);
+    IO::closeFITSFile(fptr);
+  }
 
-//   void DEIMOS::save(std::string filename) const {
-//     fitsfile* fptr = IO::createFITSFile(filename);
-//     int N = mo.getOrder();
-//     NumMatrix<data_t> M(N+1,N+1);
-//     for(int n1=0; n1 <= N; n1++)
-//       for(int n2=0; n2 <= N-n1; n2++)
-// 	M(n2,n1) = mo(n1,n2); // transpose to have correctly oriented image
-//     IO::writeFITSImage(fptr,M);
-//     IO::updateFITSKeyword(fptr,"ID",id);
-//     IO::updateFITSKeyword(fptr,"WIDTH",width);
-//     IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong());
-//     IO::closeFITSFile(fptr);
-//   }
+  void DEIMOS::save(std::string filename) const {
+    fitsfile* fptr = IO::createFITSFile(filename);
+    int N = mo.getOrder();
+    NumMatrix<data_t> M(N+1,N+1);
+    for(int n1=0; n1 <= N; n1++)
+      for(int n2=0; n2 <= N-n1; n2++)
+	M(n2,n1) = mo(n1,n2); // transpose to have correctly oriented image
+    IO::writeFITSImage(fptr,M);
+    IO::updateFITSKeyword(fptr,"ID",id,"object ID");
+    IO::updateFITSKeyword(fptr,"WIDTH",scale,"weighting function width");
+    IO::updateFITSKeyword(fptr,"EPS",eps,"weighting function ellipticity");
+    IO::updateFITSKeyword(fptr,"C",C,"deweighting correction order");
+    IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong(),"deweighted/deconvolved");
+    IO::closeFITSFile(fptr);
+  }
   
   // determine optimal weighting parameters, centroid, and ellipticity
   void DEIMOS::focus(Object& obj, int N) {
@@ -61,42 +72,49 @@ namespace shapelens {
     Point<data_t> centroid_shift;
     while (true) {
       iter++;
+      //std::cout << "# " << eps << "\t" << obj.centroid << "\t" << scale << std::endl;
       DEIMOSWeightFunction w(scale, obj.centroid, eps);
       mo = MomentsOrdered(obj, w, N + C);
       flags.reset(0);
-      flags.reset(1);
 
       // do initial centroiding and ellipticty estimates
       // from weighted moments: more stable
-      centroid_shift(0) = mo(1,0)/mo(0,0);
-      centroid_shift(1) = mo(0,1)/mo(0,0);
-      obj.centroid += centroid_shift;
-      eps = epsilon();
+      centroid_shift(0) = std::min(0.2, mo(1,0)/mo(0,0));
+      centroid_shift(1) = std::min(0.2, mo(0,1)/mo(0,0));
+      complex<data_t> eps_ = epsilon();
+
+      // FIXME: for small galaxies, deweighting from the measured
+      //   instead of the applied ellipticity improves the estimates
+      //   of the deconvolved ellipticity significantly.
+      //   For larger objects, it leads to an overestimation
+      // eps = epsilon();
+
       data_t trQ = mo(2,0) + mo(0,2);
       data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
-      data_t newscale = sqrt(trQs/mo(0,0));
+      data_t scale_ = std::min(4., sqrt(trQs/mo(0,0)));
 
       // deweight now and check whether |ellipticity| < 1
       // if so: use deweighted values, otherwise weighted ones
       MomentsOrdered mo_tmp = mo;
       deweight();
       if (abs(epsilon()) < 0.9 && mo(2,0) > 0 && mo(0,2) > 0) {
-	// use new centroid correction, remove old one
-	obj.centroid(0) += mo(1,0)/mo(0,0) - centroid_shift(0);
-	obj.centroid(1) += mo(0,1)/mo(0,0) - centroid_shift(1);
-	eps = epsilon();
+	centroid_shift(0) = std::min(0.2, mo(1,0)/mo(0,0));
+	centroid_shift(1) = std::min(0.2, mo(0,1)/mo(0,0));
+	eps_ = epsilon();
 	trQ = mo(2,0) + mo(0,2);
 	trQs = trQ*(1-gsl_pow_2(abs(eps)));
-	scale = sqrt(trQs/mo(0,0));
+	scale_ = std::min(4., sqrt(trQs/mo(0,0)));
       } else {
 	mo = mo_tmp;
-	mo.setOrder(N);
-	flags.set(0);
-	flags.set(1);
-	scale = newscale;
       }
+
       if (iter >= 20) // stop after 20 iterations
 	break;
+
+      // set new parameters for weighting
+      obj.centroid += centroid_shift;
+      scale = scale_;
+      eps = eps_;
     }
   }
 
@@ -247,42 +265,48 @@ namespace shapelens {
   }
 
   
-//   // #### DEIMOSList ####
-//   DEIMOSList::DEIMOSList() : std::vector<boost::shared_ptr<DEIMOS> >() {}
+  // #### DEIMOSList ####
+  DEIMOSList::DEIMOSList() : std::vector<boost::shared_ptr<DEIMOS> >() {}
 
-//   DEIMOSList::DEIMOSList(SQLiteDB& sql, std::string table, std::string where) :
-//     std::vector<boost::shared_ptr<DEIMOS> > () {
+  DEIMOSList::DEIMOSList(SQLiteDB& sql, std::string table, std::string where) :
+    std::vector<boost::shared_ptr<DEIMOS> > () {
     
-//   }
-//   void DEIMOSList::save(SQLiteDB& sql, std::string table) const {
-//     // drop table: faster than deleting its entries
-//     std::string query = "DROP TABLE IF EXISTS " + table + ";";
-//     sql.query(query);
+  }
+  void DEIMOSList::save(SQLiteDB& sql, std::string table) const {
+    // drop table: faster than deleting its entries
+    std::string query = "DROP TABLE IF EXISTS " + table + ";";
+    sql.query(query);
 
-//     // create it
-//     query = "CREATE TABLE " + table + "(";
-//     query += "`id` int NOT NULL PRIMARY KEY,";
-//     query += "`width` float NOT NULL,";
-//     query += "`flags` int NOT NULL,";
-//     query += "`mo` blob NOT NULL);";
-//     sql.query(query); 
+    // create it
+    query = "CREATE TABLE " + table + "(";
+    query += "`id` int NOT NULL PRIMARY KEY,";
+    query += "`width` float NOT NULL,";
+    query += "`eps1` float NOT NULL,";
+    query += "`eps2` float NOT NULL,";
+    query += "`c` int NOT NULL,";
+    query += "`flags` int NOT NULL,";
+    query += "`mo` blob NOT NULL);";
+    sql.query(query); 
     
-//     // create prepared statement
-//     sqlite3_stmt *stmt;
-//     query = "INSERT INTO `" + table + "` VALUES (?,?,?,?);";
-//     sql.checkRC(sqlite3_prepare_v2(sql.db, query.c_str(), query.size(), &stmt, NULL));
-//     for(DEIMOSList::const_iterator iter = DEIMOSList::begin(); iter != DEIMOSList::end(); iter++) {
-//       const DEIMOS& d = *(*iter);
-//       sql.checkRC(sqlite3_bind_int(stmt,1,d.id));
-//       sql.checkRC(sqlite3_bind_double(stmt,2,d.width));
-//       sql.checkRC(sqlite3_bind_int(stmt,3,d.flags.to_ulong()));
-//       sql.checkRC(sqlite3_bind_blob(stmt,4,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
-//       if(sqlite3_step(stmt)!=SQLITE_DONE)
-// 	throw std::runtime_error("ShapeletObjectDB: insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
-//       sql.checkRC(sqlite3_reset(stmt));
-//     }
-//     sql.checkRC(sqlite3_finalize(stmt));
-//   }
+    // create prepared statement
+    sqlite3_stmt *stmt;
+    query = "INSERT INTO `" + table + "` VALUES (?,?,?,?,?,?,?);";
+    sql.checkRC(sqlite3_prepare_v2(sql.db, query.c_str(), query.size(), &stmt, NULL));
+    for(DEIMOSList::const_iterator iter = DEIMOSList::begin(); iter != DEIMOSList::end(); iter++) {
+      const DEIMOS& d = *(*iter);
+      sql.checkRC(sqlite3_bind_int(stmt,1,d.id));
+      sql.checkRC(sqlite3_bind_double(stmt,2,d.scale));
+      sql.checkRC(sqlite3_bind_double(stmt,3,real(d.eps)));
+      sql.checkRC(sqlite3_bind_double(stmt,4,imag(d.eps)));
+      sql.checkRC(sqlite3_bind_int(stmt,5,d.C));
+      sql.checkRC(sqlite3_bind_int(stmt,6,d.flags.to_ulong()));
+      sql.checkRC(sqlite3_bind_blob(stmt,7,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
+      if(sqlite3_step(stmt)!=SQLITE_DONE)
+	throw std::runtime_error("ShapeletObjectDB: insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
+      sql.checkRC(sqlite3_reset(stmt));
+    }
+    sql.checkRC(sqlite3_finalize(stmt));
+  }
   
 
 } // end namespace

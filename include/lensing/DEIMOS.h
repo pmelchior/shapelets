@@ -65,16 +65,16 @@ namespace shapelens {
 
   };
 
-/*   /// Class for collections of DEIMOS instances. */
-/*   class DEIMOSList : public std::vector<boost::shared_ptr<DEIMOS> > { */
-/*   public: */
-/*     /// Default constructor. */
-/*     DEIMOSList (); */
-/*     /// Constructor from SQLite */
-/*     DEIMOSList (SQLiteDB& sql, std::string table, std::string where); */
-/*     /// Save list to table in sql. */
-/*     void save(SQLiteDB& sql, std::string table) const; */
-/*   }; */
+  /// Class for collections of DEIMOS instances.
+  class DEIMOSList : public std::vector<boost::shared_ptr<DEIMOS> > {
+  public:
+    /// Default constructor.
+    DEIMOSList ();
+    /// Constructor from SQLite
+    DEIMOSList (SQLiteDB& sql, std::string table, std::string where);
+    /// Save list to table in sql.
+    void save(SQLiteDB& sql, std::string table) const;
+  };
 
 } // end namespace
 #endif
