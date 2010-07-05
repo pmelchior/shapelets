@@ -72,49 +72,48 @@ namespace shapelens {
     Point<data_t> centroid_shift;
     while (true) {
       iter++;
-      //std::cout << "# " << eps << "\t" << obj.centroid << "\t" << scale << std::endl;
+      //std::cout << obj.id << "\t" << iter << "\t" << eps << "\t" << obj.centroid << "\t" << scale << std::endl;
+      //std::cout << obj.id << "\t" << iter << "\t" << real(eps) << "\t" << imag(eps) << "\t" << obj.centroid(0) << "\t" << obj.centroid(1) << "\t" << scale << std::endl;
       DEIMOSWeightFunction w(scale, obj.centroid, eps);
       mo = MomentsOrdered(obj, w, N + C);
       flags.reset(0);
 
-      // do initial centroiding and ellipticty estimates
-      // from weighted moments: more stable
-      centroid_shift(0) = std::min(0.2, mo(1,0)/mo(0,0));
-      centroid_shift(1) = std::min(0.2, mo(0,1)/mo(0,0));
-      complex<data_t> eps_ = epsilon();
-
-      // FIXME: for small galaxies, deweighting from the measured
+      // CAUTION: for small galaxies, deweighting from the measured weighted
       //   instead of the applied ellipticity improves the estimates
       //   of the deconvolved ellipticity significantly.
       //   For larger objects, it leads to an overestimation
-      // eps = epsilon();
+      //eps = epsilon();
 
+      // deweight now and estimate new scale, centroid and ellipticity
+      deweight();
+      centroid_shift(0) = mo(1,0)/mo(0,0);
+      centroid_shift(1) = mo(0,1)/mo(0,0);
+      complex<data_t> eps_ = epsilon();
       data_t trQ = mo(2,0) + mo(0,2);
       data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
-      data_t scale_ = std::min(4., sqrt(trQs/mo(0,0)));
+      data_t scale_ = sqrt(trQs/mo(0,0));
 
-      // deweight now and check whether |ellipticity| < 1
-      // if so: use deweighted values, otherwise weighted ones
-      MomentsOrdered mo_tmp = mo;
-      deweight();
-      if (abs(epsilon()) < 0.9 && mo(2,0) > 0 && mo(0,2) > 0) {
-	centroid_shift(0) = std::min(0.2, mo(1,0)/mo(0,0));
-	centroid_shift(1) = std::min(0.2, mo(0,1)/mo(0,0));
-	eps_ = epsilon();
-	trQ = mo(2,0) + mo(0,2);
-	trQs = trQ*(1-gsl_pow_2(abs(eps)));
-	scale_ = std::min(4., sqrt(trQs/mo(0,0)));
-      } else {
-	mo = mo_tmp;
-      }
-
-      if (iter >= 20) // stop after 20 iterations
+      if (iter >= 60)
 	break;
 
       // set new parameters for weighting
-      obj.centroid += centroid_shift;
-      scale = scale_;
-      eps = eps_;
+      data_t shift = sqrt(centroid_shift(0)*centroid_shift(0) + 
+			  centroid_shift(1)*centroid_shift(1));
+      
+      if (iter < 20) {
+	if (shift > 0.2)
+	  centroid_shift *= 0.2/shift;
+	obj.centroid += centroid_shift;
+      }
+      else if (iter < 40) {
+	//scale = std::max(1.,std::min(maxscale, scale_));
+	scale = scale_;
+      }
+      else {
+	if (abs(eps_ - eps) > 0.1)
+	  eps_ *= 0.1/abs(eps_);
+	eps = eps_;
+      }
     }
   }
 
