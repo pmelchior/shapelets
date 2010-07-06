@@ -4,9 +4,11 @@
 namespace shapelens {
 
   DEIMOS::DEIMOSWeightFunction::DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid, const complex<data_t>& eps) :
-    GaussianWeightFunction(scale,centroid),
+    GaussianWeightFunction(scale,Point<data_t>(0,0)), 
     T(0,eps) { 
-    // no need to set centroid as it is contained in 
+    // account for the centroid of the object
+    // to be subtracted off before the lensing transformation
+    T *= ShiftTransformation(centroid);
   }
 
   data_t DEIMOS::DEIMOSWeightFunction::operator()(const Point<data_t>& P_) const {
@@ -72,8 +74,6 @@ namespace shapelens {
     Point<data_t> centroid_shift;
     while (true) {
       iter++;
-      //std::cout << obj.id << "\t" << iter << "\t" << eps << "\t" << obj.centroid << "\t" << scale << std::endl;
-      //std::cout << obj.id << "\t" << iter << "\t" << real(eps) << "\t" << imag(eps) << "\t" << obj.centroid(0) << "\t" << obj.centroid(1) << "\t" << scale << std::endl;
       DEIMOSWeightFunction w(scale, obj.centroid, eps);
       mo = MomentsOrdered(obj, w, N + C);
       flags.reset(0);
@@ -93,27 +93,16 @@ namespace shapelens {
       data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
       data_t scale_ = sqrt(trQs/mo(0,0));
 
-      if (iter >= 60)
+      // FIXME: if some quantity becomes nan, we shold break and signal
+      // it in the flags.
+
+      if (iter >= 20)
 	break;
 
-      // set new parameters for weighting
-      data_t shift = sqrt(centroid_shift(0)*centroid_shift(0) + 
-			  centroid_shift(1)*centroid_shift(1));
-      
-      if (iter < 20) {
-	if (shift > 0.2)
-	  centroid_shift *= 0.2/shift;
-	obj.centroid += centroid_shift;
-      }
-      else if (iter < 40) {
-	//scale = std::max(1.,std::min(maxscale, scale_));
-	scale = scale_;
-      }
-      else {
-	if (abs(eps_ - eps) > 0.1)
-	  eps_ *= 0.1/abs(eps_);
-	eps = eps_;
-      }
+      obj.centroid += centroid_shift;
+      scale = scale_;
+      eps = eps_;
+
     }
   }
 

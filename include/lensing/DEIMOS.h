@@ -17,11 +17,8 @@ namespace shapelens {
     public:
       DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid, const complex<data_t>& eps);
       virtual data_t operator()(const Point<data_t>& P) const;
-      //void setEpsilon(const complex<data_t>& eps);
-      //const complex<data_t>& getEpsilon() const;
     private:
       LensingTransformation T;
-      //GaussianWeightFunction G;
     };
 
     /// Default constructor.
@@ -58,7 +55,7 @@ namespace shapelens {
     data_t scale;
     /// Ellipticity of weighting function
     complex<data_t> eps;
-
+    
     friend class DEIMOSList;
   private:
     void focus(Object& obj, int N);
