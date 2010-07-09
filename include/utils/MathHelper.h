@@ -30,18 +30,18 @@ namespace shapelens {
     }
   }
 
-  /// Computes the mean and variance of a series of \p x_i up to
+  /// Computes sample mean and variance of a series of \p x_i up to
   /// the index \p i.
-  void mean_variance(const data_t& x_i, int i, data_t& mean, data_t& var) {
-    if (i==0) {
-      mean = x_i;
-      var = 0;
-    } else {
-      data_t mean_j = mean;
-      mean = ((mean*i) + x_i)/(i+1);
-      var = (1-1./i)*var + (i+1)*pow_int(mean - mean_j,2);
-    }
-  }
+  /// \code
+  /// NumVector<data_t> v(N);
+  /// data_t mean, var;
+  /// for (int i=0; i < v.size(); i++) {
+  ///   v(i) = some_function();
+  ///   mean_variance(v(i), i, mean, var);
+  /// }
+  /// \endcode
+  void mean_variance(const data_t& x_i, int i, data_t& mean, data_t& var);
+
 }
 
 
