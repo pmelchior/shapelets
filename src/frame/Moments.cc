@@ -1,5 +1,5 @@
 #include "../../include/frame/Moments.h"
-#include "../../include/utils/Interpolation.h"
+#include "../../include/utils/MathHelper.h"
 
 namespace shapelens {
 
@@ -50,19 +50,6 @@ namespace shapelens {
     data_t w_;
 
     for (long i=0; i< grid.size(); i++) {
-      // Point<data_t> P = obj.grid(i), P_;
-      //     for (int n1 = 0; n1 < SUBPIXEL; n1++) {
-      //       P_(0) = P(0) + (0.5+n1)*offset - 0.5;
-      //       for (int n2 = 0; n2 < SUBPIXEL; n2++) {
-      // 	P_(1) = P(1) + (0.5+n2)*offset - 0.5;
-      // 	w_ = w(P_)/(SUBPIXEL*SUBPIXEL);
-      // 	if (obj.weight.size() != 0)
-      // 	  w_ *= obj.weight(i);
-      // 	data_t val = obj.interpolate(P_);//Interpolation::bicubic(obj,P_);
-      // 	M[0] += w_ * val * P_(0);
-      // 	M[1] += w_ * val * P_(1);
-      //       }
-      //     }
       w_ = w(grid(i));
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
@@ -88,21 +75,6 @@ namespace shapelens {
     data_t w_, diff_x, diff_y, val;
 
     for (long i=0; i< grid.size(); i++) {
-      // Point<data_t> P = obj.grid(i), P_;
-      //     for (int n1 = 0; n1 < SUBPIXEL; n1++) {
-      //       P_(0) = P(0) + (0.5+n1)*offset - 0.5;
-      //       for (int n2 = 0; n2 < SUBPIXEL; n2++) {
-      // 	P_(1) = P(1) + (0.5+n2)*offset - 0.5;
-      // 	w_ = w(P_)/(SUBPIXEL*SUBPIXEL);
-      // 	if (obj.weight.size() != 0)
-      // 	  w_ *= obj.weight(i);
-      // 	data_t val = obj.interpolate(P_);//Interpolation::bicubic(obj,P_);
-      // 	M[0] += w_ * val * gsl_pow_2(P_(0)-obj.centroid(0));
-      // 	M[1] += w_ * val * (P_(0)-obj.centroid(0))*(P_(1)-obj.centroid(1));
-      // 	M[2] += w_ * val * gsl_pow_2(P_(1)-obj.centroid(1));
-      //       }
-      //     }
-
       val = obj(i);
       w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0)-obj.centroid(0);
@@ -110,9 +82,9 @@ namespace shapelens {
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
 
-      M[0] += gsl_pow_2(diff_x) * obj(i) * w_;
+      M[0] += diff_x * diff_x * obj(i) * w_;
       M[1] += diff_x * diff_y * obj(i) * w_;
-      M[2] += gsl_pow_2(diff_y) * obj(i) * w_;
+      M[2] += diff_y * diff_y * obj(i) * w_;
     }
   }
   data_t& Moment2::operator()(bool i, bool j) {
@@ -140,10 +112,10 @@ namespace shapelens {
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
 
-      M[0] += gsl_pow_3(diff_x) * obj(i) * w_;
-      M[1] += gsl_pow_2(diff_x) * diff_y * obj(i) * w_;
-      M[2] += diff_x * gsl_pow_2(diff_y) * obj(i) * w_;
-      M[3] += gsl_pow_3(diff_y) * obj(i) * w_;
+      M[0] += pow_int(diff_x,3) * obj(i) * w_;
+      M[1] += diff_x * diff_x * diff_y * obj(i) * w_;
+      M[2] += diff_x * diff_y * diff_y * obj(i) * w_;
+      M[3] += pow_int(diff_y,3) * obj(i) * w_;
     }
   }
   data_t& Moment3::operator()(bool i, bool j, bool k) {
@@ -171,11 +143,11 @@ namespace shapelens {
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
 
-      M[0] += gsl_pow_4(diff_x) * obj(i) * w_;
-      M[1] += gsl_pow_3(diff_x) * diff_y * obj(i) * w_;
-      M[2] += gsl_pow_2(diff_x) * gsl_pow_2(diff_y) * obj(i) * w_;
-      M[3] += diff_x * gsl_pow_3(diff_y) * obj(i) * w_;
-      M[4] += gsl_pow_4(diff_y) * obj(i) * w_;
+      M[0] += pow_int(diff_x,4) * obj(i) * w_;
+      M[1] += pow_int(diff_x,3) * diff_y * obj(i) * w_;
+      M[2] += pow_int(diff_x,2) * pow_int(diff_y,2) * obj(i) * w_;
+      M[3] += diff_x * pow_int(diff_y,3) * obj(i) * w_;
+      M[4] += pow_int(diff_y,4) * obj(i) * w_;
     }
   }
   data_t& Moment4::operator()(bool i, bool j, bool k, bool l) {
@@ -203,13 +175,13 @@ namespace shapelens {
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
 
-      M[0] += gsl_pow_6(diff_x) * obj(i) * w_;
-      M[1] += gsl_pow_5(diff_x) * diff_y * obj(i) * w_;
-      M[2] += gsl_pow_4(diff_x) * gsl_pow_2(diff_y) * obj(i)* w_;
-      M[3] += gsl_pow_3(diff_x) * gsl_pow_3(diff_y) * obj(i)* w_;
-      M[4] += gsl_pow_2(diff_x) * gsl_pow_4(diff_y) * obj(i)* w_;
-      M[5] += diff_x * gsl_pow_5(diff_y) * obj(i) * w_;
-      M[6] += gsl_pow_6(diff_y) * obj(i) * w_;
+      M[0] += pow_int(diff_x,6) * obj(i) * w_;
+      M[1] += pow_int(diff_x,5) * diff_y * obj(i) * w_;
+      M[2] += pow_int(diff_x,4) * pow_int(diff_y,2) * obj(i)* w_;
+      M[3] += pow_int(diff_x,3) * pow_int(diff_y,3) * obj(i)* w_;
+      M[4] += pow_int(diff_x,2) * pow_int(diff_y,4) * obj(i)* w_;
+      M[5] += diff_x * pow_int(diff_y,5) * obj(i) * w_;
+      M[6] += pow_int(diff_y,6) * obj(i) * w_;
     }
   }
   data_t& Moment6::operator()(bool i, bool j, bool k, bool l, bool m, bool n) {
@@ -236,15 +208,15 @@ namespace shapelens {
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
 
-      M[0] += gsl_pow_8(diff_x) * val * w_;
-      M[1] += gsl_pow_7(diff_x) * diff_y * val * w_;
-      M[2] += gsl_pow_6(diff_x) * gsl_pow_2(diff_y) * val * w_;
-      M[3] += gsl_pow_5(diff_x) * gsl_pow_3(diff_y) * val * w_;
-      M[4] += gsl_pow_4(diff_x) * gsl_pow_4(diff_y) * val * w_;
-      M[5] += gsl_pow_3(diff_x) * gsl_pow_5(diff_y) * val * w_;
-      M[6] += gsl_pow_2(diff_x) * gsl_pow_6(diff_y) * val * w_;
-      M[7] += diff_x * gsl_pow_7(diff_y) * val * w_;
-      M[8] += gsl_pow_8(diff_y) * val * w_;
+      M[0] += pow_int(diff_x,8) * val * w_;
+      M[1] += pow_int(diff_x,7) * diff_y * val * w_;
+      M[2] += pow_int(diff_x,6) * pow_int(diff_y,2) * val * w_;
+      M[3] += pow_int(diff_x,5) * pow_int(diff_y,3) * val * w_;
+      M[4] += pow_int(diff_x,4) * pow_int(diff_y,4) * val * w_;
+      M[5] += pow_int(diff_x,3) * pow_int(diff_y,5) * val * w_;
+      M[6] += pow_int(diff_x,2) * pow_int(diff_y,6) * val * w_;
+      M[7] += diff_x * pow_int(diff_y,7) * val * w_;
+      M[8] += pow_int(diff_y,8) * val * w_;
     }
   }
     data_t& Moment8::operator()(bool i, bool j, bool k, bool l, bool m, bool n, bool o, bool p) {
@@ -263,6 +235,7 @@ namespace shapelens {
   MomentsOrdered::MomentsOrdered(int N_) : 
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) { }
+
 
   MomentsOrdered::MomentsOrdered(const Object& obj, const WeightFunction& w, int N_) :
     NumVector<data_t>(pyramid_num(N_+1)),
@@ -284,12 +257,13 @@ namespace shapelens {
 // 	    w_ *= obj.weight(i);
 // 	  for(int n=0; n <= N; n++)
 // 	    for(int m=0; m <= n; m++)
-// 	      operator()(m,n-m) += gsl_pow_int(diff_x,m) * gsl_pow_int(diff_y,n-m) * val * w_;
+// 	      operator()(m,n-m) += pow_int(diff_x,m) * pow_int(diff_y,n-m) * val * w_;
 // 	}
 //       }
 //     }
 
-    data_t w_, diff_x, diff_y, val;
+    data_t w_, diff_x, diff_y, val, pow_m;
+    NumVector<data_t> pow_x(N+1), pow_y(N+1);
     for (long i=0; i< obj.grid.size(); i++) {
       val = obj(i);
       w_ = w(obj.grid(i));
@@ -297,9 +271,15 @@ namespace shapelens {
       diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
+
+      for (int i=0; i <= N; i++) {
+	pow_x(i) = pow_int(diff_x,i);
+	pow_y(i) = pow_int(diff_y,i);
+      }
       for(int n=0; n <= N; n++)
-	for(int m=0; m <= n; m++)
-	  operator()(m,n-m) += gsl_pow_int(diff_x,m) * gsl_pow_int(diff_y,n-m) * val * w_;
+	for(int m=0; m <= n; m++) {
+	  operator()(m,n-m) += pow_x(m) * pow_y(n-m) * val * w_;
+      }
     }
   }
 

@@ -3,16 +3,14 @@
 
 namespace shapelens {
 
-  DEIMOS::DEIMOSWeightFunction::DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid, const complex<data_t>& eps) :
-    GaussianWeightFunction(scale,Point<data_t>(0,0)), 
+  DEIMOS::DEIMOSWeightFunction::DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid_, const complex<data_t>& eps) :
+    GaussianWeightFunction(scale,Point<data_t>(0,0)),
+    centroid(centroid_),
     T(0,eps) { 
-    // account for the centroid of the object
-    // to be subtracted off before the lensing transformation
-    T *= ShiftTransformation(centroid);
   }
 
   data_t DEIMOS::DEIMOSWeightFunction::operator()(const Point<data_t>& P_) const {
-    Point<data_t> P = P_;
+    Point<data_t> P = P_ - centroid;
     T.inverse_transform(P);
     return GaussianWeightFunction::operator()(P);
   }
@@ -48,7 +46,7 @@ namespace shapelens {
     }
     int f;
     IO::readFITSKeyword(fptr,"FLAGS",f);
-    flags = std::bitset<2>(f);
+    flags = std::bitset<3>(f);
     IO::closeFITSFile(fptr);
   }
 
@@ -70,10 +68,11 @@ namespace shapelens {
   
   // determine optimal weighting parameters, centroid, and ellipticity
   void DEIMOS::focus(Object& obj, int N) {
-    int iter = 0;
+    int iter = 0, maxiter = 15, run = 0;
     Point<data_t> centroid_shift;
+    
     while (true) {
-      iter++;
+      
       DEIMOSWeightFunction w(scale, obj.centroid, eps);
       mo = MomentsOrdered(obj, w, N + C);
       flags.reset(0);
@@ -82,57 +81,79 @@ namespace shapelens {
       //   instead of the applied ellipticity improves the estimates
       //   of the deconvolved ellipticity significantly.
       //   For larger objects, it leads to an overestimation
-      //eps = epsilon();
+      complex<data_t> eps_ = eps;
+      if (run > 0) // don't do it in the inital run: too instable
+	eps = epsilon();
 
       // deweight now and estimate new scale, centroid and ellipticity
-      deweight();
+      deweight(false);
+      eps = eps_; // undo change from above
+      
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
-      complex<data_t> eps_ = epsilon();
+      eps_ = epsilon();
       data_t trQ = mo(2,0) + mo(0,2);
       data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
       data_t scale_ = sqrt(trQs/mo(0,0));
-
-      // FIXME: if some quantity becomes nan, we shold break and signal
-      // it in the flags.
-
-      if (iter >= 20)
+      
+      
+      // if ellipticity explode: stop iterations
+      if (abs(chi()) > 1 || isnan(real(eps_))) {
+	flags.set(2);
 	break;
+      }
 
-      obj.centroid += centroid_shift;
-      scale = scale_;
-      eps = eps_;
+      iter++;
+      if (iter < 5)
+	obj.centroid += centroid_shift;
+      else if (iter < 10)
+	scale = scale_;
+      else
+	eps = eps_;
 
+      // repeat same series of iteration again
+      // but only one other time
+      if (iter == maxiter) {
+	if (run == 1) {
+	  if (C > 0)
+	    mo.setOrder(N);
+	  break;
+	} else {
+	  iter = 0;
+	  run++;
+	}
+      }
     }
   }
 
-  void DEIMOS::deweight() {
+  void DEIMOS::deweight(bool resize) {
     // check if already deweighted
     if (!flags.test(0)) {
 
-      data_t c1 = gsl_pow_2(1-real(eps)) + gsl_pow_2(imag(eps));
-      data_t c2 = gsl_pow_2(1+real(eps)) + gsl_pow_2(imag(eps));
+      data_t e1 = real(eps);
       data_t e2 = imag(eps);
+      data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
+      data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
 
       data_t s2 = gsl_pow_2(scale);
       data_t s4 = gsl_pow_4(scale);
       data_t s6 = gsl_pow_6(scale);
 
-      int N = mo.getOrder();
+      int N = mo.getOrder() - C;
       for (int n=0; n <= N; n++) {
 	for (int m=0; m <= n; m++) {
-	  if (C >= 2 && n <= N - 2) { 
+	  if (C >= 2) { 
 	    mo(m,n-m) += (c1/2*mo(m+2,n-m) - 2*e2*mo(m+1,n-m+1) +
 			  c2/2*mo(m,n-m+2))/s2;
 	  }
-	  if (C >= 4 && n <= N - 4) {
+	  if (C >= 4) {
 	    mo(m,n-m) += (c1*c1/8*mo(m+4,n-m) - 
 			  c1*e2*mo(m+3,n-m+1)  +
 			  (c1*c2/4 + 2*e2*e2)*mo(m+2,n-m+2) -
 			  c2*e2*mo(m+1,n-m+3) +
 			  c2*c2/8*mo(m,n-m+4))/s4;
 	  }
-	  if (C >= 6 && n <= N - 6) {
+	  if (C >= 6) {
 	    mo(m,n-m) += (c1*c1*c1/48*mo(m+6,n-m) -
 			  c1*c1*e2/4*mo(m+5,n-m+1) +
 			  (c1*c1*c2/16 + c1*e2*e2)*mo(m+4,n-m+2) -
@@ -144,8 +165,8 @@ namespace shapelens {
 	}
       }
 	
-      if (C > 0) {
- 	mo.setOrder(N-C);
+      if (C > 0 && resize) {
+ 	mo.setOrder(N);
       }
     
       // note in flags
@@ -290,7 +311,7 @@ namespace shapelens {
       sql.checkRC(sqlite3_bind_int(stmt,6,d.flags.to_ulong()));
       sql.checkRC(sqlite3_bind_blob(stmt,7,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
       if(sqlite3_step(stmt)!=SQLITE_DONE)
-	throw std::runtime_error("ShapeletObjectDB: insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
+	throw std::runtime_error("DEIMOSList::save() insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
       sql.checkRC(sqlite3_reset(stmt));
     }
     sql.checkRC(sqlite3_finalize(stmt));

@@ -19,6 +19,7 @@ namespace shapelens {
       virtual data_t operator()(const Point<data_t>& P) const;
     private:
       LensingTransformation T;
+      const Point<data_t>& centroid;
     };
 
     /// Default constructor.
@@ -30,7 +31,7 @@ namespace shapelens {
     /// Save to a file.
     void save(std::string filename) const;
     /// Correct the moments for the application of \p obj.w.
-    void deweight();
+    void deweight(bool resize=true);
     /// Deconvolve \p obj from \p psf.
     void deconvolve(const DEIMOS& psf);
     /// Get complex ellipticity from mo.
@@ -48,7 +49,7 @@ namespace shapelens {
     /// The transformation flags.
     /// If the zeroth bit is set, the moments are deweighted, if the first
     /// one is set, they are deconvolved.
-    std::bitset<2> flags;
+    std::bitset<3> flags;
     /// Object id.
     unsigned long id;
     /// Width of the weighting function.
