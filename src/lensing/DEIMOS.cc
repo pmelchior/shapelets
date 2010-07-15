@@ -65,62 +65,58 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong(),"deweighted/deconvolved");
     IO::closeFITSFile(fptr);
   }
+
+  complex<data_t> DEIMOS::epsilon_limited() {
+    complex<data_t> c = chi();
+    // limit chi to an absolute value
+    // which corresponds to an ellipticity of 0.99
+    data_t limit_eps = 0.99;
+    data_t limit_chi = 2*limit_eps/(1 + limit_eps*limit_eps);
+    if (abs(c) > limit_chi)
+      c *= limit_chi/abs(c);
+    // transform chi to epsilon
+    return c/(1+sqrt(1-gsl_pow_2(abs(c))));
+  }
   
   // determine optimal weighting parameters, centroid, and ellipticity
   void DEIMOS::focus(Object& obj, int N) {
-    int iter = 0, maxiter = 15, run = 0;
+    int iter = 0, maxiter = 10, run = 0, maxrun = 1;
     Point<data_t> centroid_shift;
     
     while (true) {
       
       DEIMOSWeightFunction w(scale, obj.centroid, eps);
+      //std::cout << run << "\t" << iter << "\t" << obj.centroid << "\t" << scale << "\t" << eps << std::endl;
       mo = MomentsOrdered(obj, w, N + C);
       flags.reset(0);
 
-      // CAUTION: for small galaxies, deweighting from the measured weighted
-      //   instead of the applied ellipticity improves the estimates
-      //   of the deconvolved ellipticity significantly.
-      //   For larger objects, it leads to an overestimation
-      complex<data_t> eps_ = eps;
-      if (run > 0) // don't do it in the inital run: too instable
-	eps = epsilon();
-
       // deweight now and estimate new scale, centroid and ellipticity
       deweight(false);
-      eps = eps_; // undo change from above
-      
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
-      eps_ = epsilon();
+      complex<data_t> eps_ = epsilon_limited(); //stabilized epsilon
       data_t trQ = mo(2,0) + mo(0,2);
       data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
       data_t scale_ = sqrt(trQs/mo(0,0));
       
-      
-      // if ellipticity explode: stop iterations
-      if (abs(chi()) > 1 || isnan(real(eps_))) {
-	flags.set(2);
-	break;
-      }
-
       iter++;
       if (iter < 5)
 	obj.centroid += centroid_shift;
-      else if (iter < 10)
-	scale = scale_;
-      else
+      else {
 	eps = eps_;
+	//scale = scale_;
+      }
 
       // repeat same series of iteration again
       // but only one other time
       if (iter == maxiter) {
-	if (run == 1) {
+	run++;
+	if (run == maxrun) {
 	  if (C > 0)
 	    mo.setOrder(N);
 	  break;
 	} else {
 	  iter = 0;
-	  run++;
 	}
       }
     }

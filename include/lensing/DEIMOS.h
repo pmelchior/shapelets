@@ -60,7 +60,7 @@ namespace shapelens {
     friend class DEIMOSList;
   private:
     void focus(Object& obj, int N);
-
+    complex<data_t> epsilon_limited();
   };
 
   /// Class for collections of DEIMOS instances.
