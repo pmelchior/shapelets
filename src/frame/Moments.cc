@@ -229,15 +229,15 @@ namespace shapelens {
 
 
 
-  MomentsOrdered::MomentsOrdered() :
+  Moments::Moments() :
     NumVector<data_t>(),
     N(0) { }
-  MomentsOrdered::MomentsOrdered(int N_) : 
+  Moments::Moments(int N_) : 
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) { }
 
 
-  MomentsOrdered::MomentsOrdered(const Object& obj, const WeightFunction& w, int N_) :
+  Moments::Moments(const Object& obj, const WeightFunction& w, int N_) :
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) {
     //    int SUBPIXEL = 2;
@@ -283,35 +283,35 @@ namespace shapelens {
     }
   }
 
-  data_t& MomentsOrdered::operator()(unsigned int px, unsigned int py) {
+  data_t& Moments::operator()(unsigned int px, unsigned int py) {
     return NumVector<data_t>::operator()(pyramid_num(px+py)+py);
   }
 
-  const data_t& MomentsOrdered::operator()(unsigned int px, unsigned int py) const {
+  const data_t& Moments::operator()(unsigned int px, unsigned int py) const {
     return NumVector<data_t>::operator()(pyramid_num(px+py)+py);
   }
 
-  data_t& MomentsOrdered::operator()(unsigned int i) {
+  data_t& Moments::operator()(unsigned int i) {
     return NumVector<data_t>::operator()(i);
   }
 
-  const data_t& MomentsOrdered::operator()(unsigned int i) const {
+  const data_t& Moments::operator()(unsigned int i) const {
     return NumVector<data_t>::operator()(i);
   }
 
-  int MomentsOrdered::getOrder() const {
+  int Moments::getOrder() const {
     return N;
   }
 
-  void MomentsOrdered::setOrder(int N_) {
+  void Moments::setOrder(int N_) {
     N = N_;
     NumVector<data_t>::resize(pyramid_num(N+1));
   }
   
-  int MomentsOrdered::getIndex(unsigned int px, unsigned int py) const {
+  int Moments::getIndex(unsigned int px, unsigned int py) const {
     return pyramid_num(px+py)+py;
   }
-  unsigned int MomentsOrdered::pyramid_num(int n) const {
+  unsigned int Moments::pyramid_num(int n) const {
     return (n*(n+1))/2;
   }
 

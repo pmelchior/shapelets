@@ -43,7 +43,9 @@ namespace shapelens {
     /// Get second flexion distortion from mo.
     complex<data_t> delta() const;
     /// The ordered set of multipole moments.
-    MomentsOrdered mo;
+    Moments mo;
+    /// The ordered set of multipole moment errors.
+    Moments mo_noise;
     /// Deweighting order.
     int C;
     /// The transformation flags.
@@ -59,8 +61,9 @@ namespace shapelens {
     
     friend class DEIMOSList;
   private:
-    void focus(Object& obj, int N);
+    void match(Object& obj, int N);
     complex<data_t> epsilon_limited();
+    void estimateErrors(const Object& obj, int N);
   };
 
   /// Class for collections of DEIMOS instances.

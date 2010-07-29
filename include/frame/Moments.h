@@ -137,15 +137,15 @@ class Moment8 {
 /// Container class for arbitrary moments of a two-dimensional quantity.
 /// Access is provided by an index or by the moment power in x and y.\n
 /// All moments are computed in one sweep over the data.
-class MomentsOrdered : public NumVector<data_t> {
+class Moments : public NumVector<data_t> {
 public:
   /// Default constructor
-  MomentsOrdered();
+  Moments();
   /// Constructor for moments up to order \p N.
-  MomentsOrdered(int N);
+  Moments(int N);
   /// Constructor for moments up to order \p N.
   /// The moments are populated from \p obj.
-  MomentsOrdered(const Object& obj, const WeightFunction& w, int N);
+  Moments(const Object& obj, const WeightFunction& w, int N);
   /// Access operator for vector index.
   data_t& operator()(unsigned int i);
   /// Access operator for vector index.
