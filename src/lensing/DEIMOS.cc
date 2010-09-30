@@ -9,16 +9,22 @@ namespace shapelens {
     T(0,eps) { 
   }
 
+  DEIMOS::DEIMOSWeightFunction::DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid_, const complex<data_t>& eps, const complex<data_t>& G) :
+    GaussianWeightFunction(scale,Point<data_t>(0,0)),
+    centroid(centroid_),
+    T(0,eps,complex<data_t>(0,0), G) { 
+  }
+
   data_t DEIMOS::DEIMOSWeightFunction::operator()(const Point<data_t>& P_) const {
     Point<data_t> P = P_ - centroid;
     T.inverse_transform(P);
     return GaussianWeightFunction::operator()(P);
   }
 
-  DEIMOS::DEIMOS() : id(0), flags(0), scale(0), eps(0,0), C(0) {}
+  DEIMOS::DEIMOS() : id(0), flags(0), scale(0), eps(0,0), G(0,0), C(0), flexed(false) {}
 
-  DEIMOS::DEIMOS (Object& obj, int N, int C_, data_t scale_) :
-    id(obj.id), flags(0), scale(scale_), eps(0,0), C(C_) {
+  DEIMOS::DEIMOS (Object& obj, int N, int C_, data_t scale_, bool flexed_) :
+    id(obj.id), flags(0), scale(scale_), eps(0,0), C(C_), flexed(flexed_) {
     // measure moments within optimized weighting function
     match(obj,N);
   }
@@ -81,19 +87,28 @@ namespace shapelens {
   // determine optimal weighting parameters, centroid, and ellipticity
   void DEIMOS::match(Object& obj, int N) {
     int iter = 0, maxiter = 12, run = 0, maxrun = 1;
-    data_t centroiding_scale = 2, eps_scale = scale;
+    if (flexed) 
+      maxrun++;
+
+    data_t centroiding_scale = 1.5, eps_scale = scale;
     Point<data_t> centroid_shift;
-    
+
     while (true) {
       // set smaller scale for centroid determination
-      if (iter < maxiter/2)
+      if ((!flexed && iter < maxiter/2) || (flexed && iter < maxiter/3))
 	scale = centroiding_scale;
       else // fall back to desired scale for eps determination
 	scale = eps_scale;
 
       // define weight function and measure moments
-      DEIMOSWeightFunction w(scale, obj.centroid, eps);
-      mo = Moments(obj, w, N + C);
+      DEIMOSWeightFunction* w;
+      //std::cout << iter << "\t" << scale << "\t" << obj.centroid << "\t" << eps << "\t" << G << std::endl;
+      if (flexed) 
+	w = new DEIMOSWeightFunction(scale, obj.centroid, eps, G);
+      else
+	w = new DEIMOSWeightFunction(scale, obj.centroid, eps);
+
+      mo = Moments(obj, *w, N + C);
       flags.reset(0);
 
       // deweight now and estimate new centroid and ellipticity
@@ -105,12 +120,24 @@ namespace shapelens {
       data_t trQ = mo(2,0) + mo(0,2);
       data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
       data_t scale_ = sqrt(trQs/mo(0,0));
+      if (flexed) {
+	complex<data_t> delta_ = delta();  // second flexion distortion
       
-      if (iter < maxiter/2)
-	obj.centroid += centroid_shift;
+	if (iter < maxiter/3)
+	  obj.centroid += centroid_shift;
+	else if (iter < 2*maxiter/3) {
+	  eps = eps_;
+	  //scale = scale_;
+	} else
+	  G = (4./3) * delta_;
+      }
       else {
-	eps = eps_;
-	//scale = scale_;
+	if (iter < maxiter/2)
+	  obj.centroid += centroid_shift;
+	else {
+	  eps = eps_;
+	  //scale = scale_;
+	}
       }
 
       // repeat same series of iteration again
@@ -126,6 +153,8 @@ namespace shapelens {
 	}
       }
       iter++;
+
+      delete w;
     }
 
 
@@ -224,6 +253,8 @@ namespace shapelens {
 
       data_t e1 = real(eps);
       data_t e2 = imag(eps);
+      data_t G1 = real(G);
+      data_t G2 = imag(G);
       data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
       data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
 
@@ -238,12 +269,21 @@ namespace shapelens {
 	    mo(m,n-m) += (c1/2*mo(m+2,n-m) - 2*e2*mo(m+1,n-m+1) +
 			  c2/2*mo(m,n-m+2))/s2;
 	  }
+	  if (C >= 3 && flexed) {
+	    mo(m,n-m) += ((-G1 + e1*G1 + e2*G2)*mo(m+3,n-m) +
+			  (-e2*G1 - 3*G2 + e1*G2)*mo(m+2,n-m+1) +
+			  (3*G1 + e1*G1 + e2*G2)*mo(m+1,n-m+2) +
+			  (-e2*G1 + G2 + e1*G2)*mo(m,n-m+4))/(4*s2);
+	  }
 	  if (C >= 4) {
 	    mo(m,n-m) += (c1*c1/8*mo(m+4,n-m) - 
 			  c1*e2*mo(m+3,n-m+1)  +
 			  (c1*c2/4 + 2*e2*e2)*mo(m+2,n-m+2) -
 			  c2*e2*mo(m+1,n-m+3) +
 			  c2*c2/8*mo(m,n-m+4))/s4;
+	    if (flexed)
+	      mo(m,n-m) += (G1*G1 + G2*G2)*(mo(m+4,n-m) + mo(m+2,n-m+2) +
+					    mo(m,n-m+4))/(8*s2);
 	  }
 	  if (C >= 6) {
 	    mo(m,n-m) += (c1*c1*c1/48*mo(m+6,n-m) -
@@ -266,62 +306,56 @@ namespace shapelens {
     }
   }
 
-  // helper class
-  class BinoMo {
-  public:
-    BinoMo(const Moments& mo_) : mo(mo_) {
-    }
-    data_t operator()(int i, int j) const {
-      return binomial(i+j,i) * mo(i,j);
-    }
-  private:
-    const Moments& mo;
-    NumMatrix<unsigned int> binom;
-    // CAUTION: this overflows for n > 10!!!
-    unsigned long factorial(int n) const {
-      unsigned long f = 1;
-      for (int m=2; m <= n; m++)
-	f *= m;
-      return f;
-    }
-    unsigned long binomial(int n, int m) const {
-      return factorial(n)/(factorial(m)*factorial(n-m));
-    }
-  };
-  
+  // CAUTION: this overflows for n > 10!!!
+  unsigned long factorial(int n) {
+    unsigned long f = 1;
+    for (int m=2; m <= n; m++)
+      f *= m;
+    return f;
+  }
+  unsigned long binomial(int n, int m) {
+    return factorial(n)/(factorial(m)*factorial(n-m));
+  }
+
   void DEIMOS::deconvolve(const DEIMOS& psf) {
-    // set up easy access
-    BinoMo b(mo), c(psf.mo);
-    int Nmin = std::min(psf.mo.getOrder(),mo.getOrder());
-    // no change for monopole: m(0,0) = b(0,0);
-    if (Nmin > 0) {
-      mo(0,1) -= b(0,0)*c(0,1);
-      mo(1,0) -= b(0,0)*c(1,0);
-      if (Nmin > 1) {
-	mo(0,2) -= b(0,0)*c(0,2) + 2*b(0,1)*c(0,1);
-	mo(1,1) -= 0.5*(b(0,0)*c(1,1) + 2*(b(0,1)*c(1,0) + b(1,0)*c(0,1)));
-	mo(2,0) -= b(0,0)*c(2,0) + 2*b(1,0)*c(1,0);
-	if (Nmin > 2) {
-	  mo(0,3) -= b(0,0)*c(0,3) + 3*b(0,1)*c(0,2) + 3*b(0,2)*c(0,1);
-	  mo(1,2) -= 1./3*(b(0,0)*c(1,2) + 3*(b(0,1)*c(1,1) + b(1,0)*c(0,2)) + 3*(b(0,2)*c(1,0) + b(1,1)*c(0,1)));
-	  mo(2,1) -= 1./3*(b(0,0)*c(2,1) + 3*(b(0,1)*c(2,0) + b(1,0)*c(1,1)) + 3*(b(1,1)*c(1,0) + b(2,0)*c(0,1)));
-	  mo(3,0) -= b(0,0)*c(3,0) + 3*b(1,0)*c(2,0) + 3*b(2,0)*c(1,0);
-	  if (Nmin > 3) {
-	    mo(0,4) -= b(0,0)*c(0,4) + 4*(b(0,1)*c(0,3) + b(0,3)*c(0,1)) + 6*b(0,2)*c(0,2);
-	    mo(1,3) -= 1./4*(b(0,0)*c(1,3) + 4*(b(0,1)*c(1,2) + b(1,0)*c(0,3)) + 6*(b(0,2)*c(1,1) + b(1,1)*c(0,2)) + 4*(b(0,3)*c(1,0) + b(1,2)*c(0,1)));
-	    mo(2,2) -= 1./6*(b(0,0)*c(2,2) + 4*(b(0,1)*c(2,1) + b(1,0)*c(1,2)) + 6*(b(0,2)*c(2,0) + b(1,1)*c(1,1) + b(2,0)*c(0,2)) + 4*(b(1,2)*c(1,0) + b(2,1)*c(0,1)));
-	    mo(3,1) -= 1./4*(b(0,0)*c(3,1) + 4*(b(0,1)*c(3,0) + b(1,0)*c(2,1)) + 6*(b(1,1)*c(2,0) + b(2,0)*c(1,1)) + 4*(b(2,1)*c(1,0) + b(3,0)*c(0,1)));
-	    mo(4,0) -= b(0,0)*c(4,0) + 4*(b(1,0)*c(3,0) + b(3,0)*c(1,0)) + 6*b(2,0)*c(2,0);
+    if (!flags.test(1)) {
+      int Nmin = std::min(psf.mo.getOrder(),mo.getOrder());
+      Moments& g = mo, p = psf.mo;
+      // use explicit relations for up to 2nd moments
+      g(0,0) /= p(0,0);
+      if (Nmin >= 1) {
+	g(0,1) -= g(0,0)*p(0,1);
+	g(0,1) /= p(0,0);
+	g(1,0) -= g(0,0)*p(1,0);
+	g(1,0) /= p(0,0);
+	if (Nmin >= 2) {
+	  g(0,2) -= g(0,0)*p(0,2) + 2*g(0,1)*p(0,1);
+	  g(0,2) /= p(0,0);
+	  g(1,1) -= g(0,0)*p(1,1) + g(0,1)*p(1,0) + g(1,0)*p(0,1);
+	  g(1,1) /= p(0,0);
+	  g(2,0) -= g(0,0)*p(2,0) + 2*g(1,0)*p(1,0);
+	  g(2,0) /= p(0,0);
+	  if (Nmin >= 3) {
+	    // use general formula (9)
+	    for (int n=3; n <= Nmin; n++) {
+	      for (int i=0; i <= n; i++) {
+		int j = n-i;
+		for (int k=0; k <= i-1; k++)
+		  for (int l=0; l <= j-1; l++)
+		    g(i,j) -= binomial(i,k)*binomial(j,l)*g(k,l)*p(i-k,j-l);
+		for (int k=0; k <= i-1; k++)
+		  g(i,j) -= binomial(i,k)*g(k,j)*p(i-k,0);
+		for (int l=0; l <= j-1; l++)
+		  g(i,j) -= binomial(j,l)*g(i,l)*p(0,j-l);
+		g(i,j) /= p(0,0);
+	      }
+	    }
 	  }
 	}
       }
+      // note in flags
+      flags.set(1);
     }
-    // correction for psf monopole different from unity
-    mo /= c(0,0);
-
-    // note in flags
-    flags.set(1);
-
   }
 
   complex<data_t> DEIMOS::epsilon() const {
