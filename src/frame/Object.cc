@@ -7,15 +7,13 @@ using namespace shapelens;
 Object::Object() : Image<data_t>(), segMap() {
   id = 0;
   flags = 0;
-  classifier = 0;
-  flux = centroid(0) = centroid(1) = 0;
+  centroid(0) = centroid(1) = 0;
 }
 
 Object::Object (const Image<data_t>& base) : Image<data_t>(base), segMap()  {
   id = 0;
   flags = 0;
-  classifier = 0;
-  flux = centroid(0) = centroid(1) = 0;
+  centroid(0) = centroid(1) = 0;
 }
 
 void Object::operator=(const Image<data_t>& base) {
@@ -45,13 +43,11 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
   centroid(1) = imag(xc);
-  IO::readFITSKeyword(fptr,"FLUX",flux);
   IO::readFITSKeyword(fptr,"BG_MEAN",noise_mean);
   IO::readFITSKeyword(fptr,"BG_RMS",noise_rms);
   unsigned long f;
   IO::readFITSKeyword(fptr,"FLAG",f);
   flags = std::bitset<8>(f);
-  IO::readFITSKeyword(fptr,"CLASSIFIER",classifier);
   
   // read history
   std::string hstr;
@@ -100,13 +96,11 @@ void Object::save(std::string filename) {
   IO::updateFITSKeyword(outfptr,"ID",id,"object id");
   IO::updateFITSKeyword(outfptr,"XMIN",Image<data_t>::grid.getStartPosition(0),"min(X) in image pixels");
   IO::updateFITSKeyword(outfptr,"YMIN",Image<data_t>::grid.getStartPosition(1),"min(Y) in image pixels");
-  IO::updateFITSKeyword(outfptr,"FLUX",flux,"flux in ADUs");
   complex<data_t> xc(centroid(0),centroid(1));
   IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
   IO::updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
   IO::updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");
   IO::updateFITSKeyword(outfptr,"FLAG",flags.to_ulong(),"extraction flags");
-  IO::updateFITSKeyword(outfptr,"CLASSIFIER",classifier,"object classifier");
   IO::appendFITSHistory(outfptr,Image<data_t>::history.str());
 
   // save segMap
@@ -125,57 +119,10 @@ void Object::save(std::string filename) {
   IO::closeFITSFile(outfptr);
 }
 
-void Object::computeFlux() {
-  const NumVector<data_t>& data = *this;
-  const Grid& grid = Image<data_t>::grid;
-  flux = 0;
-  // check if weights are available: if yes, use them
-  if (weight.size() != 0) {
-    data_t sum_weights = 0;
-    for (long i=0; i< grid.size(); i++) {
-      if (weight(i) > 0) {
-	flux += data(i) * weight(i);
-	sum_weights += weight(i);
-      }
-    }
-    flux /= sum_weights;
-  }
-  else // unweigthed
-    for (long i=0; i< grid.size(); i++)
-      flux += data(i);
-}
-
 void Object::computeCentroid() {
   const NumVector<data_t>& data = *this;
   const Grid& grid = Image<data_t>::grid;
-  centroid(0) = centroid(1) = 0;
-  // check if weights are available: if yes, use them
-  if (weight.size() != 0) {
-    data_t sum_weights = 0;
-    for (long i=0; i< grid.size(); i++) {
-      if (weight(i) > 0) {
-	centroid(0) += data(i) * grid(i,0) * weight(i);
-	centroid(1) += data(i) * grid(i,1) * weight(i);
-	sum_weights += weight(i);
-      }
-    }
-    centroid(0) /= flux * sum_weights;
-    centroid(1) /= flux * sum_weights;
-  }
-  else { // unweighted
-    for (long i=0; i< grid.size(); i++) {
-      centroid(0) += grid(i,0) * data(i);
-      centroid(1) += grid(i,1) * data(i);
-    }
-    centroid(0) /= flux;
-    centroid(1) /= flux;
-  }
-}
-
-void Object::computeFluxCentroid() {
-  const NumVector<data_t>& data = *this;
-  const Grid& grid = Image<data_t>::grid;
-  flux = 0;
+  data_t flux = 0;
   centroid(0) = centroid(1) = 0;
   // check if weights are available: if yes, use them
   if (weight.size() != 0) {

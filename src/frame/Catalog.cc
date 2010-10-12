@@ -64,7 +64,6 @@ void Catalog::read(string catfile) {
       // we need to subtract 1
       so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
       so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
-      so.FLUX = boost::lexical_cast<data_t>(column[format.FLUX].c_str());
       so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
       if (present.test(9))
 	so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
@@ -91,15 +90,14 @@ void Catalog::save(string catfile) const {
   catalog << "#  5 YMAX_IMAGE" << endl;
   catalog << "#  6 XCENTROID_IMAGE" << endl;
   catalog << "#  7 YCENTROID_IMAGE" << endl;
-  catalog << "#  8 FLUX" << endl;
-  catalog << "#  9 FLAGS" << endl;
+  catalog << "#  8 FLAGS" << endl;
   if (present.test(9))
-    catalog << "# 10 CLASSIFIER" << endl;
+    catalog << "# 9 CLASSIFIER" << endl;
   if (present.test(10)) {
     if (present.test(9))
-      catalog << "# 11 PARENT" << endl;
-    else
       catalog << "# 10 PARENT" << endl;
+    else
+      catalog << "# 9 PARENT" << endl;
   }
   // now all objects in Catalog
   Catalog::const_iterator iter;
@@ -111,7 +109,6 @@ void Catalog::save(string catfile) const {
     catalog << iter->second.YMAX + 1 << " ";
     catalog << iter->second.XCENTROID + 1 << " ";
     catalog << iter->second.YCENTROID + 1 << " ";
-    catalog << iter->second.FLUX << " ";
     catalog << (unsigned int) iter->second.FLAGS << " ";
     if (present.test(9))
       catalog << iter->second.CLASSIFIER << " ";
@@ -150,10 +147,6 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
     format.YCENTROID = colnr - 1;
     present[6] = 1;
   } 
-  else if (type.find("FLUX") == 0) {
-    format.FLUX = colnr - 1;
-    present[7] = 1;
-  }
   else if (type == "FLAGS") {
     format.FLAGS = colnr - 1;
     present[8] = 1;
@@ -171,8 +164,8 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
 bool Catalog::checkFormat() {
   // test if all but 9th bit are set
   // this means that CLASSIFIER is optional
-  bitset<11> mask(0);
-  mask[9] = mask[10] = 1;
+  bitset<10> mask(0);
+  mask[8] = mask[9] = 1;
   if ((present | mask).count() < 11) {
     cerr << "Catalog: mandatory catalog parameters are missing!" << endl;
     terminate();

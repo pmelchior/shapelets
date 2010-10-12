@@ -441,7 +441,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 
     // Fill other quantities into Object
     O.flags = flags;
-    O.computeFluxCentroid();
+    O.computeCentroid();
 
     // Update catalog with object values
     // therefore we need a iterator from the const_iterator
@@ -454,7 +454,6 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     write_iter->second.YMAX = ymax;
     write_iter->second.XCENTROID = O.centroid(0);
     write_iter->second.YCENTROID = O.centroid(1);
-    write_iter->second.FLUX = O.flux;
     write_iter->second.FLAGS = (unsigned char) flags.to_ulong();
     write_iter->second.CLASSIFIER = 0;
   } 
@@ -467,7 +466,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.segMap = segMap;
     if (weight.size()!=0)
       O.weight = weight;
-    O.computeFluxCentroid();
+    O.computeCentroid();
   } else {
     std::cerr << "# Frame: This Object does not exist!" << endl;
     terminate();

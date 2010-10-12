@@ -29,8 +29,6 @@ struct CatObject {
   data_t XCENTROID;
   /// <tt>Y</tt> coordinate of the centroid (alternatives: <tt>Y,Y_*,YWIN*,YPEAK*</tt>).
   data_t YCENTROID;
-  /// Flux of the Object (allowed: <tt>FLUX*</tt>).
-  data_t FLUX;
   /// Flags set by a previous segmentation software (alternatives: none).
   unsigned char FLAGS;
   /// Optional classifier of the Object (alternatives: <tt>CLASS_STAR</tt>).
@@ -121,13 +119,12 @@ class Catalog : public std::map<unsigned long, CatObject> {
     unsigned short YMAX;
     unsigned short XCENTROID;
     unsigned short YCENTROID;
-    unsigned short FLUX;
     unsigned short FLAGS;
     unsigned short CLASSIFIER;
     unsigned short PARENT;
   };
   CatFormat format;
-  std::bitset<11> present;
+  std::bitset<10> present;
   bool formatChecked;
   bool checkFormat();
   void setFormatField(std::string name, unsigned short colnr);

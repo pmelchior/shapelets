@@ -179,12 +179,9 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     }
     
     // Fill other quantities into Object
-    O.history << "# Segment:" << endl;
-    O.flux = catiter->second.FLUX;
-    O.centroid = Point<data_t>(catiter->second.XCENTROID,catiter->second.YCENTROID);
-    O.history << "# Setting catalog values: Flux = " << O.flux << ", Centroid = ("<< O.centroid(0) << "/" << O.centroid(1) << ")" << std::endl; 
+    O.centroid = Point<data_t>(catiter->second.XCENTROID,
+			       catiter->second.YCENTROID);
     O.flags = std::bitset<8>(catiter->second.FLAGS);
-    O.classifier = catiter->second.CLASSIFIER;
     O.basefilename = SExFrame::getFilename();
     if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
       O.noise_rms = bg_rms;
@@ -207,29 +204,31 @@ void SExFrame::subtractBackground() {
 // now extend to region around the object by
 // typically objectsize/2, minimum 12 pixels
 void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
-  int xrange, yrange, xborder, yborder;
-  xrange = xmax - xmin;
-  yrange = ymax - ymin;
-  if (xrange%2 == 1) {
-    xmax++;
-    xrange++;
+  if (factor > 0) {
+    int xrange, yrange, xborder, yborder;
+    xrange = xmax - xmin;
+    yrange = ymax - ymin;
+    if (xrange%2 == 1) {
+      xmax++;
+      xrange++;
+    }
+    if (yrange%2 == 1) {
+      ymax++;
+      yrange++;
+    }
+    // make the object frame square, because of const beta in both directions
+    if (xrange < yrange) {
+      yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);
+      xborder = yborder + (yrange - xrange)/2;
+    } else {
+      xborder = GSL_MAX_INT((int)floor(xrange*factor), 12);
+      yborder = xborder + (xrange - yrange)/2;
+    }
+    xmin -= xborder;
+    xmax += xborder;
+    ymin -= yborder;
+    ymax += yborder;
   }
-  if (yrange%2 == 1) {
-    ymax++;
-    yrange++;
-  }
-  // make the object frame square, because of const beta in both directions
-  if (xrange < yrange) {
-    yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);
-    xborder = yborder + (yrange - xrange)/2;
-  } else {
-    xborder = GSL_MAX_INT((int)floor(xrange*factor), 12);
-    yborder = xborder + (xrange - yrange)/2;
-  }
-  xmin -= xborder;
-  xmax += xborder;
-  ymin -= yborder;
-  ymax += yborder;
 }
 
 const SegmentationMap& SExFrame::getSegmentationMap() {
