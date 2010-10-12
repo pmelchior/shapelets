@@ -1,0 +1,132 @@
+#include "../../include/frame/HugeFrame.h"
+#include <numla/NumVectorMasked.h>
+#include <boost/tokenizer.hpp>
+#include <fstream>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_sort.h>
+#include <gsl/gsl_histogram.h>
+#include <gsl/gsl_statistics_double.h>
+#include <set>
+#include <vector>
+#include <bitset>
+
+using namespace shapelens;
+using namespace std;
+using namespace boost;
+
+typedef unsigned int uint;
+
+HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
+  catalog(catfile) {
+  estimatedBG = 0;
+  bg_mean = bg_rms = 0;
+  // axsizes of underlying Image copied since often used
+  axsize0 = HugeFrame::getSize(0);
+  axsize1 = HugeFrame::getSize(1);
+
+  fptr = IO::openFITSFile(datafile);
+  fptr_w = NULL;
+}
+
+HugeFrame::HugeFrame (std::string datafile, std::string weightfile, std::string catfile) : 
+  catalog(catfile) {
+  estimatedBG = 0;
+  bg_mean = bg_rms = 0;
+  // axsizes of underlying Image copied since often used
+  axsize0 = HugeFrame::getSize(0);
+  axsize1 = HugeFrame::getSize(1);
+
+  fptr = IO::openFITSFile(datafile);
+  fptr_w = IO::openFITSFile(weightfile);
+}
+
+HugeFrame::~HugeFrame() {
+  IO::closeFITSFile(fptr);
+  if (fptr_w != NULL) 
+    IO::closeFITSFile(fptr_w);
+}
+
+unsigned long HugeFrame::getNumberOfObjects() {
+  return catalog.size();
+}
+
+const Catalog& HugeFrame::getCatalog() {
+  return catalog;
+}
+
+void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
+  if (!estimatedBG) 
+    throw std::runtime_error("HugeFrame: noise is not set!");
+  if (catiter != catalog.end()) {
+    O.id = catiter->first;
+    int xmin, xmax, ymin, ymax;
+    xmin = catiter->second.XMIN;
+    xmax = catiter->second.XMAX;
+    ymin = catiter->second.YMIN;
+    ymax = catiter->second.YMAX;
+
+    O.history << "# Extracting Object " << (*catiter).first;
+    O.history << " found in the area (" << xmin << "/" << ymin << ") to (";
+    O.history << xmax << "/" << ymax << ")" << std::endl;
+  
+    // check if outer sizes of the object are identical to the image
+    // boundary, since then the objects is cutted 
+    bool cutflag = 0;
+    if (xmin == 0 || ymin == 0 || xmax == axsize0 -1 || ymax == axsize1 - 1) {
+      O.history << "# Object cut off at the image boundary!" << endl;
+      cutflag = 1;
+    }
+  
+    O.resize((xmax-xmin)*(ymax-ymin));
+    // Grid will be changed but not shifted (all pixels stay at their position)
+    O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.grid.setWCS(Image<data_t>::grid.getWCS());
+    //O.segMap.resize((xmax-xmin)*(ymax-ymin));
+    //O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    if (fptr_w != NULL) {
+      O.weight.resize((xmax-xmin)*(ymax-ymin));
+      O.weight.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    }
+
+    // copy pixel data
+    int status = 0;
+    data_t nullval = 0;
+    int anynull = 0;
+    long firstpix[2] = {xmin+1,ymin+1}, lastpix[2] = {xmax, ymax}, inc[2] = {1,1};
+    fits_read_subset(fptr, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.c_array(), &anynull, &status);
+    if (fptr_w != NULL) 
+      fits_read_subset(fptr_w, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.weight.c_array(), &anynull, &status);
+
+    // Fill other quantities into Object
+    O.centroid = Point<data_t>(catiter->second.XCENTROID,
+			       catiter->second.YCENTROID);
+    O.flags = std::bitset<8>(catiter->second.FLAGS);
+    O.basefilename = HugeFrame::getFilename();
+    O.noise_rms = bg_rms;
+    O.noise_mean = bg_mean;
+  }
+  else {
+    std::ostringstream mess;
+    mess << "HugeFrame: Object " << O.id << " does not exist!";
+    throw std::invalid_argument(mess.str());
+  }
+}
+
+data_t HugeFrame::getNoiseMean() {
+  if (!estimatedBG) 
+    throw std::runtime_error("HugeFrame: noise is not set!");
+  return bg_mean;
+}
+
+data_t HugeFrame::getNoiseRMS() {
+  if (!estimatedBG)
+    throw std::runtime_error("HugeFrame: noise is not set!");
+  return bg_rms;
+}
+
+void HugeFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
+  estimatedBG = 1;
+  bg_mean = mean;
+  bg_rms = rms;
+}
