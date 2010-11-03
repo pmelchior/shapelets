@@ -6,6 +6,7 @@
 
 #include "frame/Frame.h"
 #include "frame/SExFrame.h"
+#include "frame/HugeFrame.h"
 
 #include "shapelets/ShapeletObject.h"
 #include "shapelets/SIFFile.h"

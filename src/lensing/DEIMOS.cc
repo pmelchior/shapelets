@@ -102,7 +102,6 @@ namespace shapelens {
 
       // define weight function and measure moments
       DEIMOSWeightFunction* w;
-      //std::cout << iter << "\t" << scale << "\t" << obj.centroid << "\t" << eps << "\t" << G << std::endl;
       if (flexed) 
 	w = new DEIMOSWeightFunction(scale, obj.centroid, eps, G);
       else
@@ -158,21 +157,28 @@ namespace shapelens {
     }
 
 
-    //estimateErrors(obj,N);
+    estimateErrors(obj,N);
   }
 
   void DEIMOS::estimateErrors(const Object& obj, int N) {
     // compute the noise from a constant one image
     // variance of weighted moment (i,j) is propto
     // moment (i*2,j*2) measured with square of weighting function
-    Object noise = obj;
-    for (unsigned int i=0; i < noise.size(); i++)
-      noise(i) = obj.noise_rms*obj.noise_rms;
+
     // square of Gaussian: sigma -> sigma/sqrt(2);
     DEIMOSWeightFunction w2(scale/M_SQRT2, obj.centroid, eps);
-    mo_noise = Moments(noise,w2,2*(N+C));
+   
+    Object noise = obj;
+    if (obj.weight.size() == 0)
+      for (unsigned int i=0; i < noise.size(); i++)
+	noise(i) = obj.noise_rms*obj.noise_rms;
+    else
+      for (unsigned int i=0; i < noise.size(); i++)
+	noise(i) = 1./obj.weight(i);
 
-    // for convenience: copy terms from (2*i, 2*j) to (i,j)
+      mo_noise = Moments(noise,w2,2*(N+C));
+
+    // copy terms from (2*i, 2*j) to (i,j)
     for (int n=1; n <= N+C; n++)
       for (int m=0; m <= n; m++)
 	mo_noise(m,n-m) = mo_noise(2*m,2*(n-m));

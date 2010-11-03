@@ -65,11 +65,11 @@ void Catalog::read(string catfile) {
       so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
       so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
       so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
-      if (present.test(9))
+      if (present.test(8))
 	so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
       else
 	so.CLASSIFIER = (data_t) 0;
-      if (present.test(10))
+      if (present.test(9))
 	so.PARENT = boost::lexical_cast<unsigned long>(column[format.PARENT].c_str());
       else
 	so.PARENT = (unsigned long)0;
@@ -91,10 +91,10 @@ void Catalog::save(string catfile) const {
   catalog << "#  6 XCENTROID_IMAGE" << endl;
   catalog << "#  7 YCENTROID_IMAGE" << endl;
   catalog << "#  8 FLAGS" << endl;
-  if (present.test(9))
+  if (present.test(8))
     catalog << "# 9 CLASSIFIER" << endl;
-  if (present.test(10)) {
-    if (present.test(9))
+  if (present.test(9)) {
+    if (present.test(8))
       catalog << "# 10 PARENT" << endl;
     else
       catalog << "# 9 PARENT" << endl;
@@ -110,9 +110,9 @@ void Catalog::save(string catfile) const {
     catalog << iter->second.XCENTROID + 1 << " ";
     catalog << iter->second.YCENTROID + 1 << " ";
     catalog << (unsigned int) iter->second.FLAGS << " ";
-    if (present.test(9))
+    if (present.test(8))
       catalog << iter->second.CLASSIFIER << " ";
-    if (present.test(10))
+    if (present.test(9))
       catalog << iter->second.PARENT << " ";
     catalog << endl;
   }
@@ -149,15 +149,15 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
   } 
   else if (type == "FLAGS") {
     format.FLAGS = colnr - 1;
-    present[8] = 1;
+    present[7] = 1;
   }
   else if (type == "CLASS_STAR" || type == "CLASSIFIER") {
     format.CLASSIFIER = colnr - 1;
-    present[9] = 1;
+    present[8] = 1;
   }
   else if (type == "PARENT" || type == "VECTOR_ASSOC") {
     format.PARENT = colnr - 1;
-    present[10] = 1;
+    present[9] = 1;
   }
 }
 
