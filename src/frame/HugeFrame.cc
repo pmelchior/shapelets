@@ -21,24 +21,32 @@ HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
   catalog(catfile) {
   estimatedBG = 0;
   bg_mean = bg_rms = 0;
-  // axsizes of underlying Image copied since often used
-  axsize0 = HugeFrame::getSize(0);
-  axsize1 = HugeFrame::getSize(1);
 
   fptr = IO::openFITSFile(datafile);
   fptr_w = NULL;
+
+  // axsizes of underlying image (otherwise unknown)
+  long naxis[2];
+  int status = 0;
+  fits_get_img_size(fptr, 2, naxis, &status);
+  axsize0 = naxis[0];
+  axsize1 = naxis[1];
 }
 
 HugeFrame::HugeFrame (std::string datafile, std::string weightfile, std::string catfile) : 
   catalog(catfile) {
   estimatedBG = 0;
   bg_mean = bg_rms = 0;
-  // axsizes of underlying Image copied since often used
-  axsize0 = HugeFrame::getSize(0);
-  axsize1 = HugeFrame::getSize(1);
 
   fptr = IO::openFITSFile(datafile);
   fptr_w = IO::openFITSFile(weightfile);
+
+  // axsizes of underlying image (otherwise unknown)
+  long naxis[2];
+  int status = 0;
+  fits_get_img_size(fptr, 2, naxis, &status);
+  axsize0 = naxis[0];
+  axsize1 = naxis[1];
 }
 
 HugeFrame::~HugeFrame() {
@@ -70,6 +78,9 @@ void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.history << " found in the area (" << xmin << "/" << ymin << ") to (";
     O.history << xmax << "/" << ymax << ")" << std::endl;
   
+    // add several pixel to original box
+    addFrameBorder(ShapeLensConfig::ADD_BORDER,xmin,xmax,ymin,ymax);
+    
     // check if outer sizes of the object are identical to the image
     // boundary, since then the objects is cutted 
     bool cutflag = 0;
@@ -129,4 +140,38 @@ void HugeFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
   estimatedBG = 1;
   bg_mean = mean;
   bg_rms = rms;
+}
+
+void HugeFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
+  if (factor > 0) {
+    int xrange, yrange, xborder, yborder;
+    xrange = xmax - xmin;
+    yrange = ymax - ymin;
+    if (xrange%2 == 1) {
+      xmax++;
+      xrange++;
+    }
+    if (yrange%2 == 1) {
+      ymax++;
+      yrange++;
+    }
+    // make the object frame square, because of const beta in both directions
+    if (xrange < yrange) {
+      yborder = GSL_MAX_INT((int)floor(yrange*factor), 6);
+      xborder = yborder + (yrange - xrange)/2;
+    } else {
+      xborder = GSL_MAX_INT((int)floor(xrange*factor), 6);
+      yborder = xborder + (xrange - yrange)/2;
+    }
+    xmin -= xborder;
+    xmax += xborder;
+    ymin -= yborder;
+    ymax += yborder;
+
+    // ensure cutout is inside the whole frame
+    xmin = std::max(0,xmin);
+    ymin = std::max(0,ymin);
+    xmax = std::min(axsize0-1,long(xmax));
+    ymax = std::min(axsize1-1,long(ymax));
+  }
 }

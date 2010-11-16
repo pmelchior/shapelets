@@ -140,7 +140,7 @@ class SExFrame : public Image<data_t> {
   bool subtractBG, estimatedBG;
   SegmentationMap segMap;
   data_t bg_mean, bg_rms;
-  unsigned int axsize0, axsize1;
+  long axsize0, axsize1;
   Image<data_t> weight;
   gsl_rng* r;
 };
