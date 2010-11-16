@@ -34,7 +34,7 @@ namespace shapelens {
     NumMatrix<data_t> M;
     IO::readFITSImage(fptr,M);
     int N = int(M.getRows()) - 1;
-    mo = Moments(N);
+    mo.setOrder(N);
     for(int n1=0; n1 <= N; n1++)
       for(int n2=0; n2 <= N-n1; n2++)
 	mo(n1,n2) = M(n2,n1);
@@ -53,6 +53,17 @@ namespace shapelens {
     int f;
     IO::readFITSKeyword(fptr,"FLAGS",f);
     flags = std::bitset<3>(f);
+
+    // read noise
+    mo_noise.setOrder(N);
+    try {
+      IO::moveToFITSExtension(fptr, 2);
+      IO::readFITSImage(fptr,M);
+      for(int n1=0; n1 <= N; n1++)
+	for(int n2=0; n2 <= N-n1; n2++)
+	  mo_noise(n1,n2) = M(n2,n1);
+    } catch (std::invalid_argument) {}
+	
     IO::closeFITSFile(fptr);
   }
 
@@ -69,6 +80,11 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"EPS",eps,"weighting function ellipticity");
     IO::updateFITSKeyword(fptr,"C",C,"deweighting correction order");
     IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong(),"deweighted/deconvolved");
+    // save noise
+    for(int n1=0; n1 <= N; n1++)
+      for(int n2=0; n2 <= N-n1; n2++)
+	M(n2,n1) = mo_noise(n1,n2); // transpose to have correctly oriented image
+    IO::writeFITSImage(fptr,M,"VARIANCE");
     IO::closeFITSFile(fptr);
   }
 
@@ -188,7 +204,6 @@ namespace shapelens {
     data_t e2 = imag(eps);
     data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
     data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
-    
     data_t s2 = gsl_pow_2(scale);
     data_t s4 = gsl_pow_4(scale);
     data_t s6 = gsl_pow_6(scale);
@@ -263,7 +278,6 @@ namespace shapelens {
       data_t G2 = imag(G);
       data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
       data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
-
       data_t s2 = gsl_pow_2(scale);
       data_t s4 = gsl_pow_4(scale);
       data_t s6 = gsl_pow_6(scale);
