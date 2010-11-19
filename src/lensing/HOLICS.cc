@@ -6,8 +6,9 @@ namespace shapelens {
     GaussianWeightFunction w(scale, obj.centroid);
 
     sigma = w.getScale();
-
-    M = obj.flux;
+    
+    Moment0 Q0(obj,w);
+    M = Q0(0);
     Moment2 Q2(obj,w);
     trQ = __trQ(Q2);
     Moment4 Q4(obj,w);

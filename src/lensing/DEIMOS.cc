@@ -21,13 +21,16 @@ namespace shapelens {
     return GaussianWeightFunction::operator()(P);
   }
 
-  DEIMOS::DEIMOS() : id(0), flags(0), scale(0), eps(0,0), G(0,0), C(0), flexed(false) {}
+  DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), C(0), flexed(false) {}
 
   DEIMOS::DEIMOS (Object& obj, int N, int C_, data_t scale_, bool flexed_) :
-    id(obj.id), flags(0), scale(scale_), eps(0,0), C(C_), flexed(flexed_) {
+    id(obj.id), scale(scale_), eps(0,0), C(C_), flexed(flexed_), 
+    D(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2) {
     // measure moments within optimized weighting function
+    mo.setOrder(N);
     match(obj,N);
-  }
+    estimateErrors(obj,N);
+ }
 
   DEIMOS::DEIMOS(std::string filename) {
     fitsfile* fptr = IO::openFITSFile(filename);
@@ -50,9 +53,6 @@ namespace shapelens {
     } catch (std::invalid_argument) {
       C = 0;
     }
-    int f;
-    IO::readFITSKeyword(fptr,"FLAGS",f);
-    flags = std::bitset<3>(f);
 
     // read noise
     mo_noise.setOrder(N);
@@ -62,7 +62,7 @@ namespace shapelens {
       for(int n1=0; n1 <= N; n1++)
 	for(int n2=0; n2 <= N-n1; n2++)
 	  mo_noise(n1,n2) = M(n2,n1);
-    } catch (std::invalid_argument) {}
+    } catch (std::runtime_error) {}
 	
     IO::closeFITSFile(fptr);
   }
@@ -79,7 +79,7 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"WIDTH",scale,"weighting function width");
     IO::updateFITSKeyword(fptr,"EPS",eps,"weighting function ellipticity");
     IO::updateFITSKeyword(fptr,"C",C,"deweighting correction order");
-    IO::updateFITSKeyword(fptr,"FLAGS",(int)flags.to_ulong(),"deweighted/deconvolved");
+
     // save noise
     for(int n1=0; n1 <= N; n1++)
       for(int n2=0; n2 <= N-n1; n2++)
@@ -109,6 +109,7 @@ namespace shapelens {
     data_t centroiding_scale = 1.5, eps_scale = scale;
     Point<data_t> centroid_shift;
 
+    Moments mo_w(N+C);
     while (true) {
       // set smaller scale for centroid determination
       if ((!flexed && iter < maxiter/2) || (flexed && iter < maxiter/3))
@@ -116,18 +117,17 @@ namespace shapelens {
       else // fall back to desired scale for eps determination
 	scale = eps_scale;
 
-      // define weight function and measure moments
-      DEIMOSWeightFunction* w;
-      if (flexed) 
-	w = new DEIMOSWeightFunction(scale, obj.centroid, eps, G);
-      else
-	w = new DEIMOSWeightFunction(scale, obj.centroid, eps);
-
-      mo = Moments(obj, *w, N + C);
-      flags.reset(0);
+      // measure moments in weighting function
+      if (flexed) {
+	DEIMOSWeightFunction w(scale, obj.centroid, eps, G);
+	mo_w = Moments (obj, w, N + C);
+      }	else {
+	DEIMOSWeightFunction w(scale, obj.centroid, eps);
+	mo_w = Moments (obj, w, N + C);
+      }
 
       // deweight now and estimate new centroid and ellipticity
-      deweight(false);
+      deweight(mo_w, N);
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
       complex<data_t> eps_ = epsilon_limited(); //stabilized epsilon
@@ -168,12 +168,86 @@ namespace shapelens {
 	}
       }
       iter++;
+    }
+  }
 
-      delete w;
+  void DEIMOS::deweight(const Moments& mo_w, int N) {
+    data_t e1 = real(eps);
+    data_t e2 = imag(eps);
+    data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
+    data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
+    data_t s2 = gsl_pow_2(scale);
+    data_t s4 = gsl_pow_4(scale);
+    data_t s6 = gsl_pow_6(scale);
+    data_t G1 = real(G);
+    data_t G2 = imag(G);
+
+    unsigned int i,j;
+    for (int n=0; n <= N; n++) {
+      for (int m=0; m <= n; m++) {
+	i = mo.getIndex(m,n-m);
+	j = mo_w.getIndex(m,n-m);
+	D(i,j) = 1;
+	if (C >= 2) {
+	  j = mo_w.getIndex(m+2,n-m);
+	  D(i,j) = c1/(2*s2);
+	  // since the moments are of same order n
+	  // and ordered wrt to (first/last) index
+	  // moment (m+1,n-m+1) is just directly following in mo
+	  j++;
+	  D(i,j) = - 2*e2/s2;
+	  j++;
+	  D(i,j) = c2/(2*s2);
+	}
+	if (C >= 3 && flexed) {
+	  j = mo_w.getIndex(m+3,n-m);
+	  D(i,j) = (-G1 + e1*G1 + e2*G2)/(4*s4);
+	  j++;
+	  D(i,j) = (-e2*G1 - 3*G2 + e1*G2)/(4*s4);
+	  j++;
+	  D(i,j) = (3*G1 + e1*G1 + e2*G2)/(4*s4);
+	  j++;
+	  D(i,j) = (-e2*G1 + G2 + e1*G2)/(4*s4);
+	}
+	if (C >= 4) {
+	  j = mo_w.getIndex(m+4,n-m);
+	  D(i,j) = c1*c1/(8*s4);
+	  if (flexed)
+	    D(i,j) += (G1*G1 + G2*G2)/(8*s2);
+	  j++;
+	  D(i,j) = -c1*e2/s4;
+	  j++;
+	  D(i,j) = (c1*c2/4 + 2*e2*e2)/s4;
+	  if (flexed)
+	    D(i,j) += (G1*G1 + G2*G2)/(8*s2);
+	  j++;
+	  D(i,j) = -c2*e2/s4;
+	  j++;
+	  D(i,j) = c2*c2/(8*s4);
+	  if (flexed)
+	    D(i,j) += (G1*G1 + G2*G2)/(8*s2);
+	}
+	if (C >= 6) {
+	  j = mo_w.getIndex(m+6,n-m);
+	  D(i,j) = c1*c1*c1/(48*s6);
+	  j++;
+	  D(i,j) = -c1*c1*e2/(4*s6);
+	  j++;
+	  D(i,j) = (c1*c1*c2/16 + c1*e2*e2)/s6;
+	  j++;
+	  D(i,j) = -(c1*c2*e2/2 + 4*e2*e2*e2/3)/s6;
+	  j++;
+	  D(i,j) = (c1*c2*c2/16 + c2*e2*e2)/s6;
+	  j++;
+	  D(i,j) = -c2*c2*e2/(4*s6);
+	  j++;
+	  D(i,j) = c2*c2*c2/(48*s6);
+	}
+      }
     }
 
-
-    estimateErrors(obj,N);
+    // mo = D*mo_w
+    boost::numeric::bindings::atlas::gemv(1.0,(boost::numeric::ublas::matrix<data_t>)D,mo_w,0.0,mo);
   }
 
   void DEIMOS::estimateErrors(const Object& obj, int N) {
@@ -183,7 +257,7 @@ namespace shapelens {
 
     // square of Gaussian: sigma -> sigma/sqrt(2);
     DEIMOSWeightFunction w2(scale/M_SQRT2, obj.centroid, eps);
-   
+    
     Object noise = obj;
     if (obj.weight.size() == 0)
       for (unsigned int i=0; i < noise.size(); i++)
@@ -192,139 +266,26 @@ namespace shapelens {
       for (unsigned int i=0; i < noise.size(); i++)
 	noise(i) = 1./obj.weight(i);
 
-      mo_noise = Moments(noise,w2,2*(N+C));
+    mo_noise = Moments(noise,w2,2*(N+C));
 
     // copy terms from (2*i, 2*j) to (i,j)
     for (int n=1; n <= N+C; n++)
       for (int m=0; m <= n; m++)
-	mo_noise(m,n-m) = mo_noise(2*m,2*(n-m));
+      mo_noise(m,n-m) = mo_noise(2*m,2*(n-m));
     mo_noise.setOrder(N+C);
 
-    data_t e1 = real(eps);
-    data_t e2 = imag(eps);
-    data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
-    data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
-    data_t s2 = gsl_pow_2(scale);
-    data_t s4 = gsl_pow_4(scale);
-    data_t s6 = gsl_pow_6(scale);
-    
-    NumMatrix<data_t> E (mo.size(),mo_noise.size());
-    unsigned int i,j;
-    for (int n=0; n <= N; n++) {
-      for (int m=0; m <= n; m++) {
-	i = mo.getIndex(m,n-m);
-	j = mo_noise.getIndex(m,n-m);
-	E(i,j) = 1;
-	if (C >= 2) {
-	  j = mo_noise.getIndex(m+2,n-m);
-	  E(i,j) = c1/(2*s2);
-	  // since the moments are of same order n
-	  // and ordered wrt to (first/last) index
-	  // moment (m+1,n-m+1) is just directly following in mo
-	  j++;
-	  E(i,j) = - 2*e2/s2;
-	  j++;
-	  E(i,j) = c2/(2*s2);
-	}
-	if (C >= 4) {
-	  j = mo_noise.getIndex(m+4,n-m);
-	  E(i,j) = c1*c1/(8*s4);
-	  j++;
-	  E(i,j) = -c1*e2/s4;
-	  j++;
-	  E(i,j) = (c1*c2/4 + 2*e2*e2)/s4;
-	  j++;
-	  E(i,j) = -c2*e2/s4;
-	  j++;
-	  E(i,j) = c2*c2/(8*s4);
-	}
-	if (C >= 6) {
-	  j = mo_noise.getIndex(m+6,n-m);
-	  E(i,j) = c1*c1*c1/(48*s6);
-	  j++;
-	  E(i,j) = -c1*c1*e2/(4*s6);
-	  j++;
-	  E(i,j) = (c1*c1*c2/16 + c1*e2*e2)/s6;
-	  j++;
-	  E(i,j) = -(c1*c2*e2/2 + 4*e2*e2*e2/3)/s6;
-	  j++;
-	  E(i,j) = (c1*c2*c2/16 + c2*e2*e2)/s6;
-	  j++;
-	  E(i,j) = -c2*c2*e2/(4*s6);
-	  j++;
-	  E(i,j) = c2*c2*c2/(48*s6);
-	}
-      }
-    }
-    NumMatrix<data_t> S(E.getRows(), E.getRows());
-    for (i=0; i < E.getRows(); i++)
-      for (j=0; j < E.getRows(); j++)
-	for (unsigned int k=0; k < E.getColumns(); k++)
-	  S(i,j) += E(i,k)*E(j,k)*mo_noise(k);
+    NumMatrix<data_t> S(mo.size(), mo.size());
+    for (int i=0; i < mo.size(); i++)
+      for (int j=0; j < mo.size(); j++)
+	for (unsigned int k=0; k < mo_noise.size(); k++)
+	  S(i,j) += D(i,k)*D(j,k)*mo_noise(k);
     S = S.invert();
     mo_noise.setOrder(N);
-    for (i=0; i< mo_noise.size(); i++)
+    for (int i=0; i < mo_noise.size(); i++)
       mo_noise(i) = 1./S(i,i);
   }
 
 
-  void DEIMOS::deweight(bool resize) {
-    // check if already deweighted
-    if (!flags.test(0)) {
-
-      data_t e1 = real(eps);
-      data_t e2 = imag(eps);
-      data_t G1 = real(G);
-      data_t G2 = imag(G);
-      data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
-      data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
-      data_t s2 = gsl_pow_2(scale);
-      data_t s4 = gsl_pow_4(scale);
-      data_t s6 = gsl_pow_6(scale);
-
-      int N = mo.getOrder() - C;
-      for (int n=0; n <= N; n++) {
-	for (int m=0; m <= n; m++) {
-	  if (C >= 2) { 
-	    mo(m,n-m) += (c1/2*mo(m+2,n-m) - 2*e2*mo(m+1,n-m+1) +
-			  c2/2*mo(m,n-m+2))/s2;
-	  }
-	  if (C >= 3 && flexed) {
-	    mo(m,n-m) += ((-G1 + e1*G1 + e2*G2)*mo(m+3,n-m) +
-			  (-e2*G1 - 3*G2 + e1*G2)*mo(m+2,n-m+1) +
-			  (3*G1 + e1*G1 + e2*G2)*mo(m+1,n-m+2) +
-			  (-e2*G1 + G2 + e1*G2)*mo(m,n-m+4))/(4*s2);
-	  }
-	  if (C >= 4) {
-	    mo(m,n-m) += (c1*c1/8*mo(m+4,n-m) - 
-			  c1*e2*mo(m+3,n-m+1)  +
-			  (c1*c2/4 + 2*e2*e2)*mo(m+2,n-m+2) -
-			  c2*e2*mo(m+1,n-m+3) +
-			  c2*c2/8*mo(m,n-m+4))/s4;
-	    if (flexed)
-	      mo(m,n-m) += (G1*G1 + G2*G2)*(mo(m+4,n-m) + mo(m+2,n-m+2) +
-					    mo(m,n-m+4))/(8*s2);
-	  }
-	  if (C >= 6) {
-	    mo(m,n-m) += (c1*c1*c1/48*mo(m+6,n-m) -
-			  c1*c1*e2/4*mo(m+5,n-m+1) +
-			  (c1*c1*c2/16 + c1*e2*e2)*mo(m+4,n-m+2) -
-			  (c1*c2*e2/2 + 4*e2*e2*e2/3)*mo(m+3,n-m+3) +
-			  (c1*c2*c2/16 + c2*e2*e2)*mo(m+2,n-m+4) -
-			  c2*c2*e2/4*mo(m+1,n-m+5) +
-			  c2*c2*c2/48*mo(m,n-m+6))/s6;
-	  }
-	}
-      }
-	
-      if (C > 0 && resize) {
- 	mo.setOrder(N);
-      }
-    
-      // note in flags
-      flags.set(0);
-    }
-  }
 
   // CAUTION: this overflows for n > 10!!!
   unsigned long factorial(int n) {
@@ -338,25 +299,24 @@ namespace shapelens {
   }
 
   void DEIMOS::deconvolve(const DEIMOS& psf) {
-    if (!flags.test(1)) {
-      int Nmin = std::min(psf.mo.getOrder(),mo.getOrder());
-      Moments& g = mo, p = psf.mo;
-      // use explicit relations for up to 2nd moments
-      g(0,0) /= p(0,0);
-      if (Nmin >= 1) {
-	g(0,1) -= g(0,0)*p(0,1);
-	g(0,1) /= p(0,0);
-	g(1,0) -= g(0,0)*p(1,0);
-	g(1,0) /= p(0,0);
-	if (Nmin >= 2) {
-	  g(0,2) -= g(0,0)*p(0,2) + 2*g(0,1)*p(0,1);
-	  g(0,2) /= p(0,0);
-	  g(1,1) -= g(0,0)*p(1,1) + g(0,1)*p(1,0) + g(1,0)*p(0,1);
-	  g(1,1) /= p(0,0);
-	  g(2,0) -= g(0,0)*p(2,0) + 2*g(1,0)*p(1,0);
-	  g(2,0) /= p(0,0);
-	  if (Nmin >= 3) {
-	    // use general formula (9)
+    int Nmin = std::min(psf.mo.getOrder(),mo.getOrder());
+    Moments& g = mo, p = psf.mo;
+    //use explicit relations for up to 2nd moments
+    g(0,0) /= p(0,0);
+    if (Nmin >= 1) {
+      g(0,1) -= g(0,0)*p(0,1);
+      g(0,1) /= p(0,0);
+      g(1,0) -= g(0,0)*p(1,0);
+      g(1,0) /= p(0,0);
+      if (Nmin >= 2) {
+	g(0,2) -= g(0,0)*p(0,2) + 2*g(0,1)*p(0,1);
+	g(0,2) /= p(0,0);
+	g(1,1) -= g(0,0)*p(1,1) + g(0,1)*p(1,0) + g(1,0)*p(0,1);
+	g(1,1) /= p(0,0);
+	g(2,0) -= g(0,0)*p(2,0) + 2*g(1,0)*p(1,0);
+	g(2,0) /= p(0,0);
+	if (Nmin >= 3) {
+	  //use general formula (9)
 	    for (int n=3; n <= Nmin; n++) {
 	      for (int i=0; i <= n; i++) {
 		int j = n-i;
@@ -370,11 +330,8 @@ namespace shapelens {
 		g(i,j) /= p(0,0);
 	      }
 	    }
-	  }
 	}
       }
-      // note in flags
-      flags.set(1);
     }
   }
 
@@ -439,13 +396,12 @@ namespace shapelens {
     query += "`eps1` float NOT NULL,";
     query += "`eps2` float NOT NULL,";
     query += "`c` int NOT NULL,";
-    query += "`flags` int NOT NULL,";
     query += "`mo` blob NOT NULL);";
     sql.query(query); 
     
     // create prepared statement
     sqlite3_stmt *stmt;
-    query = "INSERT INTO `" + table + "` VALUES (?,?,?,?,?,?,?);";
+    query = "INSERT INTO `" + table + "` VALUES (?,?,?,?,?,?);";
     sql.checkRC(sqlite3_prepare_v2(sql.db, query.c_str(), query.size(), &stmt, NULL));
     for(DEIMOSList::const_iterator iter = DEIMOSList::begin(); iter != DEIMOSList::end(); iter++) {
       const DEIMOS& d = *(*iter);
@@ -454,7 +410,6 @@ namespace shapelens {
       sql.checkRC(sqlite3_bind_double(stmt,3,real(d.eps)));
       sql.checkRC(sqlite3_bind_double(stmt,4,imag(d.eps)));
       sql.checkRC(sqlite3_bind_int(stmt,5,d.C));
-      sql.checkRC(sqlite3_bind_int(stmt,6,d.flags.to_ulong()));
       sql.checkRC(sqlite3_bind_blob(stmt,7,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
       if(sqlite3_step(stmt)!=SQLITE_DONE)
 	throw std::runtime_error("DEIMOSList::save() insertion failed: " + std::string(sqlite3_errmsg(sql.db)));

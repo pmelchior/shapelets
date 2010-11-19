@@ -31,8 +31,6 @@ namespace shapelens {
     DEIMOS (Object& obj, int N, int C, data_t scale, bool flexed = false);
     /// Save to a file.
     void save(std::string filename) const;
-    /// Correct the moments for the application of \p obj.w.
-    void deweight(bool resize=true);
     /// Deconvolve \p obj from \p psf.
     void deconvolve(const DEIMOS& psf);
     /// Get complex ellipticity from mo.
@@ -49,10 +47,6 @@ namespace shapelens {
     Moments mo_noise;
     /// Deweighting order.
     int C;
-    /// The transformation flags.
-    /// If the zeroth bit is set, the moments are deweighted, if the first
-    /// one is set, they are deconvolved.
-    std::bitset<3> flags;
     /// Object id.
     unsigned long id;
     /// Width of the weighting function.
@@ -65,9 +59,11 @@ namespace shapelens {
     friend class DEIMOSList;
   private:
     void match(Object& obj, int N);
+    void deweight(const Moments& mo_w, int N);
     complex<data_t> epsilon_limited();
     void estimateErrors(const Object& obj, int N);
     bool flexed;
+    NumMatrix<data_t> D;
   };
 
   /// Class for collections of DEIMOS instances.
