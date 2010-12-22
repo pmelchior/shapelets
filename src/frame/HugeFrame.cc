@@ -157,10 +157,10 @@ void HugeFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, i
     }
     // make the object frame square, because of const beta in both directions
     if (xrange < yrange) {
-      yborder = GSL_MAX_INT((int)floor(yrange*factor), 6);
+      yborder = GSL_MAX_INT((int)floor(yrange*factor), 16);
       xborder = yborder + (yrange - xrange)/2;
     } else {
-      xborder = GSL_MAX_INT((int)floor(xrange*factor), 6);
+      xborder = GSL_MAX_INT((int)floor(xrange*factor), 16);
       yborder = xborder + (xrange - yrange)/2;
     }
     xmin -= xborder;
@@ -173,5 +173,6 @@ void HugeFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, i
     ymin = std::max(0,ymin);
     xmax = std::min(axsize0-1,long(xmax));
     ymax = std::min(axsize1-1,long(ymax));
+
   }
 }

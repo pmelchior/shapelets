@@ -49,6 +49,11 @@ namespace shapelens {
       eps = complex<data_t>(0,0);
     }
     try {
+      IO::readFITSKeyword(fptr,"G",G);
+    } catch (std::invalid_argument) {
+      G = complex<data_t>(0,0);
+    }
+    try {
       IO::readFITSKeyword(fptr,"C",C);
     } catch (std::invalid_argument) {
       C = 0;
@@ -78,6 +83,7 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"ID",id,"object ID");
     IO::updateFITSKeyword(fptr,"WIDTH",scale,"weighting function width");
     IO::updateFITSKeyword(fptr,"EPS",eps,"weighting function ellipticity");
+    IO::updateFITSKeyword(fptr,"G",G,"weighting function G-flexion");
     IO::updateFITSKeyword(fptr,"C",C,"deweighting correction order");
 
     // save noise
@@ -261,11 +267,10 @@ namespace shapelens {
     Object noise = obj;
     if (obj.weight.size() == 0)
       for (unsigned int i=0; i < noise.size(); i++)
-	noise(i) = obj.noise_rms*obj.noise_rms;
+	noise(i) = 1;
     else
       for (unsigned int i=0; i < noise.size(); i++)
-	noise(i) = 1./obj.weight(i);
-
+	noise(i) = obj.weight(i);
     mo_noise = Moments(noise,w2,2*(N+C));
 
     // copy terms from (2*i, 2*j) to (i,j)
@@ -283,6 +288,8 @@ namespace shapelens {
     mo_noise.setOrder(N);
     for (int i=0; i < mo_noise.size(); i++)
       mo_noise(i) = 1./S(i,i);
+    if (obj.weight.size() == 0)
+      mo_noise *= obj.noise_rms*obj.noise_rms;
   }
 
 
@@ -395,13 +402,15 @@ namespace shapelens {
     query += "`width` float NOT NULL,";
     query += "`eps1` float NOT NULL,";
     query += "`eps2` float NOT NULL,";
+    query += "`G1` float NOT NULL,";
+    query += "`G2` float NOT NULL,";
     query += "`c` int NOT NULL,";
     query += "`mo` blob NOT NULL);";
     sql.query(query); 
     
     // create prepared statement
     sqlite3_stmt *stmt;
-    query = "INSERT INTO `" + table + "` VALUES (?,?,?,?,?,?);";
+    query = "INSERT INTO `" + table + "` VALUES (?,?,?,?,?,?,?,?);";
     sql.checkRC(sqlite3_prepare_v2(sql.db, query.c_str(), query.size(), &stmt, NULL));
     for(DEIMOSList::const_iterator iter = DEIMOSList::begin(); iter != DEIMOSList::end(); iter++) {
       const DEIMOS& d = *(*iter);
@@ -409,8 +418,10 @@ namespace shapelens {
       sql.checkRC(sqlite3_bind_double(stmt,2,d.scale));
       sql.checkRC(sqlite3_bind_double(stmt,3,real(d.eps)));
       sql.checkRC(sqlite3_bind_double(stmt,4,imag(d.eps)));
-      sql.checkRC(sqlite3_bind_int(stmt,5,d.C));
-      sql.checkRC(sqlite3_bind_blob(stmt,7,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
+      sql.checkRC(sqlite3_bind_double(stmt,5,real(d.G)));
+      sql.checkRC(sqlite3_bind_double(stmt,6,imag(d.G)));
+      sql.checkRC(sqlite3_bind_int(stmt,7,d.C));
+      sql.checkRC(sqlite3_bind_blob(stmt,8,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
       if(sqlite3_step(stmt)!=SQLITE_DONE)
 	throw std::runtime_error("DEIMOSList::save() insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
       sql.checkRC(sqlite3_reset(stmt));
