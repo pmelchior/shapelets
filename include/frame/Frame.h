@@ -5,7 +5,6 @@
 #include <set>
 #include "../Typedef.h"
 #include "../ShapeLensConfig.h"
-#include "../utils/tree.hh"
 #include "Grid.h"
 #include "Image.h"
 #include "Object.h"
