@@ -49,8 +49,6 @@ class ShapeLensConfig {
   /// The detection threshold (in units of the noise variance \f$\sigma_n\f$), which is the minimum
   /// brightness an oject must have in at least one pixel in order to be detected, default = 2.
   static data_t DETECT_THRESHOLD;
-  /// Wheter detection should be checked for blending, default = true.
-  static bool BLENDING;
   /// Minimum flux of blended structure to be identified (units of the total flux of the object),
   /// default = 0.01.
   static data_t BLEND_MINCONT;

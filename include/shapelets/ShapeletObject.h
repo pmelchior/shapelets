@@ -44,7 +44,7 @@ class ShapeletObject : public Composite {
   ///  Constructor, using polar coefficients.
   /// Define image with given \f$\beta\f$, centroid position \f$x_c\f$ on
   /// given grid.
-  ShapeletObject(const CoefficientVector<complex<data_t> >& polarCoeffs, data_t inbeta, const Point<data_t>& xcentroid = Point<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
+  ShapeletObject(const CoefficientVector<std::complex<data_t> >& polarCoeffs, data_t inbeta, const Point<data_t>& xcentroid = Point<data_t>(0,0), const Grid& grid = Grid(-25,-25,50,50));
   /// Constructor for decomposing an Object.
   /// The only thing necessary is a properly filled Object.
   /// The decomposition will find the optimal shapelet parameters automatically,
@@ -58,16 +58,16 @@ class ShapeletObject : public Composite {
   /// Set cartesian coefficients.
   void setCoeffs(const CoefficientVector<data_t>& cartesianCoeffs);
   /// Set polar coefficients.
-  void setPolarCoeffs(const CoefficientVector<complex<data_t> >& polarCoeffs);
+  void setPolarCoeffs(const CoefficientVector<std::complex<data_t> >& polarCoeffs);
   /// Set errors of the cartesian coefficients.
   /// The given coefficient errors will populate the diagonal elements of 
   /// the coefficient covariance matrix.
   void setErrors(const CoefficientVector<data_t>& errors);
 
   /// Get polar coefficients.
-  CoefficientVector<complex<data_t> > getPolarCoeffs();
+  CoefficientVector<std::complex<data_t> > getPolarCoeffs();
   /// Get polar coefficients.
-  CoefficientVector<complex<data_t> > getPolarCoeffs() const;
+  CoefficientVector<std::complex<data_t> > getPolarCoeffs() const;
 
   // methods depending on the decomposition
   /// Return best fit \f$\chi^2\f$ from decomposition.
@@ -86,13 +86,13 @@ class ShapeletObject : public Composite {
   void converge(data_t kappa);
   /// Shear the image by \f$\gamma_0, \gamma_1\f$.
   /// The dimension of the coefficient matrix will be increased by 2.
-  void shear(complex<data_t> gamma);
+  void shear(std::complex<data_t> gamma);
   /// Apply flexion to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
-  void flex(complex<data_t> F, complex<data_t> G);
+  void flex(std::complex<data_t> F, std::complex<data_t> G);
   /// Apply lensing operations converge, shear and flex to the image.
   /// The dimension of the coefficient matrix will be increased by 3.
-  void lens(data_t kappa, complex<data_t> gamma, complex<data_t> F, complex<data_t> G);
+  void lens(data_t kappa, std::complex<data_t> gamma, std::complex<data_t> F, std::complex<data_t> G);
   /// Translate the image by \f$dx0, dx1\f$.
   /// This is only valid for small translations (less than 1 pixel). 
   /// For larger translations, adjust the centroid by calling setCentroid().\n
@@ -160,8 +160,8 @@ class ShapeletObject : public Composite {
   private:
   CoefficientVector<data_t>& coeffs;
   NumMatrix<data_t>& cov;
-  CoefficientVector<complex<data_t> > polarCoeffs;
-  NumMatrix<complex<data_t> > polarCov;
+  CoefficientVector<std::complex<data_t> > polarCoeffs;
+  NumMatrix<std::complex<data_t> > polarCov;
   PolarTransformation c2p;
   ImageTransformation trafo;
   data_t chisquare;

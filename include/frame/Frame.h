@@ -149,8 +149,6 @@ class Frame : public Image<data_t> {
   void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
   data_t getThreshold(unsigned long pixel, data_t factor);
   void linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& max_threshold, unsigned long startpixel);
-  bool detectBlending(const std::set<unsigned long>& all, data_t max, data_t max_threshold);
-  void insertNodesAboveThreshold(tree<std::set<unsigned long> >& tree, tree<std::set<unsigned long> >::iterator_base& diter, data_t threshold);
   data_t getTotalFlux(const std::set<unsigned long>& pixels);
   SegmentationMap segMap;
   History& history;

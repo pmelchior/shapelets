@@ -6,8 +6,8 @@
 #include <gsl/gsl_sf.h>
 
 using namespace shapelens;
-using namespace std;
-typedef complex<data_t> Complex;
+using std::endl;
+typedef std::complex<data_t> Complex;
 const Complex I = Complex(0,1);
 
 

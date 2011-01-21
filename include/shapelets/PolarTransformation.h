@@ -26,16 +26,16 @@ class PolarTransformation {
   /// \p cartesianCoeffs.\n
   /// If \p covariance and \p polarCovariance are given, the transformation is also 
   /// applied to the covariance matrices.
-  void getPolarCoeffs(const CoefficientVector<data_t>& cartesianCoeffs, CoefficientVector<complex<data_t> >& polarCoeffs, NumMatrix<data_t>* covariance = NULL, NumMatrix<complex<data_t> >* polarCovariance = NULL);
+  void getPolarCoeffs(const CoefficientVector<data_t>& cartesianCoeffs, CoefficientVector<std::complex<data_t> >& polarCoeffs, NumMatrix<data_t>* covariance = NULL, NumMatrix<std::complex<data_t> >* polarCovariance = NULL);
   /// Compute \p cartesianCoeffs from \p polarCoeffs.
   /// The transformaition automatically adapts to the order of
   /// \p polarCoeffs.
   /// If \p covariance and \p polarCovariance are given, the transformation is also 
   /// applied to the covariance matrices.
-  void getCartesianCoeffs(const CoefficientVector<complex<data_t> >& polarCoeffs, CoefficientVector<data_t>& cartesianCoeffs, NumMatrix<complex<data_t> >* polarCovariance = NULL, NumMatrix<data_t>* covariance = NULL);
+  void getCartesianCoeffs(const CoefficientVector<std::complex<data_t> >& polarCoeffs, CoefficientVector<data_t>& cartesianCoeffs, NumMatrix<std::complex<data_t> >* polarCovariance = NULL, NumMatrix<data_t>* covariance = NULL);
  private:
   unsigned int nmax;
-  NumMatrix<complex<data_t> > c2p,p2c;
+  NumMatrix<std::complex<data_t> > c2p,p2c;
   void buildTransformationMatrix(const IndexVector& , const IndexVector& );
 };
 } // end namespace

@@ -8,23 +8,23 @@ namespace shapelens {
   class KSB {
   public:
     KSB(const Object& obj, data_t scale);
-    complex<data_t> chi;
-    complex<data_t> gamma() const;
-    complex<data_t> gamma_first() const;
-    complex<data_t> gammaTr() const;\
-    complex<data_t> gammaTr1() const;
-    complex<data_t> gamma(const KSB& psf) const;
-    complex<data_t> gamma_first(const KSB& psf) const;
-    complex<data_t> gammaTr(const KSB& psf) const;
-    complex<data_t> gammaTr1(const KSB& psf) const;
-    complex<data_t> gamma_second(data_t accuracy = 0.001) const;
-    complex<data_t> gamma_exact(data_t accuracy = 0.0001) const;	
-    complex<data_t> gamma_nl(data_t accuracy = 0.000001) const;
-    complex<data_t> gamma_nl(const KSB& psf, data_t accuracy = 0.0001) const;
+    std::complex<data_t> chi;
+    std::complex<data_t> gamma() const;
+    std::complex<data_t> gamma_first() const;
+    std::complex<data_t> gammaTr() const;\
+    std::complex<data_t> gammaTr1() const;
+    std::complex<data_t> gamma(const KSB& psf) const;
+    std::complex<data_t> gamma_first(const KSB& psf) const;
+    std::complex<data_t> gammaTr(const KSB& psf) const;
+    std::complex<data_t> gammaTr1(const KSB& psf) const;
+    std::complex<data_t> gamma_second(data_t accuracy = 0.001) const;
+    std::complex<data_t> gamma_exact(data_t accuracy = 0.0001) const;	
+    std::complex<data_t> gamma_nl(data_t accuracy = 0.000001) const;
+    std::complex<data_t> gamma_nl(const KSB& psf, data_t accuracy = 0.0001) const;
 
 
   private:
-    complex<data_t> __chi(const Moment2& Q) const;
+    std::complex<data_t> __chi(const Moment2& Q) const;
     data_t __trQ(const Moment2& Q) const;
     data_t __psi(const Moment4& Q) const;
     data_t __mu(const Moment4& Q) const;
@@ -43,7 +43,7 @@ namespace shapelens {
     data_t ___a4(const Moment8& Q) const;
     data_t ___a5(const Moment8& Q) const;
     
-      complex<data_t> __p(const KSB& star) const;
+      std::complex<data_t> __p(const KSB& star) const;
   public:
     data_t trQ, trQ_, M,
       mu_, mu__, psi_, psi__, pi_, pi__, nu_, nu__, lambda__, omega__, sigma__,rho__,ix__,delta__, a1___,a2___,a3___,a4___,a5___;

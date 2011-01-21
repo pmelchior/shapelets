@@ -1,5 +1,5 @@
 #include <shapelens/ShapeLens.h>
-#include <fstream.h>
+#include <fstream>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -9,7 +9,7 @@
 #include <tclap/CmdLine.h>
 
 using namespace shapelens;
-typedef complex<data_t> Complex;
+typedef std::complex<data_t> Complex;
 
 /// Creates \f$N\f$ galaxy images in shapelet space.
 /// The output is stored as "shapelets_<i>.sif", where \f$0 \le i < N\f$

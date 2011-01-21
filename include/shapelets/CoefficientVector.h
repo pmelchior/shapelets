@@ -181,7 +181,7 @@ class CoefficientVector : public NumVector<T> {
   }
   bool isComplex() {
     T ownval;
-    complex<data_t> complexval;
+    std::complex<data_t> complexval;
     if (typeid(ownval) == typeid(complexval))
       return true;
     else

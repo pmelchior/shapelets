@@ -39,7 +39,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   IO::readFITSKeyword(fptr,"XMIN",xmin);
   IO::readFITSKeyword(fptr,"YMIN",ymin);
   Image<data_t>::grid = Grid(xmin,ymin,grid.getSize(0),grid.getSize(1));
-  complex<data_t> xc;
+  std::complex<data_t> xc;
   IO::readFITSKeyword(fptr,"CENTROID",xc);
   centroid(0) = real(xc);
   centroid(1) = imag(xc);
@@ -96,7 +96,7 @@ void Object::save(std::string filename) {
   IO::updateFITSKeyword(outfptr,"ID",id,"object id");
   IO::updateFITSKeyword(outfptr,"XMIN",Image<data_t>::grid.getStartPosition(0),"min(X) in image pixels");
   IO::updateFITSKeyword(outfptr,"YMIN",Image<data_t>::grid.getStartPosition(1),"min(Y) in image pixels");
-  complex<data_t> xc(centroid(0),centroid(1));
+  std::complex<data_t> xc(centroid(0),centroid(1));
   IO::updateFITSKeyword(outfptr,"CENTROID",xc,"centroid position in image pixels");
   IO::updateFITSKeyword(outfptr,"BG_MEAN",noise_mean,"mean of background noise");
   IO::updateFITSKeyword(outfptr,"BG_RMS",noise_rms,"rms of background noise");

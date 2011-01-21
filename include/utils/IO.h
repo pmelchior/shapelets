@@ -43,8 +43,8 @@ class IO {
   /// - <tt>unsigned long -> TULONG</tt>
   /// - <tt>float -> TFLOAT</tt>
   /// - <tt>double -> TDOUBLE</tt>
-  /// - <tt>complex<float> -> TCOMPLEX</tt>
-  /// - <tt>complex<double> -> TDBLCOMPLEX</tt>
+  /// - <tt>std::complex<float> -> TCOMPLEX</tt>
+  /// - <tt>std::complex<double> -> TDBLCOMPLEX</tt>
   /// - <tt>std::string -> TSTRING</tt>
   template <typename T> inline
     static int getFITSDataType(const T& entry) {
@@ -104,7 +104,7 @@ class IO {
   }
   
    template <class T>
-    static void writeFITSImage(fitsfile *outfptr, const Image<complex<T> >& image, std::string extname="") {
+    static void writeFITSImage(fitsfile *outfptr, const Image<std::complex<T> >& image, std::string extname="") {
     int dim0 = image.grid.getSize(0);
     int dim1 = image.grid.getSize(1);
     long naxis = 2;      
@@ -225,7 +225,7 @@ class IO {
   }
 
   template <class T>
-    static void readFITSImage(fitsfile *fptr, Image<complex<T> >& im) {
+    static void readFITSImage(fitsfile *fptr, Image<std::complex<T> >& im) {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
     if (naxis!=2)
@@ -247,7 +247,7 @@ class IO {
     fits_movrel_hdu(fptr, 1, &hdutype, &status);
     fits_read_pix(fptr, datatype, firstpix, im.size(), NULL, component.c_array(), NULL, &status);
     for(unsigned long i=0; i < component.size(); i++)
-      im(i) += complex<T>(0,component(i));
+      im(i) += std::complex<T>(0,component(i));
     if (status != 0)
       throw std::runtime_error("IO: Cannot read FITS image!");
   }
@@ -348,11 +348,11 @@ class IO {
     return TDOUBLE;
   }
   template<> inline
-    int IO::getFITSDataType<complex<float> >(const complex<float>& entry) {
+    int IO::getFITSDataType<std::complex<float> >(const std::complex<float>& entry) {
     return TCOMPLEX;
   }
   template<> inline
-    int IO::getFITSDataType<complex<double> >(const complex<double>& entry) {
+    int IO::getFITSDataType<std::complex<double> >(const std::complex<double>& entry) {
     return TDBLCOMPLEX;
   }
   template<> inline

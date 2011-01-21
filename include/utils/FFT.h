@@ -15,7 +15,7 @@ namespace shapelens {
 /// \f[F(i) = F^*(N-i)\f]
 /// for a vector index \f$i\f$ and the length of the real vector \f$N\f$.
 
-class FourierTransform1D : public NumVector<complex<data_t> > {
+class FourierTransform1D : public NumVector<std::complex<data_t> > {
  public:
   /// Constructor.
   FourierTransform1D();
@@ -24,11 +24,11 @@ class FourierTransform1D : public NumVector<complex<data_t> > {
   /// Access operator.
   /// \b CAUTION: If \f$i>N/2\f$, the result is not conjugated
   /// as required by the Hermiticity condition.
-  complex<data_t>& operator()(unsigned int i);
+  std::complex<data_t>& operator()(unsigned int i);
   /// const access operator.
   /// \b CAUTION: If \f$i>N/2\f$, the result is not conjugated
   /// as required by the Hermiticity condition.
-  const complex<data_t>& operator()(unsigned int i) const;
+  const std::complex<data_t>& operator()(unsigned int i) const;
   /// Get wavenumber of index \p i of the transform.
   data_t getWavenumber(int i) const;
   /// Resize transform for real vector of size \f$N\f$.
@@ -44,7 +44,7 @@ class FourierTransform1D : public NumVector<complex<data_t> > {
 /// obeys the Hermiticity condition
 /// \f[F(i,j) = F^*(i,J-j)\f]
 /// for vector indices \f$i, j\f$ and the column number  of the real matrix \f$J\f$.
-class FourierTransform2D : public NumVector<complex<data_t> > {
+class FourierTransform2D : public NumVector<std::complex<data_t> > {
  public:
   /// Constructor.
   FourierTransform2D();
@@ -53,13 +53,13 @@ class FourierTransform2D : public NumVector<complex<data_t> > {
   /// Access operator.
   /// \b CAUTION: If \f$j>J/2\f$, the result is not conjugated
   /// as required by the Hermiticity condition.
-  complex<data_t>& operator()(unsigned int i, unsigned int j);
+  std::complex<data_t>& operator()(unsigned int i, unsigned int j);
   /// const access operator.
   /// \b CAUTION: If \f$j>J/2\f$, the result is not conjugated
   /// as required by the Hermiticity condition.
-  const complex<data_t>& operator()(unsigned int i, unsigned int j) const;
+  const std::complex<data_t>& operator()(unsigned int i, unsigned int j) const;
   /// Get wavenumber of index \p i of the transform.
-  complex<data_t> getWavenumber(int i, int j) const;
+  std::complex<data_t> getWavenumber(int i, int j) const;
   /// Get vector index for given matrix indices
   unsigned int getIndex(unsigned int i, unsigned int j) const;
   /// Resize transform for real matrix of size \f$N\times J\f$.
@@ -67,7 +67,7 @@ class FourierTransform2D : public NumVector<complex<data_t> > {
   /// Get size of real matrix in \p dimension.
   int getRealSize(bool dimension) const;
   /// Copy operator for base-class.
-  FourierTransform2D& operator=(const NumVector<complex<data_t> >& v);
+  FourierTransform2D& operator=(const NumVector<std::complex<data_t> >& v);
  private:
   int N,J;
   data_t wavenumber(int k, bool dimension) const;

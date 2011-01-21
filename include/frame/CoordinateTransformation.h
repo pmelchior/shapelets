@@ -101,9 +101,9 @@ namespace shapelens {
   class LensingTransformation : public CoordinateTransformation {
   public:
     /// Constructor.
-    LensingTransformation(data_t kappa_, complex<data_t> gamma);
+    LensingTransformation(data_t kappa_, std::complex<data_t> gamma);
     /// Constructor for 2nd order lensing transformation.
-    LensingTransformation(data_t kappa_, complex<data_t> gamma, complex<data_t> F, complex<data_t> G);
+    LensingTransformation(data_t kappa_, std::complex<data_t> gamma, std::complex<data_t> F, std::complex<data_t> G);
     /// Apply transformation to \p P.
     virtual void transform(Point<data_t>& P) const;
     /// Apply inverse transformation to \p P.

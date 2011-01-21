@@ -15,8 +15,8 @@ namespace shapelens {
   public:
     class DEIMOSWeightFunction : public GaussianWeightFunction {
     public:
-      DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid, const complex<data_t>& eps);
-      DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid_, const complex<data_t>& eps, const complex<data_t>& G);
+      DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid, const std::complex<data_t>& eps);
+      DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid_, const std::complex<data_t>& eps, const std::complex<data_t>& G);
       virtual data_t operator()(const Point<data_t>& P) const;
     private:
       LensingTransformation T;
@@ -33,14 +33,14 @@ namespace shapelens {
     void save(std::string filename) const;
     /// Deconvolve \p obj from \p psf.
     void deconvolve(const DEIMOS& psf);
-    /// Get complex ellipticity from mo.
-    complex<data_t> epsilon() const;
-    /// Get complex ellipticity from mo.
-    complex<data_t> chi() const;
+    /// Get std::complex ellipticity from mo.
+    std::complex<data_t> epsilon() const;
+    /// Get std::complex ellipticity from mo.
+    std::complex<data_t> chi() const;
     /// Get first flexion distortion from mo.
-    complex<data_t> zeta() const;
+    std::complex<data_t> zeta() const;
     /// Get second flexion distortion from mo.
-    complex<data_t> delta() const;
+    std::complex<data_t> delta() const;
     /// The ordered set of multipole moments.
     Moments mo;
     /// The ordered set of multipole moment errors.
@@ -52,15 +52,15 @@ namespace shapelens {
     /// Width of the weighting function.
     data_t scale;
     /// Ellipticity of weighting function
-    complex<data_t> eps;
+    std::complex<data_t> eps;
     /// 2nd flexion of weighting function
-    complex<data_t> G;
+    std::complex<data_t> G;
     
     friend class DEIMOSList;
   private:
     void match(Object& obj, int N);
     void deweight(const Moments& mo_w, int N);
-    complex<data_t> epsilon_limited();
+    std::complex<data_t> epsilon_limited();
     void estimateErrors(const Object& obj, int N);
     bool flexed;
     NumMatrix<data_t> D;

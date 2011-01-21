@@ -1,5 +1,6 @@
 #include "../../include/modelfit/SourceModel.h"
 #include "../../include/utils/Interpolation.h"
+#include "../../include/frame/Moments.h"
 
 namespace shapelens {
 
@@ -78,7 +79,6 @@ namespace shapelens {
       co.YMAX = support.tr(1);
       co.XCENTROID = centroid(0);
       co.YCENTROID = centroid(1);
-      co.FLUX = sm.getFlux();
       co.CLASSIFIER = sm.getModelType();
       co.PARENT = sm.getID();
       cat[i] = co;
@@ -223,7 +223,8 @@ namespace shapelens {
     SourceModel::id = id;
   
     // compute rescaling factor for flux
-    flux_scale = flux/obj->flux;
+    Moment0 objflux(*obj,FlatWeightFunction()); 
+    flux_scale = flux/objflux(0);
   }
 
   data_t InterpolatedModel::getValue(const Point<data_t>& P) const {

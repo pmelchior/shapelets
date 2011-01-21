@@ -23,7 +23,6 @@ int main(int argc, char *argv[]) {
   // form object from image data
   Object obj;
   obj = Image<data_t>(input.getValue());
-  obj.computeFlux();
   obj.computeCentroid();
   if (sidelength.isSet()) {
     int L = sidelength.getValue();

@@ -138,8 +138,6 @@ void Frame::findObjects() {
     if (data(i) > highThreshold && segMap(i) == 0) {
       counter++;
       linkPixels(pixelset,max, max_threshold, i);
-      if (ShapeLensConfig::BLENDING)
-	blending = detectBlending(pixelset, max, max_threshold);
       if (pixelset.size() >= ShapeLensConfig::MIN_PIXELS) {
 	history << "# Object " << counter << " detected with " << pixelset.size() << " significant pixels at (" << i%(Frame::getSize(0)) << "/" << i/(Frame::getSize(0)) << ")"  << std::endl;
 	for(iter = pixelset.begin(); iter != pixelset.end(); iter++ )
@@ -202,126 +200,12 @@ void Frame::linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& m
   }
 }
 
-bool Frame::detectBlending(const set<ulong>& all, data_t max, data_t max_threshold) {
-  // compute N thresholds between min_threshold an max
-  uint N = ShapeLensConfig::BLEND_NTHRESH;
-  NumVector<data_t> threshold(N);
-  for (uint i=1; i <= N; i++)
-    threshold(i-1) = i*(max - max_threshold)/(N+1);
-  
-  tree<set<ulong> > Tree;
-  tree<set<ulong> >::iterator top;
-  tree<set<ulong> >::fixed_depth_iterator diter;
-  tree<set<ulong> >::sibling_iterator sib;
-  
-  // initialize tree with all
-  top = Tree.begin();
-  top = Tree.insert(top, all);
-  // search for children of all
-  insertNodesAboveThreshold(Tree,top, threshold(0));
-
-  // go through all depth levels
-  for (int i=1; i < N; i++) {
-    if (Tree.max_depth(top) >= i) {
-      diter = Tree.begin_fixed(top, i-1);
-      for (uint j=0; j < diter.number_of_children(); j++) {
-	sib = Tree.child(diter,j);
-	insertNodesAboveThreshold(Tree, sib, threshold(i));
-      }
-    }
-  }
-  
-  // now go thru all nodes from top to leafs
-  // for nodes with more than a single child, check if
-  // - the number of pixels are larger than ShapeLensConfig::MIN_PIXELS
-  // - the flux of thos pixels is larger than a certain fraction of the total flux
-  // for at least two children
-  // otherwise remove all children apart from the biggest/brightest
-  bool blending = 0;
-  data_t allFlux = getTotalFlux(all);
-  for(tree<set<ulong> >::breadth_first_iterator biter = Tree.begin_breadth_first(); biter != Tree.end_breadth_first(); biter++) {
-    //sib = Tree.begin(biter);
-    if (biter.number_of_children() > 1) {
-      uint found = 0;
-      for(sib = Tree.begin(biter); sib != Tree.end(biter); sib++)
-	if ((*sib).size() > ShapeLensConfig::MIN_PIXELS)
-	  if (getTotalFlux(*sib) > ShapeLensConfig::BLEND_MINCONT*allFlux)
-	    found++;
-      if (found >= 2)
-	blending = 1;
-    }
-    if (blending)
-      break;
-  }
-  return blending;
-}
-
 data_t Frame::getTotalFlux(const set<ulong>& pixels) {
   data_t flux = 0;
   const NumVector<data_t>& data = *this;
   for(set<ulong>::const_iterator iter = pixels.begin(); iter != pixels.end(); iter++)
     flux += data(*iter);
   return flux;
-}
-
-void Frame::insertNodesAboveThreshold(tree<set<ulong> >& Tree, tree<set<ulong> >::iterator_base& titer, data_t threshold) {
-  set<ulong> above;
-  set<ulong>& parent = *titer;
-  const NumVector<data_t>& data = *this;
-  // first find all pixels from parent that are above threshold
-  for (set<ulong>::const_iterator iter = parent.begin(); iter != parent.end(); iter++)
-    if (data(*iter) > threshold)
-      above.insert(*iter);
-
-  // iterate thru all above pixels, link the neighbors into first child
-  // start a new child set when above pixel is not in a prior child
-  set<ulong>::const_iterator aboveiter;
-  tree<set<ulong> >::sibling_iterator sib;
-  set<ulong> child;
-  list<ulong> childlist;
-  for (aboveiter = above.begin(); aboveiter != above.end(); aboveiter++) {
-    ulong startpixel = *aboveiter;
-    // check whether startpixel is already in one of the children
-    bool found = 0;
-    for (sib = Tree.begin(titer); sib != Tree.end(titer); sib++) {
-      if ((*sib).find(startpixel) != (*sib).end()) {
-	found = 1;
-	break;
-      }
-   }
-    // if it is not yet found, it belongs to a new child
-    // thus, search all pixels of the new child
-    if (!found) {
-      child.clear();
-      childlist.clear();
-      childlist.push_back(startpixel);
-      child.insert(startpixel);
-      uint pixelnumber = 0;
-      list<ulong>::iterator iter = childlist.begin();
-      while (pixelnumber < childlist.size()) {
-	ulong pixel = *iter;
-	// loop over all direct neighbors
-	for (uint dir = 1; dir <= 8 ; dir++) {
-	  long neighbor = Frame::grid.getNeighborPixel(pixel,dir);
-	  // neighbor is within the image
-	  if (neighbor > 0)  {
-	    // neighbor is not already in child
-	    if (child.find(neighbor) == child.end()) {
-	      // neighbor also in above set
-	      if (above.find(neighbor) != above.end()) {
-		childlist.push_back(neighbor);
-		child.insert(neighbor);
-	      }
-	    }
-	  }
-	}
-	iter++;
-	pixelnumber++;	
-      }
-      // insert child into map of nodes and automatically increase key by using size()
-      Tree.append_child(titer, child);
-    }
-  }
 }
 
 unsigned long Frame::getNumberOfObjects() {

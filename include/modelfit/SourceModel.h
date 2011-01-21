@@ -39,7 +39,7 @@ public:
   unsigned long id;
   /// Compute rectangular SourceModel::support for elliptical sources.
   /// Considers position of SourceModel::centroid.
-  void setEllipticalSupport(data_t radius, const complex<data_t>& eps);
+  void setEllipticalSupport(data_t radius, const std::complex<data_t>& eps);
 };
 
 /// Populated an object by sampling the SourceModel.
@@ -73,7 +73,7 @@ class SersicModel : public SourceModel {
  public:
   /// Constructor with Sersic index \p n, effective radius \p Re, \p flux, and
   /// intrinsic ellipticity \p eps.
-  SersicModel(data_t n, data_t Re, data_t flux, complex<data_t> eps, const CoordinateTransformation* CT = NULL, unsigned long id=0);
+  SersicModel(data_t n, data_t Re, data_t flux, std::complex<data_t> eps, const CoordinateTransformation* CT = NULL, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -82,7 +82,7 @@ class SersicModel : public SourceModel {
   virtual char getModelType() const;
 private:
   data_t n, Re, b,limit,flux,flux_limit,shear_norm,flux_scale;
-  complex<data_t> eps;
+  std::complex<data_t> eps;
 };
 
 /// Moffat model class.
@@ -95,7 +95,7 @@ class MoffatModel : public SourceModel {
  public:
   /// Constructor with Moffat index \p beta, width \p FWHM, \p flux, and
   /// intrinsic ellipticity \p eps. 
-  MoffatModel(data_t beta, data_t FWHM, data_t flux, complex<data_t> eps, const CoordinateTransformation* CT = NULL, unsigned long id=0);
+  MoffatModel(data_t beta, data_t FWHM, data_t flux, std::complex<data_t> eps, const CoordinateTransformation* CT = NULL, unsigned long id=0);
   /// Sample model at \p P.
   virtual data_t getValue(const Point<data_t>& P) const;
   /// Get total flux of model.
@@ -104,7 +104,7 @@ class MoffatModel : public SourceModel {
   virtual char getModelType() const;
  private:
   data_t beta, alpha, limit, flux_limit, flux,shear_norm,flux_scale;
-  complex<data_t> eps;
+  std::complex<data_t> eps;
 };
 
 /// Model from interpolated pixel data.

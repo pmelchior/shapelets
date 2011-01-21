@@ -49,7 +49,7 @@ ifneq ($(UNAME),Linux)
 	CFLAGS = $(CFLAGS) -bind_at_load
 endif
 #CFLAG_LIBS = -L$(LIBPATH)
-LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lg2c -lcfitsio -lfftw3 -lsqlite3
+LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lcfitsio -lfftw3 -lsqlite3
 
 AR = ar
 ARFLAGS = -sr

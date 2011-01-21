@@ -84,12 +84,12 @@ namespace shapelens {
   }
 
   /// LensingTransformation ...
-  LensingTransformation::LensingTransformation(data_t kappa_, complex<data_t> gamma) : 
+  LensingTransformation::LensingTransformation(data_t kappa_, std::complex<data_t> gamma) : 
     kappa(kappa_), flex(false) {
     gamma1 = real(gamma);
     gamma2 = imag(gamma);
   }
-  LensingTransformation::LensingTransformation(data_t kappa_, complex<data_t> gamma, complex<data_t> F, complex<data_t> G) : 
+  LensingTransformation::LensingTransformation(data_t kappa_, std::complex<data_t> gamma, std::complex<data_t> F, std::complex<data_t> G) : 
     kappa(kappa_), flex(true) {
     gamma1 = real(gamma);
     gamma2 = imag(gamma);

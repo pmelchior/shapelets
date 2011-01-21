@@ -1,7 +1,6 @@
 #ifndef SHAPELENS_IMAGETRANSFORMATION_H
 #define SHAPELENS_IMAGETRANSFORMATION_H
 
-#include <complex.h>
 // for 3D convolution tensor
 #include <boost/multi_array.hpp>
 #include <numla/NumMatrix.h>
@@ -24,7 +23,7 @@ namespace shapelens {
 /// If a History is passed to the method, appropriate statements are logged to it.
 
 class ImageTransformation {
-  typedef complex<data_t> Complex;
+  typedef std::complex<data_t> Complex;
    public:
   /// Default constructor.
   ImageTransformation();
@@ -145,24 +144,24 @@ class ImageTransformation {
   /// Apply shear to the image.
   /// If \p covariance is given, the covariance matrix is updated. 
   /// If \p history is given, an appropriate statement is appended to it.
-  void shear(CoefficientVector<data_t>& cartesianCoeffs, complex<data_t> gamma, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
+  void shear(CoefficientVector<data_t>& cartesianCoeffs, std::complex<data_t> gamma, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Apply shear to image by employing the given \p shearMatrix.
   /// See getShearMatrix() and shear().
   void shear(CoefficientVector<data_t>& cartesianCoeffs, const NumMatrix<data_t>& shearMatrix, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Compute shear matrix.
   /// cf. Paper I, eq. (32).
-  NumMatrix<data_t> getShearMatrix(complex<data_t> gamma, const IndexVector& nVector);
+  NumMatrix<data_t> getShearMatrix(std::complex<data_t> gamma, const IndexVector& nVector);
 
   /// Apply flexion to the image.
   /// If \p covariance is given, the covariance matrix is updated. 
   /// If \p history is given, an appropriate statement is appended to it.
-  void flex(CoefficientVector<data_t>& cartesianCoeffs, complex<data_t> F, complex<data_t> G, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
+  void flex(CoefficientVector<data_t>& cartesianCoeffs, std::complex<data_t> F, std::complex<data_t> G, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Apply flexion to image by employing the given \p flexionMatrix.
   /// See getFlexionMatrix() and flex().
   void flex(CoefficientVector<data_t>& cartesianCoeffs, const NumMatrix<data_t>& flexionMatrix, NumMatrix<data_t>* covariance = NULL, History* history = NULL);
   /// Compute flexion matrix.
   /// See PM's diploma thesis, eq. (5.38) - (5.41)
-  NumMatrix<data_t> getFlexionMatrix(complex<data_t> F, complex<data_t> G, const IndexVector& nVector);
+  NumMatrix<data_t> getFlexionMatrix(std::complex<data_t> F, std::complex<data_t> G, const IndexVector& nVector);
 
  private:
   void makeBTensor(boost::multi_array<data_t,3>& bt, data_t alpha_1, data_t beta_1, data_t gamma_1, int nmax);

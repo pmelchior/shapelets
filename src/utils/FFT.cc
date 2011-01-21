@@ -2,26 +2,25 @@
 #include <stdexcept>
 
 using namespace shapelens;
-typedef complex<data_t> Complex;
 
-FourierTransform1D::FourierTransform1D() : NumVector<Complex> () {
+FourierTransform1D::FourierTransform1D() : NumVector<complex<data_t> > () {
   N = 0;
 } 
 FourierTransform1D::FourierTransform1D(unsigned int N) : 
-  NumVector<Complex> (N/2+1), N(N) {}
+  NumVector<complex<data_t> > (N/2+1), N(N) {}
 
 complex<data_t>& FourierTransform1D::operator()(unsigned int i) {
   if (i <= N/2)
-    return NumVector<Complex>::operator()(i);
+    return NumVector<complex<data_t> >::operator()(i);
   else
-    return NumVector<Complex>::operator()(N-(int)i);
+    return NumVector<complex<data_t> >::operator()(N-(int)i);
     
 }
 const complex<data_t>& FourierTransform1D::operator()(unsigned int i) const {
   if (i <= N/2)
-    return NumVector<Complex>::operator()(i);
+    return NumVector<complex<data_t> >::operator()(i);
   else
-    return NumVector<Complex>::operator()(N-(int)i);
+    return NumVector<complex<data_t> >::operator()(N-(int)i);
 }
 data_t FourierTransform1D::getWavenumber(int i) const {
   if (i >= 0 && i < N/2) return 2*M_PI*i/N;
@@ -30,18 +29,18 @@ data_t FourierTransform1D::getWavenumber(int i) const {
 }
 void FourierTransform1D::resize(unsigned int N1) {
   N = N1;
-  NumVector<Complex>::resize(N/2+1);
+  NumVector<complex<data_t> >::resize(N/2+1);
 }
 
 int FourierTransform1D::getRealSize() const {
   return N;
 }
 
-FourierTransform2D::FourierTransform2D() : NumVector<Complex> () {
+FourierTransform2D::FourierTransform2D() : NumVector<complex<data_t> > () {
   N = J = 0;
 } 
 FourierTransform2D::FourierTransform2D(unsigned int N, unsigned int J) : 
-  NumVector<Complex> (N*(J/2+1)), N(N), J(J) {}
+  NumVector<complex<data_t> > (N*(J/2+1)), N(N), J(J) {}
 
 unsigned int FourierTransform2D::getIndex(unsigned int i, unsigned int j) const {
   // for some reason, the storage order is transposed
@@ -58,11 +57,11 @@ FourierTransform2D& FourierTransform2D::operator=(const NumVector<complex<data_t
 }
 
 complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j) {
-  return NumVector<Complex>::operator()(getIndex(i,j));
+  return NumVector<complex<data_t> >::operator()(getIndex(i,j));
 }
 
 const complex<data_t>& FourierTransform2D::operator()(unsigned int i, unsigned int j)  const {
-  return NumVector<Complex>::operator()(getIndex(i,j));
+  return NumVector<complex<data_t> >::operator()(getIndex(i,j));
 }
 
 int FourierTransform2D::getRealSize(bool dimension) const {
@@ -90,7 +89,7 @@ data_t FourierTransform2D::wavenumber(int k, bool dimension) const {
 void FourierTransform2D::resize(unsigned int N1, unsigned int J1) {
   N = N1;
   J = J1;
-  NumVector<Complex>::resize(N*(J/2+1));
+  NumVector<complex<data_t> >::resize(N*(J/2+1));
 }
 
 
@@ -115,9 +114,9 @@ void FFT::transform(const FourierTransform1D& F, NumVector<data_t>& f) {
     if (f.size() != N)
       f.resize(N);
     // we work directly on the contents of f and F
-    // CAUTION: Due to Hermiticity of real -> Complex FFT, 
+    // CAUTION: Due to Hermiticity of real -> complex<data_t> FFT, 
     // not all entries of F are filled
-    fftw_plan p = fftw_plan_dft_c2r_1d(N,reinterpret_cast<data_t(*)[2]>(const_cast<Complex*>(F.c_array())),reinterpret_cast<data_t*>(f.c_array()),FFTW_ESTIMATE);
+    fftw_plan p = fftw_plan_dft_c2r_1d(N,reinterpret_cast<data_t(*)[2]>(const_cast<complex<data_t>*>(F.c_array())),reinterpret_cast<data_t*>(f.c_array()),FFTW_ESTIMATE);
     fftw_execute(p);
     fftw_destroy_plan(p);
     f /= N;
@@ -148,7 +147,7 @@ void FFT::transform(const FourierTransform2D& F, NumMatrix<data_t>& f) {
     if (f.getRows() != N || f.getColumns() != J)
       f.resize(N,J);
     // we work directly on the contents of f and F
-    fftw_plan p = fftw_plan_dft_c2r_2d(N,J,reinterpret_cast<data_t(*)[2]>(const_cast<Complex*>(F.c_array())),f.c_array(),FFTW_ESTIMATE);
+    fftw_plan p = fftw_plan_dft_c2r_2d(N,J,reinterpret_cast<data_t(*)[2]>(const_cast<complex<data_t>*>(F.c_array())),f.c_array(),FFTW_ESTIMATE);
     fftw_execute(p);
     fftw_destroy_plan(p);
     // normalization
@@ -183,7 +182,7 @@ void FFT::transform(const FourierTransform2D& F, Image<data_t>& f) {
       f.grid = Grid(0,0,N,J);
     }
     // we work directly on the contents of f and F
-    fftw_plan p = fftw_plan_dft_c2r_2d(N,J,reinterpret_cast<data_t(*)[2]>(const_cast<Complex*>(F.c_array())),f.c_array(),FFTW_ESTIMATE);
+    fftw_plan p = fftw_plan_dft_c2r_2d(N,J,reinterpret_cast<data_t(*)[2]>(const_cast<complex<data_t>*>(F.c_array())),f.c_array(),FFTW_ESTIMATE);
     fftw_execute(p);
     fftw_destroy_plan(p);
     // normalization
