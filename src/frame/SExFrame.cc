@@ -1,5 +1,5 @@
 #include "../../include/frame/SExFrame.h"
-#include <numla/NumVectorMasked.h>
+#include "../../include/utils/MathHelper.h"
 #include <boost/tokenizer.hpp>
 #include <fstream>
 #include <gsl/gsl_math.h>
@@ -238,19 +238,9 @@ const SegmentationMap& SExFrame::getSegmentationMap() {
 
 // estimate noise by iterative sigma clipping
 void SExFrame::estimateNoise() {
-  // set noise estimates
-  // since the position of the object is known from segMap, we can compute the
-  // noise now on all pixels not in pixellist
-  // 1) set mask(i)=1, when segMap(i) != 0
-  // 2) create NumVectorMasked from objdata and mask
-  // 3) compute std from that
-  // NumVector<bool> mask(data.size());
-//   for(int i =0; i < data.size(); i++)
-//     if (segMap(i) != 0) 
-//       mask(i) = 1;
-//   NumVectorMasked<data_t> masked(data,mask);
-//   masked.kappa_sigma_clip(bg_mean,bg_rms);
-  SExFrame::kappa_sigma_clip(bg_mean,bg_rms);
+  std::pair<data_t, data_t> mean_std = kappa_sigma_clip(*this);
+  bg_mean = mean_std.first;
+  bg_rms = mean_std.second;
   estimatedBG = 1;
 }
 

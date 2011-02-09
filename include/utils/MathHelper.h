@@ -2,12 +2,14 @@
 #define SHAPELENS_MATHHELPER_H
 
 #include "../Typedef.h"
+#include <numla/NumVector.h>
+#include <set>
 
 namespace shapelens {
 
   /// Templated replacement of \p gsl_pow_int.
   template <class T> 
-    T pow_int(const T& x, int n) {
+  inline  T pow_int(const T& x, int n) {
     T x2,x3,x4;
     switch (n) {
     case 0: return T(1);
@@ -30,18 +32,16 @@ namespace shapelens {
     }
   }
 
-  /// Computes sample mean and variance of a series of \p x_i up to
-  /// the index \p i.
-  /// \code
-  /// NumVector<data_t> v(N);
-  /// data_t mean, var;
-  /// for (int i=0; i < v.size(); i++) {
-  ///   v(i) = some_function();
-  ///   mean_variance(v(i), i, mean, var);
-  /// }
-  /// \endcode
-  void mean_variance(const data_t& x_i, int i, data_t& mean, data_t& var);
+  /// Perform \f$\kappa-\sigma\f$-clipping to calculate mean and
+  /// and standard deviation of \p data.
+  /// The algorithm iteratively determines median \f$m\f$ and 
+  /// standard deviation \f$\sigma\f$ of all pixels within 
+  /// \f$[m-3\sigma,m+3\sigma]\f$. If a new iteration works on the same
+  /// set of pixels than the previous one, the algorithm terminates.\n
+  std::pair<data_t, data_t> kappa_sigma_clip(const NumVector<data_t>& data, unsigned long maxLength = 1000000);
 
+  /// Compute \f$\frac{1}{2}^n\f$ quantiles of \p data.
+  std::set<double> quantiles(const NumVector<data_t>& data, unsigned int n);
 }
 
 

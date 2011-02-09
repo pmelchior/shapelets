@@ -1,5 +1,5 @@
 #include "../../include/frame/Frame.h"
-#include <numla/NumVectorMasked.h>
+#include "../../include/utils/MathHelper.h"
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sort.h>
 #include <gsl/gsl_statistics.h>
@@ -52,7 +52,9 @@ Image<data_t>(datafile), weight(weightfile), segMap(), history(segMap.history) {
 
 // estimate noise by iterative sigma clipping
 void Frame::estimateNoise() {
-  Frame::kappa_sigma_clip(noise_mean,noise_rms);
+  std::pair<data_t, data_t> mean_std = kappa_sigma_clip(*this);
+  noise_mean = mean_std.first;
+  noise_rms = mean_std.second;
   history << "# Background estimation: mean = " << noise_mean;
   history << ", sigma = " << noise_rms << std::endl;
   estimatedBG = 1;

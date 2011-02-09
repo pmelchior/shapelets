@@ -5,6 +5,7 @@
 #include "../Typedef.h"
 #include <numla/NumMatrix.h>
 #include <boost/shared_ptr.hpp>
+#include <list>
 
 namespace shapelens {
   /// Base class for coordinate transformations in 2D.

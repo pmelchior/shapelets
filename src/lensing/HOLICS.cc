@@ -1,5 +1,6 @@
 #include "../../include/lensing/HOLICS.h"
 #include "../../include/frame/WeightFunction.h"
+#include <gsl/gsl_math.h>
 
 namespace shapelens {
   HOLICS::HOLICS(const Object& obj, data_t scale) {

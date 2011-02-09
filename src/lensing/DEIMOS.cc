@@ -1,5 +1,5 @@
-#include <shapelens/lensing/DEIMOS.h>
-#include <shapelens/utils/IO.h>
+#include "../../include/lensing/DEIMOS.h"
+#include "../../include/utils/IO.h"
 
 namespace shapelens {
 
@@ -103,7 +103,7 @@ namespace shapelens {
     if (abs(c) > limit_chi)
       c *= limit_chi/abs(c);
     // transform chi to epsilon
-    return c/(1+sqrt(1-gsl_pow_2(abs(c))));
+    return c/(1+sqrt(1-abs(c)*abs(c)));
   }
   
   // determine optimal weighting parameters, centroid, and ellipticity
@@ -139,7 +139,7 @@ namespace shapelens {
       complex<data_t> eps_ = epsilon_limited(); //stabilized epsilon
       // scale of best-fit Gaussian
       data_t trQ = mo(2,0) + mo(0,2);
-      data_t trQs = trQ*(1-gsl_pow_2(abs(eps)));
+      data_t trQs = trQ*(1-abs(eps)*abs(eps));
       data_t scale_ = sqrt(trQs/mo(0,0));
       if (flexed) {
 	complex<data_t> delta_ = delta();  // second flexion distortion
@@ -180,11 +180,11 @@ namespace shapelens {
   void DEIMOS::deweight(const Moments& mo_w, int N) {
     data_t e1 = real(eps);
     data_t e2 = imag(eps);
-    data_t c1 = gsl_pow_2(1-e1) + gsl_pow_2(e2);
-    data_t c2 = gsl_pow_2(1+e1) + gsl_pow_2(e2);
-    data_t s2 = gsl_pow_2(scale);
-    data_t s4 = gsl_pow_4(scale);
-    data_t s6 = gsl_pow_6(scale);
+    data_t c1 = (1-e1)*(1-e1) + e2*e2;
+    data_t c2 = (1+e1)*(1+e1) + e2*e2;
+    data_t s2 = scale*scale;
+    data_t s4 = s2*s2;
+    data_t s6 = s2*s2*s2;
     data_t G1 = real(G);
     data_t G2 = imag(G);
 
@@ -345,7 +345,7 @@ namespace shapelens {
   complex<data_t> DEIMOS::epsilon() const {
     if (mo.getOrder() >= 2) {
       complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
-      e/= (complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(complex<data_t>(mo(0,2)*mo(2,0) - gsl_pow_2(mo(1,1)))));
+      e/= (complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(complex<data_t>(mo(0,2)*mo(2,0) - mo(1,1)*mo(1,1))));
       return e;
     } else
       return complex<data_t>(0,0);

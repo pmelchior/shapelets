@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include "../Typedef.h"
 #include "../frame/Image.h"
+#include "MathHelper.h"
 #include "Singleton.h"
 
 namespace shapelens {
@@ -51,7 +52,7 @@ namespace shapelens {
 	n = n_;
 	NumVector<data_t>::resize(n+1);
 	for (int j=0; j<=n; j++)
-	  NumVector<data_t>::operator()(j) = gsl_pow_int(-1,j)*(gsl_sf_fact(n)/(gsl_sf_fact(j)*gsl_sf_fact(n-j)));
+	  NumVector<data_t>::operator()(j) = pow_int(-1,j)*(gsl_sf_fact(n)/(gsl_sf_fact(j)*gsl_sf_fact(n-j)));
       }
     }
     private:
@@ -215,7 +216,7 @@ namespace shapelens {
 	for (int i=0; i < 4; i++) {
 	  for (int j=0; j < 4; j++) {
 	    // cl(l) = c(i,j)
-	    p += cl(l)*gsl_pow_int(x-x_,i)*gsl_pow_int(y-y_,j); 
+	    p += cl(l)*pow_int(x-x_,i)*pow_int(y-y_,j); 
 	    l++;
 	  }
 	}

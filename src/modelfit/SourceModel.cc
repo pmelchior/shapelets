@@ -94,7 +94,7 @@ namespace shapelens {
   SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation* ct_, unsigned long id) : 
     n(n), Re(Re), eps(eps) {
     limit = 5*Re;
-    shear_norm = 1 - gsl_pow_2(abs(eps));
+    shear_norm = 1 - abs(eps)*abs(eps);
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
@@ -113,9 +113,9 @@ namespace shapelens {
     // flux at limit
     flux_limit = exp(-b*(RRe1n -1));
     // compute total flux of model (considering the truncation at limit)
-    flux = (gsl_pow_2(Re)*2*M_PI*n*exp(b)/pow(b,2*n) * (gsl_sf_gamma(2*n) - gsl_sf_gamma_inc(2*n,b*RRe1n)));
+    flux = (Re*Re*2*M_PI*n*exp(b)/pow(b,2*n) * (gsl_sf_gamma(2*n) - gsl_sf_gamma_inc(2*n,b*RRe1n)));
     // subtract level at limit such that the profile vanishes there
-    flux -= M_PI*gsl_pow_2(limit)*flux_limit;
+    flux -= M_PI*limit*limit*flux_limit;
     // correct for shearing
     flux *= shear_norm;
     // compute rescaling factor for flux
@@ -151,9 +151,9 @@ namespace shapelens {
   MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation* ct_, unsigned long id) :
     beta(beta), eps(eps) {
 
-    alpha = (pow(2.,1./beta)-1)/gsl_pow_2(FWHM/2);
+    alpha = (pow(2.,1./beta)-1)/(FWHM*FWHM/4);
     limit = 2*FWHM;
-    shear_norm = 1 - gsl_pow_2(abs(eps));
+    shear_norm = 1 - abs(eps)*abs(eps);
 
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
@@ -171,9 +171,9 @@ namespace shapelens {
     // flux at limit
     flux_limit = 0;//pow(1+alpha*gsl_pow_2(limit),-beta);
     // compute total flux of model (considering the truncation at limit)
-    flux = 2*M_PI*(-1 + pow(1+alpha*gsl_pow_2(limit),1-beta))/(2*alpha - 2*alpha*beta);
+    flux = 2*M_PI*(-1 + pow(1+alpha*limit*limit,1-beta))/(2*alpha - 2*alpha*beta);
     // subtract level at R such that the profile vanishes there
-    flux -= M_PI*gsl_pow_2(limit)*flux_limit;
+    flux -= M_PI*limit*limit*flux_limit;
     // correct for shearing
     flux *= shear_norm;
     // compute rescaling factor for flux
@@ -192,7 +192,7 @@ namespace shapelens {
   
     data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm;
     if (radius < limit)
-      return flux_scale*(pow(1+alpha*gsl_pow_2(radius),-beta) - flux_limit);
+      return flux_scale*(pow(1+alpha*radius*radius,-beta) - flux_limit);
     else
       return 0;
   }
