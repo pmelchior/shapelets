@@ -6,7 +6,6 @@
 
 using namespace shapelens;
 namespace ublas = boost::numeric::ublas;
-namespace atlas = boost::numeric::bindings::atlas;
 
 Decomposite::Decomposite(const Object& O, Composite& C) : 
   C2D(C),
@@ -111,7 +110,9 @@ bool Decomposite::computeCoeffs() {
       // we can neglect the coeff covariance matrix and perform a direct
       // projection on shapelet states.
       if (noise == 0)
-	atlas::gemv(CblasTrans,1.0,(C2D.M).getMatrix(),obj,0.0,C2D.coeffs);
+	// C2D.coeffs = C2D.M^T * obj
+	(C2D.M).gemv(obj,C2D.coeffs,CblasTrans);
+      //atlas::gemv(CblasTrans,1.0,(C2D.M).getMatrix(),obj,0.0,C2D.coeffs);
       // otherwise can invert the Least-Squares matrix LS
       // a Cholesky decomposition might be faster here
       else

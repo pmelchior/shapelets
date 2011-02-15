@@ -12,8 +12,6 @@
 #include "shapelets/SIFFile.h"
 #include "shapelets/ShapeletObjectList.h"
 
-#include "modelfit/SourceModel.h"
-
 /// Namespace for ShapeLens++
 namespace shapelens {
 

@@ -253,7 +253,7 @@ namespace shapelens {
     }
 
     // mo = D*mo_w
-    boost::numeric::bindings::atlas::gemv(1.0,(boost::numeric::ublas::matrix<data_t>)D,mo_w,0.0,mo);
+    D.gemv(mo_w, mo);
   }
 
   void DEIMOS::estimateErrors(const Object& obj, int N) {

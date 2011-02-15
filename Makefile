@@ -19,11 +19,6 @@ FRAMEINCLPATH = $(INCLPATH)/frame
 FRAMESRC = $(wildcard $(FRAMESRCPATH)/*.cc)
 FRAMEOBJECTS = $(FRAMESRC:$(FRAMESRCPATH)/%.cc=$(LIBPATH)/%.o)
 
-MODELFITSRCPATH = $(SRCPATH)/modelfit
-MODELFITINCLPATH = $(INCLPATH)/modelfit
-MODELFITSRC = $(wildcard $(MODELFITSRCPATH)/*.cc)
-MODELFITOBJECTS = $(MODELFITSRC:$(MODELFITSRCPATH)/%.cc=$(LIBPATH)/%.o)
-
 COMMONSRC = $(wildcard $(SRCPATH)/*.cc)
 COMMONOBJECTS = $(COMMONSRC:$(SRCPATH)/%.cc=$(LIBPATH)/%.o)
 
@@ -46,10 +41,14 @@ CC = g++
 #compilation flags
 CFLAGS = -ansi -g $(SPECIALFLAGS) -DBIG_JOINS=1
 ifneq ($(UNAME),Linux)
-	CFLAGS = $(CFLAGS) -bind_at_load
+	CFLAGS += -bind_at_load
 endif
-#CFLAG_LIBS = -L$(LIBPATH)
-LIBS = -lshapelens -lgsl -lcblas -llapack_atlas -latlas -llapack -lcfitsio -lfftw3 -lsqlite3
+
+ifneq (,$(findstring HAS_ATLAS,$(SPECIALFLAGS)))
+	LIBS = -lshapelens -lgsl -llapack_atlas -latlas -llapack -lcfitsio -lfftw3 -lsqlite3
+else
+	LIBS = -lshapelens -lgsl -lgslcblas -lcfitsio -lfftw3 -lsqlite3
+endif
 
 AR = ar
 ARFLAGS = -sr
@@ -90,11 +89,6 @@ cleanframe:
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
 	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
-cleanmodelfit:
-	rm -f $(MODELFITOBJECTS)
-	rm -f $(LIBPATH)/lib$(LIBNAME).a
-	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
-
 cleancommon:
 	rm -f $(COMMONOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
@@ -120,14 +114,14 @@ progs: $(PROGSOBJECTS)
 docs: $(HEADERS)
 	doxygen Doxyfile
 
-$(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+$(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	$(AR) $(ARFLAGS) $@ $?
 
 ifeq ($(UNAME),Linux)
-$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	$(CC) $(SHAREDFLAGS) -o $@ $?
 else
-$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	$(CC) $(SHAREDFLAGS) $(CFLAG_LIBS) -o $@ $? $(LIBS)
 endif
 
@@ -135,9 +129,6 @@ $(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LIBPATH)/%.o: $(FRAMESRCPATH)/%.cc
-	$(CC) $(CFLAGS) -c $< -o $@
-
-$(LIBPATH)/%.o: $(MODELFITSRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(LIBPATH)/%.o: $(LENSINGSRCPATH)/%.cc

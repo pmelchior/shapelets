@@ -3,7 +3,6 @@
 #include <boost/lexical_cast.hpp>
 #include <fstream>
 #include <iostream>
-#include <limits>
 
 using namespace shapelens;
 using namespace std;
@@ -12,7 +11,7 @@ bool ShapeLensConfig::VERBOSITY = 0;
 unsigned int ShapeLensConfig::NMAX_LOW = 0;
 unsigned int ShapeLensConfig::NMAX_HIGH = 100;
 data_t ShapeLensConfig::BETA_LOW = 0;
-data_t ShapeLensConfig::BETA_HIGH = numeric_limits<data_t>::infinity();
+data_t ShapeLensConfig::BETA_HIGH = 1e6;
 data_t ShapeLensConfig::DELTA_BETA = 0.02;
 bool ShapeLensConfig::ALLOW_FLATTENING = 0;
 bool ShapeLensConfig::FILTER_SPURIOUS = 0;
