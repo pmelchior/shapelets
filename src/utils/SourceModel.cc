@@ -1,4 +1,4 @@
-#include "../../include/modelfit/SourceModel.h"
+#include "../../include/utils/SourceModel.h"
 #include "../../include/utils/Interpolation.h"
 #include "../../include/frame/Moments.h"
 
