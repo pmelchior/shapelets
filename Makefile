@@ -1,7 +1,8 @@
-INCLPATH = ./include
-SRCPATH = ./src
-LIBPATH = ./lib/$(SUBDIR)
-PROGSRCPATH = ./progs
+INCLPATH = include
+SRCPATH = src
+LIBPATH = lib
+DOCPATH = doc
+PROGSRCPATH = progs
 LIBNAME = shapelens
 
 SHAPELETSSRCPATH = $(SRCPATH)/shapelets
@@ -27,12 +28,12 @@ UTILSINCLPATH = $(INCLPATH)/utils
 UTILSSRC = $(wildcard $(SRCPATH)/utils/*.cc)
 UTILSOBJECTS = $(UTILSSRC:$(SRCPATH)/utils/%.cc=$(LIBPATH)/%.o)
 
-ITALIBSLIBPATH = $(ITALIBSPATH)/lib/$(SUBDIR)
-PROGPATH = $(ITALIBSPATH)/bin/$(SUBDIR)
+ITALIBSLIBPATH = $(ITALIBSPATH)/lib
+PROGPATH = $(ITALIBSPATH)/bin
 PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
 PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
-HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(MODELFITINCLPATH)/*.h) $(wildcard $(UTILSINCLPATH)/*.h)
+HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wildcard $(FRAMEINCLPATH)/*.h) $(wildcard $(LENSINGINCLPATH)/*.h) $(wildcard $(UTILSINCLPATH)/*.h)
 
 # which OS
 UNAME := $(shell uname)
@@ -60,16 +61,21 @@ else
 	LIBEXT = dylib
 endif
 
-.DEFAULT: all
+all: $(LIBPATH) $(DOCPATH) library shared
+
+$(LIBPATH):
+	mkdir -p $(LIBPATH)
+
+$(DOCPATH):
+	mkdir -p $(DOCPATH)
 
 .PHONY: clean
-
-all: lib shared
 
 clean: 
 	rm -f $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
 	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)	
+	rm -f $(DOCPATH)/*
 
 cleanshared:
 	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
@@ -97,11 +103,11 @@ cleancommon:
 cleanprogs:
 	rm -f $(PROGSOBJECTS)
 
-lib: $(LIBPATH)/lib$(LIBNAME).a
+library: $(LIBPATH)/lib$(LIBNAME).a
 
 shared: $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
-install: lib shared
+install: library shared
 	mkdir -p $(ITALIBSLIBPATH)
 	cp $(LIBPATH)/lib$(LIBNAME).a $(ITALIBSLIBPATH)
 	cp $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $(ITALIBSLIBPATH)
@@ -119,10 +125,12 @@ $(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS
 
 ifeq ($(UNAME),Linux)
 $(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
-	$(CC) $(SHAREDFLAGS) -o $@ $?
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)	
+	$(CC) $(SHAREDFLAGS) -o $@ $^
 else
 $(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
-	$(CC) $(SHAREDFLAGS) $(CFLAG_LIBS) -o $@ $? $(LIBS)
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)	
+	$(CC) $(SHAREDFLAGS) $(CFLAG_LIBS) -o $@ $^ $(LIBS)
 endif
 
 $(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc

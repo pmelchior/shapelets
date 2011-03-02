@@ -54,7 +54,7 @@ void createShapeletImages(CoefficientVector<data_t>& averageCoeffs, CoefficientV
     beta =  betamin + gsl_rng_uniform(r)*(betamax-betamin);
     s.setBeta(beta);
     // set grid
-    int range = GSL_MAX_INT((int)ceil(15*beta),40);
+    int range = std::max((int)ceil(15*beta),40);
     if (range%2==1) range++;
     Grid grid = Grid(-range/2,-range/2,range,range);
     s.setGrid(grid);
