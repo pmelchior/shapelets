@@ -31,6 +31,16 @@ namespace shapelens {
       return x2*pow_int(x,n); 
     }
   }
+  /// Shorthands for \p pow_int() for small integer powers
+  template <class T> inline T pow2(const T& x) { return pow_int(x,2); }
+  template <class T> inline T pow3(const T& x) { return pow_int(x,3); }
+  template <class T> inline T pow4(const T& x) { return pow_int(x,4); }
+  template <class T> inline T pow5(const T& x) { return pow_int(x,5); }
+  template <class T> inline T pow6(const T& x) { return pow_int(x,6); }
+  template <class T> inline T pow7(const T& x) { return pow_int(x,7); }
+  template <class T> inline T pow8(const T& x) { return pow_int(x,8); }
+  template <class T> inline T pow9(const T& x) { return pow_int(x,9); }
+  template <class T> inline T pow10(const T& x) { return pow_int(x,10); }
 
   /// Perform \f$\kappa-\sigma\f$-clipping to calculate mean and
   /// and standard deviation of \p data.
