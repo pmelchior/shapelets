@@ -240,8 +240,8 @@ namespace shapelens {
   Moments::Moments(const Object& obj, const WeightFunction& w, int N_) :
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) {
-    //    int SUBPIXEL = 2;
-    //data_t offset = 1./SUBPIXEL;
+//     int SUBPIXEL = 2;
+//     data_t offset = 1./SUBPIXEL;
 //     data_t w_, diff_x, diff_y, val;
 //     for (long i=0; i< obj.grid.size(); i++) {
 //       Point<data_t> P = obj.grid(i), P_;
@@ -255,6 +255,7 @@ namespace shapelens {
 // 	  w_ = w(P_)/(SUBPIXEL*SUBPIXEL);
 // 	  if (obj.weight.size() != 0)
 // 	    w_ *= obj.weight(i);
+
 // 	  for(int n=0; n <= N; n++)
 // 	    for(int m=0; m <= n; m++)
 // 	      operator()(m,n-m) += pow_int(diff_x,m) * pow_int(diff_y,n-m) * val * w_;
@@ -286,7 +287,7 @@ namespace shapelens {
     if (obj.weight.size() != 0)
       for(int n=0; n <= N; n++)
 	for(int m=0; m <= n; m++)
-	  operator()(m,n-m) /= sum_w;
+	operator()(m,n-m) /= sum_w;
   }
 
   data_t& Moments::operator()(unsigned int px, unsigned int py) {

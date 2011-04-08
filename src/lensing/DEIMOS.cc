@@ -21,22 +21,36 @@ namespace shapelens {
     return GaussianWeightFunction::operator()(P);
   }
 
-  DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), C(0), flexed(false) {}
+  DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), flexed(false) {}
 
-  DEIMOS::DEIMOS (Object& obj, int N, int C_, data_t scale_, bool flexed_) :
-    id(obj.id), scale(scale_), eps(0,0), C(C_), flexed(flexed_), 
-    D(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2) {
+  DEIMOS::DEIMOS (Object& obj, int N_, int C_, data_t scale_, bool flexed_) :
+    id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_), 
+    D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
+    S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
     // measure moments within optimized weighting function
     mo.setOrder(N);
-    match(obj,N);
-    estimateErrors(obj,N);
+    match(obj);
+    setNoiseImage(obj);
+    computeCovariances();
  }
+
+  DEIMOS::DEIMOS (Object& obj, const DEIMOS& psf, int N_, int C_, data_t scale_, bool flexed_) :
+    id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_), 
+    D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
+    S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
+    // measure moments within optimized weighting function
+    mo.setOrder(N);
+    match(obj);
+    setNoiseImage(obj);
+    computeCovariances();
+    deconvolve(psf);
+  }
 
   DEIMOS::DEIMOS(std::string filename) {
     fitsfile* fptr = IO::openFITSFile(filename);
     NumMatrix<data_t> M;
     IO::readFITSImage(fptr,M);
-    int N = int(M.getRows()) - 1;
+    N = int(M.getRows()) - 1;
     mo.setOrder(N);
     for(int n1=0; n1 <= N; n1++)
       for(int n2=0; n2 <= N-n1; n2++)
@@ -59,14 +73,10 @@ namespace shapelens {
       C = 0;
     }
 
-    // read noise
-    mo_noise.setOrder(N);
+    // read covariance
     try {
       IO::moveToFITSExtension(fptr, 2);
-      IO::readFITSImage(fptr,M);
-      for(int n1=0; n1 <= N; n1++)
-	for(int n2=0; n2 <= N-n1; n2++)
-	  mo_noise(n1,n2) = M(n2,n1);
+      IO::readFITSImage(fptr,S);
     } catch (std::runtime_error) {}
 	
     IO::closeFITSFile(fptr);
@@ -74,7 +84,6 @@ namespace shapelens {
 
   void DEIMOS::save(std::string filename) const {
     fitsfile* fptr = IO::createFITSFile(filename);
-    int N = mo.getOrder();
     NumMatrix<data_t> M(N+1,N+1);
     for(int n1=0; n1 <= N; n1++)
       for(int n2=0; n2 <= N-n1; n2++)
@@ -85,12 +94,7 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"EPS",eps,"weighting function ellipticity");
     IO::updateFITSKeyword(fptr,"G",G,"weighting function G-flexion");
     IO::updateFITSKeyword(fptr,"C",C,"deweighting correction order");
-
-    // save noise
-    for(int n1=0; n1 <= N; n1++)
-      for(int n2=0; n2 <= N-n1; n2++)
-	M(n2,n1) = mo_noise(n1,n2); // transpose to have correctly oriented image
-    IO::writeFITSImage(fptr,M,"VARIANCE");
+    IO::writeFITSImage(fptr,S,"VARIANCE");
     IO::closeFITSFile(fptr);
   }
 
@@ -107,7 +111,7 @@ namespace shapelens {
   }
   
   // determine optimal weighting parameters, centroid, and ellipticity
-  void DEIMOS::match(Object& obj, int N) {
+  void DEIMOS::match(Object& obj) {
     int iter = 0, maxiter = 12, run = 0, maxrun = 1;
     if (flexed) 
       maxrun++;
@@ -133,7 +137,7 @@ namespace shapelens {
       }
 
       // deweight now and estimate new centroid and ellipticity
-      deweight(mo_w, N);
+      deweight(mo_w);
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
       complex<data_t> eps_ = epsilon_limited(); //stabilized epsilon
@@ -177,7 +181,7 @@ namespace shapelens {
     }
   }
 
-  void DEIMOS::deweight(const Moments& mo_w, int N) {
+  void DEIMOS::deweight(const Moments& mo_w) {
     data_t e1 = real(eps);
     data_t e2 = imag(eps);
     data_t c1 = (1-e1)*(1-e1) + e2*e2;
@@ -256,22 +260,24 @@ namespace shapelens {
     D.gemv(mo_w, mo);
   }
 
-  void DEIMOS::estimateErrors(const Object& obj, int N) {
-    // compute the noise from a constant one image
-    // variance of weighted moment (i,j) is propto
-    // moment (i*2,j*2) measured with square of weighting function
-
-    // square of Gaussian: sigma -> sigma/sqrt(2);
-    DEIMOSWeightFunction w2(scale/M_SQRT2, obj.centroid, eps);
-    
-    Object noise = obj;
+  void DEIMOS::setNoiseImage(const Object& obj) {
+    noise.resize(obj.size());
+    noise.grid = obj.grid;
+    noise.centroid = obj.centroid;
     if (obj.weight.size() == 0)
       for (unsigned int i=0; i < noise.size(); i++)
-	noise(i) = 1;
+	noise(i) = obj.noise_rms*obj.noise_rms;
     else
       for (unsigned int i=0; i < noise.size(); i++)
 	noise(i) = obj.weight(i);
-    mo_noise = Moments(noise,w2,2*(N+C));
+  }
+
+  void DEIMOS::computeCovariances() {
+    // variance of weighted moment (i,j) is propto
+    // moment (i*2,j*2) measured with square of weighting function
+    // (square of Gaussian: sigma -> sigma/sqrt(2));
+    DEIMOSWeightFunction w2(scale/M_SQRT2, noise.centroid, eps);
+    Moments mo_noise(noise,w2,2*(N+C));
 
     // copy terms from (2*i, 2*j) to (i,j)
     for (int n=1; n <= N+C; n++)
@@ -279,19 +285,22 @@ namespace shapelens {
       mo_noise(m,n-m) = mo_noise(2*m,2*(n-m));
     mo_noise.setOrder(N+C);
 
-    NumMatrix<data_t> S(mo.size(), mo.size());
+    S.clear();
     for (int i=0; i < mo.size(); i++)
       for (int j=0; j < mo.size(); j++)
 	for (unsigned int k=0; k < mo_noise.size(); k++)
 	  S(i,j) += D(i,k)*D(j,k)*mo_noise(k);
-    S = S.invert();
-    mo_noise.setOrder(N);
-    for (int i=0; i < mo_noise.size(); i++)
-      mo_noise(i) = 1./S(i,i);
-    if (obj.weight.size() == 0)
-      mo_noise *= obj.noise_rms*obj.noise_rms;
   }
 
+  Moments DEIMOS::getMomentErrors() const { 
+    Moments mo_noise(N);
+    if (S(0,0) != 0) {
+      NumMatrix<data_t> S_1 = S.invert();
+      for (int i=0; i < mo_noise.size(); i++)
+	mo_noise(i) = 1./S_1(i,i);
+    }
+    return mo_noise;
+  }
 
 
   // CAUTION: this overflows for n > 10!!!

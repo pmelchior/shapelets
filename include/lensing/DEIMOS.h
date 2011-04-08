@@ -27,12 +27,12 @@ namespace shapelens {
     DEIMOS();
     /// Constructor from filename.
     DEIMOS(std::string filename);
-    /// Constructor for building moments up to order \p N from \p obj.
+    /// Constructor for computing moments up to order \p N from \p obj.
     DEIMOS (Object& obj, int N, int C, data_t scale, bool flexed = false);
+    /// Constructor for computing deconvolved moments up to order \p N from \p obj.
+    DEIMOS (Object& obj, const DEIMOS& psf, int N, int C, data_t scale, bool flexed = false);
     /// Save to a file.
     void save(std::string filename) const;
-    /// Deconvolve \p obj from \p psf.
-    void deconvolve(const DEIMOS& psf);
     /// Get std::complex ellipticity from mo.
     std::complex<data_t> epsilon() const;
     /// Get std::complex ellipticity from mo.
@@ -41,10 +41,14 @@ namespace shapelens {
     std::complex<data_t> zeta() const;
     /// Get second flexion distortion from mo.
     std::complex<data_t> delta() const;
+    /// Get marginalized moment errors.
+    Moments getMomentErrors() const;
     /// The ordered set of multipole moments.
     Moments mo;
-    /// The ordered set of multipole moment errors.
-    Moments mo_noise;
+    /// Teh covariance matrix of mo.
+    NumMatrix<data_t> S;
+    /// Moment order.
+    int N;
     /// Deweighting order.
     int C;
     /// Object id.
@@ -57,13 +61,16 @@ namespace shapelens {
     std::complex<data_t> G;
     
     friend class DEIMOSList;
-  private:
-    void match(Object& obj, int N);
-    void deweight(const Moments& mo_w, int N);
+  protected:
+    void match(Object& obj);
+    void deweight(const Moments& mo_w);
+    void deconvolve(const DEIMOS& psf);
     std::complex<data_t> epsilon_limited();
-    void estimateErrors(const Object& obj, int N);
+    void setNoiseImage(const Object& obj);
+    void computeCovariances();
     bool flexed;
     NumMatrix<data_t> D;
+    Object noise;
   };
 
   /// Class for collections of DEIMOS instances.
