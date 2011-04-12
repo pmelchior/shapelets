@@ -54,7 +54,7 @@ struct CatObject {
 /// \endcode
 /// where \p COL_NR is an integer > 1 and \p PARAMETER_NAME is a
 /// string. After that follows the data section. All columns are separated by
-/// one or multiple blank characters.\n\n
+/// one or multiple blank or tabulator characters.\n\n
 /// See CatObject for details on mandatory and optional values of 
 /// \p PARAMETER_NAME.
 class Catalog : public std::map<unsigned long, CatObject> {

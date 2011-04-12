@@ -28,9 +28,14 @@ HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
   // axsizes of underlying image (otherwise unknown)
   long naxis[2];
   int status = 0;
-  fits_get_img_size(fptr, 2, naxis, &status);
-  axsize0 = naxis[0];
-  axsize1 = naxis[1];
+  int dimensions;
+  fits_get_img_dim (fptr, &dimensions, &status);
+  if (dimensions == 2) {
+    fits_get_img_size(fptr, dimensions, naxis, &status);
+    axsize0 = naxis[0];
+    axsize1 = naxis[1];
+  } else
+    throw std::invalid_argument("HugeFrame: FITS file does not provide valid image!");
 }
 
 HugeFrame::HugeFrame (std::string datafile, std::string weightfile, std::string catfile) : 
@@ -88,7 +93,6 @@ void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       O.history << "# Object cut off at the image boundary!" << endl;
       cutflag = 1;
     }
-  
     O.resize((xmax-xmin)*(ymax-ymin));
     // Grid will be changed but not shifted (all pixels stay at their position)
     O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);

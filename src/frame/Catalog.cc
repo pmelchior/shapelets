@@ -37,7 +37,7 @@ void Catalog::read(string catfile) {
   while(getline(catalog, line)) {
     typedef boost::tokenizer<boost::char_separator<char> > Tok;
     // split entries at empty chars
-    boost::char_separator<char> sep(" ");
+    boost::char_separator<char> sep(" \t");
     Tok tok(line, sep);
     // first of all we copy the token into string vector
     // though this is not too sophisticated it does not hurt and is more 
