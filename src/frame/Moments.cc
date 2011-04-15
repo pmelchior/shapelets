@@ -47,14 +47,16 @@ namespace shapelens {
   Moment1::Moment1(const Object& obj, const WeightFunction& w) {
     const Grid& grid = obj.grid;
     M[0] = M[1] = 0;
-    data_t w_;
+    data_t w_, diff_x, diff_y;
 
     for (long i=0; i< grid.size(); i++) {
       w_ = w(grid(i));
+      diff_x = obj.grid(i,0)-obj.centroid(0);
+      diff_y = obj.grid(i,1)-obj.centroid(1);
       if (obj.weight.size() != 0)
 	w_ *= obj.weight(i);
-      M[0] += obj(i) * grid(i,0) * w_;
-      M[1] += obj(i) * grid(i,1) * w_;
+      M[0] += diff_x * obj(i) * w_;
+      M[1] += diff_y * obj(i) * w_;
     }
   }
   data_t& Moment1::operator()(bool i) {
