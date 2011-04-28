@@ -19,6 +19,15 @@ namespace shapelens {
     return outfptr;
   }
 
+  fitsfile* IO::openFITSTable(std::string filename, bool write) {
+    int status = 0;
+    fitsfile* outfptr;
+    fits_open_table(&outfptr, filename.c_str(), (int) write, &status);
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot open " + filename);
+    return outfptr;
+  }
+			      
   fitsfile* IO::createFITSFile(std::string filename) {
     int status = 0;
     fitsfile *outfptr;
@@ -109,6 +118,24 @@ namespace shapelens {
       throw std::invalid_argument("IO: Cannot read FITS keycards!");
   }
 
+  long IO::getFITSTableRows(fitsfile* fptr) {
+    int status = 0;
+    long nrows;
+    fits_get_num_rows(fptr, &nrows, &status);
+    if (status != 0)
+      throw std::runtime_error("IO: Cannot find number of rows in table!");
+    return nrows;
+  }
+
+  int IO::getFITSTableColumnNumber(fitsfile* fptr, std::string name) {
+    int status = 0, colnum;
+    fits_get_colnum(fptr, 0, const_cast<char*>(name.c_str()), &colnum, &status);
+    if (status == COL_NOT_UNIQUE)
+      throw std::runtime_error("IO: Column " + name + " in FITS table is not unique!");
+    else if (status != 0)
+      throw std::invalid_argument("IO: Cannot find column " + name + " in FITS table!");
+    return colnum;
+  }
 
   void IO::addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit) {
     const gsl_rng_type * T;

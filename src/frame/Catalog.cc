@@ -5,6 +5,7 @@
 #include <set>
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
+#include <stdexcept>
 
 using namespace shapelens;
 using namespace std;
@@ -24,57 +25,95 @@ void Catalog::read(string catfile) {
   formatChecked = true;
   // open cat file
   ifstream catalog (catfile.c_str());
-  if (catalog.fail()) {
-    std::cerr << "Catalog: catalog file does not exist!" << endl;
-    terminate();
-  }
+  if (catalog.fail())
+    throw std::invalid_argument("Catalog: catalog file does not exist!");
   catalog.clear();
-  // read in cat file
-  // 1) parse the format definition lines
-  // 2) fill object information into SExCatObjects -> map<unsigned long, CatObject>;
-  string line;
-  std::vector<std::string> column;
-  while(getline(catalog, line)) {
-    typedef boost::tokenizer<boost::char_separator<char> > Tok;
-    // split entries at empty chars
-    boost::char_separator<char> sep(" \t");
-    Tok tok(line, sep);
-    // first of all we copy the token into string vector
-    // though this is not too sophisticated it does not hurt and is more 
-    // convenient
-    column.clear();
-    for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter)
-      column.push_back(*tok_iter);
-    // comment line: contains format definition at columns 2,3
-    if (column[0].compare("#") == 0)
-      setFormatField(column[2],boost::lexical_cast<unsigned short>(column[1].c_str()));
-    // at this point we should have a complete format definition: check it
-    // from here on we expect the list of object to come along.
-    else {
-      if (!formatChecked) checkFormat();
-      // then set up a true SExCatObject
-      CatObject so;
-      unsigned long id = boost::lexical_cast<unsigned long>(column[format.ID].c_str());
-      // the sextractor corrdinates start with (1,1), ours with (0,0)
-      so.XMIN = boost::lexical_cast<int>(column[format.XMIN].c_str())-1;
-      so.XMAX = boost::lexical_cast<int>(column[format.XMAX].c_str())-1;
-      so.YMIN = boost::lexical_cast<int>(column[format.YMIN].c_str())-1;
-      so.YMAX = boost::lexical_cast<int>(column[format.YMAX].c_str())-1;
-      // as Catalog pixels start with (1,1) and ours with (0,0), 
-      // we need to subtract 1
-      so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
-      so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
-      so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
+  
+  // check if it's a fits table
+  int status = 0;
+  fitsfile* fptr = NULL;
+  // yes, it is a FITS table
+  try {
+    fitsfile* fptr = IO::openFITSTable(catfile);
+    // get column numbers for all required columns 
+    setFormatFromFITSTable(fptr);
+    checkFormat();
+    // go thru all rows and grab the required columns for each object
+    CatObject so;
+    so.CLASSIFIER = so.PARENT = 0;
+    long nrows = IO::getFITSTableRows(fptr);
+    for (long i = 0; i < nrows; i++) {
+      unsigned long id;
+      IO::readFITSTableValue(fptr, i, format.ID, id);
+      IO::readFITSTableValue(fptr, i, format.XMIN, so.XMIN);
+      so.XMIN -= 1; // the sextractor coords start with (1,1), ours with (0,0)
+      IO::readFITSTableValue(fptr, i, format.XMAX, so.XMAX);
+      so.XMAX -= 1;
+      IO::readFITSTableValue(fptr, i, format.YMIN, so.YMIN);
+      so.YMIN -= 1;
+      IO::readFITSTableValue(fptr, i, format.YMAX, so.YMAX);
+      so.YMAX -= 1; 
+      IO::readFITSTableValue(fptr, i, format.XCENTROID, so.XCENTROID);
+      so.XCENTROID -= 1;
+      IO::readFITSTableValue(fptr, i, format.YCENTROID, so.YCENTROID);
+      so.YCENTROID -= 1;
+      IO::readFITSTableValue(fptr, i, format.FLAGS, so.FLAGS);
       if (present.test(8))
-	so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
-      else
-	so.CLASSIFIER = (data_t) 0;
+	IO::readFITSTableValue(fptr, i, format.CLASSIFIER, so.CLASSIFIER);
       if (present.test(9))
-	so.PARENT = boost::lexical_cast<unsigned long>(column[format.PARENT].c_str());
-      else
-	so.PARENT = (unsigned long)0;
+	IO::readFITSTableValue(fptr, i, format.PARENT, so.PARENT);
       // then store it in map
       Catalog::insert(make_pair(id,so));
+    }
+    IO::closeFITSFile(fptr);
+  }
+
+  // no, it's an ASCII file
+  catch (std::runtime_error) {
+    // read in cat file
+    // 1) parse the format definition lines
+    // 2) fill object information into SExCatObjects -> map<unsigned long, CatObject>;
+    string line;
+    std::vector<std::string> column;
+    while(getline(catalog, line)) {
+      typedef boost::tokenizer<boost::char_separator<char> > Tok;
+      // split entries at empty chars
+      boost::char_separator<char> sep(" \t");
+      Tok tok(line, sep);
+      // first of all we copy the token into string vector
+      // though this is not too sophisticated it does not hurt and is more 
+      // convenient
+      column.clear();
+      for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter)
+	column.push_back(*tok_iter);
+      // comment line: contains format definition at columns 2,3
+      if (column[0].compare("#") == 0)
+	setFormatField(column[2],boost::lexical_cast<unsigned short>(column[1].c_str()));
+      // at this point we should have a complete format definition: check it
+      // from here on we expect the list of object to come along.
+      else {
+	if (!formatChecked) checkFormat();
+	// then set up a true SExCatObject
+	CatObject so;
+	so.CLASSIFIER = so.PARENT = 0;
+	unsigned long id = boost::lexical_cast<unsigned long>(column[format.ID].c_str());
+	// the sextractor corrdinates start with (1,1), ours with (0,0)
+	so.XMIN = boost::lexical_cast<int>(column[format.XMIN].c_str())-1;
+	so.XMAX = boost::lexical_cast<int>(column[format.XMAX].c_str())-1;
+	so.YMIN = boost::lexical_cast<int>(column[format.YMIN].c_str())-1;
+	so.YMAX = boost::lexical_cast<int>(column[format.YMAX].c_str())-1;
+	// as Catalog pixels start with (1,1) and ours with (0,0), 
+	// we need to subtract 1
+	so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
+	so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
+	so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
+	if (present.test(8))
+	  so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
+	if (present.test(9))
+	  so.PARENT = boost::lexical_cast<unsigned long>(column[format.PARENT].c_str());
+	// then store it in map
+	Catalog::insert(make_pair(id,so));
+      }
     }
   }
   catalog.close();
@@ -161,12 +200,100 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
   }
 }
 
+void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
+  try {
+    format.ID = IO::getFITSTableColumnNumber(fptr, "ID");
+    present[0] = 1;
+  } catch (std::invalid_argument) {
+    try {
+      format.ID = IO::getFITSTableColumnNumber(fptr, "NUMBER");
+      present[0] = 1;
+    } catch (std::invalid_argument) {
+      try {
+	format.ID = IO::getFITSTableColumnNumber(fptr, "NR");
+	present[0] = 1;
+      } catch (std::invalid_argument) {}
+    }
+  }
+  try {
+    format.XMIN = IO::getFITSTableColumnNumber(fptr, "XMIN*");
+    present[1] = 1;
+  } catch (std::invalid_argument) {}
+  try {
+    format.XMAX = IO::getFITSTableColumnNumber(fptr, "XMAX*");
+    present[2] = 1;
+  } catch (std::invalid_argument) {}
+  try {
+    format.YMIN = IO::getFITSTableColumnNumber(fptr, "YMIN*");
+    present[3] = 1;
+  } catch (std::invalid_argument) {}
+  try {
+    format.YMAX = IO::getFITSTableColumnNumber(fptr, "YMAX*");
+    present[4] = 1;
+  } catch (std::invalid_argument) {}
+  try {
+    format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "X");
+    present[5] = 1;
+  } catch (std::invalid_argument) {
+    try {
+      format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "X_*");
+      present[5] = 1;
+    } catch (std::invalid_argument) {
+      try {
+	format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XWIN*");
+	present[5] = 1;
+      } catch (std::invalid_argument) {
+	try {
+	  format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XCENTROID*");
+	  present[5] = 1;
+	} catch (std::invalid_argument) {}
+      }
+    }
+  }
+  try {
+    format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "Y");
+    present[6] = 1;
+  } catch (std::invalid_argument) {
+    try {
+      format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "Y_*");
+      present[6] = 1;
+    } catch (std::invalid_argument) {
+      try {
+	format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YWIN*");
+	present[6] = 1;
+      } catch (std::invalid_argument) {
+	try {
+	  format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YCENTROID*");
+	  present[6] = 1;
+	} catch (std::invalid_argument) {}
+      }
+    }
+  }
+  try {
+    format.FLAGS = IO::getFITSTableColumnNumber(fptr, "FLAGS");
+    present[7] = 1;
+  } catch (std::invalid_argument) {}
+  try {
+    format.CLASSIFIER = IO::getFITSTableColumnNumber(fptr, "CLASSIFIER");
+    present[8] = 1;
+  } catch (std::invalid_argument) {}
+  try {
+    format.PARENT = IO::getFITSTableColumnNumber(fptr, "PARENT");
+    present[9] = 1;
+  } catch (std::invalid_argument) {
+    try {
+      format.PARENT = IO::getFITSTableColumnNumber(fptr, "VECTOR_ASSOC");
+      present[9] = 1;
+    } catch (std::invalid_argument) {}
+  }
+}
+
 bool Catalog::checkFormat() {
-  // test if all but 9th bit are set
-  // this means that CLASSIFIER is optional
+  // test if all but 8th and 9th bit are set
+  // this means that CLASSIFIER and PARENT are optional
   bitset<10> mask(0);
   mask[8] = mask[9] = 1;
-  if ((present | mask).count() < 11) {
+  if ((present | mask).count() < 10) {
     cerr << "Catalog: mandatory catalog parameters are missing!" << endl;
     terminate();
   }

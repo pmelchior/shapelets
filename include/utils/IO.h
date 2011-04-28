@@ -7,6 +7,7 @@
 #include <map>
 #include <stdexcept>
 #include <numla/NumMatrix.h>
+#include <boost/lexical_cast.hpp>
 #include "../Typedef.h"
 #include "../frame/Grid.h"
 
@@ -56,6 +57,9 @@ class IO {
   /// Open FITS file.
   /// If <tt>write == false</tt>, the file will be opened in read-only mode.
   static fitsfile* openFITSFile(std::string filename, bool write=false);
+  /// Open FITS file and go to first table extension.
+  /// If <tt>write == false</tt>, the file will be opened in read-only mode.
+  static fitsfile* openFITSTable(std::string filename, bool write=false);
   /// Create new FITS file.
   /// If the file \p filename already exists, it will be overwritten.
   static fitsfile* createFITSFile(std::string filename);
@@ -261,6 +265,25 @@ class IO {
     fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&val,comment, &status);
     if (status != 0)
       throw std::invalid_argument("IO: Cannot read FITS keyword " + key + "!");  }
+
+  /// Get number of rows in FITS table.
+  static long getFITSTableRows(fitsfile* fptr);
+
+  /// Get column number of a FITS table with given \p name.
+  /// \p name can contain \p * wildcards and is treated case-insensitive.
+  static int getFITSTableColumnNumber(fitsfile* fptr, std::string name);
+
+  /// Read \p val from FITS table at \p row and \p colnr.
+  /// If a NULL value was stored at this position, \p nullvalue will be 
+  /// returned insted.\n
+  /// \p row numbers start with 0 according to regular C-style iterations. 
+  template <class T>
+    static void readFITSTableValue(fitsfile* fptr, long row, int colnr, T& val, T nullvalue = 0) {
+    int status = 0, anynull;
+    fits_read_col(fptr, getFITSDataType(val), colnr, row+1, 1, 1, &nullvalue, &val, &anynull, &status);
+    if (status != 0) 
+      throw std::runtime_error("IO: Cannot read value (row,col) from FITS table!"); 
+  }
 
   /// Write PPM file from data on the given grid.
   /// Colorscheme is one of the following:

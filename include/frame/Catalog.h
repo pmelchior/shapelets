@@ -6,6 +6,7 @@
 #include <bitset>
 #include "../Typedef.h"
 #include "CoordinateTransformation.h"
+#include "../utils/IO.h"
 
 namespace shapelens {
 
@@ -128,6 +129,7 @@ class Catalog : public std::map<unsigned long, CatObject> {
   bool formatChecked;
   bool checkFormat();
   void setFormatField(std::string name, unsigned short colnr);
+  void setFormatFromFITSTable(fitsfile* fptr);
   int round(data_t x);
 };
 } // end namespace
