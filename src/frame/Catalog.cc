@@ -23,11 +23,6 @@ void Catalog::read(string catfile) {
   // in other words: which of the format fields are set
   present.reset();
   formatChecked = true;
-  // open cat file
-  ifstream catalog (catfile.c_str());
-  if (catalog.fail())
-    throw std::invalid_argument("Catalog: catalog file does not exist!");
-  catalog.clear();
   
   // check if it's a fits table
   int status = 0;
@@ -70,6 +65,12 @@ void Catalog::read(string catfile) {
 
   // no, it's an ASCII file
   catch (std::runtime_error) {
+    // open cat file
+    ifstream catalog (catfile.c_str());
+    if (catalog.fail())
+      throw std::invalid_argument("Catalog: catalog file does not exist!");
+    catalog.clear();
+
     // read in cat file
     // 1) parse the format definition lines
     // 2) fill object information into SExCatObjects -> map<unsigned long, CatObject>;
@@ -115,8 +116,8 @@ void Catalog::read(string catfile) {
 	Catalog::insert(make_pair(id,so));
       }
     }
+    catalog.close();
   }
-  catalog.close();
 }
 
 void Catalog::save(string catfile) const {
