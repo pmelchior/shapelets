@@ -1,6 +1,8 @@
 #ifndef SHAPELENS_SQLITEDB_H
 #define SHAPELENS_SQLITEDB_H
 
+#ifdef HAS_SQLiteDB
+
 #include <string>
 #include <sqlite3.h>
 
@@ -59,4 +61,5 @@ namespace shapelens {
 
 } // end namespace
 
+#endif // HAS_SQLiteDB
 #endif

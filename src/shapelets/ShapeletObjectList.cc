@@ -26,6 +26,7 @@ namespace shapelens {
     }
   }
 
+#ifdef HAS_SQLiteDB
   ShapeletObjectList::ShapeletObjectList(SQLiteDB& sqlite, std::string table, std::string where, bool loadHistory, bool loadCovariance) : vector<boost::shared_ptr<ShapeletObject> >() {
 
     //send SQL query
@@ -216,7 +217,7 @@ namespace shapelens {
     query += "`cov` mediumblob)";
     sqlite.query(query);
   }
-
+#endif // HAS_SQLiteDB
 
   void ShapeletObjectList::average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta) {
     average(mean,std_mean,beta,NULL);

@@ -1,3 +1,5 @@
+#ifdef HAS_SQLiteDB
+
 #include "../../include/utils/SQLiteDB.h"
 #include <stdexcept>
 
@@ -62,3 +64,5 @@ namespace shapelens {
     return 0;
   }
 }
+
+#endif // HAS_SQLiteDB

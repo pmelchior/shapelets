@@ -1,4 +1,4 @@
-#ifdef MySQLDB
+#ifdef HAS_MySQLDB
 
 #include "../../include/utils/MySQLDB.h"
 #include <boost/tokenizer.hpp>
@@ -132,4 +132,4 @@ namespace shapelens {
 
 } // end namespace 
 
-#endif // MYSQLDB
+#endif // HAS_MYSQLDB

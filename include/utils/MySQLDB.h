@@ -1,7 +1,7 @@
 #ifndef SHAPELENS_MYSQLDB_H
 #define SHAPELENS_MYSQLDB_H
 
-#ifdef MySQLDB
+#ifdef HAS_MySQLDB
 
 #include <string>
 #include <mysql/mysql.h>
@@ -65,5 +65,5 @@ namespace shapelens {
   };
 
 } // end namespace
-#endif // MYSQLDB
+#endif // HAS_MYSQLDB
 #endif // MYSQLDB_H

@@ -5,11 +5,6 @@ DOCPATH = doc
 PROGSRCPATH = progs
 LIBNAME = shapelens
 
-SHAPELETSSRCPATH = $(SRCPATH)/shapelets
-SHAPELETSINCLPATH = $(INCLPATH)/shapelets
-SHAPELETSSRC = $(wildcard $(SHAPELETSSRCPATH)/*.cc)
-SHAPELETSOBJECTS = $(SHAPELETSSRC:$(SHAPELETSSRCPATH)/%.cc=$(LIBPATH)/%.o)
-
 LENSINGSRCPATH = $(SRCPATH)/lensing
 LENSINGINCLPATH = $(INCLPATH)/lensing
 LENSINGSRC = $(wildcard $(LENSINGSRCPATH)/*.cc)
@@ -28,7 +23,12 @@ UTILSINCLPATH = $(INCLPATH)/utils
 UTILSSRC = $(wildcard $(SRCPATH)/utils/*.cc)
 UTILSOBJECTS = $(UTILSSRC:$(SRCPATH)/utils/%.cc=$(LIBPATH)/%.o)
 
-ITALIBSLIBPATH = $(ITALIBSPATH)/lib
+SHAPELETSSRCPATH = $(SRCPATH)/shapelets
+SHAPELETSINCLPATH = $(INCLPATH)/shapelets
+SHAPELETSSRC = $(wildcard $(SHAPELETSSRCPATH)/*.cc)
+SHAPELETSOBJECTS = $(SHAPELETSSRC:$(SHAPELETSSRCPATH)/%.cc=$(LIBPATH)/%.o)
+
+DEVELLIBPATH = $(ITALIBSPATH)/lib
 PROGPATH = $(ITALIBSPATH)/bin
 PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
 PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
@@ -46,7 +46,7 @@ ifneq ($(UNAME),Linux)
 endif
 
 ifneq (,$(findstring HAS_ATLAS,$(SPECIALFLAGS)))
-	LIBS = -lshapelens -lgsl -llapack_atlas -latlas -llapack -lcfitsio -lfftw3 -lsqlite3
+	LIBS = -lshapelens -lgsl -lcblas -llapack -latlas -lcfitsio -lfftw3 -lsqlite3
 else
 	LIBS = -lshapelens -lgsl -lgslcblas -lcfitsio -lfftw3 -lsqlite3
 endif
@@ -111,8 +111,8 @@ install: library shared
 	mkdir -p $(ITALIBSLIBPATH)
 	cp $(LIBPATH)/lib$(LIBNAME).a $(ITALIBSLIBPATH)
 	cp $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $(ITALIBSLIBPATH)
-	mkdir  -p $(ITALIBSPATH)/include/$(LIBNAME)
-	cd $(INCLPATH) && find . -type f -name '*.h' -exec  cp --parents {} $(ITALIBSPATH)/include/$(LIBNAME)/ \; && cd ../
+	mkdir  -p $(DEVELLIBPATH)/include/$(LIBNAME)
+	cd $(INCLPATH) && find . -type f -name '*.h' -exec  cp --parents {} $(DEVELLIBPATH)/include/$(LIBNAME)/ \; && cd ../
 	mkdir -p $(PROGPATH)
 
 progs: $(PROGSOBJECTS)
@@ -120,17 +120,25 @@ progs: $(PROGSOBJECTS)
 docs: $(HEADERS)
 	doxygen Doxyfile
 
-$(LIBPATH)/lib$(LIBNAME).a: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+
+$(LIBPATH)/lib$(LIBNAME).a: $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	$(AR) $(ARFLAGS) $@ $?
 
-ifeq ($(UNAME),Linux)
-$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)	
+ifeq ($(UNAME),Linux)
 	$(CC) $(SHAREDFLAGS) -o $@ $^
 else
-$(LIBPATH)/lib$(LIBNAME).$(LIBEXT): $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
-	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)	
 	$(CC) $(SHAREDFLAGS) $(CFLAG_LIBS) -o $@ $^ $(LIBS)
+endif
+
+shapelets: $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
+	$(AR) $(ARFLAGS) $(LIBPATH)/lib$(LIBNAME).a $?
+	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
+ifeq ($(UNAME),Linux)
+	$(CC) $(SHAREDFLAGS) -o $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $^
+else
+	$(CC) $(SHAREDFLAGS) $(CFLAG_LIBS) -o $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $^ $(LIBS)
 endif
 
 $(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc

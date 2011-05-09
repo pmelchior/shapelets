@@ -6,7 +6,10 @@
 #include <boost/shared_ptr.hpp>
 #include "../Typedef.h"
 #include "ShapeletObject.h"
+
+#ifdef HAS_SQLiteDB
 #include "../utils/SQLiteDB.h"
+#endif
 
 namespace shapelens {
 
@@ -14,7 +17,7 @@ namespace shapelens {
   /// This class is meant for loading a set of ShapeletObject entities by 
   /// either 
   /// - giving a list of SIFFile names as an ASCII file or
-  /// - providing a SQLiteDB connector.
+  /// - providing a SQLiteDB connector (optional).
   ///
   /// It is derived from <tt>std::vector<boost::shared_ptr<ShapeletObject> ></tt>, 
   /// so effectively one has a vector of pointers to ShapeletObjects with the 
@@ -58,6 +61,7 @@ namespace shapelens {
     ShapeletObjectList();
     /// Constructor for loading all files in \p listfile.
     ShapeletObjectList(std::string listfile);
+#ifdef HAS_SQLiteDB
     /// Constructor for loading a subset of files from \p table in \p sqlite.
     /// If \p where is not empty, it will define the clause after the 
     /// \p WHERE keyword in the SQL query.\n
@@ -66,6 +70,7 @@ namespace shapelens {
     ShapeletObjectList(SQLiteDB& sqlite, std::string table, std::string where = "", bool loadHistory = false, bool loadCovariance = false);
     /// Save list to \p table in \p sqlite.
     void save(SQLiteDB& sqlite, std::string table);
+#endif
     /// Select a subset of ShapeletObject entities.
     /// The ShapeletObject entities have to fulfill the criterium 
     /// <tt>selectionFunction(sobj) == 1</tt> to be included in the list.\n
@@ -98,7 +103,9 @@ namespace shapelens {
     void average(CoefficientVector<data_t>& mean, CoefficientVector<data_t>& std_mean, data_t& beta, data_t (* weightFunction) (ShapeletObject&, void*), void* p =NULL);
 
   private:
+#ifdef HAS_SQLiteDB
     void createTable (SQLiteDB& sqlite, std::string table);
+#endif
   };
 } // end namespace
 #endif
