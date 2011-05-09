@@ -46,9 +46,12 @@ ifneq ($(UNAME),Linux)
 endif
 
 ifneq (,$(findstring HAS_ATLAS,$(SPECIALFLAGS)))
-	LIBS = -lshapelens -lgsl -lcblas -llapack -latlas -lcfitsio -lfftw3 -lsqlite3
+	LIBS = -lshapelens -lgsl -lcblas -llapack -latlas -lcfitsio -lfftw3
 else
-	LIBS = -lshapelens -lgsl -lgslcblas -lcfitsio -lfftw3 -lsqlite3
+	LIBS = -lshapelens -lgsl -lgslcblas -lcfitsio -lfftw3
+endif
+ifneq (,$(findstring HAS_SQLiteDB,$(SPECIALFLAGS)))
+	LIBS += -lsqlite3
 endif
 
 AR = ar

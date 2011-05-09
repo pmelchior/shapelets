@@ -1,4 +1,6 @@
 #include <shapelens/ShapeLens.h>
+#include <shapelens/shapelets/ShapeletObject.h>
+#include <shapelens/shapelets/ShapeletObjectList.h>
 #include <shapelens/utils/MySQLDB.h>
 #include <shapelens/utils/SQLiteDB.h>
 #include <tclap/CmdLine.h>
@@ -29,14 +31,16 @@ int main(int argc, char *argv[]) {
   TCLAP::CmdLine cmd("Compute various shape statistic based on shapelet coefficients", ' ', "0.5");
   TCLAP::ValueArg<std::string> listArg("l","list","File that lists the SIF files",true,"","string");
   TCLAP::ValueArg<std::string> input("i","input","SIF file to analyze",true,"","string");
-  TCLAP::ValueArg<std::string> database("d","database","SQLiteDB which contains Sobjs",true,"","string");
   std::vector<TCLAP::Arg*> inputs;
   inputs.push_back(&listArg);
   inputs.push_back(&input);
+#ifdef HAS_SQLiteDB
+  TCLAP::ValueArg<std::string> database("d","database","SQLiteDB which contains Sobjs",true,"","string");
   inputs.push_back(&database);
-  cmd.xorAdd(inputs);
   TCLAP::ValueArg<std::string> table("t","table","Table in DB to load SObjs",false,"","string",cmd);
   TCLAP::ValueArg<std::string> where("w","where","Where statement to select SObjs in table",false,"","string",cmd);
+#endif
+  cmd.xorAdd(inputs);
   TCLAP::ValueArg<std::string> kernel("k","kernel","Deconvolve from this kernel SIF file",false,"","string",cmd);
   TCLAP::ValueArg<unsigned int> truncate("T","truncate","Truncate coefficient set at given order n_max",false,0,"unsigned int",cmd);
   TCLAP::ValueArg<unsigned int> diamond("D","diamond","Truncate coefficient set to diamond shape of given order n_max",false,0,"unsigned int",cmd);
@@ -49,11 +53,13 @@ int main(int argc, char *argv[]) {
     sl = ShapeletObjectList(listArg.getValue());
   else if (input.isSet())
     sl.push_back(boost::shared_ptr<ShapeletObject>(new ShapeletObject(input.getValue())));
+#ifdef HAS_SQLiteDB
   else {
     SQLiteDB sqlite;
     sqlite.connect(database.getValue());
     sl = ShapeletObjectList(sqlite,table.getValue(),where.getValue());
   }
+#endif
 
   ShapeletObject sk;
   if (kernel.isSet())

@@ -6,7 +6,6 @@
 #include "../frame/Shapes.h"
 #include "../frame/Object.h"
 #include "../frame/Catalog.h"
-#include "../shapelets/ShapeletObject.h"
 
 namespace shapelens {
 /// Base class for idealized source models.
@@ -133,25 +132,6 @@ private:
   Point<data_t> reference;
 };
 
-/// Model from ShapeletObject.
-/// The class provides convenient sampling from a ShapeletObject.
-class ShapeletModel : public SourceModel {
-public:
-  /// Constructor.
-  /// By giving \p centroid, one moves \p sobj to this centroid and adjusts
-  /// the support without altering \p sobj itself. Similarly, \p flux 
-  /// automatically rescales \p sobj to the desired total flux.\n
-   ShapeletModel(const boost::shared_ptr<ShapeletObject>& sobj, data_t flux, const CoordinateTransformation* CT = NULL);
-  /// Sample model at \p P.
-  virtual data_t getValue(const Point<data_t>& P) const;
-  /// Get total flux of model.
-  virtual data_t getFlux() const;
-  /// Get type of model.
-  virtual char getModelType() const;
-private:
-  boost::shared_ptr<ShapeletObject> sobj;
-  const Point<data_t>& scentroid;
-  data_t flux_scale;
-};
+
 } // end namespace
 #endif

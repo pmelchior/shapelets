@@ -82,7 +82,8 @@ namespace shapelens {
 	if (fabs(x_ - x) < 1e-10) // if x is too close to sampling point
 	  return data(x_);        // use data from there instead
 	else {
-	  data_t x_j, k_j, denom = 0;
+	  data_t k_j, denom = 0;
+	  int x_j;
 	  T num(0);
 	  PolynomialW& w = Singleton<PolynomialW>::getInstance();
 	  w.setOrder(n);

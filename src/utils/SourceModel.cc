@@ -73,10 +73,10 @@ namespace shapelens {
       const SourceModel& sm = *SourceModelList::operator[](i);
       const Rectangle<data_t>& support = sm.getSupport();
       const Point<data_t>& centroid = sm.getCentroid();
-      co.XMIN = support.ll(0);
-      co.YMIN = support.ll(1);
-      co.XMAX = support.tr(0);
-      co.YMAX = support.tr(1);
+      co.XMIN = (int) floor(support.ll(0));
+      co.YMIN = (int) floor(support.ll(1));
+      co.XMAX = (int) ceil(support.tr(0));
+      co.YMAX = (int) ceil(support.tr(1));
       co.XCENTROID = centroid(0);
       co.YCENTROID = centroid(1);
       co.CLASSIFIER = sm.getModelType();
@@ -253,50 +253,6 @@ namespace shapelens {
 
   char InterpolatedModel::getModelType() const {
     return 2;
-  }
-
-  // ##### Shapelet Model ##### //
-  //ShapeletModel::ShapeletModel(const ShapeletObject& sobj, data_t flux, const CoordinateTransformation* ct_) : 
-  ShapeletModel::ShapeletModel(const boost::shared_ptr<ShapeletObject>& sobj_, data_t flux, const CoordinateTransformation* ct_) : 
-    sobj(sobj_), scentroid(sobj_->getCentroid()) {
-  
-    // compute WC of centroid (which is 0/0 in image coords)
-    SourceModel::centroid(0) = 0;
-    SourceModel::centroid(1) = 0;
-    SourceModel::support = sobj->getGrid().getBoundingBox();
-    // account of centroid offset of sobj
-    SourceModel::support -= scentroid;
-    if (ct_ != NULL) {
-      ct = ct_->clone();
-      ct->transform(SourceModel::centroid);
-      SourceModel::support.apply(*ct);
-    }
-    SourceModel::id = sobj->getObjectID();
-
-    // compute rescaling factor for flux
-    flux_scale = flux/sobj->getShapeletFlux();
-  }
-
-  data_t ShapeletModel::getValue(const Point<data_t>& P) const {
-    const Grid& sobj_grid = sobj->getGrid();
-    // get image coords from WC
-    Point<data_t> P_ = P;
-    if (ct.use_count() != 0)
-      ct->inverse_transform(P_);
-    // account of centroid offset of sobj
-    P_ += scentroid;
-    if (sobj_grid.getPixel(sobj_grid.getCoords(P_)) != -1)
-      return flux_scale*sobj->eval(P_);
-    else
-      return 0;
-  }
-
-  data_t ShapeletModel::getFlux() const {
-    return flux_scale*sobj->getShapeletFlux();
-  }
-
-  char ShapeletModel::getModelType() const {
-    return 1;
   }
 
 } // end namespace

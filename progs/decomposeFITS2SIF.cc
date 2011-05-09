@@ -1,6 +1,7 @@
 // the central header file for shapelet related work.
 // you will need this almost always when working with the 'shapelens' library.
 #include <shapelens/ShapeLens.h>
+#include <shapelens/shapelets/ShapeletObject.h>
 #include <tclap/CmdLine.h>
 
 using namespace shapelens;

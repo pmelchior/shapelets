@@ -1,4 +1,5 @@
 #include <shapelens/ShapeLens.h>
+#include <shapelens/shapelets/ShapeletObject.h>
 #include <tclap/CmdLine.h>
 
 using namespace shapelens;

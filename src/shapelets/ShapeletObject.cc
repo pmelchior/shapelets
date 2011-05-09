@@ -401,3 +401,47 @@ void ShapeletObject::setID(unsigned long id_) {
 }
 
 // end legacy function //
+
+
+  // ##### Shapelet Model ##### //
+  ShapeletModel::ShapeletModel(const boost::shared_ptr<ShapeletObject>& sobj_, data_t flux, const CoordinateTransformation* ct_) : 
+    sobj(sobj_), scentroid(sobj_->getCentroid()) {
+  
+    // compute WC of centroid (which is 0/0 in image coords)
+    SourceModel::centroid(0) = 0;
+    SourceModel::centroid(1) = 0;
+    SourceModel::support = sobj->getGrid().getBoundingBox();
+    // account of centroid offset of sobj
+    SourceModel::support -= scentroid;
+    if (ct_ != NULL) {
+      ct = ct_->clone();
+      ct->transform(SourceModel::centroid);
+      SourceModel::support.apply(*ct);
+    }
+    SourceModel::id = sobj->getObjectID();
+
+    // compute rescaling factor for flux
+    flux_scale = flux/sobj->getShapeletFlux();
+  }
+
+  data_t ShapeletModel::getValue(const Point<data_t>& P) const {
+    const Grid& sobj_grid = sobj->getGrid();
+    // get image coords from WC
+    Point<data_t> P_ = P;
+    if (ct.use_count() != 0)
+      ct->inverse_transform(P_);
+    // account of centroid offset of sobj
+    P_ += scentroid;
+    if (sobj_grid.getPixel(sobj_grid.getCoords(P_)) != -1)
+      return flux_scale*sobj->eval(P_);
+    else
+      return 0;
+  }
+
+  data_t ShapeletModel::getFlux() const {
+    return flux_scale*sobj->getShapeletFlux();
+  }
+
+  char ShapeletModel::getModelType() const {
+    return 1;
+  }

@@ -1,4 +1,5 @@
 #include <shapelens/ShapeLens.h>
+#include <shapelens/shapelets/ShapeletObject.h>
 #include <tclap/CmdLine.h>
 
 using namespace shapelens;
@@ -27,10 +28,10 @@ int main(int argc, char *argv[]) {
   if (sidelength.isSet()) {
     int L = sidelength.getValue();
     Point<int> p1,p2;
-    p1(0) = obj.centroid(0) - L/2;
-    p1(1) = obj.centroid(1) - L/2;
-    p2(0) = obj.centroid(0) + L/2;
-    p2(1) = obj.centroid(1) + L/2;
+    p1(0) = (int) floor(obj.centroid(0) - L/2);
+    p1(1) = (int) floor(obj.centroid(1) - L/2);
+    p2(0) = (int) ceil(obj.centroid(0) + L/2);
+    p2(1) = (int) ceil(obj.centroid(1) + L/2);
     Image<data_t> sub;
     obj.slice(sub,p1,p2);
     obj = sub;
