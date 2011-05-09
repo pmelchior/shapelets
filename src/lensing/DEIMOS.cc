@@ -125,7 +125,7 @@ namespace shapelens {
       if ((!flexed && iter < maxiter/2) || (flexed && iter < maxiter/3))
 	scale = centroiding_scale;
       else // fall back to desired scale for eps determination
-	scale = eps_scale;
+	scale = eps_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps)); // keep semi-minor axis at fixed length = scale
 
       // measure moments in weighting function
       if (flexed) {
@@ -396,6 +396,7 @@ namespace shapelens {
   // #### DEIMOSList ####
   DEIMOSList::DEIMOSList() : std::vector<boost::shared_ptr<DEIMOS> >() {}
 
+#ifdef HAS_SQLiteDB
   DEIMOSList::DEIMOSList(SQLiteDB& sql, std::string table, std::string where) :
     std::vector<boost::shared_ptr<DEIMOS> > () {
     
@@ -437,6 +438,6 @@ namespace shapelens {
     }
     sql.checkRC(sqlite3_finalize(stmt));
   }
-  
+#endif  
 
 } // end namespace

@@ -78,10 +78,12 @@ namespace shapelens {
   public:
     /// Default constructor.
     DEIMOSList ();
+#ifdef HAS_SQLiteDB
     /// Constructor from SQLite
     DEIMOSList (SQLiteDB& sql, std::string table, std::string where);
     /// Save list to table in sql.
     void save(SQLiteDB& sql, std::string table) const;
+#endif
   };
 
 } // end namespace
