@@ -1,6 +1,5 @@
 #include "../../include/utils/IO.h"
 #include <gsl/gsl_math.h>
-#include <gsl/gsl_rng.h>
 #include <gsl/gsl_randist.h>
 #include <time.h>
 #include <sys/timeb.h>
@@ -137,6 +136,11 @@ namespace shapelens {
     return colnum;
   }
 
+  void IO::addUniformNoise(NumVector<data_t>& data, const gsl_rng * r, data_t noisemean, data_t noiselimit) {
+    for (int i=0; i < data.size(); i++)
+      data(i) += noisemean + noiselimit*gsl_rng_uniform (r);
+  }
+
   void IO::addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit) {
     const gsl_rng_type * T;
     gsl_rng * r;
@@ -149,11 +153,15 @@ namespace shapelens {
     ftime(&tp);
     seeder += tp.millitm;
     gsl_rng_set(r,seeder);
-    for (int i=0; i < data.size(); i++)
-      data(i) += noisemean + noiselimit*gsl_rng_uniform (r);
+    addUniformNoise(data, r, noisemean, noiselimit);
     gsl_rng_free (r);
   }
 
+  void IO::addGaussianNoise(NumVector<data_t>& data, const gsl_rng * r, data_t noisemean, data_t noisesigma) {
+    for (int i=0; i < data.size(); i++)
+      data(i) += noisemean + gsl_ran_gaussian_ziggurat (r,noisesigma);
+  }
+  
   void IO::addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma) {
     const gsl_rng_type * T;
     gsl_rng * r;
@@ -166,10 +174,13 @@ namespace shapelens {
     ftime(&tp);
     seeder += tp.millitm;
     gsl_rng_set(r,seeder);
-    for (int i=0; i < data.size(); i++) {
-      data(i) += noisemean + gsl_ran_gaussian_ziggurat (r,noisesigma);
-    }
+    addGaussianNoise(data, r, noisemean, noisesigma);
     gsl_rng_free (r);
+  }
+  
+  void IO::addPoissonianNoise(NumVector<data_t>& data, const gsl_rng * r, data_t noisemean) {
+    for (int i=0; i < data.size(); i++)
+      data(i) += noisemean + gsl_ran_gaussian_ziggurat (r,sqrt(fabs(noisemean+data(i))));
   }
 
   void IO::addPoissonianNoise(NumVector<data_t>& data, data_t noisemean) {
@@ -184,9 +195,7 @@ namespace shapelens {
     ftime(&tp);
     seeder += tp.millitm;
     gsl_rng_set(r,seeder);
-    for (int i=0; i < data.size(); i++) {
-      data(i) += noisemean + gsl_ran_gaussian_ziggurat (r,sqrt(fabs(noisemean+data(i))));
-    }
+    addPoissonianNoise(data, r, noisemean);
     gsl_rng_free (r);
   }
 

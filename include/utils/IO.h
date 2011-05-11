@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <numla/NumMatrix.h>
 #include <boost/lexical_cast.hpp>
+#include <gsl/gsl_rng.h>
 #include "../Typedef.h"
 #include "../frame/Grid.h"
 
@@ -308,14 +309,20 @@ class IO {
   static void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
   /// Write RGBImage from makeRGBImage() to PPM file.
   static void writeRGB2PPMImage (std::string filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage);
-  /// Add uniform noise from noisemean to noisemean+noiselimit.
+  /// Add uniform noise within noisemean to noisemean+noiselimit.
   static void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit);
+  /// Add uniform noise from preconfigured RNG within noisemean to noisemean+noiselimit.
+  static void addUniformNoise(NumVector<data_t>& data, const gsl_rng* r, data_t noisemean, data_t noiselimit);
   /// Add gaussian noise.
   static void addGaussianNoise(NumVector<data_t>& data, data_t noisemean, data_t noisesigma);
+  /// Add gaussian noise from preconfigured RNG.
+  static void addGaussianNoise(NumVector<data_t>& data, const gsl_rng* r, data_t noisemean, data_t noisesigma);
   /// Add poissonian noise.
   /// The noise of the \f$i\f$th pixel is drawn from a gaussian distribution with
   /// \f$ \sigma_i = \sqrt{\mu_n + data_i}\f$.
   static void addPoissonianNoise(NumVector<data_t>& data, data_t noisemean);
+  /// Add poissonian noise from preconfigured RNG.
+  static void addPoissonianNoise(NumVector<data_t>& data, const gsl_rng* r, data_t noisemean);
   /// Convolve input with a 3x3 Gaussian.
   static void convolveGaussian(const NumVector<data_t>& input, NumVector<data_t>& result, int width,int height);
  private:
