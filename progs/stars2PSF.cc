@@ -9,9 +9,10 @@ data_t xi(data_t r) {
 }
 
 int main(int argc, char* argv[]) {
-  TCLAP::CmdLine cmd("Measure PSF moments from stars and interpolate in between", ' ', "0.2");
+  TCLAP::CmdLine cmd("Measure PSF moments from stars and interpolate in between", ' ', "0.3");
   TCLAP::ValueArg<std::string> cat("c","catalog","Catalog file", true, "","string",cmd);
   TCLAP::ValueArg<std::string> file("f","file","Image file", true, "","string",cmd);
+  TCLAP::ValueArg<int> order("N","moment_order","Moment order", false, 2,"int",cmd);
   TCLAP::ValueArg<int> C("C","correction_order","DEIMOS correction order", true, 4,"int",cmd);
   TCLAP::ValueArg<data_t> s("s","scale","DEIMOS weighting scale", true, 3.,"data_t",cmd);
   TCLAP::SwitchArg flexed("F","flexed","Enable flexion in DEIMOS", cmd, false);
@@ -25,9 +26,9 @@ int main(int argc, char* argv[]) {
   cmd.parse(argc,argv);
 
   // shear/flexion?
-  int N = 2;
+  int N = order.getValue();
   if (flexed.getValue())
-    N = 4;
+    N = std::min(4,N);
 
 
   // open file pointers and catalog

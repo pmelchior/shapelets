@@ -5,8 +5,7 @@
 #include "../frame/Moments.h"
 #include "../frame/CoordinateTransformation.h"
 #include "../utils/SQLiteDB.h"
-#include <vector>
-#include <bitset>
+#include "../utils/History.h"
 #include <boost/shared_ptr.hpp>
 
 namespace shapelens {
@@ -23,14 +22,23 @@ namespace shapelens {
       const Point<data_t>& centroid;
     };
 
+    class PSFMultiScale : private std::map<data_t, Moments> {
+    public:
+      void insert(data_t scale, const Moments& mo);
+      const Moments& getAtScale(data_t scale) const;
+      data_t getScaleSmallerThan(data_t scale) const;
+      data_t getMinimumScale() const;
+      data_t getMaximumScale() const;
+    };
+
     /// Default constructor.
     DEIMOS();
     /// Constructor from filename.
     DEIMOS(std::string filename);
     /// Constructor for computing moments up to order \p N from \p obj.
-    DEIMOS (Object& obj, int N, int C, data_t scale, bool flexed = false);
+    DEIMOS (const Object& obj, int N, int C, data_t scale, bool flexed = false);
     /// Constructor for computing deconvolved moments up to order \p N from \p obj.
-    DEIMOS (Object& obj, const DEIMOS& psf, int N, int C, data_t scale, bool flexed = false);
+    DEIMOS (const Object& obj, const PSFMultiScale& psf, int N, int C, data_t scale, bool flexed = false);
     /// Save to a file.
     void save(std::string filename) const;
     /// Get std::complex ellipticity from mo.
@@ -43,9 +51,9 @@ namespace shapelens {
     std::complex<data_t> delta() const;
     /// Get marginalized moment errors.
     Moments getMomentErrors() const;
-    /// The ordered set of multipole moments.
+    /// Ordered set of multipole moments.
     Moments mo;
-    /// Teh covariance matrix of mo.
+    /// Covariance matrix of mo.
     NumMatrix<data_t> S;
     /// Moment order.
     int N;
@@ -53,24 +61,27 @@ namespace shapelens {
     int C;
     /// Object id.
     unsigned long id;
-    /// Width of the weighting function.
+    /// Final width of the weight function.
     data_t scale;
-    /// Ellipticity of weighting function
+    /// Centroid of weight function.
+    Point<data_t> centroid;
+    /// Ellipticity of weight function
     std::complex<data_t> eps;
-    /// 2nd flexion of weighting function
+    /// 2nd flexion of weight function
     std::complex<data_t> G;
     
     friend class DEIMOSList;
   protected:
-    void match(Object& obj);
+    void match(const Object& obj, data_t min_scale);
     void deweight(const Moments& mo_w);
-    void deconvolve(const DEIMOS& psf);
+    void deconvolve(const Moments& psf);
     std::complex<data_t> epsilon_limited();
     void setNoiseImage(const Object& obj);
     void computeCovariances();
     bool flexed;
     NumMatrix<data_t> D;
     Object noise;
+    History history;
   };
 
   /// Class for collections of DEIMOS instances.

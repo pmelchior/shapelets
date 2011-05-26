@@ -1,5 +1,6 @@
 #include "../../include/lensing/DEIMOS.h"
 #include "../../include/utils/IO.h"
+#include "../../include/ShapeLensConfig.h"
 
 namespace shapelens {
 
@@ -20,30 +21,91 @@ namespace shapelens {
     T.inverse_transform(P);
     return GaussianWeightFunction::operator()(P);
   }
+  
+  void DEIMOS::PSFMultiScale::insert(data_t scale, const Moments& mo) {
+    std::map<data_t, Moments>::insert(std::pair<data_t, Moments>(scale, mo));
+  }
+  const Moments& DEIMOS::PSFMultiScale::getAtScale(data_t scale) const {
+    std::map<data_t, Moments>::const_iterator iter = std::map<data_t, Moments>::find(scale);
+    if (iter == std::map<data_t, Moments>::end())
+      throw std::invalid_argument("DEIMOS::PSFMultiScale: scale not available!");
+    return iter->second;
+  }
+
+  data_t DEIMOS::PSFMultiScale::getScaleSmallerThan(data_t scale) const {
+    std::map<data_t, Moments>::const_iterator iter = std::map<data_t, Moments>::find(scale);
+    if (iter == std::map<data_t, Moments>::end())
+      throw std::invalid_argument("DEIMOS::PSFMultiScale: scale not available!");
+    if (iter == std::map<data_t, Moments>::begin())
+      throw std::runtime_error("DEIMOS::PSFMultiScale: no smaller scale available!");
+    iter--;
+    return iter->first;
+
+  }
+
+  data_t DEIMOS::PSFMultiScale::getMinimumScale() const {
+    return std::map<data_t, Moments>::begin()->first;
+  }
+  
+  data_t DEIMOS::PSFMultiScale::getMaximumScale() const {
+    std::map<data_t, Moments>::const_iterator iter = std::map<data_t, Moments>::end();
+    iter--;
+    return iter->first;
+  }
 
   DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), flexed(false) {}
 
-  DEIMOS::DEIMOS (Object& obj, int N_, int C_, data_t scale_, bool flexed_) :
+  DEIMOS::DEIMOS (const Object& obj, int N_, int C_, data_t scale_, bool flexed_) :
     id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_), 
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
     S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
     // measure moments within optimized weighting function
     mo.setOrder(N);
-    match(obj);
+    match(obj, scale);
     setNoiseImage(obj);
     computeCovariances();
  }
 
-  DEIMOS::DEIMOS (Object& obj, const DEIMOS& psf, int N_, int C_, data_t scale_, bool flexed_) :
+  DEIMOS::DEIMOS (const Object& obj, const DEIMOS::PSFMultiScale& psf, int N_, int C_, data_t scale_, bool flexed_) :
     id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_), 
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
     S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
     // measure moments within optimized weighting function
     mo.setOrder(N);
-    match(obj);
-    setNoiseImage(obj);
-    computeCovariances();
-    deconvolve(psf);
+    data_t matching_scale = scale;
+    match(obj, matching_scale);
+    while (abs(epsilon()) >= 0.999) {
+      try {
+	matching_scale = psf.getScaleSmallerThan(matching_scale);
+	history << "# Matching failed, restarting with scale s = " << matching_scale << std::endl; 
+	match(obj, matching_scale);
+      } catch (std::runtime_error) {
+	break;
+      }
+    }
+    if (abs(epsilon()) < 1) {
+      history << "# Deweighted moments:\t" << mo << std::endl;
+      deconvolve(psf.getAtScale(matching_scale));
+      while (abs(epsilon()) >= 0.999) {
+	try {
+	  matching_scale = psf.getScaleSmallerThan(matching_scale);
+	  history << "# Deconvolution failed, repeat matching with scale s = " << matching_scale << std::endl;
+	  match(obj, matching_scale);
+	  history << "# Deweighted moments:\t" << mo << std::endl;
+	  deconvolve(psf.getAtScale(matching_scale));
+	} catch (std::runtime_error) {
+	  break;
+	}
+      }
+      history << "# Deconvolved moments:\t" << mo << std::endl;
+      if (abs(epsilon()) > 0.999)
+	history << "# Deconvolution failed, minimum PSF scale reached. GAME OVER." << std::endl;
+      else {
+	setNoiseImage(obj);
+	computeCovariances();
+      }
+    } else
+      history << "# Deweighting failed, minimum PSF scale reached. GAME OVER." << std::endl;
   }
 
   DEIMOS::DEIMOS(std::string filename) {
@@ -97,71 +159,70 @@ namespace shapelens {
     IO::writeFITSImage(fptr,S,"VARIANCE");
     IO::closeFITSFile(fptr);
   }
-
+  
+  // stabilized epsilon, limited to |e| < 0.99
   complex<data_t> DEIMOS::epsilon_limited() {
     complex<data_t> c = chi();
     // limit chi to an absolute value
     // which corresponds to an ellipticity of 0.99
     data_t limit_eps = 0.99;
     data_t limit_chi = 2*limit_eps/(1 + limit_eps*limit_eps);
-    if (abs(c) > limit_chi)
+    if (abs(c) > limit_chi)      
       c *= limit_chi/abs(c);
     // transform chi to epsilon
     return c/(1+sqrt(1-abs(c)*abs(c)));
   }
-  
+
   // determine optimal weighting parameters, centroid, and ellipticity
-  void DEIMOS::match(Object& obj) {
-    int iter = 0, maxiter = 12, run = 0, maxrun = 1;
+  void DEIMOS::match(const Object& obj, data_t matching_scale) {
+    centroid = obj.centroid;
+    eps = complex<data_t>(0,0);
+    scale = matching_scale;
+    int iter = 0, maxiter = 18, run = 0, maxrun = 1;
     if (flexed) 
       maxrun++;
 
-    data_t centroiding_scale = 1.5, eps_scale = scale;
     Point<data_t> centroid_shift;
-
+    history << "# Matching weight function:" << std::endl;
+    history << "# iter\tscale\tcentroid\tepsilon" << std::endl;
     Moments mo_w(N+C);
     while (true) {
-      // set smaller scale for centroid determination
-      if ((!flexed && iter < maxiter/2) || (flexed && iter < maxiter/3))
-	scale = centroiding_scale;
-      else // fall back to desired scale for eps determination
-	scale = eps_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps)); // keep semi-minor axis at fixed length = scale
-
-      // measure moments in weighting function
+      // measure moments under weight function
       if (flexed) {
-	DEIMOSWeightFunction w(scale, obj.centroid, eps, G);
+	DEIMOSWeightFunction w(scale, centroid, eps, G);
 	mo_w = Moments (obj, w, N + C);
       }	else {
-	DEIMOSWeightFunction w(scale, obj.centroid, eps);
+	DEIMOSWeightFunction w(scale, centroid, eps);
 	mo_w = Moments (obj, w, N + C);
       }
+      history << "# " << iter+1 << "\t" << scale << "\t" << centroid << "\t" << eps << std::endl;
 
-      // deweight now and estimate new centroid and ellipticity
+      // deweight and estimate new centroid and ellipticity
       deweight(mo_w);
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
-      complex<data_t> eps_ = epsilon_limited(); //stabilized epsilon
-      // scale of best-fit Gaussian
-      data_t trQ = mo(2,0) + mo(0,2);
-      data_t trQs = trQ*(1-abs(eps)*abs(eps));
-      data_t scale_ = sqrt(trQs/mo(0,0));
+      complex<data_t> eps_ = epsilon();//_limited();
+
       if (flexed) {
-	complex<data_t> delta_ = delta();  // second flexion distortion
-      
-	if (iter < maxiter/3)
-	  obj.centroid += centroid_shift;
-	else if (iter < 2*maxiter/3) {
+	complex<data_t> delta_ = delta();
+	if (iter < maxiter/3 - 1)
+	  centroid += centroid_shift;
+	else if (iter < 2*maxiter/3 - 1) {
+	  if (abs(eps_) >= 0.999)
+	    break;
 	  eps = eps_;
-	  //scale = scale_;
-	} else
+	  scale = matching_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps));
+	} else if (iter < maxiter - 1)
 	  G = (4./3) * delta_;
       }
       else {
-	if (iter < maxiter/2)
-	  obj.centroid += centroid_shift;
-	else {
+	if (iter < maxiter/3 - 1)
+	  centroid -= centroid_shift;
+	else if (iter < maxiter - 1) {
+	  if (abs(eps_) >= 0.999)
+	    break;
 	  eps = eps_;
-	  //scale = scale_;
+	  scale = matching_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps));
 	}
       }
 
@@ -169,16 +230,22 @@ namespace shapelens {
       // but only one other time
       if (iter == maxiter-1) {
 	run++;
-	if (run == maxrun) {
-	  if (C > 0)
-	    mo.setOrder(N);
+	if (run == maxrun)
 	  break;
-	} else {
+	else 
 	  iter = 0;
-	}
       }
       iter++;
     }
+
+    /*
+    // boost ellipticity by some factor of order 1%
+    data_t lambda = 1 + 2*abs(epsilon())*abs(epsilon());
+    data_t mo20 = mo(2,0);
+    mo(2,0) = 0.5*(mo(2,0)*(1+lambda) + mo(0,2)*(1-lambda));
+    mo(0,2) = 0.5*(mo(0,2)*(1+lambda) + mo20*(1-lambda));
+    mo(1,1) *= lambda;
+    */
   }
 
   void DEIMOS::deweight(const Moments& mo_w) {
@@ -276,7 +343,7 @@ namespace shapelens {
     // variance of weighted moment (i,j) is propto
     // moment (i*2,j*2) measured with square of weighting function
     // (square of Gaussian: sigma -> sigma/sqrt(2));
-    DEIMOSWeightFunction w2(scale/M_SQRT2, noise.centroid, eps);
+    DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
     Moments mo_noise(noise,w2,2*(N+C));
 
     // copy terms from (2*i, 2*j) to (i,j)
@@ -314,9 +381,9 @@ namespace shapelens {
     return factorial(n)/(factorial(m)*factorial(n-m));
   }
 
-  void DEIMOS::deconvolve(const DEIMOS& psf) {
-    int Nmin = std::min(psf.mo.getOrder(),mo.getOrder());
-    Moments& g = mo, p = psf.mo;
+  void DEIMOS::deconvolve(const Moments& p) {
+    Moments& g = mo;
+    int Nmin = std::min(p.getOrder(),g.getOrder());
     //use explicit relations for up to 2nd moments
     g(0,0) /= p(0,0);
     if (Nmin >= 1) {
