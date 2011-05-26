@@ -64,6 +64,18 @@ class Property : public std::map<std::string, variant_t> {
   /// Const access operator.
   /// Throws \p std::invalid_argument if \p key is not element of the map.
   const variant_t& operator[](const std::string& key) const ;
+  /// Convenient getter function.
+  /// Throws <tt>std::invalid_argument</tt> if \p key is not present in Property
+  /// and <tt>boost::bad_get</tt> if \p key has different type than \p T.
+  template <class T>
+    void get(const std::string& key, T& val) const {
+    val = boost::get<T>(Property::operator[](key));
+  }
+  /// Conventient setter function.
+  template <class T>
+    void set(const std::string& key, const T& val) {
+    Property::operator[](key) = val;
+  }
   /// Write contents of property to \p out.
   /// If the entries should be written with a different separator than \p std::endl,
   /// specify \p linesep. This should only be used in cases where the line separator

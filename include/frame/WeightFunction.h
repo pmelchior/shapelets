@@ -5,26 +5,49 @@
 #include "Point.h"
 
 namespace shapelens {
+  /// Abstract base class for weight functions.
   class WeightFunction {
   public:
+    /// Get value of weight function at position \p P.
     virtual data_t operator()(const Point<data_t>& P) const = 0;
   };
 
+  /// Default implementation of flat weight function.
   class FlatWeightFunction : public WeightFunction {
   public:
+    /// Constructor.
     FlatWeightFunction();
+    /// Get value of weight function at position \p P.
+    /// Returns 1.
     virtual data_t operator()(const Point<data_t>& P) const;
   };
 
+  /// Gaussian weight function.
+  /// Returns \f$W(x) = \exp\Bigl(\frac{-x^{\prime 2}}{2s^s}\Bigr)\f$, i.e.
+  /// the weight are drawn from a circular Gaussian of scale \f$s\f$,
+  /// centered at some predefined centroid position.\n
+  /// Derivatives (w.r.t. \f$s\f$ or \f$s^2\f$) can be accessed by
+  /// choosing the repective derivative order with setDerivative().
   class GaussianWeightFunction : public WeightFunction {
   public:
+    /// Constructor.
     GaussianWeightFunction(data_t scale, const Point<data_t>& centroid);
+    /// Get value of weight function.
     virtual data_t operator()(const Point<data_t>& P) const;
+    /// Get scale.
     data_t getScale() const;
+    /// Set scale.
     void setScale(data_t scale);
+    /// Set derivative of weight function.
+    /// Positive \p n denotes derivatives w.r.t. \f$s\f$, 
+    /// negative w.r.t. \f$s^2\f$. Orders up to 3 are implemented, order 0
+    /// recovers the original weight function.
     void setDerivative(int n);
+    /// Get the current derivative.
     int getDerivative() const;
+    /// Set the centroid.
     void setCentroid(const Point<data_t>& centroid);
+    /// Get centroid position.
     const Point<data_t>& getCentroid() const;
   protected:
     Point<data_t> C;

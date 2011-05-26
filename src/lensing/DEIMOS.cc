@@ -160,19 +160,6 @@ namespace shapelens {
     IO::closeFITSFile(fptr);
   }
   
-  // stabilized epsilon, limited to |e| < 0.99
-  complex<data_t> DEIMOS::epsilon_limited() {
-    complex<data_t> c = chi();
-    // limit chi to an absolute value
-    // which corresponds to an ellipticity of 0.99
-    data_t limit_eps = 0.99;
-    data_t limit_chi = 2*limit_eps/(1 + limit_eps*limit_eps);
-    if (abs(c) > limit_chi)      
-      c *= limit_chi/abs(c);
-    // transform chi to epsilon
-    return c/(1+sqrt(1-abs(c)*abs(c)));
-  }
-
   // determine optimal weighting parameters, centroid, and ellipticity
   void DEIMOS::match(const Object& obj, data_t matching_scale) {
     centroid = obj.centroid;
@@ -201,7 +188,7 @@ namespace shapelens {
       deweight(mo_w);
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
-      complex<data_t> eps_ = epsilon();//_limited();
+      complex<data_t> eps_ = epsilon();
 
       if (flexed) {
 	complex<data_t> delta_ = delta();
@@ -237,7 +224,6 @@ namespace shapelens {
       }
       iter++;
     }
-
     /*
     // boost ellipticity by some factor of order 1%
     data_t lambda = 1 + 2*abs(epsilon())*abs(epsilon());

@@ -12,22 +12,38 @@ namespace shapelens {
   /// Class for moment-based lensing and deconvolution.
   class DEIMOS {
   public:
+    /// DEIMOS weight function.
+    /// DEIMOS uses an elliptical (and possibly G-flexed) Gaussian 
+    /// weight function, \f$W(x) = \exp\Bigl(\frac{-x^{\prime 2}}{2s^s}\Bigr)\f$,
+    /// where \f$x^\prime\f$ undergoes a suitable LensingTransformation.
     class DEIMOSWeightFunction : public GaussianWeightFunction {
     public:
+      /// Constructor for ellipticial weight function.
       DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid, const std::complex<data_t>& eps);
+      /// Constructor for elliptical and G-flexed weight function.
       DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid_, const std::complex<data_t>& eps, const std::complex<data_t>& G);
+      /// Get value of weight function at position \p P.
       virtual data_t operator()(const Point<data_t>& P) const;
-    private:
+    protected:
       LensingTransformation T;
       const Point<data_t>& centroid;
     };
 
-    class PSFMultiScale : private std::map<data_t, Moments> {
+    /// DEIMOS mulit-scale PSF container.
+    class PSFMultiScale : public std::map<data_t, Moments> {
     public:
+      /// Insert Moments \p mo measured with \p scale.
       void insert(data_t scale, const Moments& mo);
+      /// Get moments measured with \p scale.
+      /// Throws <tt>std::invalid_argument</tt> if \p scale is not available.
       const Moments& getAtScale(data_t scale) const;
+      /// Get next smaller scale.
+      /// Throws <tt>std::invalid_argument</tt> if \p scale is not available,
+      /// and <tt>std::runtime_error</tt> if \p scale is the smallest scale. 
       data_t getScaleSmallerThan(data_t scale) const;
+      /// Get minimum scale available.
       data_t getMinimumScale() const;
+      /// Get maximum scale available.
       data_t getMaximumScale() const;
     };
 
@@ -75,7 +91,6 @@ namespace shapelens {
     void match(const Object& obj, data_t min_scale);
     void deweight(const Moments& mo_w);
     void deconvolve(const Moments& psf);
-    std::complex<data_t> epsilon_limited();
     void setNoiseImage(const Object& obj);
     void computeCovariances();
     bool flexed;
