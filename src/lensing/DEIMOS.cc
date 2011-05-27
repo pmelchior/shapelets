@@ -56,7 +56,7 @@ namespace shapelens {
   DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), flexed(false) {}
 
   DEIMOS::DEIMOS (const Object& obj, int N_, int C_, data_t scale_, bool flexed_) :
-    id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_), 
+    id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_),
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
     S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
     // measure moments within optimized weighting function
@@ -67,44 +67,60 @@ namespace shapelens {
  }
 
   DEIMOS::DEIMOS (const Object& obj, const DEIMOS::PSFMultiScale& psf, int N_, int C_, data_t scale_, bool flexed_) :
-    id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_), 
+    id(obj.id), scale(scale_), eps(0,0), N(N_), C(C_), flexed(flexed_),
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
     S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
     // measure moments within optimized weighting function
     mo.setOrder(N);
     data_t matching_scale = scale;
+    setNoiseImage(obj);
     match(obj, matching_scale);
-    while (abs(epsilon()) >= 0.999) {
-      try {
-	matching_scale = psf.getScaleSmallerThan(matching_scale);
-	history << "# Matching failed, restarting with scale s = " << matching_scale << std::endl; 
-	match(obj, matching_scale);
-      } catch (std::runtime_error) {
-	break;
-      }
+
+    // initial matching failed, try with smaller scale
+    while (S_N[matching_scale] == 0 && matching_scale > psf.getMinimumScale()) {
+      matching_scale = psf.getScaleSmallerThan(matching_scale);
+      history << "# Matching failed, restarting with scale s = " << matching_scale << std::endl; 
+      match(obj, matching_scale);
     }
-    if (abs(epsilon()) < 1) {
-      history << "# Deweighted moments:\t" << mo << std::endl;
-      deconvolve(psf.getAtScale(matching_scale));
-      while (abs(epsilon()) >= 0.999) {
-	try {
-	  matching_scale = psf.getScaleSmallerThan(matching_scale);
-	  history << "# Deconvolution failed, repeat matching with scale s = " << matching_scale << std::endl;
-	  match(obj, matching_scale);
-	  history << "# Deweighted moments:\t" << mo << std::endl;
-	  deconvolve(psf.getAtScale(matching_scale));
-	} catch (std::runtime_error) {
+
+    // matching successfull, try with lower scale and see whether S/N improves
+    if (S_N[matching_scale] > 0) {
+      while (matching_scale > psf.getMinimumScale()) {
+	data_t S_N_current = S_N[matching_scale];
+	data_t matching_scale_current = matching_scale;
+	complex<data_t> eps_current = eps, G_current = G;
+	Point<data_t> centroid_current = centroid;
+	Moments mo_current = mo;
+	matching_scale = psf.getScaleSmallerThan(matching_scale);
+	history << "# Trying smaller scale s = " << matching_scale << " to find optimal S/N" << std::endl;
+	match(obj, matching_scale);
+	// if S/N goes down, reset to best S/N case
+	if (S_N[matching_scale] < S_N_current) {
+	  matching_scale = matching_scale_current;
+	  history << "# Reverting to scale s = " << matching_scale << std::endl;
+	  mo = mo_current;
+	  eps = eps_current;
+	  G = G_current;
+	  scale = matching_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps));
 	  break;
 	}
+      }
+      history << "# Deweighted moments:\t" << mo << std::endl;
+      deconvolve(psf.getAtScale(matching_scale));
+      while (abs(epsilon()) >= 0.999 && matching_scale > psf.getMinimumScale()) {
+	matching_scale = psf.getScaleSmallerThan(matching_scale);
+	history << "# Deconvolution failed, repeat matching with scale s = " << matching_scale << std::endl;
+	match(obj, matching_scale);
+	history << "# Deweighted moments:\t" << mo << std::endl;
+	deconvolve(psf.getAtScale(matching_scale));
       }
       history << "# Deconvolved moments:\t" << mo << std::endl;
       if (abs(epsilon()) > 0.999)
 	history << "# Deconvolution failed, minimum PSF scale reached. GAME OVER." << std::endl;
-      else {
-	setNoiseImage(obj);
+      else
 	computeCovariances();
-      }
-    } else
+    }
+    else
       history << "# Deweighting failed, minimum PSF scale reached. GAME OVER." << std::endl;
   }
 
@@ -164,7 +180,10 @@ namespace shapelens {
   void DEIMOS::match(const Object& obj, data_t matching_scale) {
     centroid = obj.centroid;
     eps = complex<data_t>(0,0);
-    scale = matching_scale;
+    scale = std::max(1.0, matching_scale*0.66);
+    //scale = matching_scale;
+    S_N[matching_scale] = 0;
+    data_t S_N_max = 0;
     int iter = 0, maxiter = 18, run = 0, maxrun = 1;
     if (flexed) 
       maxrun++;
@@ -182,32 +201,51 @@ namespace shapelens {
 	DEIMOSWeightFunction w(scale, centroid, eps);
 	mo_w = Moments (obj, w, N + C);
       }
-      history << "# " << iter+1 << "\t" << scale << "\t" << centroid << "\t" << eps << std::endl;
-
+      
+      data_t S_N_, delta_S_N_;
+      if (flexed) {
+	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps, G);
+	Moments mo_w2(noise, w2, 0);
+	S_N_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+      } else {
+	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
+	Moments mo_w2(noise, w2, 0);
+	S_N_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+      }
+      
       // deweight and estimate new centroid and ellipticity
       deweight(mo_w);
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
       complex<data_t> eps_ = epsilon();
 
+      history << "# " << iter+1 << "\t" << scale << "\t" << centroid << "\t" << eps << "\t" << S_N_ << std::endl;
+
       if (flexed) {
+	// FIXME: convergence tests/criterium missing here!
 	complex<data_t> delta_ = delta();
 	if (iter < maxiter/3 - 1)
 	  centroid += centroid_shift;
 	else if (iter < 2*maxiter/3 - 1) {
-	  if (abs(eps_) >= 0.999)
-	    break;
 	  eps = eps_;
 	  scale = matching_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps));
-	} else if (iter < maxiter - 1)
+	} else if (iter < maxiter - 1) {
 	  G = (4./3) * delta_;
+	}
       }
-      else {
-	if (iter < maxiter/3 - 1)
+      else {	
+	if (iter < 3)
 	  centroid -= centroid_shift;
 	else if (iter < maxiter - 1) {
-	  if (abs(eps_) >= 0.999)
+	  if (abs(eps_) >= 0.999 || S_N_ < S_N_max)
 	    break;
+	  // let matching converge a bit before concluding it's good...
+	  if (iter > 6) {
+	    S_N[matching_scale] = S_N_max;
+	    if (S_N_ < (1+1e-5)*S_N_max) // convergence criterium
+	      break;
+	  }
+	  S_N_max = S_N_;
 	  eps = eps_;
 	  scale = matching_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps));
 	}

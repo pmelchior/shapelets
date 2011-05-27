@@ -94,6 +94,7 @@ namespace shapelens {
     void setNoiseImage(const Object& obj);
     void computeCovariances();
     bool flexed;
+    std::map<data_t, data_t> S_N;
     NumMatrix<data_t> D;
     Object noise;
     History history;
