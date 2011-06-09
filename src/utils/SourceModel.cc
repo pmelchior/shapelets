@@ -212,7 +212,7 @@ namespace shapelens {
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    SourceModel::support = obj->grid.getBoundingBox();
+    SourceModel::support = obj->grid.getSupport().getBoundingBox();
     // account of centroid offset of obj
     SourceModel::support -= obj->centroid;
     if (ct_ != NULL) {

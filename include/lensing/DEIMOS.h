@@ -77,14 +77,18 @@ namespace shapelens {
     int C;
     /// Object id.
     unsigned long id;
-    /// Final width of the weight function.
+    /// Width of the weight function.
     data_t scale;
+    /// Pixel scale [degrees/pixel].
+    data_t scale_factor;
     /// Centroid of weight function.
     Point<data_t> centroid;
-    /// Ellipticity of weight function
+    /// Ellipticity of weight function.
     std::complex<data_t> eps;
-    /// 2nd flexion of weight function
+    /// 2nd flexion of weight function.
     std::complex<data_t> G;
+    /// S/N of moment measurement.
+    data_t SN;
     
     friend class DEIMOSList;
   protected:

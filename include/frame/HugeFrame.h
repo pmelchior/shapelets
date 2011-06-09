@@ -18,7 +18,7 @@ namespace shapelens {
   /// keep pointers to the image files.\n
   /// fillObject() then copies only the regions which are enclosed by the 
   /// corner points <tt>XMIN..XMAX,YMIN..YMAX</tt> as given in the catalog.
-  class HugeFrame : public Image<data_t> {
+  class HugeFrame {
   public:
     /// Constructor with image file and catalog file.
     HugeFrame(std::string datafile, std::string catfile);
@@ -46,6 +46,8 @@ namespace shapelens {
     unsigned long getNumberOfObjects();
     /// Return Catalog read by readCatalog().
     const Catalog& getCatalog();
+    /// Grid.
+    Grid grid;
 
   private:
     void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
@@ -54,6 +56,7 @@ namespace shapelens {
     bool estimatedBG;
     data_t bg_mean, bg_rms;
     long axsize0, axsize1;
+    std::string basefilename;
   };
 } // end namespace
 #endif

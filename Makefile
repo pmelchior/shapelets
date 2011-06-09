@@ -53,6 +53,9 @@ endif
 ifneq (,$(findstring HAS_SQLiteDB,$(SPECIALFLAGS)))
 	LIBS += -lsqlite3
 endif
+ifneq (,$(findstring HAS_WCSLIB,$(SPECIALFLAGS)))
+	LIBS += -lwcs
+endif
 
 AR = ar
 ARFLAGS = -sr

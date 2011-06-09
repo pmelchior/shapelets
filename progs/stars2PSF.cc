@@ -23,6 +23,7 @@ int main(int argc, char* argv[]) {
   cmd.xorAdd(weight, noise);
   TCLAP::ValueArg<std::string> saveObj("S","save_objects","Save objects in this file", false, "", "string",cmd);
   TCLAP::ValueArg<std::string> average("a","average","Save average moments to file", false, "", "string",cmd);
+  TCLAP::SwitchArg usewcs("u","use_wcs","Use WCS from FITS header", cmd, false);
   cmd.parse(argc,argv);
 
   // shear/flexion?
@@ -30,6 +31,8 @@ int main(int argc, char* argv[]) {
   if (flexed.getValue())
     N = std::min(4,N);
 
+  // set WCS if requested
+  ShapeLensConfig::USE_WCS = usewcs.getValue();
 
   // open file pointers and catalog
   HugeFrame* frame;

@@ -67,15 +67,17 @@ class ShapeLensConfig {
   /// Relative uncertainty on \f$\beta\f$during optimization, default 0.02.
   static data_t DELTA_BETA;
   /// Whether flattening of \f$\chi^2\f$ is allowed as termination criterium
-  /// for the optimization process, default = 0.
+  /// for the optimization process, default = false.
   static bool ALLOW_FLATTENING;
   /// Whether the value if the shapelet basis functions should be integrated
-  /// within pixels when computing the shapelet model, default = 0;
+  /// within pixels when computing the shapelet model, default = false;
   static bool PIXEL_INTEGRATION;
   /// The noise model employed during the decomposition (see Decomposite),
   /// default = "GAUSSIAN"
   static std::string NOISEMODEL;
-
+  /// Whether coordinates are treated as sky coordinates, default = false;
+  /// WCS information is read from FITS file header.
+  static bool USE_WCS;
 };
 } // end namespace
 #endif

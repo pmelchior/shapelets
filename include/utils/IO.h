@@ -10,7 +10,9 @@
 #include <boost/lexical_cast.hpp>
 #include <gsl/gsl_rng.h>
 #include "../Typedef.h"
+#include "../ShapeLensConfig.h"
 #include "../frame/Grid.h"
+#include "../frame/WCSTransformation.h"
 
 namespace shapelens {
 template <class T>
@@ -220,6 +222,15 @@ class IO {
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
     im.grid.setSize(0,0,naxes[0],naxes[1]);
+    // set wcs from fits file if requested
+    if (ShapeLensConfig::USE_WCS) {
+#ifdef HAS_WCSLIB
+      im.grid.setWCS(WCSTransformation(fptr));
+#else
+      throw std::runtime_error("IO: WCS usage requested, but HAS_WCSToolsLib not specified");
+#endif
+    }
+
     im.resize(im.grid.size());
     long firstpix[2] = {1,1};
     T val;
@@ -239,6 +250,15 @@ class IO {
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
     im.grid.setSize(0,0,naxes[0],naxes[1]);
+    // set WCS from fits file if requested
+    if (ShapeLensConfig::USE_WCS) {
+#ifdef HAS_WCSLIB
+      im.grid.setWCS(WCSTransformation(fptr));
+#else
+      throw std::runtime_error("IO: WCS usage requested, but HAS_WCSToolsLib not specified");
+#endif
+    }
+
     im.resize(im.grid.size());
     long firstpix[2] = {1,1};
     T val;

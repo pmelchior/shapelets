@@ -49,8 +49,8 @@ class Grid {
   unsigned long size() const;
   /// Get Polygon which contains the grid points in World Coordinates.
   Polygon<data_t> getSupport() const;
-  /// Return rectangular bounding box in World Coordinates.
-  Rectangle<data_t> getBoundingBox() const;
+  /// Return rectangular bounding box in image coordinates.
+  Rectangle<int> getBoundingBox() const;
   /// Find the image coordinates from the pixel index.
   /// The coordinate system is defined such, that the left lower corner of 
   /// the image has the coordinates \f$(start_0,start_1)\f$ (defined at 

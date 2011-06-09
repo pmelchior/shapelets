@@ -57,6 +57,12 @@ namespace shapelens {
       ll = min;
       tr = max;
     }
+
+    /// Compute area of rectangle.
+    T getArea() const {
+      return (tr(0)-ll(0))*(tr(1)-ll(1));
+      
+    }
     /// Add \p P to \p ll and \p tr.
     inline Rectangle<T>& operator+= (const Point<T>& P) {
       ll += P;
@@ -68,6 +74,11 @@ namespace shapelens {
       ll -= P;
       tr -= P;
       return *this;
+    }
+    /// Ostream from Rectangle.
+    friend std::ostream& operator<<(std::ostream& os, const Rectangle<T>& p) {
+      os << p.ll << ".." << p.tr;
+      return os;
     }
   };
   
@@ -146,7 +157,7 @@ namespace shapelens {
       for (typename std::list<Edge<T> >::const_iterator iter = edges.begin(); iter != edges.end(); iter++) {
 	a += (iter->p1(0)*iter->p2(1)) - (iter->p2(0)*iter->p1(1));
       }
-      return 0.5*a;
+      return fabs(0.5*a);
     }
     /// Checks whether \p p is inside the polygon.
     /// Uses crossing test: If a ray originating from \p into positive y-direction

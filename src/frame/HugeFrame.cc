@@ -1,4 +1,5 @@
 #include "../../include/frame/HugeFrame.h"
+#include "../../include/ShapeLensConfig.h"
 #include <numla/NumVectorMasked.h>
 #include <boost/tokenizer.hpp>
 #include <fstream>
@@ -34,6 +35,14 @@ HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
     fits_get_img_size(fptr, dimensions, naxis, &status);
     axsize0 = naxis[0];
     axsize1 = naxis[1];
+    grid.setSize(0,0,axsize0, axsize1);
+    if (ShapeLensConfig::USE_WCS) {
+#ifdef HAS_WCSLIB
+      grid.setWCS(WCSTransformation(fptr));
+#else
+      throw std::runtime_error("IO: WCS usage requested, but HAS_WCSToolsLib not specified");
+#endif
+    }
   } else
     throw std::invalid_argument("HugeFrame: FITS file does not provide valid image!");
 }
@@ -49,9 +58,22 @@ HugeFrame::HugeFrame (std::string datafile, std::string weightfile, std::string 
   // axsizes of underlying image (otherwise unknown)
   long naxis[2];
   int status = 0;
-  fits_get_img_size(fptr, 2, naxis, &status);
-  axsize0 = naxis[0];
-  axsize1 = naxis[1];
+  int dimensions;
+  fits_get_img_dim (fptr, &dimensions, &status);
+  if (dimensions == 2) {
+    fits_get_img_size(fptr, dimensions, naxis, &status);
+    axsize0 = naxis[0];
+    axsize1 = naxis[1];
+    grid.setSize(0,0,axsize0, axsize1);
+    if (ShapeLensConfig::USE_WCS) {
+#ifdef HAS_WCSLIB
+      grid.setWCS(WCSTransformation(fptr));
+#else
+      throw std::runtime_error("IO: WCS usage requested, but HAS_WCSToolsLib not specified");
+#endif
+    }
+  } else
+    throw std::invalid_argument("HugeFrame: FITS file does not provide valid image!");
 }
 
 HugeFrame::~HugeFrame() {
@@ -96,9 +118,11 @@ void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.resize((xmax-xmin)*(ymax-ymin));
     // Grid will be changed but not shifted (all pixels stay at their position)
     O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
-    O.grid.setWCS(Image<data_t>::grid.getWCS());
-    //O.segMap.resize((xmax-xmin)*(ymax-ymin));
-    //O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.centroid = Point<data_t>(catiter->second.XCENTROID,
+			       catiter->second.YCENTROID);
+    if (ShapeLensConfig::USE_WCS)
+      O.grid.setWCS(grid.getWCS());
+
     if (fptr_w != NULL) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
       O.weight.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
@@ -114,10 +138,9 @@ void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       fits_read_subset(fptr_w, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.weight.c_array(), &anynull, &status);
 
     // Fill other quantities into Object
-    O.centroid = Point<data_t>(catiter->second.XCENTROID,
-			       catiter->second.YCENTROID);
+    
     O.flags = std::bitset<8>(catiter->second.FLAGS);
-    O.basefilename = HugeFrame::getFilename();
+    O.basefilename = basefilename;
     O.noise_rms = bg_rms;
     O.noise_mean = bg_mean;
   }

@@ -7,20 +7,21 @@
 using namespace shapelens;
 using namespace std;
 
-bool ShapeLensConfig::VERBOSITY = 0;
+bool ShapeLensConfig::VERBOSITY = false;
 unsigned int ShapeLensConfig::NMAX_LOW = 0;
 unsigned int ShapeLensConfig::NMAX_HIGH = 100;
 data_t ShapeLensConfig::BETA_LOW = 0;
 data_t ShapeLensConfig::BETA_HIGH = 1e6;
 data_t ShapeLensConfig::DELTA_BETA = 0.02;
-bool ShapeLensConfig::ALLOW_FLATTENING = 0;
-bool ShapeLensConfig::FILTER_SPURIOUS = 0;
+bool ShapeLensConfig::ALLOW_FLATTENING = false;
+bool ShapeLensConfig::FILTER_SPURIOUS = false;
 data_t ShapeLensConfig::ADD_BORDER = 0.5;
 unsigned int ShapeLensConfig::MIN_PIXELS = 20;
 data_t ShapeLensConfig::MIN_THRESHOLD = 1.25;
 data_t ShapeLensConfig::DETECT_THRESHOLD = 3.;
 std::string ShapeLensConfig::NOISEMODEL = "GAUSSIAN";
-bool ShapeLensConfig::PIXEL_INTEGRATION = 0;
+bool ShapeLensConfig::PIXEL_INTEGRATION = false;
+bool ShapeLensConfig::USE_WCS = false;
 
 ShapeLensConfig::ShapeLensConfig() {
 }
@@ -75,6 +76,8 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
 	NOISEMODEL = column[1];
       if (column[0] == "PIXEL_INTEGRATION")
 	PIXEL_INTEGRATION = boost::lexical_cast<bool>(column[1].c_str());
+      if (column[0] == "USE_WCS")
+	USE_WCS = boost::lexical_cast<bool>(column[1].c_str());
     }
   }
   // check if limits on beta and nmax make sense

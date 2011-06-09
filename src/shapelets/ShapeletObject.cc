@@ -410,7 +410,7 @@ void ShapeletObject::setID(unsigned long id_) {
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
     SourceModel::centroid(1) = 0;
-    SourceModel::support = sobj->getGrid().getBoundingBox();
+    SourceModel::support = sobj->getGrid().getSupport().getBoundingBox();
     // account of centroid offset of sobj
     SourceModel::support -= scentroid;
     if (ct_ != NULL) {

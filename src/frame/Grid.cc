@@ -61,38 +61,43 @@ namespace shapelens {
   }
 
   Polygon<data_t> Grid::getSupport() const {
+    Rectangle<int> bb = getBoundingBox();
     std::list<Point<data_t> > pl;
-    Point<int> IC;
     // lower-left in image coords
-    IC(0) = start0;
-    IC(1) = start1;
-    pl.push_back(operator()(getPixel(IC))); // already in WC
+    Point<data_t> P = bb.ll;
+    if (ct.use_count() != 0)
+      ct->transform(P);
+    pl.push_back(P);
     // lower-right
-    IC(0) = start0 + N0 - 1;
-    pl.push_back(operator()(getPixel(IC)));
+    P(0) = bb.tr(0);
+    P(1) = bb.ll(1);
+    if (ct.use_count() != 0)
+      ct->transform(P);
+    pl.push_back(P);
     // top-left
-    IC(0) = start0;
-    IC(1) = start1 + N1 - 1;
-    pl.push_back(operator()(getPixel(IC)));
+    P(0) = bb.ll(0);
+    P(1) = bb.tr(1);
+    if (ct.use_count() != 0)
+      ct->transform(P);
+    pl.push_back(P);
     // top-right
-    IC(0) = start0 + N0 - 1;
-    pl.push_back(operator()(getPixel(IC)));
+    P = bb.tr;
+    if (ct.use_count() != 0)
+      ct->transform(P);
+    pl.push_back(P);
     Polygon<data_t> p(pl);
     // as support may have flipped edges, we need to remap it
     if (ct.use_count() != 0)
       p.remap();
-    return p;
+      return p;
   }
 
-  Rectangle<data_t> Grid::getBoundingBox() const {
-    Rectangle<data_t> bbox;
-    if (ct.use_count() != 0) {
-      return getSupport().getBoundingBox();
-    }
-    else {  
-      bbox.ll = operator()(0);
-      bbox.tr = operator()(Grid::size()-1);
-    }
+  Rectangle<int> Grid::getBoundingBox() const {
+    Rectangle<int> bbox;
+    bbox.ll(0) = start0;
+    bbox.ll(1) = start1;
+    bbox.tr(0) = start0 + N0;
+    bbox.tr(1) = start1 + N1;
     return bbox;
   }
 
