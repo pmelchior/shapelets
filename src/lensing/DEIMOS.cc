@@ -249,8 +249,8 @@ namespace shapelens {
       obj.grid.getWCS().inverse_transform(centroid_pix); 
       history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << centroid_pix << "\t" << eps << "\t";
       if (iter < 4 || (flexed && iter < maxiter/3))
-	std::cout << "\t\t";
-      std::cout << S_N_ << std::endl;
+	history << "\t\t";
+      history << S_N_ << std::endl;
 
       // deweight and estimate new centroid and ellipticity
       deweight(mo_w);

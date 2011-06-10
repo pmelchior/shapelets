@@ -20,7 +20,7 @@ namespace shapelens {
 
     // Interpret the WCS keywords
     struct wcsprm* wcss; // use pointer to read multiple wcs structs if necessary
-    status = wcspih(header, nkeyrec, WCSHDR_all, -3, &nreject, &nwcs, &wcss);
+    status = wcspih(header, nkeyrec, WCSHDR_all, 0, &nreject, &nwcs, &wcss);
     free(header);
     if (status)
       throw std::runtime_error("WCSTransformation: Cannot read WCS header keywords (" + std::string(wcshdr_errmsg[status]) + ")");
