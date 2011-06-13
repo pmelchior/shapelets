@@ -29,7 +29,7 @@ void Catalog::read(string catfile) {
   fitsfile* fptr = NULL;
   // yes, it is a FITS table
   try {
-    fitsfile* fptr = IO::openFITSTable(catfile);
+    fptr = IO::openFITSTable(catfile);
     // get column numbers for all required columns 
     setFormatFromFITSTable(fptr);
     checkFormat();
@@ -241,7 +241,7 @@ void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
       present[5] = 1;
     } catch (std::invalid_argument) {
       try {
-	format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XWIN*");
+	format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XWIN_*");
 	present[5] = 1;
       } catch (std::invalid_argument) {
 	try {
@@ -260,7 +260,7 @@ void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
       present[6] = 1;
     } catch (std::invalid_argument) {
       try {
-	format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YWIN*");
+	format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YWIN_*");
 	present[6] = 1;
       } catch (std::invalid_argument) {
 	try {
