@@ -46,9 +46,9 @@ ifneq ($(UNAME),Linux)
 endif
 
 ifneq (,$(findstring HAS_ATLAS,$(SPECIALFLAGS)))
-	LIBS = -lshapelens -lgsl -lcblas -llapack -latlas -lcfitsio -lfftw3
+	LIBS = -lgsl -lcblas -llapack -latlas -lcfitsio -lfftw3
 else
-	LIBS = -lshapelens -lgsl -lgslcblas -lcfitsio -lfftw3
+	LIBS = -lgsl -lgslcblas -lcfitsio -lfftw3
 endif
 ifneq (,$(findstring HAS_SQLiteDB,$(SPECIALFLAGS)))
 	LIBS += -lsqlite3
@@ -147,9 +147,6 @@ else
 	$(CC) $(SHAREDFLAGS) $(CFLAG_LIBS) -o $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $^ $(LIBS)
 endif
 
-$(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
-	$(CC) $(CFLAGS) -c $< -o $@
-
 $(LIBPATH)/%.o: $(FRAMESRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -162,5 +159,8 @@ $(LIBPATH)/%.o: $(UTILSSRCPATH)/%.cc
 $(LIBPATH)/%.o: $(SRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(PROGPATH)/%: $(PROGSRCPATH)/%.cc
-	$(CC) $(CFLAGS) $(CFLAG_LIBS) $< -o $@ $(LIBS)
+	$(CC) $(CFLAGS) $(CFLAG_LIBS) $< -o $@ -l$(LIBNAME) $(LIBS)
