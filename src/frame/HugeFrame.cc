@@ -20,7 +20,6 @@ typedef unsigned int uint;
 
 HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
   catalog(catfile) {
-  estimatedBG = 0;
   bg_mean = bg_rms = 0;
 
   fptr = IO::openFITSFile(datafile);
@@ -40,7 +39,7 @@ HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
 #ifdef HAS_WCSLIB
       grid.setWCS(WCSTransformation(fptr));
 #else
-      throw std::runtime_error("IO: WCS usage requested, but HAS_WCSToolsLib not specified");
+      throw std::runtime_error("IO: WCS usage requested, but HAS_WCSLIB not specified");
 #endif
     }
   } else
@@ -49,7 +48,6 @@ HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
 
 HugeFrame::HugeFrame (std::string datafile, std::string weightfile, std::string catfile) : 
   catalog(catfile) {
-  estimatedBG = 0;
   bg_mean = bg_rms = 0;
 
   fptr = IO::openFITSFile(datafile);
@@ -91,8 +89,6 @@ const Catalog& HugeFrame::getCatalog() {
 }
 
 void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
-  if (!estimatedBG) 
-    throw std::runtime_error("HugeFrame: noise is not set!");
   if (catiter != catalog.end()) {
     O.id = catiter->first;
     int xmin, xmax, ymin, ymax;
@@ -138,7 +134,6 @@ void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       fits_read_subset(fptr_w, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.weight.c_array(), &anynull, &status);
 
     // Fill other quantities into Object
-    
     O.flags = std::bitset<8>(catiter->second.FLAGS);
     O.basefilename = basefilename;
     O.noise_rms = bg_rms;
@@ -152,19 +147,14 @@ void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 }
 
 data_t HugeFrame::getNoiseMean() {
-  if (!estimatedBG) 
-    throw std::runtime_error("HugeFrame: noise is not set!");
   return bg_mean;
 }
 
 data_t HugeFrame::getNoiseRMS() {
-  if (!estimatedBG)
-    throw std::runtime_error("HugeFrame: noise is not set!");
   return bg_rms;
 }
 
 void HugeFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
-  estimatedBG = 1;
   bg_mean = mean;
   bg_rms = rms;
 }

@@ -18,12 +18,16 @@ int main(int argc, char* argv[]) {
   TCLAP::SwitchArg flexed("F","flexed","Enable flexion in DEIMOS", cmd, false);
   TCLAP::SwitchArg printMoments("m","print_moments","Print moments", cmd, false);
   TCLAP::SwitchArg printErrors("e","print_errors","Print moment errors", cmd, false);
+  TCLAP::SwitchArg usewcs("u","use_wcs","Use WCS from FITS header", cmd, false);
   cmd.parse(argc,argv);
 
   // shear/flexion?
   int N = order.getValue();
   if (flexed.getValue())
     N = std::min(4,N);
+
+  // set WCS if requested
+  ShapeLensConfig::USE_WCS = usewcs.getValue();
 
   // open file pointers and catalog
   HugeFrame* frame;

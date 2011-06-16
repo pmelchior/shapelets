@@ -11,24 +11,27 @@
 namespace shapelens {
 
 /// Structure to store information of Catalog objects.
-/// The names of the parameters are indentical or similar to those used by SExtractor.
+/// The names of the parameters are indentical or similar to those used by 
+/// SExtractor. Coordinates are supposed to be given in image units, 
+/// starting at (1/1) in the left-lower corner.
 ///
-/// Allowed values for <tt>PARAMETER_NAME</tt> in the file read by Catalog are listed below.
+/// Allowed values for <tt>PARAMETER_NAME</tt> in the file read by Catalog 
+/// are listed below.
 /// In addition to these, the number of the object must be given; 
 /// its <tt>PARAMETER_NAME</tt> is one these: <tt>ID,NR,NUMBER</tt>.
 
 struct CatObject {
-  /// Minimum <tt>X</tt> coordinate of cutout (allowed: <tt>XMIN*</tt>).
+  /// Minimum <tt>X</tt> coordinate of cutout (allowed: <tt>XMIN,XMIN_IMAGE</tt>).
   int XMIN;
-  /// Maximum <tt>X</tt> coordinate of cutout (allowed: <tt>XMAX*</tt>).
+  /// Maximum <tt>X</tt> coordinate of cutout (allowed: <tt>XMAX,XMAX_IMAGE</tt>).
   int XMAX;
-  /// Minimum <tt>Y</tt> coordinate of cutout (allowed: <tt>YMIN*</tt>).
+  /// Minimum <tt>Y</tt> coordinate of cutout (allowed: <tt>YMIN,YMIN_IMAGE</tt>).
   int YMIN;
-  /// Maximum <tt>Y</tt> coordinate of cutout (allowed: <tt>YMAX*</tt>).
+  /// Maximum <tt>Y</tt> coordinate of cutout (allowed: <tt>YMAX,YMAX_IMAGE</tt>).
   int YMAX;
-  /// <tt>X</tt> coordinate of the centroid (alternatives: <tt>X,X_*,XWIN*,XPEAK*</tt>).
+  /// <tt>X</tt> coordinate of the centroid (alternatives: <tt>X,X_IMAGE,XWIN,XWIN_IMAGE,XPEAK,XCENTROID</tt>).
   data_t XCENTROID;
-  /// <tt>Y</tt> coordinate of the centroid (alternatives: <tt>Y,Y_*,YWIN*,YPEAK*</tt>).
+  /// <tt>Y</tt> coordinate of the centroid (alternatives: <tt>Y,Y_IMAGE,YWIN,YWIN-IMAGE,YPEAK,YCENTROID</tt>).
   data_t YCENTROID;
   /// Flags set by a previous segmentation software (alternatives: none).
   unsigned char FLAGS;

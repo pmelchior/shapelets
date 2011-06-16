@@ -73,7 +73,8 @@ namespace shapelens {
     // measure moments within optimized weighting function
     mo.setOrder(N);
     setNoiseImage(obj);
-    match(obj, scale);
+    data_t matching_scale = scale;
+    match(obj, matching_scale);
     computeCovariances();
  }
 
@@ -107,19 +108,19 @@ namespace shapelens {
 
     // matching successfull, try with lower scale and see whether S/N improves
     if (S_N[matching_scale] > 0) {
-      while (matching_scale > psf.getMinimumScale()) {
+      while (matching_scale/scale_factor > psf.getMinimumScale()) {
 	data_t S_N_current = S_N[matching_scale];
 	data_t matching_scale_current = matching_scale;
 	complex<data_t> eps_current = eps, G_current = G;
 	Point<data_t> centroid_current = centroid;
 	Moments mo_current = mo;
-	matching_scale = psf.getScaleSmallerThan(matching_scale);
-	history << "# Trying smaller scale s = " << matching_scale << " to find optimal S/N" << std::endl;
+	matching_scale = psf.getScaleSmallerThan(matching_scale/scale_factor)*scale_factor;
+	history << "# Trying smaller scale s = " << matching_scale/scale_factor << " to find optimal S/N" << std::endl;
 	match(obj, matching_scale);
 	// if S/N goes down, reset to best S/N case
 	if (S_N[matching_scale] < S_N_current) {
 	  matching_scale = matching_scale_current;
-	  history << "# Reverting to scale s = " << matching_scale << std::endl;
+	  history << "# Reverting to scale s = " << matching_scale/scale_factor << std::endl;
 	  mo = mo_current;
 	  eps = eps_current;
 	  G = G_current;
@@ -127,15 +128,18 @@ namespace shapelens {
 	  break;
 	}
       }
-      SN = S_N[matching_scale];
       history << "# Deweighted moments:\t" << mo << std::endl;
-      deconvolve(psf.getAtScale(matching_scale));
-      while (abs(epsilon()) >= 0.999 && matching_scale > psf.getMinimumScale()) {
-	matching_scale = psf.getScaleSmallerThan(matching_scale);
-	history << "# Deconvolution failed, repeat matching with scale s = " << matching_scale << std::endl;
+      deconvolve(psf.getAtScale(matching_scale/scale_factor));
+      while (abs(epsilon()) >= 0.999 && 
+	     matching_scale/scale_factor > psf.getMinimumScale()) {
+	matching_scale = psf.getScaleSmallerThan(matching_scale/scale_factor)*scale_factor;
+	history << "# Deconvolution failed, repeat matching with scale s = " << matching_scale/scale_factor << std::endl;
+	// FIXME: if we store centroid, mo, eps, scale,
+	// we may avoid matching in cases where smaller scales
+	// have already been tried to improve S/N
 	match(obj, matching_scale);
 	history << "# Deweighted moments:\t" << mo << std::endl;
-	deconvolve(psf.getAtScale(matching_scale));
+	deconvolve(psf.getAtScale(matching_scale/scale_factor));
       }
       history << "# Deconvolved moments:\t" << mo << std::endl;
       if (abs(epsilon()) > 0.999)
@@ -211,9 +215,7 @@ namespace shapelens {
     // use a smaller scale for centroiding
     scale = std::max(matching_scale*0.66, 1.0*scale_factor);
     
-    S_N[matching_scale] = 0;
-    data_t S_N_max = 0;
-    int iter = 0, maxiter = 18, run = 0, maxrun = 1;
+    int iter = 0, maxiter = 18, maxiter_centroid = 5, run = 0, maxrun = 1;
     if (flexed) 
       maxrun++;
     
@@ -225,7 +227,7 @@ namespace shapelens {
     while (true) {
       // measure moments under weight function
       if (flexed) {
-	DEIMOSWeightFunction w(scale, centroid, eps, G);
+	 DEIMOSWeightFunction w(scale, centroid, eps, G);
 	mo_w = Moments (obj, w, N + C);
       }	else {
 	DEIMOSWeightFunction w(scale, centroid, eps);
@@ -233,29 +235,29 @@ namespace shapelens {
       }
 
       // measure S/N (of flux)
-      data_t S_N_;
       if (flexed) {
 	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps, G);
 	Moments mo_w2(noise, w2, 0);
-	S_N_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+	S_N[matching_scale] = mo_w(0,0) / sqrt(mo_w2(0,0));
       } else {
 	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
 	Moments mo_w2(noise, w2, 0);
-	S_N_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+	S_N[matching_scale] = mo_w(0,0) / sqrt(mo_w2(0,0));
       }
       
       // output current weighting parameters (in pixel units)
       centroid_pix = centroid;
       obj.grid.getWCS().inverse_transform(centroid_pix); 
       history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << centroid_pix << "\t" << eps << "\t";
-      if (iter < 4 || (flexed && iter < maxiter/3))
+      if (iter < maxiter_centroid || (flexed && iter < maxiter/3))
 	history << "\t\t";
-      history << S_N_ << std::endl;
+      history << S_N[matching_scale] << std::endl;
 
       // deweight and estimate new centroid and ellipticity
       deweight(mo_w);
       centroid_shift(0) = mo(1,0)/mo(0,0);
       centroid_shift(1) = mo(0,1)/mo(0,0);
+      data_t shift = sqrt(centroid_shift(0)*centroid_shift(0) + centroid_shift(1)*centroid_shift(1));
       complex<data_t> eps_ = epsilon();
 
       if (flexed) {
@@ -270,22 +272,24 @@ namespace shapelens {
 	  G = (4./3) * delta_;
 	}
       }
-      else {	
-	if (iter < 3)
+      else {
+	if (iter < maxiter_centroid - 1) {
 	  centroid -= centroid_shift;
+	  // if centroiding has converged: stop it
+	  if (shift < 1e-2*scale_factor)
+	     maxiter_centroid = iter;
+	}
 	else if (iter < maxiter - 1) {
-	  if (abs(eps_) >= 0.999 || S_N_ < S_N_max)
+	  // abort for non-sensical ellipticities or convergence
+	  if (abs(eps_) >= 0.999 ||
+	      (fabs(S_N[matching_scale]/SN - 1) < 1e-5 && abs(eps - eps_) < 1e-3)) {
+	    SN = S_N[matching_scale];
 	    break;
-	  // let matching converge a bit before concluding it's good...
-	  if (iter > 6) {
-	    S_N[matching_scale] = S_N_max;
-	    if (S_N_ < (1+1e-5)*S_N_max) // convergence criterium
-	      break;
 	  }
-	  S_N_max = S_N_;
 	  eps = eps_;
 	  scale = matching_scale/sqrt(1 + abs(eps)*abs(eps) - 2*abs(eps));
 	}
+	SN = S_N[matching_scale];
       }
 
       // repeat same series of iteration again
@@ -392,7 +396,6 @@ namespace shapelens {
     noise.resize(obj.size());
     noise.grid = obj.grid;
     noise.centroid = obj.centroid;
-    //    std::cout << obj.noise_rms << "\t" << obj.centroid()
     if (obj.weight.size() == 0)
       for (unsigned int i=0; i < noise.size(); i++)
 	noise(i) = obj.noise_rms*obj.noise_rms;

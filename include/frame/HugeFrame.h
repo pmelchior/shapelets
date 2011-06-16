@@ -53,7 +53,6 @@ namespace shapelens {
     void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
     Catalog catalog;
     fitsfile *fptr, *fptr_w;
-    bool estimatedBG;
     data_t bg_mean, bg_rms;
     long axsize0, axsize1;
     std::string basefilename;

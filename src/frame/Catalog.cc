@@ -128,8 +128,8 @@ void Catalog::save(string catfile) const {
   catalog << "#  3 XMAX_IMAGE" << endl;
   catalog << "#  4 YMIN_IMAGE" << endl;
   catalog << "#  5 YMAX_IMAGE" << endl;
-  catalog << "#  6 XCENTROID_IMAGE" << endl;
-  catalog << "#  7 YCENTROID_IMAGE" << endl;
+  catalog << "#  6 X_IMAGE" << endl;
+  catalog << "#  7 Y_IMAGE" << endl;
   catalog << "#  8 FLAGS" << endl;
   if (present.test(8))
     catalog << "# 9 CLASSIFIER" << endl;
@@ -217,37 +217,61 @@ void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
     }
   }
   try {
-    format.XMIN = IO::getFITSTableColumnNumber(fptr, "XMIN*");
+    format.XMIN = IO::getFITSTableColumnNumber(fptr, "XMIN");
     present[1] = 1;
-  } catch (std::invalid_argument) {}
+  } catch (std::invalid_argument) {
+    try {
+      format.XMIN = IO::getFITSTableColumnNumber(fptr, "XMIN_IMAGE");
+      present[1] = 1;
+    } catch  (std::invalid_argument) {}
+  }
   try {
-    format.XMAX = IO::getFITSTableColumnNumber(fptr, "XMAX*");
+    format.XMAX = IO::getFITSTableColumnNumber(fptr, "XMAX");
     present[2] = 1;
-  } catch (std::invalid_argument) {}
+  } catch (std::invalid_argument) {
+    try {
+      format.XMAX = IO::getFITSTableColumnNumber(fptr, "XMAX_IMAGE");
+      present[2] = 1;
+    } catch (std::invalid_argument) {}
+  }
   try {
-    format.YMIN = IO::getFITSTableColumnNumber(fptr, "YMIN*");
+    format.YMIN = IO::getFITSTableColumnNumber(fptr, "YMIN");
     present[3] = 1;
-  } catch (std::invalid_argument) {}
+  } catch (std::invalid_argument) {
+    try {
+      format.YMIN = IO::getFITSTableColumnNumber(fptr, "YMIN_IMAGE");
+      present[3] = 1;
+    } catch (std::invalid_argument) {}
+  }
   try {
-    format.YMAX = IO::getFITSTableColumnNumber(fptr, "YMAX*");
+    format.YMAX = IO::getFITSTableColumnNumber(fptr, "YMAX");
     present[4] = 1;
-  } catch (std::invalid_argument) {}
+  } catch (std::invalid_argument) {
+    try {
+      format.YMAX = IO::getFITSTableColumnNumber(fptr, "YMAX_IMAGE");
+      present[4] = 1;
+    } catch (std::invalid_argument) {}
+  }
   try {
     format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "X");
     present[5] = 1;
   } catch (std::invalid_argument) {
     try {
-      format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "X_*");
+      format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "X_IMAGE");
       present[5] = 1;
     } catch (std::invalid_argument) {
       try {
-	format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XWIN_*");
+	format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XWIN_IMAGE");
 	present[5] = 1;
       } catch (std::invalid_argument) {
 	try {
-	  format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XCENTROID*");
+	  format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XCENTROID");
 	  present[5] = 1;
-	} catch (std::invalid_argument) {}
+	} catch (std::invalid_argument) {
+	  try {
+	    format.XCENTROID = IO::getFITSTableColumnNumber(fptr, "XPEAK");
+	    present[5] = 1;
+	  } catch (std::invalid_argument) {}}
       }
     }
   }
@@ -256,17 +280,22 @@ void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
     present[6] = 1;
   } catch (std::invalid_argument) {
     try {
-      format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "Y_*");
+      format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "Y_IMAGE");
       present[6] = 1;
     } catch (std::invalid_argument) {
       try {
-	format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YWIN_*");
+	format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YWIN_IMAGE");
 	present[6] = 1;
       } catch (std::invalid_argument) {
 	try {
-	  format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YCENTROID*");
+	  format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YCENTROID");
 	  present[6] = 1;
-	} catch (std::invalid_argument) {}
+	} catch (std::invalid_argument) {
+	  try {
+	    format.YCENTROID = IO::getFITSTableColumnNumber(fptr, "YPEAK");
+	    present[6] = 1;
+	  } catch (std::invalid_argument) {}
+	}
       }
     }
   }
