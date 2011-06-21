@@ -87,33 +87,39 @@ void Catalog::read(string catfile) {
       column.clear();
       for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter)
 	column.push_back(*tok_iter);
-      // comment line: contains format definition at columns 2,3
-      if (column[0].compare("#") == 0)
-	setFormatField(column[2],boost::lexical_cast<unsigned short>(column[1].c_str()));
-      // at this point we should have a complete format definition: check it
-      // from here on we expect the list of object to come along.
-      else {
-	if (!formatChecked) checkFormat();
-	// then set up a true SExCatObject
-	CatObject so;
-	so.CLASSIFIER = so.PARENT = 0;
-	unsigned long id = boost::lexical_cast<unsigned long>(column[format.ID].c_str());
-	// the sextractor corrdinates start with (1,1), ours with (0,0)
-	so.XMIN = boost::lexical_cast<int>(column[format.XMIN].c_str())-1;
-	so.XMAX = boost::lexical_cast<int>(column[format.XMAX].c_str())-1;
-	so.YMIN = boost::lexical_cast<int>(column[format.YMIN].c_str())-1;
-	so.YMAX = boost::lexical_cast<int>(column[format.YMAX].c_str())-1;
-	// as Catalog pixels start with (1,1) and ours with (0,0), 
-	// we need to subtract 1
-	so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
-	so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
-	so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
-	if (present.test(8))
-	  so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
-	if (present.test(9))
-	  so.PARENT = boost::lexical_cast<unsigned long>(column[format.PARENT].c_str());
-	// then store it in map
-	Catalog::insert(make_pair(id,so));
+      // exclude empty lines
+      if (column.size() > 2) { // at least # COLUMN NAME needs to be present 
+	// comment line: contains format definition at columns 2,3
+	if (column[0].compare("#") == 0)
+	  setFormatField(column[2],boost::lexical_cast<unsigned short>(column[1].c_str()));
+	// at this point we should have a complete format definition: check it
+	// from here on we expect the list of object to come along.
+	else {
+	  if (!formatChecked) checkFormat();
+	  if (column.size() < present.count())
+	    throw std::runtime_error("Catalog: not all necessary column provided in line:\n" + line);
+
+	  // then set up a true SExCatObject
+	  CatObject so;
+	  so.CLASSIFIER = so.PARENT = 0;
+	  unsigned long id = boost::lexical_cast<unsigned long>(column[format.ID].c_str());
+	  // the sextractor corrdinates start with (1,1), ours with (0,0)
+	  so.XMIN = boost::lexical_cast<int>(column[format.XMIN].c_str())-1;
+	  so.XMAX = boost::lexical_cast<int>(column[format.XMAX].c_str())-1;
+	  so.YMIN = boost::lexical_cast<int>(column[format.YMIN].c_str())-1;
+	  so.YMAX = boost::lexical_cast<int>(column[format.YMAX].c_str())-1;
+	  // as Catalog pixels start with (1,1) and ours with (0,0), 
+	  // we need to subtract 1
+	  so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
+	  so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
+	  so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
+	  if (present.test(8))
+	    so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
+	  if (present.test(9))
+	    so.PARENT = boost::lexical_cast<unsigned long>(column[format.PARENT].c_str());
+	  // then store it in map
+	  Catalog::insert(make_pair(id,so));
+	}
       }
     }
     catalog.close();
@@ -191,7 +197,7 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
     format.FLAGS = colnr - 1;
     present[7] = 1;
   }
-  else if (type == "CLASS_STAR" || type == "CLASSIFIER") {
+  else if (type == "CLASS_STAR" || type == "CLASS" || type == "CLASSIFIER") {
     format.CLASSIFIER = colnr - 1;
     present[8] = 1;
   }
