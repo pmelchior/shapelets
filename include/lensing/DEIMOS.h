@@ -11,6 +11,18 @@
 
 namespace shapelens {
   /// Class for moment-based lensing and deconvolution.
+  /// DEIMOS implements the method introduced by Melchior et al. (2011), 	
+  /// a moment-based approach to weak lensing with an analytic deconvolution
+  /// procedure.
+  ///
+  /// It uses an iterative matching algorithm to determine the optimal
+  /// size, center, and ellipticity of a weight function to measure the
+  /// convolved object. If required, a deconvolution can be performed with
+  /// a PSF shape, measured with the same parameters as the object.
+  ///
+  /// \b NOTE: If ShapeLensConfig::USE_WCS is set to \p true, the moments mo
+  /// and all moment-related quantities (foremost scale, centroid, epsilon) are
+  /// measured in these units.
   class DEIMOS {
   public:
     /// DEIMOS weight function.
@@ -86,8 +98,9 @@ namespace shapelens {
     /// Actual width of the weight function [WCS units].
     /// Determined during the matching procedure as
     /// \f$s = s_m/\sqrt{1 + \epsilon^2 - 2|\epsilon|}\f$,
-    /// where \f$s_m$ denotes matching_scale and \f$\epsilon\$ the convolved
-    /// ellipticity.
+    /// where \f$s_m\f$ denotes DEIMOS::matching_scale and \f$\epsilon\f$ 
+    /// the convolved ellipticity. If WCS units are used, \f$s\f$ is rescale
+    /// accordingly. 
     data_t scale;
     /// Pixel scale [WCS unit/pixel].
     data_t scale_factor;
