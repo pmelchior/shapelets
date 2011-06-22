@@ -264,7 +264,6 @@ namespace shapelens {
       w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0) - centroid_wcs(0);
       diff_y = obj.grid(i,1) - centroid_wcs(1);
-      //std::cout << i << "\t" << val << "\t" << obj.grid(i) << "\t" << w_ << "\t" << diff_x << "\t" << diff_y << std::endl;
       if (obj.weight.size() != 0) {
 	w_ *= obj.weight(i);
 	sum_w += obj.weight(i);

@@ -80,7 +80,7 @@ namespace shapelens {
     int N;
     /// Deweighting order.
     int C;
-    /// Object id.
+    /// Copy of Object::id.
     unsigned long id;
     /// Width of the weight function.
     data_t scale;
@@ -95,6 +95,13 @@ namespace shapelens {
     /// S/N of moment measurement.
     std::map<data_t, data_t> SN;
     /// Matching and deconvolution flags.
+    /// The flags are ordered as DEIMOS processes objects, 
+    /// i.e. matching (first centroid then ellipticity) followed by
+    /// deconvolution (if necessary):
+    /// - <tt>flags[0]</tt>: centroid determination failed
+    /// - <tt>flags[1]</tt>: non-sensical moments or ellipiticty
+    /// - <tt>flags[2]</tt>: ellipticity matching failed
+    /// - <tt>flags[3]</tt>: deconvolution results in non-sensical moments
     std::bitset<4> flags;
 
     friend class DEIMOSList;

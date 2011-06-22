@@ -81,7 +81,9 @@ clean:
 	rm -f $(SHAPELETSOBJECTS) $(FRAMEOBJECTS) $(LENSINGOBJECTS) $(MODELFITOBJECTS) $(COMMONOBJECTS) $(UTILSOBJECTS)
 	rm -f $(LIBPATH)/lib$(LIBNAME).a
 	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)	
-	rm -f $(DOCPATH)/*
+
+cleandocs:
+	rm -rf $(DOCPATH)/*
 
 cleanshared:
 	rm -f $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
