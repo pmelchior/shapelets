@@ -68,8 +68,6 @@ namespace shapelens {
     std::complex<data_t> delta() const;
     /// Get marginalized moment errors.
     Moments getMomentErrors() const;
-    /// Get scale finally used for matching weight function.
-    data_t getMatchingScale() const;
     /// Check if moments are sensical (return 1 if they are not).
     bool flagMoments(const Moments& M) const;
     /// Ordered set of multipole moments.
@@ -82,9 +80,16 @@ namespace shapelens {
     int C;
     /// Copy of Object::id.
     unsigned long id;
-    /// Width of the weight function.
+    /// Matching scale of the weight function.
+    /// Corresponds to the size of the semi-minor axis [pixel]:
+    data_t matching_scale;
+    /// Actual width of the weight function [WCS units].
+    /// Determined during the matching procedure as
+    /// \f$s = s_m/\sqrt{1 + \epsilon^2 - 2|\epsilon|}\f$,
+    /// where \f$s_m$ denotes matching_scale and \f$\epsilon\$ the convolved
+    /// ellipticity.
     data_t scale;
-    /// Pixel scale [degrees/pixel].
+    /// Pixel scale [WCS unit/pixel].
     data_t scale_factor;
     /// Centroid of weight function.
     Point<data_t> centroid;
@@ -106,12 +111,12 @@ namespace shapelens {
 
     friend class DEIMOSList;
   protected:
-    void match(const Object& obj, data_t matching_scale);
+    void match(Object& obj);
     void deweight(const Moments& mo_w);
     void deconvolve(const Moments& psf);
     void setNoiseImage(const Object& obj);
     void computeCovariances();
-    data_t getEpsScale(data_t matching_scale, const std::complex<data_t>& eps) const;
+    data_t getEpsScale() const;
     bool flexed;
     NumMatrix<data_t> D;
     Object noise;
