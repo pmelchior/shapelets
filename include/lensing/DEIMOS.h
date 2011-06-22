@@ -7,6 +7,7 @@
 #include "../utils/SQLiteDB.h"
 #include "../utils/History.h"
 #include <boost/shared_ptr.hpp>
+#include <bitset>
 
 namespace shapelens {
   /// Class for moment-based lensing and deconvolution.
@@ -67,6 +68,10 @@ namespace shapelens {
     std::complex<data_t> delta() const;
     /// Get marginalized moment errors.
     Moments getMomentErrors() const;
+    /// Get scale finally used for matching weight function.
+    data_t getMatchingScale() const;
+    /// Check if moments are sensical (return 1 if they are not).
+    bool flagMoments(const Moments& M) const;
     /// Ordered set of multipole moments.
     Moments mo;
     /// Covariance matrix of mo.
@@ -88,17 +93,19 @@ namespace shapelens {
     /// 2nd flexion of weight function.
     std::complex<data_t> G;
     /// S/N of moment measurement.
-    data_t SN;
-    
+    std::map<data_t, data_t> SN;
+    /// Matching and deconvolution flags.
+    std::bitset<4> flags;
+
     friend class DEIMOSList;
   protected:
-    void match(const Object& obj, data_t min_scale);
+    void match(const Object& obj, data_t matching_scale);
     void deweight(const Moments& mo_w);
     void deconvolve(const Moments& psf);
     void setNoiseImage(const Object& obj);
     void computeCovariances();
+    data_t getEpsScale(data_t matching_scale, const std::complex<data_t>& eps) const;
     bool flexed;
-    std::map<data_t, data_t> S_N;
     NumMatrix<data_t> D;
     Object noise;
     History history;

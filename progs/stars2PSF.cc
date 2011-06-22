@@ -4,10 +4,6 @@
 
 using namespace shapelens;
 
-data_t xi(data_t r) {
-  return exp(-r/2100);
-}
-
 int main(int argc, char* argv[]) {
   TCLAP::CmdLine cmd("Measure PSF moments from stars and interpolate in between", ' ', "0.3");
   TCLAP::ValueArg<std::string> cat("c","catalog","Catalog file", true, "","string",cmd);
@@ -61,6 +57,7 @@ int main(int argc, char* argv[]) {
       avg.mo += d.mo; // flux weighted average
       avg.S += d.S;
       avg.eps += d.eps;
+      avg.scale += d.scale;
       if (flexed.getValue())
 	avg.G += d.G;
     }
@@ -82,7 +79,7 @@ int main(int argc, char* argv[]) {
       std::cout << "\t" << real(d.delta()) << "\t" << imag(d.delta());
       std::cout << "\t" << mu;
     }
-    std::cout << std::endl;
+    std::cout << "\t" << d.SN[s.getValue()] << "\t" << d.flags.to_string() << std::endl;
     if (saveObj.isSet())
       IO::writeFITSImage(fptr,obj);
   }
@@ -103,6 +100,7 @@ int main(int argc, char* argv[]) {
     // plain average
     avg.eps /= frame->getCatalog().size();
     avg.G /= frame->getCatalog().size();
+    avg.scale /= frame->getCatalog().size();
     avg.id = 0;
     avg.save(average.getValue());
   }

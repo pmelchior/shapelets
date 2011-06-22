@@ -94,7 +94,8 @@ int main(int argc, char* argv[]) {
       std::cout << "\t" << real(d.delta()) << "\t" << imag(d.delta());
       std::cout << "\t" << mu;
     }
-      
+    
+    std::cout << "\t" << d.SN[s.getValue()] << "\t" << d.flags.to_string() << std::endl;
     std::cout << std::endl;
   }
 
