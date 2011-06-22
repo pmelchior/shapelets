@@ -32,6 +32,9 @@ namespace shapelens {
     data_t getNoiseRMS();
     /// Set noise features explicitly.
     void setNoiseMeanRMS(data_t mean, data_t rms);
+    /// Subtract constant background noise level.
+    /// The noise level is obtained from the entries set by setNoiseMeanRMS().
+    void subtractBackground();
     /// Fill all necessary information into an Object.
     /// The object is selected by the iterator \p catiter which must must
     /// be constructed from the Catalog obtained by calling getCatalog().\n
@@ -55,6 +58,7 @@ namespace shapelens {
     fitsfile *fptr, *fptr_w;
     data_t bg_mean, bg_rms;
     long axsize0, axsize1;
+    bool subtractBG;
     std::string basefilename;
   };
 } // end namespace

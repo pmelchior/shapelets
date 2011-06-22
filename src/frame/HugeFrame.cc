@@ -20,7 +20,7 @@ typedef unsigned int uint;
 
 HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
   catalog(catfile) {
-  bg_mean = bg_rms = 0;
+  bg_mean = bg_rms = subtractBG = 0;
 
   fptr = IO::openFITSFile(datafile);
   fptr_w = NULL;
@@ -48,7 +48,7 @@ HugeFrame::HugeFrame (std::string datafile, std::string catfile) :
 
 HugeFrame::HugeFrame (std::string datafile, std::string weightfile, std::string catfile) : 
   catalog(catfile) {
-  bg_mean = bg_rms = 0;
+  bg_mean = bg_rms = subtractBG = 0;
 
   fptr = IO::openFITSFile(datafile);
   fptr_w = IO::openFITSFile(weightfile);
@@ -130,6 +130,9 @@ void HugeFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     int anynull = 0;
     long firstpix[2] = {xmin+1,ymin+1}, lastpix[2] = {xmax, ymax}, inc[2] = {1,1};
     fits_read_subset(fptr, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.c_array(), &anynull, &status);
+    if (subtractBG)
+      O -= bg_mean;
+
     if (fptr_w != NULL) 
       fits_read_subset(fptr_w, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.weight.c_array(), &anynull, &status);
 
@@ -157,6 +160,10 @@ data_t HugeFrame::getNoiseRMS() {
 void HugeFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
   bg_mean = mean;
   bg_rms = rms;
+}
+
+void HugeFrame::subtractBackground() {
+  subtractBG = 1;
 }
 
 void HugeFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
