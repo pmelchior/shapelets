@@ -312,7 +312,12 @@ void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
   try {
     format.CLASSIFIER = IO::getFITSTableColumnNumber(fptr, "CLASSIFIER");
     present[8] = 1;
-  } catch (std::invalid_argument) {}
+  } catch (std::invalid_argument) {
+    try {
+    format.CLASSIFIER = IO::getFITSTableColumnNumber(fptr, "CLASS_STAR");
+    present[8] = 1;
+    } catch (std::invalid_argument) {}
+  }
   try {
     format.PARENT = IO::getFITSTableColumnNumber(fptr, "PARENT");
     present[9] = 1;

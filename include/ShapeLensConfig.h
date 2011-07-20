@@ -52,6 +52,9 @@ class ShapeLensConfig {
   /// Whether objects with <tt>segMap(i) < 0</tt> are replaced by artificial noise,
   /// default = 0.
   static bool FILTER_SPURIOUS;
+  /// Whether the segmented ojects should be checked for overlapping objects
+  /// or boundary truncation, default = true.
+  static bool CHECK_OBJECT;
   /// The amount by which the objects area is enlarged on each side relative to the
   /// object's area in the segmentation map, default = 0.5
   /// (50% increase in size an all sides).

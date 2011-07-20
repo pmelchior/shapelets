@@ -15,6 +15,7 @@ data_t ShapeLensConfig::BETA_HIGH = 1e6;
 data_t ShapeLensConfig::DELTA_BETA = 0.02;
 bool ShapeLensConfig::ALLOW_FLATTENING = false;
 bool ShapeLensConfig::FILTER_SPURIOUS = false;
+bool ShapeLensConfig::CHECK_OBJECT = true;
 data_t ShapeLensConfig::ADD_BORDER = 0.5;
 unsigned int ShapeLensConfig::MIN_PIXELS = 20;
 data_t ShapeLensConfig::MIN_THRESHOLD = 1.25;
@@ -64,6 +65,8 @@ ShapeLensConfig::ShapeLensConfig(string filename) {
 	ALLOW_FLATTENING = boost::lexical_cast<bool>(column[1].c_str());
       if (column[0] == "FILTER_SPURIOUS")
         FILTER_SPURIOUS = boost::lexical_cast<bool>(column[1].c_str());
+      if (column[0] == "CHECK_OBJECT")
+        CHECK_OBJECT = boost::lexical_cast<bool>(column[1].c_str());
       if (column[0] == "ADD_BORDER")
         ADD_BORDER = boost::lexical_cast<data_t>(column[1].c_str());
       if (column[0] == "MIN_PIXELS")

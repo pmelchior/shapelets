@@ -68,6 +68,9 @@ namespace shapelens {
     DEIMOS (const Object& obj, int N, int C, data_t scale, bool flexed = false);
     /// Constructor for computing deconvolved moments up to order \p N from \p obj.
     DEIMOS (const Object& obj, const PSFMultiScale& psf, int N, int C, data_t scale, bool flexed = false);
+    /// Deconvolve from Moments of \p psf.
+    /// This is only relevant for the contructor without PSF specification. 
+    void deconvolve(const Moments& psf);
     /// Save to a file.
     void save(std::string filename) const;
     /// Get std::complex ellipticity from mo.
@@ -126,7 +129,6 @@ namespace shapelens {
   protected:
     void match(Object& obj);
     void deweight(const Moments& mo_w);
-    void deconvolve(const Moments& psf);
     void setNoiseImage(const Object& obj);
     void computeCovariances();
     data_t getEpsScale() const;

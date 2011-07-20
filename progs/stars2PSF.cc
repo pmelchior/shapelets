@@ -5,8 +5,10 @@
 using namespace shapelens;
 
 int main(int argc, char* argv[]) {
-  TCLAP::CmdLine cmd("Measure PSF moments from stars and interpolate in between", ' ', "0.3");
+  TCLAP::CmdLine cmd("Measure PSF moments from stars and interpolate in between", ' ', "0.4");
   TCLAP::ValueArg<std::string> cat("c","catalog","Catalog file", true, "","string",cmd);
+  TCLAP::ValueArg<std::string> segmap("S","segmap","Segmentation maps", false, "", "string",cmd);
+  TCLAP::ValueArg<std::string> weight("w","weightmap","Weight map file", false, "","string");
   TCLAP::ValueArg<std::string> file("f","file","Image file", true, "","string",cmd);
   TCLAP::ValueArg<int> order("N","moment_order","Moment order", false, 2,"int",cmd);
   TCLAP::ValueArg<int> C("C","correction_order","DEIMOS correction order", true, 4,"int",cmd);
@@ -14,10 +16,9 @@ int main(int argc, char* argv[]) {
   TCLAP::SwitchArg flexed("F","flexed","Enable flexion in DEIMOS", cmd, false);
   TCLAP::SwitchArg printMoments("m","print_moments","Print moments", cmd, false);
   TCLAP::SwitchArg printErrors("e","print_errors","Print moment errors", cmd, false);
-  TCLAP::ValueArg<std::string> weight("w","weightmap","Weight map file", false, "","string");
-  TCLAP::ValueArg<data_t> noise("n","noise_rms","RMS of the background noise", true, 0.,"data_t");
+  TCLAP::ValueArg<data_t> noise("n","noise_rms","RMS of the background noise", false, 0.,"data_t");
   cmd.xorAdd(weight, noise);
-  TCLAP::ValueArg<std::string> saveObj("S","save_objects","Save objects in this file", false, "", "string",cmd);
+  TCLAP::ValueArg<std::string> saveObj("o","save_objects","Save objects in this file", false, "", "string",cmd);
   TCLAP::ValueArg<std::string> average("a","average","Save average moments to file", false, "", "string",cmd);
   TCLAP::SwitchArg usewcs("u","use_wcs","Use WCS from FITS header", cmd, false);
   cmd.parse(argc,argv);
@@ -29,14 +30,12 @@ int main(int argc, char* argv[]) {
 
   // set WCS if requested
   ShapeLensConfig::USE_WCS = usewcs.getValue();
+  ShapeLensConfig::CHECK_OBJECT = true;
 
   // open file pointers and catalog
-  HugeFrame* frame;
-  if (weight.isSet())
-    frame = new HugeFrame(file.getValue(), weight.getValue(), cat.getValue());
-  else
-    frame = new HugeFrame(file.getValue(), cat.getValue());
-  frame->setNoiseMeanRMS(0,noise.getValue());
+  SExFrame frame(file.getValue(), cat.getValue(), segmap.getValue(), weight.getValue());
+  if (noise.isSet())
+    frame.setNoiseMeanRMS(0,noise.getValue());
 
   Object obj;
   fitsfile* fptr;
@@ -45,13 +44,13 @@ int main(int argc, char* argv[]) {
 
   DEIMOS avg;
 
-  for (Catalog::const_iterator iter = frame->getCatalog().begin(); 
-       iter != frame->getCatalog().end();
+  for (Catalog::const_iterator iter = frame.getCatalog().begin(); 
+       iter != frame.getCatalog().end();
        iter++) {
-    frame->fillObject(obj,iter);
+    frame.fillObject(obj,iter);
     DEIMOS d(obj, N, C.getValue(), s.getValue(), flexed.getValue());
     
-    if (iter == frame->getCatalog().begin())
+    if (iter == frame.getCatalog().begin())
       avg = d;
     else {
       avg.mo += d.mo; // flux weighted average
@@ -61,7 +60,7 @@ int main(int argc, char* argv[]) {
       if (flexed.getValue())
 	avg.G += d.G;
     }
-
+    
     std::cout << iter->first << "\t" << obj.centroid(0) << "\t" << obj.centroid(1) << "\t" ;
     if (printMoments.getValue()) 
       for (int i=0; i < d.mo.size(); i++)
@@ -83,24 +82,23 @@ int main(int argc, char* argv[]) {
     if (saveObj.isSet())
       IO::writeFITSImage(fptr,obj);
   }
-
+  
   // clean up
-  delete frame;
   if (saveObj.isSet())
     IO::closeFITSFile(fptr);
 
   if (average.isSet()) {
     // flux-weighted average
-    avg.mo /= frame->getCatalog().size();
-    avg.S /= frame->getCatalog().size();
+    avg.mo /= frame.getCatalog().size();
+    avg.S /= frame.getCatalog().size();
     // flux normalization
     data_t flux = avg.mo(0,0);
     avg.mo /= flux;
     avg.S /= flux*flux;
     // plain average
-    avg.eps /= frame->getCatalog().size();
-    avg.G /= frame->getCatalog().size();
-    avg.scale /= frame->getCatalog().size();
+    avg.eps /= frame.getCatalog().size();
+    avg.G /= frame.getCatalog().size();
+    avg.scale /= frame.getCatalog().size();
     avg.id = 0;
     avg.save(average.getValue());
   }

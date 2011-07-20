@@ -1,29 +1,50 @@
 #include "../../include/frame/SExFrame.h"
 #include "../../include/utils/MathHelper.h"
-#include <boost/tokenizer.hpp>
-#include <fstream>
-#include <gsl/gsl_math.h>
 #include <gsl/gsl_randist.h>
-#include <gsl/gsl_sort.h>
-#include <gsl/gsl_histogram.h>
-#include <gsl/gsl_statistics_double.h>
 #include <set>
 #include <vector>
 #include <bitset>
 
 using namespace shapelens;
 using namespace std;
-using namespace boost;
 
 typedef unsigned int uint;
 
-SExFrame::SExFrame (std::string datafile, std::string segmapfile, std::string catfile) : 
-Image<data_t>(datafile), weight(), segMap(segmapfile) {
-  subtractBG = estimatedBG = 0;
+SExFrame::SExFrame (std::string datafile, std::string catfile, std::string segmapfile, std::string weightfile) : 
+  catalog(catfile), basefilename(datafile) {
+  subtractBG = false;
   bg_mean = bg_rms = 0;
-  // axsizes of underlying Image copied since often used
-  axsize0 = SExFrame::getSize(0);
-  axsize1 = SExFrame::getSize(1);
+
+  // open datafile
+  fptr = IO::openFITSFile(datafile);
+  long naxis[2];
+  int status = 0;
+  int dimensions;
+  fits_get_img_dim (fptr, &dimensions, &status);
+  if (dimensions == 2) {
+    fits_get_img_size(fptr, dimensions, naxis, &status);
+    axsize0 = naxis[0];
+    axsize1 = naxis[1];
+    grid.setSize(0,0,axsize0, axsize1);
+    if (ShapeLensConfig::USE_WCS) {
+#ifdef HAS_WCSLIB
+      grid.setWCS(WCSTransformation(fptr));
+#else
+      throw std::runtime_error("IO: WCS usage requested, but HAS_WCSLIB not specified");
+#endif
+    }
+  } else
+    throw std::invalid_argument("SExFrame: FITS file does not provide valid image!");
+  
+  // open weight and segmentation maps if specified
+  if (weightfile != "")
+    fptr_w = IO::openFITSFile(weightfile);
+  else
+    fptr_w = NULL;
+  if (segmapfile != "")
+    fptr_s = IO::openFITSFile(segmapfile);
+  else
+    fptr_s = NULL;
 
   // for artificial noise
   const gsl_rng_type * T;
@@ -31,48 +52,26 @@ Image<data_t>(datafile), weight(), segMap(segmapfile) {
   T = gsl_rng_default;
   r = gsl_rng_alloc (T);
 
-  // read catalog
-  catalog = Catalog(catfile);
-
-  // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
-  fitsfile* fptr = IO::openFITSFile(segmapfile);
+  // check if NOISE_MEAN and NOISE_RMS is given as header keyword 
+  // in datafile or segmapfile
   try {
-    IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
-    IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
-    estimatedBG = 1;
-  } catch (std::exception) {}
-  IO::closeFITSFile(fptr);
-}
-
-SExFrame::SExFrame (std::string datafile, std::string weightfile, std::string segmapfile, std::string catfile) : 
-Image<data_t>(datafile), weight(weightfile), segMap(segmapfile) {
-  subtractBG = estimatedBG = 0;
-  bg_mean = bg_rms = 0;
-  // axsizes of underlying Image copied since often used
-  axsize0 = SExFrame::getSize(0);
-  axsize1 = SExFrame::getSize(1);
-
-  // for artificial noise
-  const gsl_rng_type * T;
-  gsl_rng_env_setup();
-  T = gsl_rng_default;
-  r = gsl_rng_alloc (T);
-
-  // read catalog
-  catalog = Catalog(catfile);
-
-  // check if NOISE_MEAN and NOISE_RMS is given as header keyword in segmapfile
-  fitsfile* fptr = IO::openFITSFile(segmapfile);
-  try {
-    IO::readFITSKeyword(fptr,"NOISE_MEAN",bg_mean);
-    IO::readFITSKeyword(fptr,"NOISE_RMS",bg_rms);
-    estimatedBG = 1;
-  } catch (std::exception) {}
-  IO::closeFITSFile(fptr);
+    IO::readFITSKeyword(fptr,"BG_MEAN",bg_mean);
+    IO::readFITSKeyword(fptr,"BG_RMS",bg_rms);
+  } catch (std::exception) {
+    if (fptr_s != NULL) {
+      try {
+	IO::readFITSKeyword(fptr_s,"BG_MEAN",bg_mean);
+	IO::readFITSKeyword(fptr_s,"BG_RMS",bg_rms);
+      } catch (std::exception) {}
+    }
+  }
 }
 
 SExFrame::~SExFrame() {
   gsl_rng_free (r);
+  IO::closeFITSFile(fptr);
+  IO::closeFITSFile(fptr_w);
+  IO::closeFITSFile(fptr_s);
 }
 
 unsigned long SExFrame::getNumberOfObjects() {
@@ -84,7 +83,6 @@ const Catalog& SExFrame::getCatalog() {
 }
 
 void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
-  if (!estimatedBG) estimateNoise();
   if (catiter != catalog.end()) {
     O.id = catiter->first;
     int xmin, xmax, ymin, ymax;
@@ -117,72 +115,79 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 	O.history << "# Extended area filled with noise." << std::endl;
     }
 
-    // define new object data set, find 1-sigma noise oscillations with more 
-    // than 4 pixels and set their pixelmap flag to -2
-    // in the end only object data into new vector of smaller size, the rest will
-    // filled up with artificial noise
-    const NumVector<data_t>& data = *this;
+    // prepare containers
     O.resize((xmax-xmin)*(ymax-ymin));
     // Grid will be changed but not shifted (all pixels stay at their position)
     O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
-    O.grid.setWCS(Image<data_t>::grid.getWCS());
-    O.segMap.resize((xmax-xmin)*(ymax-ymin));
-    O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
-    if (weight.size()!=0) {
+    O.centroid = Point<data_t>(catiter->second.XCENTROID,
+			       catiter->second.YCENTROID);
+    if (ShapeLensConfig::USE_WCS)
+      O.grid.setWCS(grid.getWCS());
+
+    if (fptr_w != NULL) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
       O.weight.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+      if (ShapeLensConfig::USE_WCS)
+      O.weight.grid.setWCS(grid.getWCS());
     }
-    vector<uint> nearby_objects;
+    if (fptr_s != NULL) {
+      O.segMap.resize((xmax-xmin)*(ymax-ymin));
+      O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+      if (ShapeLensConfig::USE_WCS)
+      O.segMap.grid.setWCS(grid.getWCS());
+    }
 
-    Point<int> P;
-    for (int i =0; i < O.size(); i++) {
-      P = O.grid.getCoords(i);
-      long j = SExFrame::grid.getPixel(P);
+    // copy pixel data
+    int status = 0;
+    data_t nullval = 0;
+    int anynull = 0;
+    long firstpix[2] = {xmin+1,ymin+1}, lastpix[2] = {xmax, ymax}, inc[2] = {1,1};
+    fits_read_subset(fptr, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.c_array(), &anynull, &status);
+    if (fptr_w != NULL) 
+      fits_read_subset(fptr_w, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.weight.c_array(), &anynull, &status);
+    if (fptr_s != NULL) 
+      fits_read_subset(fptr_s, IO::getFITSDataType(long(0)), firstpix, lastpix, inc, &nullval, O.segMap.c_array(), &anynull, &status);
 
-      // if pixel is out of image region, fill noise from default values
-      // since we fill same noise into data and into bgrms
-      // the overall chi^2 (normalized by bg_rms) is unaffected by this region
-      if (j == -1) {
-	O(i) = gsl_ran_gaussian (r, bg_rms);
-	O.segMap(i) = 0;
-	if (weight.size()!=0) 
-	  O.weight(i) = 1./gsl_pow_2(bg_rms);
-	if (!subtractBG)
-	  O(i) += bg_mean;
-      } 
-      //now inside image region
-      else {
-	// mask other detected objects in the frame
-	if ((segMap(j) > 0 && segMap(j) != catiter->first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
-	  // if we have a weight map 
-	  if (weight.size()!=0)
-	    O(i) = gsl_ran_gaussian (r, sqrt(1./weight(j)));
+    // check image pixels: replace pixels outside the original frame
+    // or those belonging to another object by background noise
+    if (subtractBG)
+      O -= bg_mean;
+    if (ShapeLensConfig::CHECK_OBJECT && (anynull != 0 || fptr_s != NULL)) {
+      vector<uint> nearby_objects;
+      for (int i =0; i < O.size(); i++) {
+	bool fill = false;
+	Point<int> P = O.grid.getCoords(i);
+	// outside
+	if (P(0) < 0 || P(0) >= axsize0 || P(1) < 0 || P(1) >= axsize1)
+	  fill = true;
+
+	// check segmap
+	if (fptr_s != NULL) {
+	  if ((O.segMap(i) > 0 && O.segMap(i) != catiter->first) || (O.segMap(i) < 0 && ShapeLensConfig::FILTER_SPURIOUS))
+	    fill = true;
+	  // this objects has to yet been found to be nearby
+	  if (std::find(nearby_objects.begin(),nearby_objects.end(),O.segMap(i)) == nearby_objects.end()) {
+	    O.history << "# Object " << O.segMap(i) << " nearby, but not overlapping." << std::endl;
+	    nearby_objects.push_back(O.segMap(i));
+	  }
+	}
+
+	if (fill) {
+	  if (fptr_w != NULL) {
+	    if (O.weight(i) != 0)
+	      O(i) = gsl_ran_gaussian (r, 1./sqrt(O.weight(i)));
+	  }
 	  else
 	    O(i) = gsl_ran_gaussian (r, bg_rms);
-	  // this objects has to yet been found to be nearby
-	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
-	    O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
-	    nearby_objects.push_back(segMap(j));
-	  }
 	  if (!subtractBG)
 	    O(i) += bg_mean;
 	}
-	else {
-	  O(i) = data(j);
-	  if (subtractBG) 
-	    O(i) -= bg_mean;
-	}
-	O.segMap(i) = segMap(j);
-	if (weight.size()!=0) 
-	  O.weight(i) = weight(j);
       }
     }
-    
+
     // Fill other quantities into Object
-    O.centroid = Point<data_t>(catiter->second.XCENTROID,
-			       catiter->second.YCENTROID);
     O.flags = std::bitset<8>(catiter->second.FLAGS);
-    O.basefilename = SExFrame::getFilename();
+    O.basefilename = basefilename;
     if (ShapeLensConfig::NOISEMODEL == "GAUSSIAN") {
       O.noise_rms = bg_rms;
       if (subtractBG)
@@ -192,8 +197,9 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     }
   }
   else {
-    std::cerr << "# SExFrame: This Object does not exist!" << endl;
-    terminate();
+    std::ostringstream mess;
+    mess << "SExFrame: Object " << O.id << " does not exist!";
+    throw std::invalid_argument(mess.str());
   }
 }
 
@@ -202,7 +208,7 @@ void SExFrame::subtractBackground() {
 }
 
 // now extend to region around the object by
-// typically objectsize/2, minimum 12 pixels
+// typically objectsize/2, minimum 16 pixels
 void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
   if (factor > 0) {
     int xrange, yrange, xborder, yborder;
@@ -218,10 +224,10 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
     }
     // make the object frame square, because of const beta in both directions
     if (xrange < yrange) {
-      yborder = GSL_MAX_INT((int)floor(yrange*factor), 12);
+      yborder = std::max((int)floor(yrange*factor), 16);
       xborder = yborder + (yrange - xrange)/2;
     } else {
-      xborder = GSL_MAX_INT((int)floor(xrange*factor), 12);
+      xborder = std::max((int)floor(xrange*factor), 16);
       yborder = xborder + (xrange - yrange)/2;
     }
     xmin -= xborder;
@@ -231,35 +237,15 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
   }
 }
 
-const SegmentationMap& SExFrame::getSegmentationMap() {
-  return segMap;
-}
-
-
-// estimate noise by iterative sigma clipping
-void SExFrame::estimateNoise() {
-  std::pair<data_t, data_t> mean_std = kappa_sigma_clip(*this);
-  bg_mean = mean_std.first;
-  bg_rms = mean_std.second;
-  estimatedBG = 1;
-}
-
 data_t SExFrame::getNoiseMean() {
-  if (!estimatedBG) estimateNoise();
   return bg_mean;
 }
 
 data_t SExFrame::getNoiseRMS() {
-  if (!estimatedBG) estimateNoise();
   return bg_rms;
 }
 
 void SExFrame::setNoiseMeanRMS(data_t mean, data_t rms) {
-  estimatedBG = 1;
   bg_mean = mean;
   bg_rms = rms;
-}
-
-CorrelationFunction SExFrame::computeCorrelationFunction(data_t threshold) {
-  return CorrelationFunction(*this,segMap,threshold);
 }
