@@ -59,7 +59,7 @@ namespace shapelens {
       throw std::runtime_error("IO: Cannot move to extension " + name + "!");
   }
 
-  void IO::updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment) {
+  void IO::updateFITSKeywordString(fitsfile *outfptr, const std::string& keyword, const std::string& value, const std::string& comment) {
     int status = 0;
     fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
     if (status != 0)

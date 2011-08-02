@@ -73,7 +73,7 @@ class IO {
   /// Move to extension \p name in FITS file.
   static void moveToFITSExtension(fitsfile* fptr, std::string name);
   /// Set/update std::string keyword in FITS file header.
-  static void updateFITSKeywordString(fitsfile *outfptr, std::string keyword, std::string value, std::string comment="");
+  static void updateFITSKeywordString(fitsfile *outfptr, const std::string& keyword, const std::string& value, const std::string& comment="");
   /// Append \p history to FITS header histroy.
   static void appendFITSHistory(fitsfile *outfptr, std::string history);
   /// Read std::string keyword from FITS header.
@@ -178,9 +178,9 @@ class IO {
   /// Set/update keyword in FITS file header.
   /// For setting string keywords, use updateFITSKeywordString() instead.
   template <class T>
-    static void updateFITSKeyword(fitsfile *outfptr, std::string keyword, T value, std::string comment="") {
+    static void updateFITSKeyword(fitsfile *outfptr, const std::string& keyword, const T& value, const std::string& comment = std::string()) {
     int status = 0;
-    fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), &value, const_cast<char *>(comment.c_str()), &status);
+    fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<T*>(&value) , const_cast<char *>(comment.c_str()), &status);
     if (status != 0)
       throw std::runtime_error("IO: Cannot update FITS keyword " + keyword);
   }
@@ -406,9 +406,17 @@ class IO {
     return TDBLCOMPLEX;
   }
   template<> inline
+    int IO::getFITSDataType<Point<float> >(const Point<float>& entry) {
+    return TCOMPLEX;
+  }
+  template<> inline
+    int IO::getFITSDataType<Point<double> >(const Point<double>& entry) {
+    return TDBLCOMPLEX;
+  }
+  template<> inline
     int IO::getFITSDataType<std::string>(const std::string& entry) {
     return TSTRING;
   }
-  
+
 } // end namespace
 #endif

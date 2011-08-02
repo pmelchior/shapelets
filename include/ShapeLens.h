@@ -6,7 +6,6 @@
 
 #include "frame/Frame.h"
 #include "frame/SExFrame.h"
-#include "frame/HugeFrame.h"
 
 /// Namespace for ShapeLens++
 namespace shapelens {
