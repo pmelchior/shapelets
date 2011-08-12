@@ -250,6 +250,11 @@ namespace shapelens {
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) { }
 
+  Moments& Moments::operator=(const Moments& m) {
+    setOrder(m.N);
+    NumVector<data_t>::operator=(m);
+    return *this;
+  }
 
   Moments::Moments(const Object& obj, const WeightFunction& w, int N_) :
     NumVector<data_t>(pyramid_num(N_+1)),

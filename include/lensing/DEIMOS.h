@@ -115,6 +115,11 @@ namespace shapelens {
     std::complex<data_t> G;
     /// S/N of moment measurement.
     std::map<data_t, data_t> SN;
+    /// Resolution factor \f$R_2\f$.
+    /// From Hirata et al. (2004), eq. 8: \f$R_2 = 1 - trQ_p / trQ_{g*}\f$, where \f$trQ\f$
+    /// denotes the sum of the symmetric second moments (of either the PSF or the
+    /// convolved galaxy).
+    data_t R2;
     /// Matching and deconvolution flags.
     /// The flags are ordered as DEIMOS processes objects, 
     /// i.e. matching (first centroid then ellipticity) followed by
@@ -125,6 +130,7 @@ namespace shapelens {
     /// - <tt>flags[3]</tt>: deconvolution results in non-sensical moments
     std::bitset<4> flags;
 
+    static bool FIX_CENTROID, FIX_ELLIPTICITY;
     friend class DEIMOSList;
   protected:
     void match(Object& obj);

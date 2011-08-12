@@ -4,6 +4,9 @@
 
 namespace shapelens {
 
+  bool DEIMOS::FIX_CENTROID = false;
+  bool DEIMOS::FIX_ELLIPTICITY = false;
+
   DEIMOS::DEIMOSWeightFunction::DEIMOSWeightFunction(data_t scale, const Point<data_t>& centroid_, const complex<data_t>& eps) :
     GaussianWeightFunction(scale,Point<data_t>(0,0)),
     centroid(centroid_),
@@ -53,17 +56,17 @@ namespace shapelens {
     return iter->first;
   }
 
-  DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), flexed(false) {}
+  DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), R2(0), flexed(false) {}
 
   DEIMOS::DEIMOS (const Object& obj_, int N_, int C_, data_t matching_scale_, bool flexed_) :
-    id(obj_.id), matching_scale(matching_scale_), eps(0,0), N(N_), C(C_), flexed(flexed_),
+    id(obj_.id), matching_scale(matching_scale_), eps(0,0), N(N_), C(C_), R2(0), flexed(flexed_),
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
     S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
 
     // dirty little trick to update obj.centroid for moment measurement
     Object& obj = const_cast<Object&>(obj_);
     Point<data_t> old_centroid = obj.centroid; // save for later
-    
+
     // compute scale in WCS units:
     // average scale within objects bounding box
     scale_factor = 1;
@@ -84,10 +87,10 @@ namespace shapelens {
  }
 
   DEIMOS::DEIMOS (const Object& obj_, const DEIMOS::PSFMultiScale& psf, int N_, int C_, data_t matching_scale_, bool flexed_) :
-    id(obj_.id), matching_scale(matching_scale_), eps(0,0), N(N_), C(C_), flexed(flexed_),
+    id(obj_.id), matching_scale(matching_scale_), eps(0,0), N(N_), C(C_), R2(0), flexed(flexed_),
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2),
     S(((N_+1)*(N_+2))/2, ((N_+1)*(N_+2))/2) {
-
+    
     // dirty little trick to update obj.centroid for moment measurement
     Object& obj = const_cast<Object&>(obj_);
     Point<data_t> old_centroid = obj.centroid; // save for later
@@ -109,7 +112,7 @@ namespace shapelens {
     // initial matching failed, try with smaller scale
     while (flags.any() && matching_scale > psf.getMinimumScale()) {
       matching_scale = psf.getScaleSmallerThan(matching_scale);
-      history << "# Matching failed, restarting with scale s = " << matching_scale << std::endl; 
+      history << "# Matching failed (" << flags << "), restarting with s = " << matching_scale << std::endl; 
       match(obj);
     }
 
@@ -132,10 +135,12 @@ namespace shapelens {
 	  eps = eps_current;
 	  G = G_current;
 	  scale = getEpsScale();
+	  centroid = centroid_current;
 	  break;
 	}
       }
       history << "# Deweighted moments:\t" << mo << std::endl;
+      Moments tmp = mo;
       deconvolve(psf.getAtScale(matching_scale));
       while (flags.any() && matching_scale > psf.getMinimumScale()) {
 	matching_scale = psf.getScaleSmallerThan(matching_scale);
@@ -145,19 +150,23 @@ namespace shapelens {
 	// have already been tried to improve S/N
 	match(obj);
 	history << "# Deweighted moments:\t" << mo << std::endl;
+	tmp = mo;
 	deconvolve(psf.getAtScale(matching_scale));
       }
       history << "# Deconvolved moments:\t" << mo << std::endl;
-      if (flags.any())
+      if (flags.any()) {
 	history << "# Deconvolution failed, minimum PSF scale reached. GAME OVER." << std::endl;
+	mo = tmp;
+      }
       else
 	computeCovariances();
     }
     else
-      history << "# Deweighting failed, minimum PSF scale reached. GAME OVER." << std::endl;
-
+      history << "# Deweighting failed (" << flags << "), minimum PSF scale reached. GAME OVER." << std::endl;
+    
     // restore obj's original centroid
     obj.centroid = old_centroid;
+
   }
 
   DEIMOS::DEIMOS(std::string filename) {
@@ -203,6 +212,11 @@ namespace shapelens {
       IO::readFITSKeyword(fptr,"SN",SN[matching_scale]);
     } catch (std::invalid_argument) {}
     try {
+      IO::readFITSKeyword(fptr,"R2",R2);
+    } catch (std::invalid_argument) {
+      R2 = 0;
+    }
+    try {
       unsigned long flagnum;
       IO::readFITSKeyword(fptr,"FLAGS",flagnum);
       flags = std::bitset<4>(flagnum);
@@ -234,6 +248,7 @@ namespace shapelens {
     std::map<data_t, data_t>::const_iterator iter = SN.find(matching_scale);
     if (iter != SN.end())
       IO::updateFITSKeyword(fptr,"SN",*iter,"S/N");
+    IO::updateFITSKeyword(fptr,"R2", R2, "resolution of the galaxy");
     IO::updateFITSKeyword(fptr,"FLAGS",flags.to_ulong(),"matching and deconvolution flags");
     IO::writeFITSImage(fptr,S,"VARIANCE");
     IO::closeFITSFile(fptr);
@@ -271,7 +286,7 @@ namespace shapelens {
       maxrun++;
     
     Point<data_t> centroid_shift;
-    history << "# Matching weight function:" << std::endl;
+    history << "# Matching weight function: s = " << matching_scale << std::endl;
     history << "# iter\tscale\tcentroid\t\tepsilon\t\t\tS/N" << std::endl;
     history << "# " + std::string(70, '-') << std::endl;
     Moments mo_w(N+C);
@@ -322,16 +337,24 @@ namespace shapelens {
       }
       else {
 	// centroiding
-	if (centroiding && iter < maxiter_centroid - 1)  {
+	if (centroiding && iter < maxiter_centroid - 1 && FIX_CENTROID == false)  {
 	  centroid_shift(0) = mo(1,0)/mo(0,0);
 	  centroid_shift(1) = mo(0,1)/mo(0,0);
 	  data_t shift = sqrt(centroid_shift(0)*centroid_shift(0) + centroid_shift(1)*centroid_shift(1)) / scale_factor;
 	  if (shift > 5) {
 	    flags[0] = 1;
+	    mo(0,0) = mo_w(0,0);
+	    mo(0,2) = mo_w(0,2);
+	    mo(1,1) = mo_w(1,1);
+	    mo(2,0) = mo_w(2,0);
 	    break;
 	  }
 	  if (iter == maxiter_centroid - 1 && trouble) {
 	    flags[1] = trouble;
+	    mo(0,0) = mo_w(0,0);
+	    mo(0,2) = mo_w(0,2);
+	    mo(1,1) = mo_w(1,1);
+	    mo(2,0) = mo_w(2,0);
 	    break;
 	  }
 
@@ -347,11 +370,16 @@ namespace shapelens {
 	    centroiding = false;
 	}
 	// match ellipticity
-	else if (iter < maxiter - 1) {
+	else if (iter < maxiter - 1 && FIX_ELLIPTICITY == false) {
 	  complex<data_t> eps_ = epsilon();
+
 	  // abort for non-sensical ellipticities
 	  if (trouble) {
 	    flags[1] = trouble;
+	    mo(0,0) = mo_w(0,0);
+	    mo(0,2) = mo_w(0,2);
+	    mo(1,1) = mo_w(1,1);
+	    mo(2,0) = mo_w(2,0);
 	    break;
 	  }
 	  // convergence test
@@ -362,11 +390,12 @@ namespace shapelens {
 	  if (iter == iter_initial + 1)
 	    SN_initial = SN_;
 	  if (iter > iter_initial + 1) {
-	    if (SN_ < (0.95*SN_initial)) { // strong non-convergence
+	    // strong non-convergence: don't cut too hard here, it saves time but objects
+	    // with large apparent ellipticity see an decrease in S/N during matching
+	    if (SN_ < (0.5*SN_initial)) { 
 	      flags[2] = 1;
 	      break;
 	    }
-
 	    if (fabs(SN_/SN[matching_scale] - 1) < 1e-5 && 
 		abs(eps - eps_) < 1e-3) {
 	      SN[matching_scale] = SN_;
@@ -528,6 +557,10 @@ namespace shapelens {
   void DEIMOS::deconvolve(const Moments& p) {
     Moments& g = mo;
     int Nmin = std::min(p.getOrder(),g.getOrder());
+
+    // compute resolution factor R_2 (Hirata04.1, eq. 8)
+    R2 = 1 - ((p(2,0)+p(0,2))/p(0,0)) / ((g(2,0)+g(0,2))/g(0,0));
+
     //use explicit relations for up to 2nd moments
     g(0,0) /= p(0,0);
     if (Nmin >= 1) {
