@@ -91,9 +91,12 @@ namespace shapelens {
   }
 
   // ##### Sersic Model ##### //
-  SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation* ct_, unsigned long id) : 
+  SersicModel::SersicModel(data_t n, data_t Re, data_t flux_eff, complex<data_t> eps, data_t truncation, const CoordinateTransformation* ct_, unsigned long id) : 
     n(n), Re(Re), eps(eps) {
-    limit = 5*Re;
+    if (truncation > 0)
+      limit = truncation*Re;
+    else
+      limit = 1000*Re; // much larger than he image
     shear_norm = 1 - abs(eps)*abs(eps);
     // compute WC of centroid (which is 0/0 in image coords)
     SourceModel::centroid(0) = 0;
@@ -148,11 +151,14 @@ namespace shapelens {
   }
 
   // ##### Moffat Model ##### //
-  MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, const CoordinateTransformation* ct_, unsigned long id) :
+  MoffatModel::MoffatModel(data_t beta, data_t FWHM, data_t flux_eff, complex<data_t> eps, data_t truncation, const CoordinateTransformation* ct_, unsigned long id) :
     beta(beta), eps(eps) {
 
     alpha = (pow(2.,1./beta)-1)/(FWHM*FWHM/4);
-    limit = 2*FWHM;
+    if (truncation > 0) 
+      limit = truncation*FWHM;
+    else
+      limit = 1000*FWHM; // much larger than any image
     shear_norm = 1 - abs(eps)*abs(eps);
 
     // compute WC of centroid (which is 0/0 in image coords)
@@ -169,7 +175,7 @@ namespace shapelens {
     SourceModel::id = id;
 
     // flux at limit
-    flux_limit = 0;//pow(1+alpha*gsl_pow_2(limit),-beta);
+    flux_limit = pow(1+alpha*limit*limit,-beta);
     // compute total flux of model (considering the truncation at limit)
     flux = 2*M_PI*(-1 + pow(1+alpha*limit*limit,1-beta))/(2*alpha - 2*alpha*beta);
     // subtract level at R such that the profile vanishes there
