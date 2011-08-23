@@ -72,7 +72,8 @@ namespace shapelens {
   public:
     /// Constructor with Sersic index \p n, effective radius \p Re, \p flux, and
     /// intrinsic ellipticity \p eps.
-    /// If <tt>truncation!=0</tt>, the profile is truncated at is this of radii.
+    /// If <tt>truncation!=0</tt>, the profile is truncated at is this number 
+    /// of radii.
     SersicModel(data_t n, data_t Re, data_t flux, std::complex<data_t> eps, data_t truncation = 0, const CoordinateTransformation* CT = NULL, unsigned long id=0);
     /// Sample model at \p P.
     virtual data_t getValue(const Point<data_t>& P) const;
@@ -88,14 +89,14 @@ namespace shapelens {
   /// Moffat model class.
   /// The model has the form
   ///\f[I_M\bigl((x,y)\bigl) = \bigl(1+\alpha r^2\bigr)^{-\beta}\ \text{with}\ r=\sqrt{x^2 + y^2}\ \text{and}\ \alpha = \frac{2^{1/\beta}-1}{(FWHM/2)^2}.\f]
-  /// The ensure vanishing flux at large radii, the profile is truncated at
-  /// \f$5FWHM\f$ and the appropriate value at that position is subtracted from 
+  /// The ensure vanishing flux at large radii, the profile can be truncated at
+  /// some \p FWHM and the appropriate value at that position is subtracted from 
   /// \f$I_M\f$.
   class MoffatModel : public SourceModel {
   public:
     /// Constructor with Moffat index \p beta, width \p FWHM, \p flux, and
     /// intrinsic ellipticity \p eps.
-    /// If <tt>truncation!=0</tt>, the profile is truncated at is this of \p FWHM.
+    /// If <tt>truncation!=0</tt>, the profile is truncated at is this number of \p FWHM.
     MoffatModel(data_t beta, data_t FWHM, data_t flux, std::complex<data_t> eps, data_t truncation = 0, const CoordinateTransformation* CT = NULL, unsigned long id=0);
     /// Sample model at \p P.
     virtual data_t getValue(const Point<data_t>& P) const;
@@ -107,6 +108,26 @@ namespace shapelens {
     data_t beta, alpha, limit, flux_limit, flux,shear_norm,flux_scale;
     std::complex<data_t> eps;
   };
+
+  /// Pseudo-Airy model class.
+  /// The model has the form
+  /// \f[I_M\bigl((x,y)\bigl) = \begin{cases}\frac{\sin^2(r/r_d)}{(r/r_d)^2} & \text{if}\ \ r < r_d\\\frac{\sin^2(r/r_d)}{(r/r_d)^3} & \text{if}\ \ r > r_d\end{cases} \text{with}\ r=\sqrt{x^2 + y^2}\ \text{and}\ r_d= 0.5 * FWHM / 1.203\f]
+  class AiryModel : public SourceModel {
+  public:
+    /// Constructor.
+    /// If <tt>truncation!=0</tt>, the profile is truncated at is this number of \p FWHM.
+    AiryModel(data_t FWHM, data_t flux, std::complex<data_t> eps, data_t truncation = 0, const CoordinateTransformation* CT = NULL, unsigned long id=0);
+    /// Sample model at \p P.
+    virtual data_t getValue(const Point<data_t>& P) const;
+    /// Get total flux of model.
+    virtual data_t getFlux() const;
+    /// Get type of model.
+    virtual char getModelType() const;
+  private:
+    data_t r_d, limit, flux_limit, flux, shear_norm, flux_scale;
+    std::complex<data_t> eps;
+  };
+
 
   /// Model from interpolated pixel data.
   /// The class provides several interpolation types for the Image given 

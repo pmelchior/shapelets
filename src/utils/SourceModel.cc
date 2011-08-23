@@ -211,6 +211,68 @@ namespace shapelens {
     return 3;
   }
 
+    // ##### Psuedo-Airy Model ##### //
+  AiryModel::AiryModel(data_t FWHM, data_t flux_eff, complex<data_t> eps, data_t truncation, const CoordinateTransformation* ct_, unsigned long id) :
+  eps(eps) {
+    
+    if (truncation > 0) 
+      limit = truncation*FWHM;
+    else
+      limit = 1000*FWHM; // much larger than any image
+    shear_norm = 1 - abs(eps)*abs(eps);
+    
+    // compute WC of centroid (which is 0/0 in image coords)
+    SourceModel::centroid(0) = 0;
+    SourceModel::centroid(1) = 0;
+    // compute support size from Re and eps
+    SourceModel::setEllipticalSupport(limit,eps);
+    // set the WCS from CT
+    if (ct_!=NULL) {
+      ct = ct_->clone();
+      ct->transform(SourceModel::centroid);
+      SourceModel::support.apply(*ct);
+    }
+    SourceModel::id = id;
+    // scale radius, see GREAT10 documentation
+    r_d = 0.5 * FWHM / 1.203;
+    // FIXME: flux and flux_limit not correctly set
+    flux_limit = 0.;
+    flux = 2 * M_PI;
+    flux *= shear_norm;
+    flux_scale = flux_eff/flux;
+  }
+  
+  data_t AiryModel::getValue(const Point<data_t>& P) const {
+    // get image coords from WC
+    Point<data_t> P_ = P;
+    if (ct.use_count() != 0)
+      ct->inverse_transform(P_);
+    
+    // additionally apply shear transformation for an elliptical profile
+    data_t x_ = (1-real(eps))*P_(0) - imag(eps)*P_(1);
+    data_t y_ = -imag(eps)*P_(0) + (1+real(eps))*P_(1);
+    
+    data_t radius = sqrt(x_*x_ + y_*y_)/shear_norm/r_d;
+    data_t sr = sin(radius);
+    data_t temp = sr/radius;
+    if (radius < 1e-3) // singularity at zero
+      temp = 1;
+
+    if (radius < 1.)
+      return flux_scale*temp*temp;
+    else
+      return flux_scale*temp*temp/radius;
+  }
+  
+  data_t AiryModel::getFlux() const {
+    return 2 * M_PI;
+  }
+  
+  char AiryModel::getModelType() const {
+    return 4;
+  }
+
+
   // ##### Interpolated Model ##### //
   InterpolatedModel::InterpolatedModel(const boost::shared_ptr<Object>& obj_, data_t flux, const CoordinateTransformation* ct_, int order, unsigned long id) : 
     obj(obj_), order(order),flux(flux) {
