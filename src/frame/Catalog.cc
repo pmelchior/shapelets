@@ -22,7 +22,7 @@ void Catalog::read(string catfile) {
   // reset bitset that indicates which data are given in catalog
   // in other words: which of the format fields are set
   present.reset();
-  formatChecked = true;
+  formatChecked = false;
   
   // check if it's a fits table
   int status = 0;
@@ -101,7 +101,7 @@ void Catalog::read(string catfile) {
 	    throw std::runtime_error("Catalog: not all necessary column provided in line:\n" + line);
 	  // then set up a true SExCatObject
 	  CatObject so;
-	  so.CLASSIFIER = so.PARENT = 0;
+	  so.CLASSIFIER = so.PARENT = so.FLAGS = 0;
 	  unsigned long id = boost::lexical_cast<unsigned long>(column[format.ID].c_str());
 	  // the sextractor corrdinates start with (1,1), ours with (0,0)
 	  so.XMIN = boost::lexical_cast<int>(column[format.XMIN].c_str())-1;
@@ -112,7 +112,8 @@ void Catalog::read(string catfile) {
 	  // we need to subtract 1
 	  so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
 	  so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
-	  so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
+	  if (present.test(7))
+	    so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
 	  if (present.test(8))
 	    so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
 	  if (present.test(9))
@@ -332,11 +333,17 @@ void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
 bool Catalog::checkFormat() {
   // test if all but 8th and 9th bit are set
   // this means that CLASSIFIER and PARENT are optional
-  bitset<10> mask(0);
-  mask[8] = mask[9] = 1;
-  if ((present | mask).count() < 10) {
-    cerr << "Catalog: mandatory catalog parameters are missing!" << endl;
-    terminate();
+  bitset<10> needed(0);
+  int limit = 7;
+  for (int i = 0; i < limit; i++)
+    needed[i] = 1;
+
+  if ((present & needed).count() < limit) {
+    std::ostringstream mess;
+    mess << "Catalog: mandatory catalog parameters are missing!" << endl;
+    mess << "Present:\t" << present << endl;
+    mess << "Required:\t" << needed << endl;
+    throw std::runtime_error(mess.str());
   }
   else
     formatChecked = 1;
