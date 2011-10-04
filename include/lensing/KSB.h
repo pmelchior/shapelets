@@ -21,7 +21,7 @@ namespace shapelens {
     std::complex<data_t> gamma_exact(data_t accuracy = 0.0001) const;	
     std::complex<data_t> gamma_nl(data_t accuracy = 0.000001) const;
     std::complex<data_t> gamma_nl(const KSB& psf, data_t accuracy = 0.0001) const;
-
+    data_t SN;
 
   private:
     std::complex<data_t> __chi(const Moment2& Q) const;

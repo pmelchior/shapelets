@@ -71,6 +71,9 @@ namespace shapelens {
     // reset to zero-th derivative since w is const
     w.setDerivative(0);
 
+    // measure S/N
+    SN = M0(0)/(obj.noise_rms * sqrt(M_PI) * w.getScale());
+
 
     R(0,0,0) = (real(chi)/trQ)*(2*rho__ + 4*psi_) - 2*lambda__/trQ - 4*pi_/trQ;
     R(0,0,1) = (real(chi)/trQ)*(4*ix__  + 8*mu_ ) - 4*omega__/trQ;

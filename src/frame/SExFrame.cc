@@ -70,8 +70,10 @@ SExFrame::SExFrame (std::string datafile, std::string catfile, std::string segma
 SExFrame::~SExFrame() {
   gsl_rng_free (r);
   IO::closeFITSFile(fptr);
-  IO::closeFITSFile(fptr_w);
-  IO::closeFITSFile(fptr_s);
+  if (fptr_w != NULL)
+    IO::closeFITSFile(fptr_w);
+  if (fptr_s != NULL)
+    IO::closeFITSFile(fptr_s);
 }
 
 unsigned long SExFrame::getNumberOfObjects() {

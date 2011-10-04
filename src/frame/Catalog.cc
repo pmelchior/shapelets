@@ -87,6 +87,7 @@ void Catalog::read(string catfile) {
       column.clear();
       for(Tok::iterator tok_iter = tok.begin(); tok_iter != tok.end(); ++tok_iter)
 	column.push_back(*tok_iter);
+      
       // exclude empty lines
       if (column.size() > 2) { // at least # COLUMN NAME needs to be present 
 	// comment line: contains format definition at columns 2,3
@@ -98,7 +99,6 @@ void Catalog::read(string catfile) {
 	  if (!formatChecked) checkFormat();
 	  if (column.size() < present.count())
 	    throw std::runtime_error("Catalog: not all necessary column provided in line:\n" + line);
-
 	  // then set up a true SExCatObject
 	  CatObject so;
 	  so.CLASSIFIER = so.PARENT = 0;
@@ -165,43 +165,43 @@ void Catalog::save(string catfile) const {
 }
 
 void Catalog::setFormatField(std::string type, unsigned short colnr) {
-  if (type == "ID" || type == "NUMBER" || type == "NR") {
+  if (present[0] == 0 && (type == "ID" || type == "NUMBER" || type == "NR")) {
     format.ID = colnr - 1;
     present[0] = 1;
   }
-  else if (type.find("XMIN") == 0) {
+  else if (present[1] == 0 && type.find("XMIN") == 0) {
     format.XMIN = colnr - 1;
     present[1] = 1;
   }
-  else if (type.find("XMAX") == 0) {
+  else if (present[2] == 0 && type.find("XMAX") == 0) {
     format.XMAX = colnr - 1;
     present[2] = 1;
   }
-  else if (type.find("YMIN") == 0) {
+  else if (present[3] == 0 && type.find("YMIN") == 0) {
     format.YMIN = colnr - 1;
     present[3] = 1;
   }
-  else if (type.find("YMAX") == 0) {
+  else if (present[4] == 0 && type.find("YMAX") == 0) {
     format.YMAX = colnr - 1;
     present[4] = 1;
   }
-  else if (type == "X" || type.find("X_") == 0 || type.find("XWIN") == 0 || type.find("XPEAK") == 0 || type.find("XCENTROID") == 0) {
+  else if (present[5] == 0 && (type == "X" || type.find("X_") == 0 || type.find("XWIN") == 0 || type.find("XPEAK") == 0 || type.find("XCENTROID") == 0)) {
     format.XCENTROID = colnr - 1;
     present[5] = 1;
   }
-  else if (type == "Y" || type.find("Y_") == 0 || type.find("YWIN") == 0 || type.find("YPEAK") == 0 || type.find("YCENTROID") == 0) {
+  else if (present[6] == 0 && (type == "Y" || type.find("Y_") == 0 || type.find("YWIN") == 0 || type.find("YPEAK") == 0 || type.find("YCENTROID") == 0)) {
     format.YCENTROID = colnr - 1;
     present[6] = 1;
   } 
-  else if (type == "FLAGS") {
+  else if (present[7] == 0 && type == "FLAGS") {
     format.FLAGS = colnr - 1;
     present[7] = 1;
   }
-  else if (type == "CLASS_STAR" || type == "CLASS" || type == "CLASSIFIER") {
+  else if (present[8] == 0 && (type == "CLASS_STAR" || type == "CLASS" || type == "CLASSIFIER")) {
     format.CLASSIFIER = colnr - 1;
     present[8] = 1;
   }
-  else if (type == "PARENT" || type == "VECTOR_ASSOC") {
+  else if (present[9] == 0 && (type == "PARENT" || type == "VECTOR_ASSOC")) {
     format.PARENT = colnr - 1;
     present[9] = 1;
   }

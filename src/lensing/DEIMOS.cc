@@ -428,7 +428,6 @@ namespace shapelens {
     data_t c2 = (1+e1)*(1+e1) + e2*e2;
     data_t s2 = scale*scale;
     data_t s4 = s2*s2;
-    data_t s6 = s2*s2*s2;
     data_t G1 = real(G);
     data_t G2 = imag(G);
 
@@ -478,6 +477,7 @@ namespace shapelens {
 	    D(i,j) += (G1*G1 + G2*G2)/(8*s2);
 	}
 	if (C >= 6) {
+	  data_t s6 = s2*s2*s2;
 	  j = mo_w.getIndex(m+6,n-m);
 	  D(i,j) = c1*c1*c1/(48*s6);
 	  j++;
@@ -492,6 +492,52 @@ namespace shapelens {
 	  D(i,j) = -c2*c2*e2/(4*s6);
 	  j++;
 	  D(i,j) = c2*c2*c2/(48*s6);
+	}
+	if (C >= 8) {
+	  data_t s8 = s4*s4;
+	  j = mo_w.getIndex(m+8,n-m);
+	  D(i,j) = c1*c1*c1*c1/(384*s8);
+	  j++;
+	  D(i,j) = -c1*c1*c1*e2/(24*s8);
+	  j++;
+	  D(i,j) = (c1*c1*c1*c2/96 + c1*c1*e2*e2/4)/s8;
+	  j++;
+	  D(i,j) = -(c1*c1*c2*e2/8 + 2*c1*e2*e2*e2/3)/s8;
+	  j++;
+	  D(i,j) = (c1*c1*c2*c2/64 + c1*c2*e2*e2/2 + 2*e2*e2*e2*e2/3)/s8;
+	  j++;
+	  D(i,j) = -(c1*c2*c2*e2/8 + 2*c2*e2*e2*e2/3)/s8;
+	  j++;
+	  D(i,j) = (c1*c2*c2*c2/96 + c2*c2*e2*e2/4)/s8;
+	  j++;
+	  D(i,j) = -c2*c2*c2*e2/(24*s8);
+	  j++;
+	  D(i,j) = c2*c2*c2*c2/(384*s8);
+	}
+	if (C >= 10) {
+	  data_t s10 = s4*s4*s2;
+	  j = mo_w.getIndex(m+10,n-m);
+	  D(i,j) = c1*c1*c1*c1*c1/(3840*s10);
+	  j++;
+	  D(i,j) = -c1*c1*c1*c1*e2/(192*s10);
+	  j++;
+	  D(i,j) = (c1*c1*c1*c1*c2/768 + c1*c1*c1*e2*e2/24)/s10;
+	  j++;
+	  D(i,j) = -(c1*c1*c1*c2*e2/48 + c1*c1*e2*e2*e2/6)/s10;
+	  j++;
+	  D(i,j) = (c1*c1*c1*c2*c2/384 + c1*c1*c2*e2*e2/8 + c1*e2*e2*e2*e2/3)/s10;
+	  j++;
+	  D(i,j) = -(c1*c1*c2*c2*e2/32 + c1*c2*e2*e2*e2/3 + 4*e2*e2*e2*e2*e2/15)/s10;
+	  j++;
+	  D(i,j) = (c1*c1*c2*c2*c2/384 + c1*c2*c2*e2*e2/8 + c2*e2*e2*e2*e2/3)/s10;
+	  j++;
+	  D(i,j) = -(c1*c2*c2*c2*e2/48 + c2*c2*e2*e2*e2/6)/s10;
+	  j++;
+	  D(i,j) = (c1*c2*c2*c2*c2/768 + c2*c2*c2*e2*e2/24)/s10;
+	  j++;
+	  D(i,j) = -c2*c2*c2*c2*e2/(192*s10);
+	  j++;
+	  D(i,j) = c2*c2*c2*c2*c2/(3840*s10);
 	}
       }
     }
