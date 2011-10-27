@@ -110,12 +110,6 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.history << xmax << "/" << ymax << ")" << std::endl;
 
     // check if object was close to the image boundary so that noise has to be added
-    if (xmin < 0 || ymin < 0 || xmax >= axsize0 || ymax >= axsize1) {
-      if (!cutflag)
-	O.history << "# Object close to image boundary: Possible cut-off. Extended area filled with noise." << std::endl;
-      else
-	O.history << "# Extended area filled with noise." << std::endl;
-    }
 
     // prepare containers
     O.resize((xmax-xmin)*(ymax-ymin));
@@ -213,7 +207,7 @@ void SExFrame::subtractBackground() {
 // typically objectsize/2, minimum 16 pixels
 void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax) { 
   if (factor > 0) {
-    int xrange, yrange, xborder, yborder;
+    long int xrange, yrange, xborder, yborder;
     xrange = xmax - xmin;
     yrange = ymax - ymin;
     if (xrange%2 == 1) {
@@ -232,10 +226,10 @@ void SExFrame::addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, in
       xborder = std::max((int)floor(xrange*factor), 16);
       yborder = xborder + (xrange - yrange)/2;
     }
-    xmin -= xborder;
-    xmax += xborder;
-    ymin -= yborder;
-    ymax += yborder;
+    xmin = std::max((long int) 0, xmin - xborder);
+    xmax = std::min(axsize0, xmax + xborder);
+    ymin = std::max((long int) 0, ymin - yborder);
+    ymax = std::min(axsize1, ymax + yborder);
   }
 }
 
