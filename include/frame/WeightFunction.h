@@ -22,13 +22,29 @@ namespace shapelens {
     virtual data_t operator()(const Point<data_t>& P) const;
   };
 
+  /// Localized weight function.
+  class LocalWeightFunction : public WeightFunction {
+  public:
+    /// Constructor.
+    LocalWeightFunction(const Point<data_t>& P);
+    /// Set the centroid.
+    virtual void setCentroid(const Point<data_t>& centroid);
+    /// Get centroid position.
+    virtual const Point<data_t>& getCentroid() const;
+    /// Get value of weight function at position \p P.
+    virtual data_t operator()(const Point<data_t>& P) const = 0;
+    protected:
+    /// Centroid/reference position.
+    Point<data_t> C;  
+  };
+
   /// Gaussian weight function.
   /// Returns \f$W(x) = \exp\Bigl(\frac{-x^{\prime 2}}{2s^s}\Bigr)\f$, i.e.
   /// the weight are drawn from a circular Gaussian of scale \f$s\f$,
   /// centered at some predefined centroid position.\n
   /// Derivatives (w.r.t. \f$s\f$ or \f$s^2\f$) can be accessed by
   /// choosing the repective derivative order with setDerivative().
-  class GaussianWeightFunction : public WeightFunction {
+  class GaussianWeightFunction : public LocalWeightFunction {
   public:
     /// Constructor.
     GaussianWeightFunction(data_t scale, const Point<data_t>& centroid);
@@ -45,12 +61,7 @@ namespace shapelens {
     void setDerivative(int n);
     /// Get the current derivative.
     int getDerivative() const;
-    /// Set the centroid.
-    void setCentroid(const Point<data_t>& centroid);
-    /// Get centroid position.
-    const Point<data_t>& getCentroid() const;
   protected:
-    Point<data_t> C;
     int n;
     data_t scale, sigma2;
     data_t (GaussianWeightFunction::*fptr) (const Point<data_t>&) const;
@@ -67,6 +78,19 @@ namespace shapelens {
   inline data_t GaussianWeightFunction::operator()(const Point<data_t>& P) const {
     return (*this.*fptr)(P);
   }
+
+  /// Weight function for power-law distance weighting.
+  class PowerLawWeightFunction : public LocalWeightFunction {
+  public:
+    /// Constructor
+    PowerLawWeightFunction(const Point<data_t>& centroid, data_t index);
+    /// Return \f$r^n\f$.
+    /// $\f r\f$ is the Euclidean distance between \p P and the reference point
+    /// and \f$ n\f$ the power-law index.
+    virtual data_t operator() (const Point<data_t>& P) const;
+  private:
+    data_t n;
+  };
 
 } // end namespace
 #endif

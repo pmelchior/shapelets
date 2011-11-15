@@ -23,7 +23,7 @@ namespace shapelens {
     /// \b CAUTION: Don't mix with Point nodes.
     void insertNodes(const std::vector<shapelens::Rectangle<data_t> >& vr);
     /// Insert nodes.
-    /// Nodes are Point entities for which the RTree stores their index.
+    /// Nodes are Point entities for which the RTree stores their index.\n
     /// \b CAUTION: Don't mix with Rectangle nodes.
     void insertNodes(const std::vector<shapelens::Point<data_t> >& vr);
     /// Destructor.

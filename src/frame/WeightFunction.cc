@@ -11,18 +11,22 @@ namespace shapelens {
     return 1;
   }
 
-  GaussianWeightFunction::GaussianWeightFunction(data_t scale_, const Point<data_t>& centroid_):
-    scale(scale_), n(0), sigma2(scale_*scale_) {
-    C = centroid_;
-    fptr = &GaussianWeightFunction::Gauss;
+  LocalWeightFunction::LocalWeightFunction(const Point<data_t>& centroid) :
+    C(centroid) {
   }
 
-  void GaussianWeightFunction::setCentroid(const Point<data_t>& centroid) {
+  void LocalWeightFunction::setCentroid(const Point<data_t>& centroid) {
     C = centroid;
   }
-  const Point<data_t>& GaussianWeightFunction::getCentroid() const {
+  const Point<data_t>& LocalWeightFunction::getCentroid() const {
     return C;
   }  
+
+  GaussianWeightFunction::GaussianWeightFunction(data_t scale_, const Point<data_t>& centroid):
+    LocalWeightFunction(centroid),
+    scale(scale_), n(0), sigma2(scale_*scale_) {
+    fptr = &GaussianWeightFunction::Gauss;
+  }
 
   data_t  GaussianWeightFunction::Gauss(const Point<data_t>& P) const {
     data_t r = sqrt(gsl_pow_2(P(0)-C(0)) + gsl_pow_2(P(1)-C(1)));
@@ -79,5 +83,15 @@ namespace shapelens {
   void GaussianWeightFunction::setScale(data_t scale_) {
     scale = scale_;
     sigma2 = scale*scale;
+  }
+
+  PowerLawWeightFunction::PowerLawWeightFunction(const Point<data_t>& centroid, data_t index) :
+    LocalWeightFunction(centroid), n(index) {
+  }
+  
+  data_t PowerLawWeightFunction::operator() (const Point<data_t>& P) const {
+    data_t r = sqrt((P(0) - C(0))*(P(0) - C(0)) + 
+		    (P(1) - C(1))*(P(1) - C(1)));
+    return pow(r,n);
   }
 }
