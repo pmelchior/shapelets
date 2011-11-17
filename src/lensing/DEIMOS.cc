@@ -1,4 +1,5 @@
 #include "../../include/lensing/DEIMOS.h"
+#include "../../include/lensing/LensHelper.h"
 #include "../../include/utils/IO.h"
 #include "../../include/ShapeLensConfig.h"
 
@@ -653,21 +654,11 @@ namespace shapelens {
   }
 
   complex<data_t> DEIMOS::epsilon() const {
-    if (mo.getOrder() >= 2) {
-      complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
-      e/= (complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(complex<data_t>(mo(0,2)*mo(2,0) - mo(1,1)*mo(1,1))));
-      return e;
-    } else
-      return complex<data_t>(0,0);
+    return shapelens::epsilon(mo);
   }
   
   complex<data_t> DEIMOS::chi() const {
-    if (mo.getOrder() >= 2) {
-      complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
-      e/= mo(2,0) + mo(0,2);
-      return e;
-    } else
-      return complex<data_t>(0,0);
+    return shapelens::chi(mo);
   }
  
   // HOLICS equations from OMU 2007

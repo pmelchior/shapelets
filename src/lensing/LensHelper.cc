@@ -14,6 +14,7 @@ namespace shapelens {
   void lensEps(const std::complex<data_t>& gamma, std::complex<data_t>& eps) {
     eps = (eps + gamma)/(1. + conj(gamma)*eps);
   }
+
   data_t sampleEllipticity(const gsl_rng * r, data_t sigma_e, complex<data_t>& eps, data_t limit) {
     complex<data_t> I(0,1);
     data_t e = 1;
@@ -23,4 +24,23 @@ namespace shapelens {
     eps = e * exp(2*M_PI*I*gsl_rng_uniform(r));
     return gsl_ran_rayleigh_pdf (e, sigma_e);
   }
+
+  std::complex<data_t> epsilon(const Moments& mo) {
+    if (mo.getOrder() >= 2) {
+      std::complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
+      e/= (std::complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(std::complex<data_t>(mo(0,2)*mo(2,0) - mo(1,1)*mo(1,1))));
+      return e;
+    } else
+      return std::complex<data_t>(0,0);
+  }
+
+  std::complex<data_t> chi(const Moments& mo) {
+    if (mo.getOrder() >= 2) {
+      std::complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
+      e/= mo(2,0) + mo(0,2);
+      return e;
+    } else
+      return std::complex<data_t>(0,0);
+  }
+
 } // end namespace

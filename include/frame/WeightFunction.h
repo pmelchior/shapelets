@@ -85,7 +85,7 @@ namespace shapelens {
     /// Constructor
     PowerLawWeightFunction(const Point<data_t>& centroid, data_t index);
     /// Return \f$r^n\f$.
-    /// $\f r\f$ is the Euclidean distance between \p P and the reference point
+    /// \f$ r\f$ is the Euclidean distance between \p P and the reference point
     /// and \f$ n\f$ the power-law index.
     virtual data_t operator() (const Point<data_t>& P) const;
   private:

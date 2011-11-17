@@ -3,6 +3,7 @@
 #include <complex>
 #include <gsl/gsl_rng.h>
 #include "../Typedef.h"
+#include "../../include/frame/Moments.h"
 
 namespace shapelens {
   
@@ -18,6 +19,10 @@ namespace shapelens {
   /// truncated at \p limit.\n
   /// Returns probability of finding the sampled value of \f$\epsilon\f$.
   data_t sampleEllipticity(const gsl_rng * r, data_t sigma_e, complex<data_t>& eps, data_t limit=0.95);
+  /// Get complex ellipticity \f$\epsilon\f$ from Moments.
+  std::complex<data_t> epsilon(const Moments& mo);
+  /// Get complex ellipticity \f$\chi\f$ from Moments.
+  std::complex<data_t> chi(const Moments& mo);
 } // end namespace
 
 #endif
