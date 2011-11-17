@@ -48,7 +48,7 @@ endif
 ifneq (,$(findstring HAS_ATLAS,$(SPECIALFLAGS)))
 	LIBS = -lgsl -llapack -lcblas -latlas -lcfitsio -lfftw3
 else
-	LIBS = -lg2c -lgsl -lgslcblas -lcfitsio -lfftw3
+	LIBS = -lgsl -lgslcblas -lcfitsio -lfftw3
 endif
 ifneq (,$(findstring HAS_SQLiteDB,$(SPECIALFLAGS)))
 	LIBS += -lsqlite3

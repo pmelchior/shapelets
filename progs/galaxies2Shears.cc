@@ -8,6 +8,7 @@ int main(int argc, char* argv[]) {
   TCLAP::CmdLine cmd("Measure galactic moments", ' ', "0.3");
   TCLAP::ValueArg<std::string> cat("c","catalog","Catalog file", true, "","string",cmd);
   TCLAP::ValueArg<std::string> weight("w","weightmap","Weight map file", false, "","string");
+  TCLAP::ValueArg<std::string> segmap("S","segmap","Segmentation maps", false, "", "string",cmd);
   TCLAP::ValueArg<data_t> noise("n","noise_rms","RMS of the background noise", true, 0.,"data_t");
   cmd.xorAdd(weight, noise);
   TCLAP::ValueArg<std::string> psffile("p","psf_file","PSF moments file", true, "","string",cmd);
@@ -30,51 +31,22 @@ int main(int argc, char* argv[]) {
   ShapeLensConfig::USE_WCS = usewcs.getValue();
 
   // open file pointers and catalog
-  HugeFrame* frame;
-  if (weight.isSet())
-    frame = new HugeFrame(file.getValue(), weight.getValue(), cat.getValue());
-  else
-    frame = new HugeFrame(file.getValue(), cat.getValue());
-  frame->setNoiseMeanRMS(0,noise.getValue());
+  SExFrame frame (file.getValue(), cat.getValue(), segmap.getValue(), weight.getValue());
+  frame.setNoiseMeanRMS(0,noise.getValue());
 
-  // open PSF moment maps
-  // only moments higher than 1 are stored
-  // assumption: mom_00 = 1, mom_01 = mom_10 = 0
-
-  // DEIMOS psf;
-//   psf.mo.setOrder(N);
-//   psf.mo(0,0) = 1;
-//   psf.mo(0,1) = psf.mo(1,0) = 0;
-//   fitsfile* fptr_p = IO::openFITSFile(psffile.getValue());
-//   int B;
-//   IO::readFITSKeyword(fptr_p,"B",B); // kriging box size
-//   int m = 3;
-//   if (N == 4)
-//     m = 12;
-//   Image<data_t> map;
-//   std::vector<Image<data_t> > mom_psf;
-//   for (int i = 0; i < m; i++) {
-//     IO::moveToFITSExtension(fptr_p,i+1);
-//     IO::readFITSImage(fptr_p,map);
-//     mom_psf.push_back(map);
-//   }
-//   IO::closeFITSFile(fptr_p);
+  // open PSF moment file:
+  // TODO: this need to be adapted to the way the PSF moments
+  // and their variation with position and scale are computed 
   DEIMOS p(psffile.getValue());
   DEIMOS::PSFMultiScale psf;
   psf.insert(s.getValue(), p.mo);
 
   Object obj;
-  for (Catalog::const_iterator iter = frame->getCatalog().begin(); 
-       iter != frame->getCatalog().end();
+  for (Catalog::const_iterator iter = frame.getCatalog().begin(); 
+       iter != frame.getCatalog().end();
        iter++) {
-    frame->fillObject(obj,iter);
+    frame.fillObject(obj,iter);
     DEIMOS d(obj, psf, N, C.getValue(), s.getValue(), flexed.getValue());
-
-    // // fill psf moments from moment maps
-//     int pos1 = int(floor(obj.centroid(0)))/B;
-//     int pos2 = int(floor(obj.centroid(1)))/B;
-//     for (int i=3; i < psf.mo.size(); i++)
-//       psf.mo(i) = (mom_psf[i-3])(pos1,pos2);
 
     std::cout << iter->first << "\t" << obj.centroid(0) << "\t" << obj.centroid(1) << "\t" ;
     if (printMoments.getValue()) 
@@ -98,8 +70,4 @@ int main(int argc, char* argv[]) {
     std::cout << "\t" << d.SN[s.getValue()] << "\t" << d.flags.to_string() << std::endl;
     std::cout << std::endl;
   }
-
-  // clean up
-  delete frame;
-
 }

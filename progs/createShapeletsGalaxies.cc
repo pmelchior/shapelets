@@ -44,7 +44,7 @@ void createShapeletImages(CoefficientVector<data_t>& averageCoeffs, CoefficientV
   
    // now different galaxies, all normalized and with beta = 1
   std::ostringstream sif_filename;
-  std::ofstream listfile("shapelets.ls");
+  std::ofstream listfile((path + "shapelets.ls").c_str());
   for (int n = 0; n < N; n++) {
     // add gaussian scatter on coeffs
     for (int i=0; i<coeffs.size(); i++)
@@ -64,7 +64,7 @@ void createShapeletImages(CoefficientVector<data_t>& averageCoeffs, CoefficientV
     // since images are aligned along x axis
     // rotate them by any angle between 0 and 2 pi
     s.rotate(2*M_PI*gsl_rng_uniform(r));
-
+    //s.shear(std::complex<data_t>(0.2,0));
     // normalize flux for comparability later
     s.brighten(1./s.getShapeletFlux());
     s.brighten(beta*beta);

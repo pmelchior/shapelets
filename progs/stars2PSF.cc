@@ -31,11 +31,11 @@ int main(int argc, char* argv[]) {
   // set WCS if requested
   ShapeLensConfig::USE_WCS = usewcs.getValue();
   ShapeLensConfig::CHECK_OBJECT = true;
+  //ShapeLensConfig::VERBOSITY = true;
 
   // open file pointers and catalog
   SExFrame frame(file.getValue(), cat.getValue(), segmap.getValue(), weight.getValue());
-  if (noise.isSet())
-    frame.setNoiseMeanRMS(0,noise.getValue());
+  frame.setNoiseMeanRMS(0,noise.getValue());
 
   Object obj;
   fitsfile* fptr;
@@ -48,6 +48,8 @@ int main(int argc, char* argv[]) {
        iter != frame.getCatalog().end();
        iter++) {
     frame.fillObject(obj,iter);
+    if (iter->first == 1)
+      obj.save("test.fits");
     DEIMOS d(obj, N, C.getValue(), s.getValue(), flexed.getValue());
     
     if (iter == frame.getCatalog().begin())
