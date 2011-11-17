@@ -32,6 +32,10 @@ namespace shapelens {
     struct wcsprm wcs;
     double *imgcrd, *pixcrd, *world;
     int *stat;
+    NumMatrix<data_t> A,B;
+    data_t crpix1, crpix2;
+    bool has_sip;
+    data_t sip_polynomial(const NumMatrix<data_t>& M, data_t& u, data_t& v) const;
 #endif
   };
 } // end namespace shapelens

@@ -1,8 +1,12 @@
 #ifdef HAS_WCSLIB
 #include "../../include/frame/WCSTransformation.h"
+#include "../../include/utils/IO.h"
+#include "../../include/utils/MathHelper.h"
 #include <wcslib/wcshdr.h>
 #include <wcslib/wcsfix.h>
 #include <wcslib/wcs.h>
+#include <iostream>
+#include <iomanip>
 
 namespace shapelens {
 
@@ -15,7 +19,7 @@ namespace shapelens {
     if (fits_hdr2str(fptr, 1, NULL, 0, &header, &nkeyrec, &status)) {
       status = 0;
       fits_file_name(fptr, header, &status);
-      throw std::runtime_error("WCSTransformation: Cannot read header of file at " + std::string(header));
+      throw std::runtime_error("WCSTransformation: Cannot read header of file " + std::string(header));
     }
 
     // Interpret the WCS keywords
@@ -26,15 +30,22 @@ namespace shapelens {
       throw std::runtime_error("WCSTransformation: Cannot read WCS header keywords (" + std::string(wcshdr_errmsg[status]) + ")");
 
     // check there is one (and one only) WCS with 2 coordinate axes
-    if (wcss == NULL)
-      throw std::runtime_error("WCSTransformation: No world coordinate systems found.");
+    if (wcss == NULL) {
+      status = 0;
+      fits_file_name(fptr, header, &status);
+      throw std::runtime_error("WCSTransformation: No world coordinate systems found in " + std::string(header));
+    }
     else if (nwcs > 1) {
       wcsvfree(&nwcs, &wcss);
-      throw std::runtime_error("WCSTransformation: More than one world coordinate systems found.");
+      status = 0;
+      fits_file_name(fptr, header, &status);
+      throw std::runtime_error("WCSTransformation: More than one world coordinate systems found in "+std::string(header));
     }
     else if (wcss->naxis != 2) {
       wcsvfree(&nwcs, &wcss);
-      throw std::runtime_error("WCSTransformation: WCS does not have 2 axes");
+      status = 0;
+      fits_file_name(fptr, header, &status);
+      throw std::runtime_error("WCSTransformation: WCS does not have 2 axes in " + std::string(header));
     }
 
     // initialize this wcs structure and copy it from first (and only)
@@ -53,6 +64,42 @@ namespace shapelens {
     imgcrd = (double*) realloc(NULL, 2 * sizeof(double));
     pixcrd = (double*) realloc(NULL, 2 * sizeof(double));
     stat   = (int*) realloc(NULL,   2 * sizeof(int));
+
+    // since wcslib does not deal with SIP distortions, we have to read
+    // the distortion coefficients if present
+    std::string ctype1;
+    IO::readFITSKeywordString(fptr, "CTYPE1", ctype1);
+    if (ctype1.find("TAN-SIP") != std::string::npos) {
+      has_sip = true;
+      std::ostringstream key;
+      int A_order, B_order;
+      IO::readFITSKeyword(fptr, "A_ORDER", A_order);
+      IO::readFITSKeyword(fptr, "B_ORDER", B_order);
+      A = NumMatrix<data_t>(A_order+1, A_order+1);
+      B = NumMatrix<data_t>(B_order+1, B_order+1);
+      for (int i=0; i <= A_order; i++) {
+	for (int j=0; j <= A_order; j++) {
+	  key.str("");
+	  key << "A_" << i << "_" << j;
+	  try { // not all coefficients need to be present
+	    IO::readFITSKeyword(fptr, key.str(), A(i,j));
+	  } catch (std::invalid_argument) {}
+	}
+      }
+      for (int i=0; i <= B_order; i++) {
+	for (int j=0; j <= B_order; j++) {
+	  key.str("");
+	  key << "B_" << i << "_" << j;
+	  try {
+	    IO::readFITSKeyword(fptr, key.str(), B(i,j));
+	  } catch (std::invalid_argument) {}
+	}
+      }
+      IO::readFITSKeyword(fptr, "CRPIX1", crpix1);
+      IO::readFITSKeyword(fptr, "CRPIX2", crpix2);
+    }
+    else
+      has_sip = false;
   }
   
   // explicit definition since we have to allocate containers
@@ -79,9 +126,27 @@ namespace shapelens {
     free(stat);
   }
 
+  data_t WCSTransformation::sip_polynomial(const NumMatrix<data_t>& M, data_t& u, data_t& v) const {
+    data_t f = 0;
+    for (int i=0; i < M.getRows(); i++)
+      for (int j=0; j < M.getColumns(); j++)
+	f += M(i,j) * pow_int(u,i) * pow_int(v,j);
+    return f;
+  }
+
   void WCSTransformation::transform(Point<data_t>& P) const {
-    *pixcrd = P(0);    
-    *(pixcrd+1) = P(1);
+    // apply sip transform if necessary
+    if (has_sip) {
+      double u = P(0) - crpix1, v = P(1) - crpix2;
+      double f = sip_polynomial(A,u,v), g = sip_polynomial(B, u, v);
+      *pixcrd = u + f + crpix1;
+      *(pixcrd+1) = v + g + crpix2;
+    } 
+    else {
+      *pixcrd = P(0);    
+      *(pixcrd+1) = P(1);
+    }
+    
     // use intermediate world coordinates
     // rather then celestial
     if (intermediate) {
@@ -96,6 +161,7 @@ namespace shapelens {
     }
     stack_transform(P);
   }
+
   void WCSTransformation::inverse_transform(Point<data_t>& P) const {
     // inverse: this trafo comes last
     stack_inverse_transform(P);
@@ -114,6 +180,21 @@ namespace shapelens {
     }
     P(0) = (*pixcrd);
     P(1) = *(pixcrd+1);
+
+    // need to invert non-linear SIP distortion if necessary
+    if (has_sip) {
+      data_t u, u_, u__, v, v_, v__;
+      u = u_ = P(0) - crpix1;
+      v = v_ = P(1) - crpix2;
+      do { // simple solver, assumes distortion to be small
+	u__ = u;
+	v__ = v;
+	u = u_ - sip_polynomial(A, u, v);
+	v = v_ - sip_polynomial(B, u, v);
+      } while (fabs(u - u__) > 1e-2 || fabs(v - v__) >1e-2);
+      P(0) = u + crpix1;
+      P(1) = v + crpix2;
+    }
   }
 
   boost::shared_ptr<CoordinateTransformation> WCSTransformation::clone() const {

@@ -34,15 +34,23 @@ SExFrame::SExFrame (std::string datafile, std::string catfile, std::string segma
 #endif
     }
   } else
-    throw std::invalid_argument("SExFrame: FITS file does not provide valid image!");
+    throw std::invalid_argument("SExFrame: FITS file " + datafile + " does not provide valid image!");
   
   // open weight and segmentation maps if specified
-  if (weightfile != "")
+  if (weightfile != "") {
     fptr_w = IO::openFITSFile(weightfile);
+    fits_get_img_dim (fptr_w, &dimensions, &status);
+    if (dimensions != 2)
+      throw std::invalid_argument("SExFrame: FITS file " + weightfile + " does not provide valid image!");
+  }
   else
     fptr_w = NULL;
-  if (segmapfile != "")
+  if (segmapfile != "") {
     fptr_s = IO::openFITSFile(segmapfile);
+    fits_get_img_dim (fptr_s, &dimensions, &status);
+    if (dimensions != 2)
+      throw std::invalid_argument("SExFrame: FITS file " + segmapfile + " does not provide valid image!");
+  }
   else
     fptr_s = NULL;
 

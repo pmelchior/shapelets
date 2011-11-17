@@ -12,8 +12,8 @@ namespace shapelens {
   template <class T>
     class Interpolator {
   public:
-    /// Constructor to specify \p values at \p points
-  Interpolator(const std::vector<Point<data_t> >& points, const std::vector<T>& values) : points(points), values(values) {}
+    /// Constructor to specify \p values_ at \p points_
+  Interpolator(const std::vector<Point<data_t> >& points_, const std::vector<T>& values_) : points(points_), values(values_) {}
     virtual ~Interpolator();
     /// Interpolates \p values at position \p P.
     virtual T operator()(const Point<data_t>& P) const = 0;
