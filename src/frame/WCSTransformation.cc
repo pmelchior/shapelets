@@ -114,6 +114,11 @@ namespace shapelens {
     wcscopy(0, &(W.wcs), &wcs);
     wcsset(&wcs);
     intermediate = W.intermediate;
+    has_sip = W.has_sip;
+    A = W.A;
+    B = W.B;
+    crpix1 = W.crpix1;
+    crpix2 = W.crpix2;
   }
   
   // explicit definition to deallocate all structures
@@ -134,7 +139,7 @@ namespace shapelens {
     return f;
   }
 
-  void WCSTransformation::transform(Point<data_t>& P) const {
+  void WCSTransformation::f(Point<data_t>& P) const {
     // apply sip transform if necessary
     if (has_sip) {
       double u = P(0) - crpix1, v = P(1) - crpix2;
@@ -162,7 +167,7 @@ namespace shapelens {
     stack_transform(P);
   }
 
-  void WCSTransformation::inverse_transform(Point<data_t>& P) const {
+  void WCSTransformation::f_1(Point<data_t>& P) const {
     // inverse: this trafo comes last
     stack_inverse_transform(P);
     // use intermediate world coordinates (as input)
@@ -201,4 +206,5 @@ namespace shapelens {
     return boost::shared_ptr<CoordinateTransformation>(new WCSTransformation(*this));
   }
 } // end namespace
+
 #endif // HAS_WCSLIB

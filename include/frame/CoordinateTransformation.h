@@ -17,19 +17,27 @@ namespace shapelens {
     /// The new transformation will be made of the product
     /// <tt>(*this) -> (*this) * C</tt>
     void operator*=(const CoordinateTransformation& C);
+    /// Invert the transformation.
+    void invert();
     /// Apply transformation to \p P.
-    virtual void transform(Point<data_t>& P) const = 0;
+    void transform(Point<data_t>& P) const;
     /// Apply inverse transformation to \p P.
-    virtual void inverse_transform(Point<data_t>& P) const = 0;
+    void inverse_transform(Point<data_t>& P) const;
     /// Get a copy of \p this.
     virtual boost::shared_ptr<CoordinateTransformation> clone() const = 0;
-    /// Stack of transformation to be applied after another
-    std::list<boost::shared_ptr<CoordinateTransformation> > stack;
   protected:
     /// Apply all transformations from the stack.
     void stack_transform(Point<data_t>& P) const;
     /// Apply all inverse transformation from the stack in reverse order.
     void stack_inverse_transform(Point<data_t>& P) const;
+    /// Stack of transformation to be applied after another
+    std::list<boost::shared_ptr<CoordinateTransformation> > stack;
+    CoordinateTransformation();
+  private:
+    bool inverted;
+    // actual virtual functions for forward and inverse transformation
+    virtual void f(Point<data_t>& P) const = 0;
+    virtual void f_1(Point<data_t>& P) const = 0;
   };
 
   /// Empty/Null transformations in 2D.
@@ -38,12 +46,13 @@ namespace shapelens {
   public:
     /// Constructor.
     NullTransformation();
-    /// Apply transformation to \p P.
-    virtual void transform(Point<data_t>& P) const;
-    /// Apply inverse transformation to \p P.
-    virtual void inverse_transform(Point<data_t>& P) const;
     /// Get a copy of \p this.
     virtual boost::shared_ptr<CoordinateTransformation> clone() const;
+  private:
+    /// Apply transformation to \p P.
+    virtual void f(Point<data_t>& P) const;
+    /// Apply inverse transformation to \p P.
+    virtual void f_1(Point<data_t>& P) const;
   };
 
   /// Class for rescaling transformations in 2D.
@@ -53,14 +62,12 @@ namespace shapelens {
   public:
     /// Constructor.
     ScalarTransformation(data_t scale);
-    /// Apply transformation to \p P.
-    virtual void transform(Point<data_t>& P) const;
-    /// Apply inverse transformation to \p P.
-    virtual void inverse_transform(Point<data_t>& P) const;
     /// Get a copy of \p this.
     virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     data_t s;
+    virtual void f(Point<data_t>& P) const;
+    virtual void f_1(Point<data_t>& P) const;
   };
 
   /// Class for translation transformations in 2D.
@@ -70,14 +77,12 @@ namespace shapelens {
   public:
     /// Constructor.
     ShiftTransformation(const Point<data_t>& dP_);
-    /// Apply transformation to \p P.
-    virtual void transform(Point<data_t>& P) const;
-    /// Apply inverse transformation to \p P.
-    virtual void inverse_transform(Point<data_t>& P) const;
     /// Get a copy of \p this.
     virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     Point<data_t> dP;
+    virtual void f(Point<data_t>& P) const;
+    virtual void f_1(Point<data_t>& P) const;
   };
 
   /// Class for linear transformations in 2D.
@@ -88,14 +93,12 @@ namespace shapelens {
   public:
     /// Constructor.
     LinearTransformation(const NumMatrix<data_t>& M_);
-    /// Apply transformation to \p P.
-    virtual void transform(Point<data_t>& P) const;
-    /// Apply inverse transformation to \p P.
-    virtual void inverse_transform(Point<data_t>& P) const;
     /// Get a copy of \p this.
     virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     NumMatrix<data_t> M, M_1;
+    virtual void f(Point<data_t>& P) const;
+    virtual void f_1(Point<data_t>& P) const;
   };
 
   /// Class for lensing transformations in 2D.
@@ -105,16 +108,14 @@ namespace shapelens {
     LensingTransformation(data_t kappa_, std::complex<data_t> gamma);
     /// Constructor for 2nd order lensing transformation.
     LensingTransformation(data_t kappa_, std::complex<data_t> gamma, std::complex<data_t> F, std::complex<data_t> G);
-    /// Apply transformation to \p P.
-    virtual void transform(Point<data_t>& P) const;
-    /// Apply inverse transformation to \p P.
-    virtual void inverse_transform(Point<data_t>& P) const;
     /// Get a copy of \p this.
     virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     bool flex;
     data_t kappa, gamma1, gamma2, D111, D112, D121, D122, D211, D212, D221, D222;
-    
+    virtual void f(Point<data_t>& P) const;
+    virtual void f_1(Point<data_t>& P) const;    
   };
 } // end namespace
+
 #endif

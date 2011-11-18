@@ -17,6 +17,8 @@ namespace shapelens {
     /// Top-right boundary point.
     Point<T> tr;
     /// Apply coordinate transformation.
+    /// The result is again a Rectangle, defined by the bounding box of
+    /// the transformed four points that initially defined the Rectangle.
     void apply(const CoordinateTransformation& C) {
       Point<T> lr(tr(0),ll(1)), tl(ll(0),tr(1));
       C.transform(ll);
@@ -59,9 +61,17 @@ namespace shapelens {
     }
 
     /// Compute area of rectangle.
-    T getArea() const {
+    inline T getArea() const {
       return (tr(0)-ll(0))*(tr(1)-ll(1));
       
+    }
+    /// Check whether Point \p P is inside Rectangle.
+    /// Points on any edge are included.  
+    inline bool contains(const Point<T>& P) const {
+      if (P(0) >= ll(0) && P(0) <= tr(0) && P(1) >= ll(1) && P(1) <= tr(1))
+	return true;
+      else
+	return false;
     }
     /// Add \p P to \p ll and \p tr.
     inline Rectangle<T>& operator+= (const Point<T>& P) {

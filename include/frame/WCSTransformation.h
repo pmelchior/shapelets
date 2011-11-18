@@ -20,10 +20,6 @@ namespace shapelens {
     WCSTransformation(const WCSTransformation& wcs);
     ///Destructor.
     ~WCSTransformation(); 
-    /// Apply transformation to \p P.
-    virtual void transform(Point<data_t>& P) const;
-    /// Apply inverse transformation to \p P.
-    virtual void inverse_transform(Point<data_t>& P) const;
     /// Get a copy of \p this.
     virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
@@ -36,9 +32,11 @@ namespace shapelens {
     data_t crpix1, crpix2;
     bool has_sip;
     data_t sip_polynomial(const NumMatrix<data_t>& M, data_t& u, data_t& v) const;
+    virtual void f(Point<data_t>& P) const;
+    virtual void f_1(Point<data_t>& P) const;
 #endif
   };
 } // end namespace shapelens
- 
+
 #endif // SHAPELENS_WCSTRANSFORMATION_H
 

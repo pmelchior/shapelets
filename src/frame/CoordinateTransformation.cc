@@ -1,12 +1,31 @@
 #include "../../include/frame/CoordinateTransformation.h"
 
 namespace shapelens {
-
+  CoordinateTransformation::CoordinateTransformation() : inverted(false) {
+  }
   CoordinateTransformation::~CoordinateTransformation() {
   }
 
   void CoordinateTransformation::operator*=(const CoordinateTransformation& C) {
     stack.push_back(boost::shared_ptr<CoordinateTransformation>(C.clone()));
+    stack.back()->inverted = C.inverted;
+  }
+
+  void CoordinateTransformation::invert() {
+    inverted = !inverted; 
+  }
+
+  void CoordinateTransformation::transform(Point<data_t>& P) const {
+    if (inverted)
+      f_1(P);
+    else
+      f(P);
+  }
+  void CoordinateTransformation::inverse_transform(Point<data_t>& P) const {
+    if (inverted)
+      f(P);
+    else
+      f_1(P);
   }
 
   void CoordinateTransformation::stack_transform(Point<data_t>& P) const {
@@ -22,26 +41,26 @@ namespace shapelens {
   /// NullTransformation ...
   NullTransformation::NullTransformation() {
   }
-  void NullTransformation::transform(Point<data_t>& P) const {
+  void NullTransformation::f(Point<data_t>& P) const {
     // do nothing, just go through the remainder of the stack
     stack_transform(P);
   }
-  void NullTransformation::inverse_transform(Point<data_t>& P) const {
+  void NullTransformation::f_1(Point<data_t>& P) const {
     // do nothing, just go through the remainder of the stack
     stack_inverse_transform(P);
   }
   boost::shared_ptr<CoordinateTransformation> NullTransformation::clone() const {
     return boost::shared_ptr<CoordinateTransformation>(new NullTransformation(*this));
   }
-
+  
   /// ScalarTransformation ...
   ScalarTransformation::ScalarTransformation(data_t scale): s(scale) {}
     
-  void ScalarTransformation::transform(Point<data_t>& P) const {
+  void ScalarTransformation::f(Point<data_t>& P) const {
     P *= s;
     stack_transform(P);
   }
-  void ScalarTransformation::inverse_transform(Point<data_t>& P) const {
+  void ScalarTransformation::f_1(Point<data_t>& P) const {
     stack_inverse_transform(P);
     P /= s; // inverse: this trafo comes latest
   }
@@ -52,11 +71,11 @@ namespace shapelens {
   /// ShiftTransformation ...
   ShiftTransformation::ShiftTransformation(const Point<data_t>& dP_): dP(dP_) {}
     
-  void ShiftTransformation::transform(Point<data_t>& P) const {
+  void ShiftTransformation::f(Point<data_t>& P) const {
     P += dP;
     stack_transform(P);
   }
-  void ShiftTransformation::inverse_transform(Point<data_t>& P) const {
+  void ShiftTransformation::f_1(Point<data_t>& P) const {
     stack_inverse_transform(P);
     P -= dP;
   }
@@ -67,13 +86,13 @@ namespace shapelens {
   /// LinearTransformation ...
   LinearTransformation::LinearTransformation(const NumMatrix<data_t>& M_): M(M_), M_1(M_.invert()) {}
     
-  void LinearTransformation::transform(Point<data_t>& P) const {
+  void LinearTransformation::f(Point<data_t>& P) const {
     data_t p0 = P(0);
     P(0) = M(0,0)*P(0) + M(0,1)*P(1);
     P(1) = M(1,0)* p0  + M(1,1)*P(1);
     stack_transform(P);
   }
-  void LinearTransformation::inverse_transform(Point<data_t>& P) const {
+  void LinearTransformation::f_1(Point<data_t>& P) const {
     stack_inverse_transform(P);
     data_t p0 = P(0);
     P(0) = M_1(0,0)*P(0) + M_1(0,1)*P(1);
@@ -109,7 +128,7 @@ namespace shapelens {
     D222 = Gamma1_2 - 0.5*Gamma2_1;
   }
 
-  void LensingTransformation::transform(Point<data_t>& P) const {
+  void LensingTransformation::f(Point<data_t>& P) const {
     // store temporarily
     data_t p0 = P(0), p1 = P(1);
     // apply eq. (3) in reverse direction (unlensed -> lensed)
@@ -123,7 +142,7 @@ namespace shapelens {
     stack_transform(P);
   }
 
-  void LensingTransformation::inverse_transform(Point<data_t>& P) const {
+  void LensingTransformation::f_1(Point<data_t>& P) const {
     stack_inverse_transform(P);
 
     // store temporarily
