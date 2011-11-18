@@ -9,7 +9,7 @@
 namespace ublas = boost::numeric::ublas;
 namespace shapelens {
 
-  fitsfile* IO::openFITSFile(std::string filename, bool write) {
+  fitsfile* IO::openFITSFile(const std::string& filename, bool write) {
     int status = 0;
     fitsfile* outfptr;
     fits_open_file(&outfptr, filename.c_str(), (int) write, &status);
@@ -18,7 +18,7 @@ namespace shapelens {
     return outfptr;
   }
 
-  fitsfile* IO::openFITSTable(std::string filename, bool write) {
+  fitsfile* IO::openFITSTable(const std::string& filename, bool write) {
     int status = 0;
     fitsfile* outfptr;
     fits_open_table(&outfptr, filename.c_str(), (int) write, &status);
@@ -27,12 +27,12 @@ namespace shapelens {
     return outfptr;
   }
 			      
-  fitsfile* IO::createFITSFile(std::string filename) {
+  fitsfile* IO::createFITSFile(const std::string& filename) {
     int status = 0;
     fitsfile *outfptr;
-    filename = "!"+filename; // overwrite existing file if necessary
+    std::string newfilename = "!"+filename; // overwrite existing file if necessary
     // create fits file
-    fits_create_file(&outfptr,filename.c_str(), &status);
+    fits_create_file(&outfptr,newfilename.c_str(), &status);
     if (status != 0)
       throw std::runtime_error("IO: Cannot create " + filename);
     return outfptr;
@@ -42,31 +42,31 @@ namespace shapelens {
     int status = 0;
     fits_close_file(fptr, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot close FITS file!");
+      throw std::runtime_error("IO: Cannot close FITS file " + getFITSFileName(fptr));
   }
 
   void IO::moveToFITSExtension(fitsfile* fptr, unsigned int i) {
     int status = 0;
     fits_movabs_hdu(fptr, i, NULL, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot move to specified extension!");
+      throw std::runtime_error("IO: Cannot move to specified extension in " + getFITSFileName(fptr));
   }
 
-  void IO:: moveToFITSExtension(fitsfile* fptr, std::string name) {
+  void IO:: moveToFITSExtension(fitsfile* fptr, const std::string& name) {
     int status = 0, hdutype = ANY_HDU, extver = 0;
     fits_movnam_hdu(fptr, hdutype, const_cast<char*>(name.c_str()), extver, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot move to extension " + name + "!");
+      throw std::runtime_error("IO: Cannot move to extension " + name + " in " + getFITSFileName(fptr));
   }
 
-  void IO::updateFITSKeywordString(fitsfile *outfptr, const std::string& keyword, const std::string& value, const std::string& comment) {
+  void IO::updateFITSKeywordString(fitsfile *fptr, const std::string& keyword, const std::string& value, const std::string& comment) {
     int status = 0;
-    fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
+    fits_write_key (fptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot update FITS keyword " + keyword);
+      throw std::runtime_error("IO: Cannot update FITS keyword " + keyword + " in " +  getFITSFileName(fptr));
   }
 
-  void IO::appendFITSHistory(fitsfile *outfptr, std::string history) {
+  void IO::appendFITSHistory(fitsfile *fptr, const std::string& history) {
     // since it is too long the be saved in one shot
     // split it line by line
     // and for each line insert a HISTORY line in the header
@@ -83,23 +83,23 @@ namespace shapelens {
 	int index = (card).find("\t");
 	card.replace(index,1,spaces - (index%spaces), tabReplacement);
       }
-      fits_write_history (outfptr,const_cast<char*>(card.c_str()), &status);
+      fits_write_history (fptr,const_cast<char*>(card.c_str()), &status);
     }
     if (status != 0)
-      throw std::runtime_error("IO: Cannot append FITS history!");
+      throw std::runtime_error("IO: Cannot append FITS history to " + getFITSFileName(fptr));
   }
 
-  void IO::readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val) {
+  void IO::readFITSKeywordString(fitsfile *fptr, const std::string& key, std::string& val) {
     int status = 0;
     char* comment = NULL;
     char value[FLEN_CARD];
     fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&value, comment, &status);
     val = std::string(value);
     if (status != 0)
-      throw std::invalid_argument("IO: Cannot read FITS keyword!");
+      throw std::invalid_argument("IO: Cannot read FITS keyword " + key + " from " + getFITSFileName(fptr));
   }
 
-  void IO::readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value) {
+  void IO::readFITSKeyCards(fitsfile *fptr, const std::string& key, std::string& value) {
     int status = 0, nkeys, keylen=0;
     char* comment = NULL;
     char card[FLEN_CARD], keyword[FLEN_KEYWORD];
@@ -114,7 +114,7 @@ namespace shapelens {
       }
     }
     if (status != 0)
-      throw std::invalid_argument("IO: Cannot read FITS keycards!");
+      throw std::invalid_argument("IO: Cannot read FITS keycards from " + getFITSFileName(fptr));
   }
 
   long IO::getFITSTableRows(fitsfile* fptr) {
@@ -122,18 +122,25 @@ namespace shapelens {
     long nrows;
     fits_get_num_rows(fptr, &nrows, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot find number of rows in table!");
+      throw std::runtime_error("IO: Cannot find number of rows in table in " + getFITSFileName(fptr));
     return nrows;
   }
 
-  int IO::getFITSTableColumnNumber(fitsfile* fptr, std::string name) {
+  int IO::getFITSTableColumnNumber(fitsfile* fptr, const std::string& name) {
     int status = 0, colnum;
     fits_get_colnum(fptr, 0, const_cast<char*>(name.c_str()), &colnum, &status);
     if (status == COL_NOT_UNIQUE)
-      throw std::runtime_error("IO: Column " + name + " in FITS table is not unique!");
+      throw std::runtime_error("IO: Column " + name + " in FITS table is not unique in " + getFITSFileName(fptr));
     else if (status != 0)
-      throw std::invalid_argument("IO: Cannot find column " + name + " in FITS table!");
+      throw std::invalid_argument("IO: Cannot find column " + name + " in FITS table in " + getFITSFileName(fptr));
     return colnum;
+  }
+
+  std::string IO::getFITSFileName(fitsfile *fptr) {
+    int status = 0;
+    char *header;
+    fits_file_name(fptr, header, &status);
+    return std::string(header);
   }
 
   void IO::addUniformNoise(NumVector<data_t>& data, const gsl_rng * r, data_t noisemean, data_t noiselimit) {
@@ -282,7 +289,7 @@ namespace shapelens {
     }
   };
 
-  int IO::makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme) {
+  int IO::makeColorMatrix(NumMatrix<unsigned int>& m, const std::string& colorscheme) {
     // convert colorscheme into appropriate parameters
     // default parameters are "SPECTRUM"
     char scheme = 0;
@@ -499,7 +506,7 @@ namespace shapelens {
     }
   }
 
-  void IO::writePPMImage(std::string filename, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
+  void IO::writePPMImage(const std::string& filename, const std::string& colorscheme, const std::string& scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
     FILE *file;
     long x,y,k;
     
@@ -545,7 +552,7 @@ namespace shapelens {
     fclose(file);
   }
 
-  void IO::makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
+  void IO::makeRGBImage(NumMatrix<unsigned int>& rgbImage, const std::string& colorscheme, const std::string& scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data) {
     unsigned int width = grid.getSize(0);
     unsigned int height= grid.getSize(1);
   
@@ -578,7 +585,7 @@ namespace shapelens {
     }
   }
 
-  void IO::writeRGB2PPMImage (std::string filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage) {
+  void IO::writeRGB2PPMImage (const std::string& filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage) {
     FILE *file;
     unsigned int width = grid.getSize(0);
     unsigned int height= grid.getSize(1);

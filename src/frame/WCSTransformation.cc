@@ -17,9 +17,7 @@ namespace shapelens {
     
     // Read in the FITS header, excluding COMMENT and HISTORY keyrecords.
     if (fits_hdr2str(fptr, 1, NULL, 0, &header, &nkeyrec, &status)) {
-      status = 0;
-      fits_file_name(fptr, header, &status);
-      throw std::runtime_error("WCSTransformation: Cannot read header of file " + std::string(header));
+      throw std::runtime_error("WCSTransformation: Cannot read header of file " + IO::getFITSFileName(fptr));
     }
 
     // Interpret the WCS keywords
@@ -37,15 +35,11 @@ namespace shapelens {
     }
     else if (nwcs > 1) {
       wcsvfree(&nwcs, &wcss);
-      status = 0;
-      fits_file_name(fptr, header, &status);
-      throw std::runtime_error("WCSTransformation: More than one world coordinate systems found in "+std::string(header));
+      throw std::runtime_error("WCSTransformation: More than one world coordinate systems found in " + IO::getFITSFileName(fptr));
     }
     else if (wcss->naxis != 2) {
       wcsvfree(&nwcs, &wcss);
-      status = 0;
-      fits_file_name(fptr, header, &status);
-      throw std::runtime_error("WCSTransformation: WCS does not have 2 axes in " + std::string(header));
+      throw std::runtime_error("WCSTransformation: WCS does not have 2 axes in " + IO::getFITSFileName(fptr));
     }
 
     // initialize this wcs structure and copy it from first (and only)

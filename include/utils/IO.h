@@ -59,34 +59,36 @@ class IO {
 
   /// Open FITS file.
   /// If <tt>write == false</tt>, the file will be opened in read-only mode.
-  static fitsfile* openFITSFile(std::string filename, bool write=false);
+  static fitsfile* openFITSFile(const std::string& filename, bool write=false);
   /// Open FITS file and go to first table extension.
   /// If <tt>write == false</tt>, the file will be opened in read-only mode.
-  static fitsfile* openFITSTable(std::string filename, bool write=false);
+  static fitsfile* openFITSTable(const std::string& filename, bool write=false);
   /// Create new FITS file.
   /// If the file \p filename already exists, it will be overwritten.
-  static fitsfile* createFITSFile(std::string filename);
+  static fitsfile* createFITSFile(const std::string& filename);
   /// Close FITS file pointer.
   static void closeFITSFile(fitsfile* fptr);
   /// Move to extension \p i (starting from 1) in FITS file.
   static void moveToFITSExtension(fitsfile* fptr, unsigned int i);
   /// Move to extension \p name in FITS file.
-  static void moveToFITSExtension(fitsfile* fptr, std::string name);
+  static void moveToFITSExtension(fitsfile* fptr, const std::string& name);
   /// Set/update std::string keyword in FITS file header.
-  static void updateFITSKeywordString(fitsfile *outfptr, const std::string& keyword, const std::string& value, const std::string& comment="");
+  static void updateFITSKeywordString(fitsfile *fptr, const std::string& keyword, const std::string& value, const std::string& comment="");
   /// Append \p history to FITS header histroy.
-  static void appendFITSHistory(fitsfile *outfptr, std::string history);
+  static void appendFITSHistory(fitsfile *fptr, const std::string& history);
   /// Read std::string keyword from FITS header.
-  static void readFITSKeywordString(fitsfile *fptr, std::string key, std::string& val);
+  static void readFITSKeywordString(fitsfile *fptr, const std::string& key, std::string& val);
   /// Read FITS keyword cards directly.
-  static void readFITSKeyCards(fitsfile *fptr, std::string key, std::string& value);
+  static void readFITSKeyCards(fitsfile *fptr, const std::string& key, std::string& value);
+  /// Get name of FITS file from its pointer.
+  static std::string getFITSFileName(fitsfile *fptr); 
 
   /// Write FITS image from an Image<T>.
   /// The datatype will be automatically adjusted, based on the
   /// result of getFITSImageFormat() and getFITSDataType().
   /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
-    static void writeFITSImage(fitsfile *outfptr, const Image<T>& image, std::string extname="") {
+    static void writeFITSImage(fitsfile *fptr, const Image<T>& image, std::string extname="") {
     int dim0 = image.grid.getSize(0);
     int dim1 = image.grid.getSize(1);
     long naxis = 2;      
@@ -98,20 +100,20 @@ class IO {
     int datatype = getFITSDataType(image(0));
     // create HDU
     int status = 0;
-    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    fits_create_img(fptr, imageformat, naxis, naxes, &status);
     // write pixel data
     long firstpix[2] = {1,1};
-    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(image.c_array()), &status);
+    fits_write_pix(fptr,datatype,firstpix,npixels,const_cast<T *>(image.c_array()), &status);
     // insert creator and extname keywords
     if (extname != "")
-      updateFITSKeywordString (outfptr, "EXTNAME", extname);
-    updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+      updateFITSKeywordString (fptr, "EXTNAME", extname);
+    updateFITSKeywordString (fptr, "CREATOR", "ShapeLens++");
     if (status != 0)
-      throw std::runtime_error("IO: Cannot write FITS image!");
+      throw std::runtime_error("IO: Cannot write FITS image in " + getFITSFileName(fptr));
   }
   
    template <class T>
-    static void writeFITSImage(fitsfile *outfptr, const Image<std::complex<T> >& image, std::string extname="") {
+    static void writeFITSImage(fitsfile *fptr, const Image<std::complex<T> >& image, std::string extname="") {
     int dim0 = image.grid.getSize(0);
     int dim1 = image.grid.getSize(1);
     long naxis = 2;      
@@ -126,24 +128,24 @@ class IO {
     NumVector<T> component(image.size());
     // create HDU
     int status = 0;
-    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    fits_create_img(fptr, imageformat, naxis, naxes, &status);
     // write first component
     for(unsigned long i=0; i < component.size(); i++)
       component(i) = real(image(i));
-    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(component.c_array()), &status);
+    fits_write_pix(fptr,datatype,firstpix,npixels,const_cast<T *>(component.c_array()), &status);
 
     // insert creator and extname keywords
     if (extname != "")
-      updateFITSKeywordString (outfptr, "EXTNAME", extname);
-    updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+      updateFITSKeywordString (fptr, "EXTNAME", extname);
+    updateFITSKeywordString (fptr, "CREATOR", "ShapeLens++");
 
     // write second component
-    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    fits_create_img(fptr, imageformat, naxis, naxes, &status);
     for(unsigned long i=0; i < component.size(); i++)
       component(i) = imag(image(i));
-    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(component.c_array()), &status);
+    fits_write_pix(fptr,datatype,firstpix,npixels,const_cast<T *>(component.c_array()), &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot write FITS image!");
+      throw std::runtime_error("IO: Cannot write FITS image to " + getFITSFileName(fptr));
   }
 
   /// Write FITS image from an NumMatrix<T>.
@@ -151,7 +153,7 @@ class IO {
   /// result of getFITSImageFormat() and getFITSDataType().
   /// If \p extname is non-empty, the keyword \p EXTNAME is set to \p extname.
   template <class T>
-    static void writeFITSImage(fitsfile *outfptr, const NumMatrix<T>& M, std::string extname="") {
+    static void writeFITSImage(fitsfile *fptr, const NumMatrix<T>& M, std::string extname="") {
     int dim0 = M.getColumns();
     int dim1 = M.getRows();
     long naxis = 2;      
@@ -163,26 +165,26 @@ class IO {
     int datatype = getFITSDataType(M(0,0));
     // create HDU
     int status = 0;
-    fits_create_img(outfptr, imageformat, naxis, naxes, &status);
+    fits_create_img(fptr, imageformat, naxis, naxes, &status);
     // write pixel data
     long firstpix[2] = {1,1};
-    fits_write_pix(outfptr,datatype,firstpix,npixels,const_cast<T *>(M.c_array()), &status);
+    fits_write_pix(fptr,datatype,firstpix,npixels,const_cast<T *>(M.c_array()), &status);
     // insert creator and extname keywords
     if (extname != "")
-      updateFITSKeywordString (outfptr, "EXTNAME", extname);
-    updateFITSKeywordString (outfptr, "CREATOR", "ShapeLens++");
+      updateFITSKeywordString (fptr, "EXTNAME", extname);
+    updateFITSKeywordString (fptr, "CREATOR", "ShapeLens++");
     if (status != 0)
-      throw std::runtime_error("IO: FITS image could not be writted!");
+      throw std::runtime_error("IO: Cannot write FITS image to " + getFITSFileName(fptr));
   }
 
   /// Set/update keyword in FITS file header.
   /// For setting string keywords, use updateFITSKeywordString() instead.
   template <class T>
-    static void updateFITSKeyword(fitsfile *outfptr, const std::string& keyword, const T& value, const std::string& comment = std::string()) {
+    static void updateFITSKeyword(fitsfile *fptr, const std::string& keyword, const T& value, std::string comment = "") {
     int status = 0;
-    fits_write_key (outfptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<T*>(&value) , const_cast<char *>(comment.c_str()), &status);
+    fits_write_key (fptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<T*>(&value) , comment.c_str(), &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot update FITS keyword " + keyword);
+      throw std::runtime_error("IO: Cannot update FITS keyword " + keyword + " in " + getFITSFileName(fptr));
   }
 
   /// Read FITS image into NumMatrix<T>.
@@ -193,7 +195,7 @@ class IO {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
     if (naxis!=2)
-      throw std::invalid_argument("IO: naxis != 2. This is not a FITS image!");
+      throw std::invalid_argument("IO: naxis != 2. Pointer of " + getFITSFileName(fptr) + " does not provide image");
 
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
@@ -204,7 +206,7 @@ class IO {
     int datatype = getFITSDataType(val);
     fits_read_pix(fptr, datatype, firstpix, naxes[0]*naxes[1], NULL, M.c_array(), NULL, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot read FITS image!");
+      throw std::runtime_error("IO: Cannot read FITS image in " + getFITSFileName(fptr));
   }
 
   /// Read FITS image into Image<T>.
@@ -217,7 +219,7 @@ class IO {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
     if (naxis!=2)
-      throw std::invalid_argument("IO: naxis != 2. This is not a FITS image!");
+      throw std::invalid_argument("IO: naxis != 2. Pointer of " + getFITSFileName(fptr) + " does not provide image");
 
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
@@ -237,7 +239,7 @@ class IO {
     int datatype = getFITSDataType(val);
     fits_read_pix(fptr, datatype, firstpix, im.size(), NULL, im.c_array(), NULL, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot read FITS image!");
+      throw std::runtime_error("IO: Cannot read FITS image from "+ getFITSFileName(fptr));
   }
 
   template <class T>
@@ -245,7 +247,7 @@ class IO {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
     if (naxis!=2)
-      throw std::invalid_argument("IO: naxis != 2. This is not a FITS image!");
+      throw std::invalid_argument("IO: naxis != 2. Pointer of " + getFITSFileName(fptr) + " does not provide image");
 
     long naxes[2] = {1,1};
     fits_get_img_size(fptr, naxis, naxes, &status);
@@ -274,25 +276,26 @@ class IO {
     for(unsigned long i=0; i < component.size(); i++)
       im(i) += std::complex<T>(0,component(i));
     if (status != 0)
-      throw std::runtime_error("IO: Cannot read FITS image!");
+      throw std::runtime_error("IO: Cannot read FITS image from " + getFITSFileName(fptr));
   }
 
   /// Read in keyword from FITS header.
   /// For std::string keywords, use readFITSKeywordString() instead.
   template <class T>
-    static void readFITSKeyword(fitsfile *fptr, std::string key, T& val) {
+    static void readFITSKeyword(fitsfile *fptr, const std::string& key, T& val) {
     int status = 0;
     char* comment = NULL;
     fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&val,comment, &status);
     if (status != 0)
-      throw std::invalid_argument("IO: Cannot read FITS keyword " + key + "!");  }
+      throw std::invalid_argument("IO: Cannot read FITS keyword " + key + " from " + getFITSFileName(fptr));  
+  }
 
   /// Get number of rows in FITS table.
   static long getFITSTableRows(fitsfile* fptr);
 
   /// Get column number of a FITS table with given \p name.
   /// \p name can contain \p * wildcards and is treated case-insensitive.
-  static int getFITSTableColumnNumber(fitsfile* fptr, std::string name);
+  static int getFITSTableColumnNumber(fitsfile* fptr, const std::string& name);
 
   /// Read \p val from FITS table at \p row and \p colnr.
   /// If a NULL value was stored at this position, \p nullvalue will be 
@@ -303,7 +306,7 @@ class IO {
     int status = 0, anynull;
     fits_read_col(fptr, getFITSDataType(val), colnr, row+1, 1, 1, &nullvalue, &val, &anynull, &status);
     if (status != 0) 
-      throw std::runtime_error("IO: Cannot read value (row,col) from FITS table!"); 
+      throw std::runtime_error("IO: Cannot read value (row,col) from FITS table in "+ getFITSFileName(fptr)); 
   }
 
   /// Write PPM file from data on the given grid.
@@ -322,13 +325,13 @@ class IO {
   /// \p min and \p max indicate the ends of the accepted range of values, 
   /// values smaller (larger) than <tt>min (max)</tt> are set to 
   /// <tt>min (max)</tt>.
-  static void writePPMImage(std::string filename,std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
+  static void writePPMImage(const std::string& filename, const std::string& colorscheme, const std::string& scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
   /// Create RGB representation of data.
   /// This function is usefull for manipulations of the data in RGB space. 
   /// See writePPMImage() for details.
-  static void makeRGBImage(NumMatrix<unsigned int>& rgbImage, std::string colorscheme, std::string scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
+  static void makeRGBImage(NumMatrix<unsigned int>& rgbImage, const std::string& colorscheme, const std::string& scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
   /// Write RGBImage from makeRGBImage() to PPM file.
-  static void writeRGB2PPMImage (std::string filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage);
+  static void writeRGB2PPMImage (const std::string& filename, const Grid& grid, const NumMatrix<unsigned int>& rgbImage);
   /// Add uniform noise within noisemean to noisemean+noiselimit.
   static void addUniformNoise(NumVector<data_t>& data, data_t noisemean, data_t noiselimit);
   /// Add uniform noise from preconfigured RNG within noisemean to noisemean+noiselimit.
@@ -346,7 +349,7 @@ class IO {
   /// Convolve input with a 3x3 Gaussian.
   static void convolveGaussian(const NumVector<data_t>& input, NumVector<data_t>& result, int width,int height);
  private:
-  static int makeColorMatrix(NumMatrix<unsigned int>& m, std::string colorscheme);
+  static int makeColorMatrix(NumMatrix<unsigned int>& m, const std::string& colorscheme);
   static unsigned int getScaledValue(data_t value, int maxcolors, data_t min, data_t max, char scaling);
 };
 
