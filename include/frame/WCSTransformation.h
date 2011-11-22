@@ -24,6 +24,8 @@ namespace shapelens {
     virtual boost::shared_ptr<CoordinateTransformation> clone() const;
   private:
     bool intermediate;
+    virtual void f(Point<data_t>& P) const;
+    virtual void f_1(Point<data_t>& P) const;
 #ifdef HAS_WCSLIB  
     struct wcsprm wcs;
     double *imgcrd, *pixcrd, *world;
@@ -32,8 +34,6 @@ namespace shapelens {
     data_t crpix1, crpix2;
     bool has_sip;
     data_t sip_polynomial(const NumMatrix<data_t>& M, data_t& u, data_t& v) const;
-    virtual void f(Point<data_t>& P) const;
-    virtual void f_1(Point<data_t>& P) const;
 #endif
   };
 } // end namespace shapelens

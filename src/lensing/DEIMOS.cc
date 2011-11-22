@@ -248,7 +248,7 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"G",G,"weighting function G-flexion");
     std::map<data_t, data_t>::const_iterator iter = SN.find(matching_scale);
     if (iter != SN.end())
-      IO::updateFITSKeyword(fptr,"SN",*iter,"S/N");
+      IO::updateFITSKeyword(fptr,"SN",iter->second,"S/N");
     IO::updateFITSKeyword(fptr,"R2", R2, "resolution of the galaxy");
     IO::updateFITSKeyword(fptr,"FLAGS",flags.to_ulong(),"matching and deconvolution flags");
     IO::writeFITSImage(fptr,S,"VARIANCE");

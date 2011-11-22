@@ -17,7 +17,7 @@ namespace shapelens {
     
     // Read in the FITS header, excluding COMMENT and HISTORY keyrecords.
     if (fits_hdr2str(fptr, 1, NULL, 0, &header, &nkeyrec, &status)) {
-      throw std::runtime_error("WCSTransformation: Cannot read header of file " + IO::getFITSFileName(fptr));
+      throw std::runtime_error("WCSTransformation: Cannot read header of file ");// + IO::getFITSFileName(fptr));
     }
 
     // Interpret the WCS keywords
@@ -29,17 +29,15 @@ namespace shapelens {
 
     // check there is one (and one only) WCS with 2 coordinate axes
     if (wcss == NULL) {
-      status = 0;
-      fits_file_name(fptr, header, &status);
-      throw std::runtime_error("WCSTransformation: No world coordinate systems found in " + std::string(header));
+      throw std::runtime_error("WCSTransformation: No world coordinate systems found in ");// + IO::getFITSFileName(fptr));
     }
     else if (nwcs > 1) {
       wcsvfree(&nwcs, &wcss);
-      throw std::runtime_error("WCSTransformation: More than one world coordinate systems found in " + IO::getFITSFileName(fptr));
+      throw std::runtime_error("WCSTransformation: More than one world coordinate systems found in ");// + IO::getFITSFileName(fptr));
     }
     else if (wcss->naxis != 2) {
       wcsvfree(&nwcs, &wcss);
-      throw std::runtime_error("WCSTransformation: WCS does not have 2 axes in " + IO::getFITSFileName(fptr));
+      throw std::runtime_error("WCSTransformation: WCS does not have 2 axes in ");// + IO::getFITSFileName(fptr));
     }
 
     // initialize this wcs structure and copy it from first (and only)
@@ -51,7 +49,7 @@ namespace shapelens {
     wcsvfree(&nwcs, &wcss);  // free the read-in structure
 
     if (status)
-      throw std::runtime_error("WCSTransformation: wcsset error (" + std::string(wcs_errmsg[status]) + ")");
+      throw std::runtime_error("WCSTransformation: wcsset error (");// + std::string(wcs_errmsg[status]) + ")");
 
     // initialize coordinate containers
     world  = (double*) realloc(NULL,  2 * sizeof(double));
@@ -92,7 +90,7 @@ namespace shapelens {
       IO::readFITSKeyword(fptr, "CRPIX1", crpix1);
       IO::readFITSKeyword(fptr, "CRPIX2", crpix2);
     }
-    else
+    //else
       has_sip = false;
   }
   

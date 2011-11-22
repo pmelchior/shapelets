@@ -42,28 +42,37 @@ namespace shapelens {
     int status = 0;
     fits_close_file(fptr, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot close FITS file " + getFITSFileName(fptr));
+	  throw std::runtime_error("IO: Cannot close FITS file " + getFITSFileName(fptr));
   }
 
   void IO::moveToFITSExtension(fitsfile* fptr, unsigned int i) {
     int status = 0;
     fits_movabs_hdu(fptr, i, NULL, &status);
-    if (status != 0)
-      throw std::runtime_error("IO: Cannot move to specified extension in " + getFITSFileName(fptr));
+    /*if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot move to extension " << i << " in " + getFITSFileName(fptr);
+      throw std::runtime_error(note.str());
+      }*/
   }
 
   void IO:: moveToFITSExtension(fitsfile* fptr, const std::string& name) {
     int status = 0, hdutype = ANY_HDU, extver = 0;
     fits_movnam_hdu(fptr, hdutype, const_cast<char*>(name.c_str()), extver, &status);
-    if (status != 0)
-      throw std::runtime_error("IO: Cannot move to extension " + name + " in " + getFITSFileName(fptr));
+    /*if (status != 0) {
+      std::ostringstream  note;
+      note << "IO: Cannot move to extension " << name << " in " << getFITSFileName(fptr);
+      throw std::runtime_error(note.str());
+      }*/
   }
 
   void IO::updateFITSKeywordString(fitsfile *fptr, const std::string& keyword, const std::string& value, const std::string& comment) {
     int status = 0;
     fits_write_key (fptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
-    if (status != 0)
-      throw std::runtime_error("IO: Cannot update FITS keyword " + keyword + " in " +  getFITSFileName(fptr));
+    /*if (status != 0) {
+      std::ostringstream  note;
+      note << "IO: Cannot update FITS keyword " << keyword << " in " << getFITSFileName(fptr);
+      throw std::runtime_error(note.str());
+      }*/
   }
 
   void IO::appendFITSHistory(fitsfile *fptr, const std::string& history) {
@@ -86,7 +95,7 @@ namespace shapelens {
       fits_write_history (fptr,const_cast<char*>(card.c_str()), &status);
     }
     if (status != 0)
-      throw std::runtime_error("IO: Cannot append FITS history to " + getFITSFileName(fptr));
+      throw std::runtime_error("IO: Cannot append FITS history to ");// + getFITSFileName(fptr));
   }
 
   void IO::readFITSKeywordString(fitsfile *fptr, const std::string& key, std::string& val) {
@@ -95,8 +104,11 @@ namespace shapelens {
     char value[FLEN_CARD];
     fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&value, comment, &status);
     val = std::string(value);
-    if (status != 0)
-      throw std::invalid_argument("IO: Cannot read FITS keyword " + key + " from " + getFITSFileName(fptr));
+    /*if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot read FITS keyword " << key << " from " << getFITSFileName(fptr);
+      throw std::invalid_argument(note.str());
+      }*/
   }
 
   void IO::readFITSKeyCards(fitsfile *fptr, const std::string& key, std::string& value) {
@@ -114,7 +126,7 @@ namespace shapelens {
       }
     }
     if (status != 0)
-      throw std::invalid_argument("IO: Cannot read FITS keycards from " + getFITSFileName(fptr));
+      throw std::invalid_argument("IO: Cannot read FITS keycards from ");// + getFITSFileName(fptr));
   }
 
   long IO::getFITSTableRows(fitsfile* fptr) {
@@ -122,26 +134,34 @@ namespace shapelens {
     long nrows;
     fits_get_num_rows(fptr, &nrows, &status);
     if (status != 0)
-      throw std::runtime_error("IO: Cannot find number of rows in table in " + getFITSFileName(fptr));
+      throw std::runtime_error("IO: Cannot find number of rows in table in ");// + getFITSFileName(fptr));
     return nrows;
   }
 
   int IO::getFITSTableColumnNumber(fitsfile* fptr, const std::string& name) {
     int status = 0, colnum;
     fits_get_colnum(fptr, 0, const_cast<char*>(name.c_str()), &colnum, &status);
-    if (status == COL_NOT_UNIQUE)
-      throw std::runtime_error("IO: Column " + name + " in FITS table is not unique in " + getFITSFileName(fptr));
-    else if (status != 0)
-      throw std::invalid_argument("IO: Cannot find column " + name + " in FITS table in " + getFITSFileName(fptr));
+    /*if (status == COL_NOT_UNIQUE) {
+      std::ostringstream note;
+      note << "IO: Column " << name + " in FITS table is not unique in " << getFITSFileName(fptr);
+      throw std::runtime_error(note.str());
+    }
+    else if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot find column " << name << " in FITS table in " << getFITSFileName(fptr);
+      throw std::invalid_argument(note.str());
+      }*/
     return colnum;
   }
 
-  std::string IO::getFITSFileName(fitsfile *fptr) {
+  /*  std::string IO::getFITSFileName(fitsfile *fptr) {
     int status = 0;
     char *header;
     fits_file_name(fptr, header, &status);
+    if (status != 0)
+      throw std::invalid_argument("IO: Cannot get filename pointer");
     return std::string(header);
-  }
+    }*/
 
   void IO::addUniformNoise(NumVector<data_t>& data, const gsl_rng * r, data_t noisemean, data_t noiselimit) {
     for (int i=0; i < data.size(); i++)

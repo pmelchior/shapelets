@@ -81,7 +81,14 @@ class IO {
   /// Read FITS keyword cards directly.
   static void readFITSKeyCards(fitsfile *fptr, const std::string& key, std::string& value);
   /// Get name of FITS file from its pointer.
-  static std::string getFITSFileName(fitsfile *fptr); 
+  static std::string getFITSFileName(fitsfile *fptr) {
+    int status = 0;
+    char *header;
+    fits_file_name(fptr, header, &status);
+    if (status != 0)
+      throw std::invalid_argument("IO: Cannot get filename pointer");
+    return std::string(header);
+  }
 
   /// Write FITS image from an Image<T>.
   /// The datatype will be automatically adjusted, based on the
@@ -180,11 +187,14 @@ class IO {
   /// Set/update keyword in FITS file header.
   /// For setting string keywords, use updateFITSKeywordString() instead.
   template <class T>
-    static void updateFITSKeyword(fitsfile *fptr, const std::string& keyword, const T& value, std::string comment = "") {
+    static void updateFITSKeyword(fitsfile *fptr, const std::string& keyword, const T& value, const std::string& comment) {
     int status = 0;
     fits_write_key (fptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<T*>(&value) , comment.c_str(), &status);
-    if (status != 0)
-      throw std::runtime_error("IO: Cannot update FITS keyword " + keyword + " in " + getFITSFileName(fptr));
+    if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot update FITS keyword " << keyword << " = " << value << " in " << getFITSFileName(fptr);
+      throw std::runtime_error(note.str());
+      }
   }
 
   /// Read FITS image into NumMatrix<T>.
@@ -285,9 +295,15 @@ class IO {
     static void readFITSKeyword(fitsfile *fptr, const std::string& key, T& val) {
     int status = 0;
     char* comment = NULL;
-    fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&val,comment, &status);
-    if (status != 0)
-      throw std::invalid_argument("IO: Cannot read FITS keyword " + key + " from " + getFITSFileName(fptr));  
+    fits_read_key (fptr,getFITSDataType(val), const_cast<char*>(key.c_str()),&val,comment, &status);
+    // FIXME: for whatever reason, the exception below creates a SEGFAULT!
+    /*
+    if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot read FITS keyword " << key << " from " << getFITSFileName(fptr);
+      throw std::invalid_argument(note.str());
+    }
+    */
   }
 
   /// Get number of rows in FITS table.
@@ -305,8 +321,11 @@ class IO {
     static void readFITSTableValue(fitsfile* fptr, long row, int colnr, T& val, T nullvalue = 0) {
     int status = 0, anynull;
     fits_read_col(fptr, getFITSDataType(val), colnr, row+1, 1, 1, &nullvalue, &val, &anynull, &status);
-    if (status != 0) 
-      throw std::runtime_error("IO: Cannot read value (row,col) from FITS table in "+ getFITSFileName(fptr)); 
+    if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot read value in (row/col) = (" << row << "/" << colnr << ") from FITS table in " << getFITSFileName(fptr);
+      throw std::runtime_error(note.str());
+    }
   }
 
   /// Write PPM file from data on the given grid.

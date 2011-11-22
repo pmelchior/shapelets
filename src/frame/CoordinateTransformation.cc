@@ -1,13 +1,15 @@
 #include "../../include/frame/CoordinateTransformation.h"
 
 namespace shapelens {
+
   CoordinateTransformation::CoordinateTransformation() : inverted(false) {
   }
+
   CoordinateTransformation::~CoordinateTransformation() {
   }
 
   void CoordinateTransformation::operator*=(const CoordinateTransformation& C) {
-    stack.push_back(boost::shared_ptr<CoordinateTransformation>(C.clone()));
+    stack.push_back(C.clone());
     stack.back()->inverted = C.inverted;
   }
 
