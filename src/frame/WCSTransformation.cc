@@ -90,7 +90,7 @@ namespace shapelens {
       IO::readFITSKeyword(fptr, "CRPIX1", crpix1);
       IO::readFITSKeyword(fptr, "CRPIX2", crpix2);
     }
-    //else
+    else
       has_sip = false;
   }
   
