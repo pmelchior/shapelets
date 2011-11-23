@@ -14,15 +14,14 @@ Catalog::Catalog() : map<unsigned long, CatObject>() {
   present.set();
 }
 
-Catalog::Catalog(string catfile) : map<unsigned long, CatObject>() {
-  read(catfile);
+Catalog::Catalog(string catfile, const std::list<std::string>& optional) : map<unsigned long, CatObject>() {
+  read(catfile, optional);
 }
 
-void Catalog::read(string catfile) {
+void Catalog::read(string catfile, const std::list<std::string>& optional) {
   // reset bitset that indicates which data are given in catalog
   // in other words: which of the format fields are set
   present.reset();
-  formatChecked = false;
   
   // check if it's a fits table
   int status = 0;
@@ -31,11 +30,9 @@ void Catalog::read(string catfile) {
   try {
     fptr = IO::openFITSTable(catfile);
     // get column numbers for all required columns 
-    setFormatFromFITSTable(fptr);
-    checkFormat();
+    setFormatFromFITSTable(fptr, optional);
     // go thru all rows and grab the required columns for each object
     CatObject so;
-    so.CLASSIFIER = so.PARENT = 0;
     long nrows = IO::getFITSTableRows(fptr);
     for (long i = 0; i < nrows; i++) {
       unsigned long id;
@@ -53,10 +50,12 @@ void Catalog::read(string catfile) {
       IO::readFITSTableValue(fptr, i, format.YCENTROID, so.YCENTROID);
       so.YCENTROID -= 1;
       IO::readFITSTableValue(fptr, i, format.FLAGS, so.FLAGS);
-      if (present.test(8))
-	IO::readFITSTableValue(fptr, i, format.CLASSIFIER, so.CLASSIFIER);
-      if (present.test(9))
-	IO::readFITSTableValue(fptr, i, format.PARENT, so.PARENT);
+      
+      // read in optional columns if present
+      for (std::map<std::string, OptFormat>::const_iterator iter = format.OPT.begin(); iter != format.OPT.end(); iter++) {
+	setOptionalField(fptr, i, iter->second, iter->first, so);
+      }
+
       // then store it in map
       Catalog::insert(make_pair(id,so));
     }
@@ -74,6 +73,7 @@ void Catalog::read(string catfile) {
     // read in cat file
     // 1) parse the format definition lines
     // 2) fill object information into SExCatObjects -> map<unsigned long, CatObject>;
+    formatChecked = false;
     string line;
     std::vector<std::string> column;
     while(getline(catalog, line)) {
@@ -92,7 +92,7 @@ void Catalog::read(string catfile) {
       if (column.size() > 2) { // at least # COLUMN NAME needs to be present 
 	// comment line: contains format definition at columns 2,3
 	if (column[0].compare("#") == 0)
-	  setFormatField(column[2],boost::lexical_cast<unsigned short>(column[1].c_str()));
+	  setFormatField(column[2],boost::lexical_cast<unsigned short>(column[1].c_str()), optional);
 	// at this point we should have a complete format definition: check it
 	// from here on we expect the list of object to come along.
 	else {
@@ -101,7 +101,6 @@ void Catalog::read(string catfile) {
 	    throw std::runtime_error("Catalog: not all necessary column provided in line:\n" + line);
 	  // then set up a true SExCatObject
 	  CatObject so;
-	  so.CLASSIFIER = so.PARENT = so.FLAGS = 0;
 	  unsigned long id = boost::lexical_cast<unsigned long>(column[format.ID].c_str());
 	  // the sextractor corrdinates start with (1,1), ours with (0,0)
 	  so.XMIN = boost::lexical_cast<int>(column[format.XMIN].c_str())-1;
@@ -112,12 +111,12 @@ void Catalog::read(string catfile) {
 	  // we need to subtract 1
 	  so.XCENTROID = boost::lexical_cast<data_t>(column[format.XCENTROID].c_str())-1;
 	  so.YCENTROID = boost::lexical_cast<data_t>(column[format.YCENTROID].c_str())-1;
-	  if (present.test(7))
-	    so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
-	  if (present.test(8))
-	    so.CLASSIFIER = boost::lexical_cast<data_t>(column[format.CLASSIFIER].c_str());
-	  if (present.test(9))
-	    so.PARENT = boost::lexical_cast<unsigned long>(column[format.PARENT].c_str());
+	  so.FLAGS = (unsigned char) boost::lexical_cast<unsigned int>(column[format.FLAGS].c_str());
+	  
+	  // read optional columns
+	  for (std::map<std::string, OptFormat>::const_iterator iter = format.OPT.begin(); iter != format.OPT.end(); iter++)
+	    so.OPT[iter->first] = boost::lexical_cast<data_t>(column[iter->second.COLNR].c_str());
+
 	  // then store it in map
 	  Catalog::insert(make_pair(id,so));
 	}
@@ -138,14 +137,16 @@ void Catalog::save(string catfile) const {
   catalog << "#  6 X_IMAGE" << endl;
   catalog << "#  7 Y_IMAGE" << endl;
   catalog << "#  8 FLAGS" << endl;
-  if (present.test(8))
-    catalog << "# 9 CLASSIFIER" << endl;
-  if (present.test(9)) {
-    if (present.test(8))
-      catalog << "# 10 PARENT" << endl;
-    else
-      catalog << "# 9 PARENT" << endl;
+  int col = 9;
+  for (std::map<std::string, OptFormat>::const_iterator piter = format.OPT.begin();
+       piter != format.OPT.end(); piter++) {
+    catalog << "# ";
+    if (col < 10)
+      catalog << " ";
+    catalog << col << " " << piter->first << endl;
+    col++;
   }
+
   // now all objects in Catalog
   Catalog::const_iterator iter;
   for (iter = Catalog::begin(); iter != Catalog::end(); iter++) {
@@ -156,16 +157,25 @@ void Catalog::save(string catfile) const {
     catalog << iter->second.YMAX + 1 << " ";
     catalog << iter->second.XCENTROID + 1 << " ";
     catalog << iter->second.YCENTROID + 1 << " ";
-    catalog << (unsigned int) iter->second.FLAGS << " ";
-    if (present.test(8))
-      catalog << iter->second.CLASSIFIER << " ";
-    if (present.test(9))
-      catalog << iter->second.PARENT << " ";
+    catalog << (unsigned int) iter->second.FLAGS;
+    for (Property::const_iterator piter = iter->second.OPT.begin();
+	 piter != iter->second.OPT.end(); iter++) {
+      catalog << " ";
+      std::map<std::string, OptFormat>::const_iterator fiter = format.OPT.find(piter->first);
+      if (fiter->second.TYPE == TINT)
+	catalog << boost::get<int>(piter->second);
+      else if (fiter->second.TYPE == TFLOAT)
+	catalog << boost::get<data_t>(piter->second);
+      else if (fiter->second.TYPE == TDOUBLE)
+	catalog << boost::get<data_t>(piter->second);
+      else if (fiter->second.TYPE == TSTRING)
+	catalog << boost::get<std::string>(piter->second);
+    }
     catalog << endl;
   }
 }
 
-void Catalog::setFormatField(std::string type, unsigned short colnr) {
+void Catalog::setFormatField(std::string type, unsigned short colnr, const std::list<std::string>& optional) {
   if (present[0] == 0 && (type == "ID" || type == "NUMBER" || type == "NR")) {
     format.ID = colnr - 1;
     present[0] = 1;
@@ -198,17 +208,22 @@ void Catalog::setFormatField(std::string type, unsigned short colnr) {
     format.FLAGS = colnr - 1;
     present[7] = 1;
   }
-  else if (present[8] == 0 && (type == "CLASS_STAR" || type == "CLASS" || type == "CLASSIFIER")) {
-    format.CLASSIFIER = colnr - 1;
-    present[8] = 1;
-  }
-  else if (present[9] == 0 && (type == "PARENT" || type == "VECTOR_ASSOC")) {
-    format.PARENT = colnr - 1;
-    present[9] = 1;
+
+  // read in optional fields: assume all fields are data_t
+  else if (optional.size() > 0) {
+    for (std::list<std::string>::const_iterator iter = optional.begin();
+	 iter != optional.end(); iter++) {
+      if (type == *iter) {
+	OptFormat of;
+	of.COLNR = colnr - 1;
+	of.TYPE = IO::getFITSDataType(data_t(0));
+	format.OPT[*iter] = of;
+      }
+    }
   }
 }
 
-void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
+void Catalog::setFormatFromFITSTable(fitsfile* fptr, const std::list<std::string>& optional) {
   try {
     format.ID = IO::getFITSTableColumnNumber(fptr, "ID");
     present[0] = 1;
@@ -310,39 +325,47 @@ void Catalog::setFormatFromFITSTable(fitsfile* fptr) {
     format.FLAGS = IO::getFITSTableColumnNumber(fptr, "FLAGS");
     present[7] = 1;
   } catch (std::invalid_argument) {}
-  try {
-    format.CLASSIFIER = IO::getFITSTableColumnNumber(fptr, "CLASSIFIER");
-    present[8] = 1;
-  } catch (std::invalid_argument) {
+
+  // find the columns for the optional keywords
+  // silently ignore if they are not present, since they are optional
+  for (std::list<std::string>::const_iterator iter = optional.begin();
+       iter != optional.end(); iter++) {
     try {
-    format.CLASSIFIER = IO::getFITSTableColumnNumber(fptr, "CLASS_STAR");
-    present[8] = 1;
+      OptFormat of;
+      of.COLNR = IO::getFITSTableColumnNumber(fptr, *iter);
+      of.TYPE = IO::getFITSTableColumnType(fptr, of.COLNR);
+      format.OPT[*iter] = of;
     } catch (std::invalid_argument) {}
   }
-  try {
-    format.PARENT = IO::getFITSTableColumnNumber(fptr, "PARENT");
-    present[9] = 1;
-  } catch (std::invalid_argument) {
-    try {
-      format.PARENT = IO::getFITSTableColumnNumber(fptr, "VECTOR_ASSOC");
-      present[9] = 1;
-    } catch (std::invalid_argument) {}
+  checkFormat();
+}
+
+void Catalog::setOptionalField(fitsfile* fptr, int row, const OptFormat& of, const std::string& name, CatObject& co) {
+  switch (of.TYPE) {
+  case TINT: int ival; 
+    IO::readFITSTableValue(fptr, row, of.COLNR, ival);
+    co.OPT[name] = ival;
+    break;
+  case TFLOAT: data_t fval;
+    IO::readFITSTableValue(fptr, row, of.COLNR, fval);
+    co.OPT[name] = fval;
+    break;
+  case TDOUBLE: data_t dval;
+    IO::readFITSTableValue(fptr, row, of.COLNR, dval);
+    co.OPT[name] = dval;
+    break;
+  case TSTRING: std::string sval;
+    IO::readFITSTableValue(fptr, row, of.COLNR, sval);
+    co.OPT[name] = sval;
+    break;
   }
 }
 
 bool Catalog::checkFormat() {
-  // test if all but 8th and 9th bit are set
-  // this means that CLASSIFIER and PARENT are optional
-  bitset<10> needed(0);
-  int limit = 7;
-  for (int i = 0; i < limit; i++)
-    needed[i] = 1;
-
-  if ((present & needed).count() < limit) {
+  if (present.count() != present.size()) {
     std::ostringstream mess;
     mess << "Catalog: mandatory catalog parameters are missing!" << endl;
     mess << "Present:\t" << present << endl;
-    mess << "Required:\t" << needed << endl;
     throw std::runtime_error(mess.str());
   }
   else

@@ -129,7 +129,7 @@ void Frame::findObjects() {
   set<ulong>::iterator iter;
 
   // reset catalog and create dummy CatObject
-  CatObject co = {0,0,0,0,0,0,0,0,0};
+  CatObject co;
 
   // look for all positive fluctuations with at least 1 pixel above
   // highThreshold and minPixels above significanceThreshold
@@ -341,7 +341,6 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     write_iter->second.XCENTROID = O.centroid(0);
     write_iter->second.YCENTROID = O.centroid(1);
     write_iter->second.FLAGS = (unsigned char) flags.to_ulong();
-    write_iter->second.CLASSIFIER = 0;
   } 
   // this is the whole frame
   else if (O.id==0) {

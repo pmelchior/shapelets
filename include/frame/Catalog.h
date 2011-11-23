@@ -4,9 +4,11 @@
 #include <map>
 #include <string>
 #include <bitset>
+#include <list>
 #include "../Typedef.h"
 #include "CoordinateTransformation.h"
 #include "../utils/IO.h"
+#include "../utils/Property.h"
 
 namespace shapelens {
 
@@ -35,10 +37,8 @@ struct CatObject {
   data_t YCENTROID;
   /// Flags set by a previous segmentation software (alternatives: none).
   unsigned char FLAGS;
-  /// Optional classifier of the Object (alternatives: <tt>CLASS_STAR</tt>).
-  data_t CLASSIFIER;
-  /// Optional parent id (alternative: <tt>VECTOR_ASSOC</tt>).
-  unsigned long PARENT;
+  /// Storage for optional values.
+  Property OPT;
 };
 
 /// Class for reading and storing catalogs of objects.
@@ -66,11 +66,14 @@ class Catalog : public std::map<unsigned long, CatObject> {
   /// Default constructor.
   Catalog();
   /// Argumented contructor to read Catalog from <tt>catfile</tt>.
-  /// The file must be given in ASCII and conform with the SExtractor format.
-  Catalog(std::string catfile);
+  /// The file can either be given in ASCII and conform with the SExtractor 
+  /// format, or be a FITS table.\n
+  /// \p optional denotes a list of optional columns in \p catfile, whose
+  /// values are inserted into CatObject::prop.
+  Catalog(std::string catfile, const std::list<std::string>& optional = std::list<std::string>());
   /// Read <tt>catfile</tt>.
   /// The file must be given in ASCII and conform with the SExtractor format.
-  void read(std::string catfile);
+  void read(std::string catfile, const std::list<std::string>& optional = std::list<std::string>());
   /// Save Catalog to file.
   /// The file will be stored in ASCII and conform with the SExtractor format.
   void save(std::string catfile) const;
@@ -115,6 +118,10 @@ class Catalog : public std::map<unsigned long, CatObject> {
   //void operator/=(const Catalog& c);
   
  private:
+  struct OptFormat {
+    unsigned short COLNR;
+    int TYPE;
+  };
   struct CatFormat {
     unsigned short ID;
     unsigned short XMIN;
@@ -124,15 +131,15 @@ class Catalog : public std::map<unsigned long, CatObject> {
     unsigned short XCENTROID;
     unsigned short YCENTROID;
     unsigned short FLAGS;
-    unsigned short CLASSIFIER;
-    unsigned short PARENT;
+    std::map<std::string, OptFormat> OPT;
   };
   CatFormat format;
-  std::bitset<10> present;
+  std::bitset<8> present;
   bool formatChecked;
   bool checkFormat();
-  void setFormatField(std::string name, unsigned short colnr);
-  void setFormatFromFITSTable(fitsfile* fptr);
+  void setFormatField(std::string name, unsigned short colnr, const std::list<std::string>& optional);
+  void setFormatFromFITSTable(fitsfile* fptr, const std::list<std::string>& optional);
+  void setOptionalField(fitsfile* fptr, int row, const OptFormat& of, const std::string& name, CatObject& co);
   int round(data_t x);
 };
 } // end namespace

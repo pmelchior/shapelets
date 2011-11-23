@@ -79,8 +79,8 @@ namespace shapelens {
       co.YMAX = (int) ceil(support.tr(1));
       co.XCENTROID = centroid(0);
       co.YCENTROID = centroid(1);
-      co.CLASSIFIER = sm.getModelType();
-      co.PARENT = sm.getID();
+      co.OPT["MODEL_TYPE"] = int(sm.getModelType());
+      co.OPT["MODEL_ID"] = int(sm.getID());
       cat[i] = co;
     }
     return cat;

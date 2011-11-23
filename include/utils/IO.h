@@ -313,6 +313,9 @@ class IO {
   /// \p name can contain \p * wildcards and is treated case-insensitive.
   static int getFITSTableColumnNumber(fitsfile* fptr, const std::string& name);
 
+  /// Get data type of column \p colnr from a FITS table.
+  static int getFITSTableColumnType(fitsfile* fptr, int colnr);
+
   /// Read \p val from FITS table at \p row and \p colnr.
   /// If a NULL value was stored at this position, \p nullvalue will be 
   /// returned insted.\n

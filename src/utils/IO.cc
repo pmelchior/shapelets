@@ -153,6 +153,20 @@ namespace shapelens {
       }*/
     return colnum;
   }
+  
+  int IO::getFITSTableColumnType(fitsfile* fptr, int colnr) {
+    int status = 0, typecode;
+    long repeat, width;
+    fits_get_coltype(fptr, colnr, &typecode, &repeat, &width, &status);
+    /*
+    if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot find type of column " << colnr << " in FITS table in " << getFITSFileName(fptr);
+      throw std::invalid_argument(note.str());
+      }*/
+    return typecode;
+  }
+  
 
   /*  std::string IO::getFITSFileName(fitsfile *fptr) {
     int status = 0;
