@@ -69,7 +69,7 @@ class Catalog : public std::map<unsigned long, CatObject> {
   /// The file can either be given in ASCII and conform with the SExtractor 
   /// format, or be a FITS table.\n
   /// \p optional denotes a list of optional columns in \p catfile, whose
-  /// values are inserted into CatObject::prop.
+  /// values are inserted into CatObject::OPT.
   Catalog(std::string catfile, const std::list<std::string>& optional = std::list<std::string>());
   /// Read <tt>catfile</tt>.
   /// The file must be given in ASCII and conform with the SExtractor format.
