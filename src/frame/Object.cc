@@ -33,7 +33,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   IO::readFITSImage(fptr,*this);
   
   // recover object information from header keywords
-  IO::readFITSKeywordString(fptr,"BASEFILE",Image<data_t>::basefilename);
+  IO::readFITSKeyword(fptr,"BASEFILE",Image<data_t>::basefilename);
   IO::readFITSKeyword(fptr,"ID",id);
   int xmin,ymin;
   IO::readFITSKeyword(fptr,"XMIN",xmin);
@@ -65,7 +65,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   // check if there is 2nd extHDU: the weight map or correlation
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
     std::string extname;
-    IO::readFITSKeywordString(fptr, "EXTNAME", extname);
+    IO::readFITSKeyword(fptr, "EXTNAME", extname);
     if (extname == "WEIGHT") {
       history << " and weight map";
       IO::readFITSImage(fptr, weight);
@@ -92,7 +92,7 @@ void Object::save(std::string filename) {
   IO::writeFITSImage(outfptr,*this);
 
   // add object information to header
-  IO::updateFITSKeywordString(outfptr,"BASEFILE",Image<data_t>::basefilename,"name of source file");
+  IO::updateFITSKeyword(outfptr,"BASEFILE",Image<data_t>::basefilename,"name of source file");
   IO::updateFITSKeyword(outfptr,"ID",id,"object id");
   IO::updateFITSKeyword(outfptr,"XMIN",Image<data_t>::grid.getStartPosition(0),"min(X) in image pixels");
   IO::updateFITSKeyword(outfptr,"YMIN",Image<data_t>::grid.getStartPosition(1),"min(Y) in image pixels");

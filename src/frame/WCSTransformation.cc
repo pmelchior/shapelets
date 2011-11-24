@@ -60,7 +60,7 @@ namespace shapelens {
     // since wcslib does not deal with SIP distortions, we have to read
     // the distortion coefficients if present
     std::string ctype1;
-    IO::readFITSKeywordString(fptr, "CTYPE1", ctype1);
+    IO::readFITSKeyword(fptr, "CTYPE1", ctype1);
     if (ctype1.find("TAN-SIP") != std::string::npos) {
       has_sip = true;
       std::ostringstream key;

@@ -45,11 +45,11 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
   IO::updateFITSKeyword(outfptr,"DIM",sobj.coeffs.getNMax()+1,"dimensions in shapelet space (nmax+1)");
   IO::updateFITSKeyword(outfptr,"CHI2",sobj.getChiSquare(),"decomposition quality");
   IO::updateFITSKeyword(outfptr,"FLAGS",sobj.getFlags().to_ulong(),"extraction and decomposition flags");
-  IO::updateFITSKeywordString(outfptr, "EXTNAME", sobj.getName(), "shapelet object name");
+  IO::updateFITSKeyword(outfptr, "EXTNAME", sobj.getName(), "shapelet object name");
 
   // ** Frame parameters **
   fits_write_record(outfptr,"        / Frame parameters     /",&status);
-  IO::updateFITSKeywordString(outfptr,"BASEFILE",sobj.getBaseFilename(),"originating data file");
+  IO::updateFITSKeyword(outfptr,"BASEFILE",sobj.getBaseFilename(),"originating data file");
   IO::updateFITSKeyword(outfptr,"ID",sobj.getObjectID(),"object id in BASEFILE");
   const Grid& grid = sobj.getGrid();
   IO::updateFITSKeyword(outfptr,"XMIN",grid.getStartPosition(0),"min(X) in image pixels");
@@ -62,7 +62,7 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
 
   // ** ShapeLensConfig parameters **
   fits_write_record(outfptr,"        / ShapeLensConfig parameters /",&status);
-  IO::updateFITSKeywordString(outfptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL,"noise model");
+  IO::updateFITSKeyword(outfptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL,"noise model");
   IO::updateFITSKeyword(outfptr," NMAX_LOW",ShapeLensConfig::NMAX_LOW,"lower bound for n_max");
   IO::updateFITSKeyword(outfptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH,"upper bound for n_max");
   IO::updateFITSKeyword(outfptr," BETA_LOW",ShapeLensConfig::BETA_LOW,"lower bound for beta");
@@ -118,7 +118,7 @@ void SIFFile::saveSObj(fitsfile* outfptr, const ShapeletObject& sobj) {
     fits_create_img(outfptr, imageformat, naxis, naxes, &status);
     long firstpix[2] = {1,1};
     fits_write_pix(outfptr,datatype,firstpix,dim,const_cast<char*>(os.str().c_str()), &status);
-    IO::updateFITSKeywordString (outfptr,"EXTNAME","PROPS");
+    IO::updateFITSKeyword(outfptr,"EXTNAME",std::string("PROPS"));
   }
 }
 
@@ -152,7 +152,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   sobj.flags = std::bitset<16>(flags);
 
   // read frame parameters
-  IO::readFITSKeywordString(fptr,"BASEFILE",sobj.basefilename);
+  IO::readFITSKeyword(fptr,"BASEFILE",sobj.basefilename);
   IO::readFITSKeyword(fptr,"ID",sobj.id);
   try {
     IO::readFITSKeyword(fptr,"CLASSIFIER",tmp);
@@ -173,7 +173,7 @@ void SIFFile::load(ShapeletObject& sobj, bool preserve_config) {
   // shapelensconfig parameters
   // set them only if preserve_config == 0
   if (!preserve_config) {
-    IO::readFITSKeywordString(fptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL);
+    IO::readFITSKeyword(fptr,"NOISEMODEL",ShapeLensConfig::NOISEMODEL);
     IO::readFITSKeyword(fptr," NMAX_LOW",ShapeLensConfig::NMAX_LOW);
     IO::readFITSKeyword(fptr,"NMAX_HIGH",ShapeLensConfig::NMAX_HIGH);
     IO::readFITSKeyword(fptr," BETA_LOW",ShapeLensConfig::BETA_LOW);

@@ -9,6 +9,7 @@
 namespace ublas = boost::numeric::ublas;
 namespace shapelens {
 
+
   fitsfile* IO::openFITSFile(const std::string& filename, bool write) {
     int status = 0;
     fitsfile* outfptr;
@@ -45,6 +46,16 @@ namespace shapelens {
 	  throw std::runtime_error("IO: Cannot close FITS file " + getFITSFileName(fptr));
   }
 
+  /// Get name of FITS file from its pointer.
+  std::string IO::getFITSFileName(fitsfile *fptr) {
+    int status = 0;
+    char *header;
+    fits_file_name(fptr, header, &status);
+    if (status != 0)
+      throw std::invalid_argument("IO: Cannot get filename pointer");
+    return std::string(header);
+  }
+
   void IO::moveToFITSExtension(fitsfile* fptr, unsigned int i) {
     int status = 0;
     fits_movabs_hdu(fptr, i, NULL, &status);
@@ -61,16 +72,6 @@ namespace shapelens {
     /*if (status != 0) {
       std::ostringstream  note;
       note << "IO: Cannot move to extension " << name << " in " << getFITSFileName(fptr);
-      throw std::runtime_error(note.str());
-      }*/
-  }
-
-  void IO::updateFITSKeywordString(fitsfile *fptr, const std::string& keyword, const std::string& value, const std::string& comment) {
-    int status = 0;
-    fits_write_key (fptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<char *>(value.c_str()), const_cast<char *>(comment.c_str()), &status);
-    /*if (status != 0) {
-      std::ostringstream  note;
-      note << "IO: Cannot update FITS keyword " << keyword << " in " << getFITSFileName(fptr);
       throw std::runtime_error(note.str());
       }*/
   }
@@ -96,19 +97,6 @@ namespace shapelens {
     }
     if (status != 0)
       throw std::runtime_error("IO: Cannot append FITS history to ");// + getFITSFileName(fptr));
-  }
-
-  void IO::readFITSKeywordString(fitsfile *fptr, const std::string& key, std::string& val) {
-    int status = 0;
-    char* comment = NULL;
-    char value[FLEN_CARD];
-    fits_read_key (fptr,getFITSDataType(val), const_cast<char *>(key.c_str()),&value, comment, &status);
-    val = std::string(value);
-    /*if (status != 0) {
-      std::ostringstream note;
-      note << "IO: Cannot read FITS keyword " << key << " from " << getFITSFileName(fptr);
-      throw std::invalid_argument(note.str());
-      }*/
   }
 
   void IO::readFITSKeyCards(fitsfile *fptr, const std::string& key, std::string& value) {

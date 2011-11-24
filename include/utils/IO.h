@@ -18,12 +18,25 @@ namespace shapelens {
 template <class T>
 class Image;
 
-/// Functions for reading and writing into several formats\n\n
+/// Class for FITS-related functions.
 /// \b NOTE: The functions will throw a instance of \p std::exception 
 /// in case of a failure.
 class IO {
-  public:
-
+  // helper function to get pointer to data section fits functions
+  template<class T>
+    inline static  T* data(T& val) { 
+    return &val;
+  }    
+  template<class T>
+    inline static  T* data(Point<T>& p) {
+    return p.c_array();
+  }
+  inline static char* data(std::string s) {
+    return const_cast<char*>(s.c_str());
+  }
+  
+ public:
+ 
   /// Return FITS Image format definition, based on the type of \p entry.
   /// - <tt>char, unsigned char -> BYTE_IMG</tt>
   /// - <tt>int -> SHORT_IMG</tt>
@@ -32,8 +45,8 @@ class IO {
   /// - <tt>unsigned long -> ULONG_IMG</tt>
   /// - <tt>float -> FLOAT_IMG</tt>
   /// - <tt>double -> DOUBLE_IMG</tt>
-  template <typename T> inline
-    static int getFITSImageFormat(const T& entry) {
+  template <typename T> inline static
+     int getFITSImageFormat(const T& entry) {
     // default type, uses template specialization for other types
     // see below
     return BYTE_IMG;
@@ -50,8 +63,8 @@ class IO {
   /// - <tt>std::complex<float> -> TCOMPLEX</tt>
   /// - <tt>std::complex<double> -> TDBLCOMPLEX</tt>
   /// - <tt>std::string -> TSTRING</tt>
-  template <typename T> inline
-    static int getFITSDataType(const T& entry) {
+  template <typename T> inline static
+     int getFITSDataType(const T& entry) {
     // default type, uses template specialization for other types
     // see below
     return TBYTE;
@@ -72,23 +85,44 @@ class IO {
   static void moveToFITSExtension(fitsfile* fptr, unsigned int i);
   /// Move to extension \p name in FITS file.
   static void moveToFITSExtension(fitsfile* fptr, const std::string& name);
-  /// Set/update std::string keyword in FITS file header.
-  static void updateFITSKeywordString(fitsfile *fptr, const std::string& keyword, const std::string& value, const std::string& comment="");
   /// Append \p history to FITS header histroy.
   static void appendFITSHistory(fitsfile *fptr, const std::string& history);
-  /// Read std::string keyword from FITS header.
-  static void readFITSKeywordString(fitsfile *fptr, const std::string& key, std::string& val);
   /// Read FITS keyword cards directly.
   static void readFITSKeyCards(fitsfile *fptr, const std::string& key, std::string& value);
   /// Get name of FITS file from its pointer.
-  static std::string getFITSFileName(fitsfile *fptr) {
+  static std::string getFITSFileName(fitsfile *fptr);
+
+    /// Read in keyword from FITS header.
+  template <class T>
+    static void readFITSKeyword(fitsfile *fptr, const std::string& key, T& val) {
     int status = 0;
-    char *header;
-    fits_file_name(fptr, header, &status);
-    if (status != 0)
-      throw std::invalid_argument("IO: Cannot get filename pointer");
-    return std::string(header);
+    char* comment = NULL;
+    fits_read_key (fptr,getFITSDataType(val), const_cast<char*>(key.c_str()),data(val),comment, &status);
+    // FIXME: for whatever reason, the exception below creates a SEGFAULT!
+    /*
+    if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot read FITS keyword " << key << " from " << getFITSFileName(fptr);
+      throw std::invalid_argument(note.str());
+    }
+    */
   }
+
+    /// Set/update keyword in FITS file header.
+  template <class T>
+    static void updateFITSKeyword(fitsfile *fptr, const std::string& keyword, const T& value_, std::string comment = "") {
+    T& value = const_cast<T&>(value_);
+    int status = 0;
+    fits_write_key (fptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), data(value), comment.c_str(), &status);
+    /*
+    if (status != 0) {
+      std::ostringstream note;
+      note << "IO: Cannot update FITS keyword " << keyword << " = " << value_ << " in " << getFITSFileName(fptr);
+      throw std::runtime_error(note.str());
+      }
+    */
+  }
+
 
   /// Write FITS image from an Image<T>.
   /// The datatype will be automatically adjusted, based on the
@@ -113,8 +147,8 @@ class IO {
     fits_write_pix(fptr,datatype,firstpix,npixels,const_cast<T *>(image.c_array()), &status);
     // insert creator and extname keywords
     if (extname != "")
-      updateFITSKeywordString (fptr, "EXTNAME", extname);
-    updateFITSKeywordString (fptr, "CREATOR", "ShapeLens++");
+      updateFITSKeyword(fptr, "EXTNAME", extname);
+    updateFITSKeyword(fptr, "CREATOR", std::string("ShapeLens++"));
     if (status != 0)
       throw std::runtime_error("IO: Cannot write FITS image in " + getFITSFileName(fptr));
   }
@@ -143,8 +177,8 @@ class IO {
 
     // insert creator and extname keywords
     if (extname != "")
-      updateFITSKeywordString (fptr, "EXTNAME", extname);
-    updateFITSKeywordString (fptr, "CREATOR", "ShapeLens++");
+      updateFITSKeyword(fptr, "EXTNAME", extname);
+    updateFITSKeyword(fptr, "CREATOR", std::string("ShapeLens++"));
 
     // write second component
     fits_create_img(fptr, imageformat, naxis, naxes, &status);
@@ -178,23 +212,10 @@ class IO {
     fits_write_pix(fptr,datatype,firstpix,npixels,const_cast<T *>(M.c_array()), &status);
     // insert creator and extname keywords
     if (extname != "")
-      updateFITSKeywordString (fptr, "EXTNAME", extname);
-    updateFITSKeywordString (fptr, "CREATOR", "ShapeLens++");
+      updateFITSKeyword(fptr, "EXTNAME", extname);
+    updateFITSKeyword(fptr, "CREATOR", std::string("ShapeLens++"));
     if (status != 0)
       throw std::runtime_error("IO: Cannot write FITS image to " + getFITSFileName(fptr));
-  }
-
-  /// Set/update keyword in FITS file header.
-  /// For setting string keywords, use updateFITSKeywordString() instead.
-  template <class T>
-    static void updateFITSKeyword(fitsfile *fptr, const std::string& keyword, const T& value, const std::string& comment) {
-    int status = 0;
-    fits_write_key (fptr, getFITSDataType(value), const_cast<char *>(keyword.c_str()), const_cast<T*>(&value) , comment.c_str(), &status);
-    if (status != 0) {
-      std::ostringstream note;
-      note << "IO: Cannot update FITS keyword " << keyword << " = " << value << " in " << getFITSFileName(fptr);
-      throw std::runtime_error(note.str());
-      }
   }
 
   /// Read FITS image into NumMatrix<T>.
@@ -253,7 +274,7 @@ class IO {
   }
 
   template <class T>
-    static void readFITSImage(fitsfile *fptr, Image<std::complex<T> >& im) {
+   static void readFITSImage(fitsfile *fptr, Image<std::complex<T> >& im) {
     int naxis, status = 0;
     fits_get_img_dim(fptr, &naxis, &status);
     if (naxis!=2)
@@ -289,39 +310,20 @@ class IO {
       throw std::runtime_error("IO: Cannot read FITS image from " + getFITSFileName(fptr));
   }
 
-  /// Read in keyword from FITS header.
-  /// For std::string keywords, use readFITSKeywordString() instead.
-  template <class T>
-    static void readFITSKeyword(fitsfile *fptr, const std::string& key, T& val) {
-    int status = 0;
-    char* comment = NULL;
-    fits_read_key (fptr,getFITSDataType(val), const_cast<char*>(key.c_str()),&val,comment, &status);
-    // FIXME: for whatever reason, the exception below creates a SEGFAULT!
-    /*
-    if (status != 0) {
-      std::ostringstream note;
-      note << "IO: Cannot read FITS keyword " << key << " from " << getFITSFileName(fptr);
-      throw std::invalid_argument(note.str());
-    }
-    */
-  }
 
   /// Get number of rows in FITS table.
   static long getFITSTableRows(fitsfile* fptr);
-
   /// Get column number of a FITS table with given \p name.
   /// \p name can contain \p * wildcards and is treated case-insensitive.
   static int getFITSTableColumnNumber(fitsfile* fptr, const std::string& name);
-
   /// Get data type of column \p colnr from a FITS table.
   static int getFITSTableColumnType(fitsfile* fptr, int colnr);
-
   /// Read \p val from FITS table at \p row and \p colnr.
   /// If a NULL value was stored at this position, \p nullvalue will be 
   /// returned insted.\n
   /// \p row numbers start with 0 according to regular C-style iterations. 
   template <class T>
-    static void readFITSTableValue(fitsfile* fptr, long row, int colnr, T& val, T nullvalue = 0) {
+  static void readFITSTableValue(fitsfile* fptr, long row, int colnr, T& val, T nullvalue = 0) {
     int status = 0, anynull;
     fits_read_col(fptr, getFITSDataType(val), colnr, row+1, 1, 1, &nullvalue, &val, &anynull, &status);
     if (status != 0) {
@@ -347,7 +349,7 @@ class IO {
   /// \p min and \p max indicate the ends of the accepted range of values, 
   /// values smaller (larger) than <tt>min (max)</tt> are set to 
   /// <tt>min (max)</tt>.
-  static void writePPMImage(const std::string& filename, const std::string& colorscheme, const std::string& scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
+   void writePPMImage(const std::string& filename, const std::string& colorscheme, const std::string& scaling, data_t min, data_t max, const Grid& grid, const NumVector<data_t>& data);
   /// Create RGB representation of data.
   /// This function is usefull for manipulations of the data in RGB space. 
   /// See writePPMImage() for details.
@@ -441,6 +443,14 @@ class IO {
   template<> inline
     int IO::getFITSDataType<std::string>(const std::string& entry) {
     return TSTRING;
+  }
+
+  template <> inline
+    void IO::readFITSKeyword<std::string>(fitsfile *fptr, const std::string& key, std::string& val) {
+    int status = 0;
+    char value[FLEN_CARD];
+    fits_read_key (fptr,IO::getFITSDataType(val), const_cast<char *>(key.c_str()),&value, NULL, &status);
+    val = std::string(value);
   }
 
 } // end namespace
