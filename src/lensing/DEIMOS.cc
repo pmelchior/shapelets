@@ -1,7 +1,9 @@
 #include "../../include/lensing/DEIMOS.h"
 #include "../../include/lensing/LensHelper.h"
 #include "../../include/utils/IO.h"
+#include "../../include/utils/MathHelper.h"
 #include "../../include/ShapeLensConfig.h"
+#include <numla/NumMatrixDiagonal.h>
 
 namespace shapelens {
 
@@ -79,9 +81,12 @@ namespace shapelens {
 
     // measure moments within optimized weighting function
     mo.setOrder(N);
+    Moments mo_w(N+C);
+    match(obj, mo_w);
+
     setNoiseImage(obj);
-    match(obj);
-    computeCovariances();
+    computeCovariances(mo_w);
+    SN[matching_scale] = computeSN(mo_w);
 
     // restore obj's original centroid
     obj.centroid = old_centroid;
@@ -107,14 +112,16 @@ namespace shapelens {
 
     // measure moments within optimized weighting function
     mo.setOrder(N);
+    Moments mo_w(N+C);
+    match(obj, mo_w);
     setNoiseImage(obj);
-    match(obj);
+    match(obj, mo_w);
 
     // initial matching failed, try with smaller scale
     while (flags.any() && matching_scale > psf.getMinimumScale()) {
       matching_scale = psf.getScaleSmallerThan(matching_scale);
       history << "# Matching failed (" << flags << "), restarting with s = " << matching_scale << std::endl; 
-      match(obj);
+      match(obj, mo_w);
     }
 
     // matching successfull, try with lower scale and see whether S/N improves
@@ -127,7 +134,7 @@ namespace shapelens {
 	Moments mo_current = mo;
 	matching_scale = psf.getScaleSmallerThan(matching_scale);
 	history << "# Trying smaller scale s = " << matching_scale << " to find optimal S/N" << std::endl;
-	match(obj);
+	match(obj, mo_w);
 	// if S/N goes down, reset to best S/N case
 	if (SN[matching_scale] < SN_current) {
 	  matching_scale = matching_scale_current;
@@ -149,7 +156,7 @@ namespace shapelens {
 	// FIXME: if we store centroid, mo, eps, scale,
 	// we may avoid matching in cases where smaller scales
 	// have already been tried to improve S/N
-	match(obj);
+	match(obj, mo_w);
 	history << "# Deweighted moments:\t" << mo << std::endl;
 	tmp = mo;
 	deconvolve(psf.getAtScale(matching_scale));
@@ -160,7 +167,7 @@ namespace shapelens {
 	mo = tmp;
       }
       else
-	computeCovariances();
+	computeCovariances(mo_w);
     }
     else
       history << "# Deweighting failed (" << flags << "), minimum PSF scale reached. GAME OVER." << std::endl;
@@ -263,7 +270,7 @@ namespace shapelens {
   }
 
   // determine optimal weighting parameters, centroid, and ellipticity
-  void DEIMOS::match(Object& obj) {
+  void DEIMOS::match(Object& obj, Moments& mo_w) {
     // (re-)set centroid, ellipticity and scale
     centroid = obj.centroid;
     eps = complex<data_t>(0,0);
@@ -290,7 +297,6 @@ namespace shapelens {
     history << "# Matching weight function: s = " << matching_scale << std::endl;
     history << "# iter\tscale\tcentroid\t\tepsilon\t\t\tS/N" << std::endl;
     history << "# " + std::string(70, '-') << std::endl;
-    Moments mo_w(N+C);
     while (true) {
       // measure moments under weight function
       if (flexed) {
@@ -301,22 +307,15 @@ namespace shapelens {
 	mo_w = Moments (obj, w, N + C);
       }
 
-      // measure S/N (of flux)
-      data_t SN_;
-      if (flexed) {
-	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps, G);
-	Moments mo_w2(noise, w2, 0);
-	SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
-      } else {
-	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
-	Moments mo_w2(noise, w2, 0);
-	SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+      data_t SN_ = computeSN(mo_w);
+      history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << obj.centroid << "\t" << eps;
+      if (noise.size() > 0) { // only then SN_ is meaningful
+	history << "\t";
+	if (centroiding)
+	  history << "\t\t";
+	history << SN_;
       }
- 
-      history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << obj.centroid << "\t" << eps << "\t";
-      if (centroiding)
-	history << "\t\t";
-      history << SN_ << std::endl;
+      history << std::endl;
 
       // deweight and estimate new centroid and ellipticity
       deweight(mo_w);
@@ -548,35 +547,71 @@ namespace shapelens {
   }
 
   void DEIMOS::setNoiseImage(const Object& obj) {
-    noise.resize(obj.size());
-    noise.grid = obj.grid;
-    noise.centroid = obj.centroid;
-    if (obj.weight.size() == 0)
-      for (unsigned int i=0; i < noise.size(); i++)
-	noise(i) = obj.noise_rms*obj.noise_rms;
-    else
-      for (unsigned int i=0; i < noise.size(); i++)
-	noise(i) = obj.weight(i);
+    // only do something if noise properties are set
+    if (obj.noise_rms > 0 || obj.weight.size() > 0) {
+      noise.resize(obj.size());
+      noise.grid = obj.grid;
+      noise.centroid = obj.centroid;
+      if (obj.weight.size() == 0)
+	for (unsigned int i=0; i < noise.size(); i++)
+	  noise(i) = obj.noise_rms*obj.noise_rms;
+      else
+	for (unsigned int i=0; i < noise.size(); i++)
+	  noise(i) = obj.weight(i);
+    }
   }
 
-  void DEIMOS::computeCovariances() {
-    // variance of weighted moment (i,j) is propto
-    // moment (i*2,j*2) measured with square of weighting function
-    // (square of Gaussian: sigma -> sigma/sqrt(2));
-    DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
-    Moments mo_noise(noise,w2,2*(N+C));
+  data_t DEIMOS::computeSN(const Moments& mo_w) {
+    // measure S/N (of flux)
+    data_t SN_ = 1;
+    // only do it if we have a noise image
+    if (noise.size() > 0) {
+      if (flexed) {
+	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps, G);
+	Moments mo_w2(noise, w2, 0);
+	SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+      } else {
+	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
+	Moments mo_w2(noise, w2, 0);
+	SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+      }
+    }
+    return SN_;
+  }
 
-    // copy terms from (2*i, 2*j) to (i,j)
-    for (int n=1; n <= N+C; n++)
-      for (int m=0; m <= n; m++)
-      mo_noise(m,n-m) = mo_noise(2*m,2*(n-m));
-    mo_noise.setOrder(N+C);
+  void DEIMOS::computeCovariances(const Moments& mo_w) {
+    // only do something if we have a noise image
+    if (noise.size() > 0) {
 
-    S.clear();
-    for (int i=0; i < mo.size(); i++)
-      for (int j=0; j < mo.size(); j++)
-	for (unsigned int k=0; k < mo_noise.size(); k++)
-	  S(i,j) += D(i,k)*D(j,k)*mo_noise(k);
+      // covariances of a weighted moment mo(i,j) is given by
+      // <mo(i,j) mo_(k,l)> = sigma_n^2 \int d^2x W^2(x) x_1^{i+k} x_2^{j+l},
+      // i.e. moments up to (i*2,j*2) measured with square of weighting function
+      // (square of Gaussian: sigma -> sigma/sqrt(2));
+      DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
+      Moments mo_noise(noise, w2, 2*(N+C));
+      NumMatrix<data_t> S_(mo_w.size(), mo_w.size());
+      for (int n = 0; n < mo_w.size(); n++) {
+	std::pair<int, int> p = mo_w.getPowers(n);
+	for (int m = 0; m < mo_w.size(); m++) {
+	  std::pair<int, int> p_ = mo_w.getPowers(m);
+	  S_(n,m) = mo_noise(p.first + p_.first, p.second + p_.second);
+	}
+      }
+      //std::cout << S_ << std::endl;
+      /*
+      // copy terms from (2*i, 2*j) to (i,j)
+      NumMatrixDiagonal<data_t> S_(mo_w.size());
+      for (int n=0; n <= N+C; n++) {
+	for (int m=0; m <= n; m++) {
+	  int j = mo_noise.getIndex(m,n-m);
+	  S_(j) = 1./mo_noise(2*m,2*(n-m)); // invert diagonal terms
+	}
+      }
+      */
+      
+      S = (D*(S_.invert()*D.transpose())).invert();
+      //std::cout << S << std::endl;
+    }
   }
 
   Moments DEIMOS::getMomentErrors() const { 
@@ -587,18 +622,6 @@ namespace shapelens {
 	mo_noise(i) = 1./S_1(i,i);
     }
     return mo_noise;
-  }
-
-
-  // CAUTION: this overflows for n > 10!!!
-  unsigned long factorial(int n) {
-    unsigned long f = 1;
-    for (int m=2; m <= n; m++)
-      f *= m;
-    return f;
-  }
-  unsigned long binomial(int n, int m) {
-    return factorial(n)/(factorial(m)*factorial(n-m));
   }
 
   void DEIMOS::deconvolve(const Moments& p) {

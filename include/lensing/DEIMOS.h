@@ -133,15 +133,17 @@ namespace shapelens {
     static bool FIX_CENTROID, FIX_ELLIPTICITY;
     friend class DEIMOSList;
   protected:
-    void match(Object& obj);
+    void match(Object& obj, Moments& mo_w);
     void deweight(const Moments& mo_w);
     void setNoiseImage(const Object& obj);
-    void computeCovariances();
+    void computeCovariances(const Moments& mo_w);
+    data_t computeSN(const Moments& mo_w);
     data_t getEpsScale() const;
     bool flexed;
     NumMatrix<data_t> D;
-    Object noise;
     History history;
+  private:
+    Object noise;
   };
 
   /// Class for collections of DEIMOS instances.

@@ -317,6 +317,23 @@ namespace shapelens {
   int Moments::getIndex(unsigned int px, unsigned int py) const {
     return pyramid_num(px+py)+py;
   }
+
+  std::pair<int, int> Moments::getPowers(int i) const {
+    // turns out that inverting getIndex() boils down to finding
+    // the largest number 0 <= n <= i, for which t = sqrt(8*n + 1) is an integer.
+    // then, py = i - n and px = (-py -1 + t)/2
+    // btw, n = pyramid_num(px + py)
+    int n = i;
+    data_t t;
+    while (n >= 0) {
+      t = sqrt(8*n + 1);
+      if (t == int(t))
+	break;
+      n--;
+    }
+    int py = i - n;
+    return std::pair<int, int> ((-py - 1 + int(t))/2, py);
+  }
   unsigned int Moments::pyramid_num(int n) const {
     return (n*(n+1))/2;
   }

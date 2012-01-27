@@ -6,7 +6,7 @@
 #include <gsl/gsl_statistics_double.h>
 
 namespace shapelens {
-  
+
   std::pair<data_t, data_t> kappa_sigma_clip(const NumVector<data_t>& data, unsigned long maxLength) {
     data_t mean, sigma;
     // since sorting is performed in place, we need a copy of the vector

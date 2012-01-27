@@ -42,6 +42,21 @@ namespace shapelens {
   template <class T> inline T pow9(const T& x) { return pow_int(x,9); }
   template <class T> inline T pow10(const T& x) { return pow_int(x,10); }
 
+  /// Factorial of \p n.
+  /// \b CAUTION: this overflows for \p n > 10!!!
+  inline unsigned long factorial(int n) {
+    unsigned long f = 1;
+    for (int m=2; m <= n; m++)
+      f *= m;
+    return f;
+  }
+
+  /// Binomial coefficient \f$\tbinom{n}{m}\f$.
+  /// \b CAUTION: This overflows for integer arguments larger 10!!!
+  inline unsigned long binomial(int n, int m) {
+    return factorial(n)/(factorial(m)*factorial(n-m));
+  }
+
   /// Perform \f$\kappa-\sigma\f$-clipping to calculate mean and
   /// and standard deviation of \p data.
   /// The algorithm iteratively determines median \f$m\f$ and 

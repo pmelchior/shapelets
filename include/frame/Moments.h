@@ -163,6 +163,8 @@ public:
   /// Get vector index of moment \f$\langle x^{p_x}\, y^{p_y}\rangle\f$ from 
   /// the powers.
   int getIndex(unsigned int px, unsigned int py) const;
+  /// Get moment powers from the vector index \p i.
+  std::pair<int, int> getPowers(int i) const;
  private:
   unsigned int pyramid_num(int n) const;
   int N;
