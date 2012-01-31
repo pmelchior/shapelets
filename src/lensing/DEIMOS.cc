@@ -3,7 +3,6 @@
 #include "../../include/utils/IO.h"
 #include "../../include/utils/MathHelper.h"
 #include "../../include/ShapeLensConfig.h"
-#include <numla/NumMatrixDiagonal.h>
 
 namespace shapelens {
 
@@ -557,7 +556,7 @@ namespace shapelens {
 	  noise(i) = obj.noise_rms*obj.noise_rms;
       else
 	for (unsigned int i=0; i < noise.size(); i++)
-	  noise(i) = obj.weight(i);
+	  noise(i) = 1./obj.weight(i);
     }
   }
 
@@ -594,23 +593,11 @@ namespace shapelens {
 	std::pair<int, int> p = mo_w.getPowers(n);
 	for (int m = 0; m < mo_w.size(); m++) {
 	  std::pair<int, int> p_ = mo_w.getPowers(m);
-	  S_(n,m) = mo_noise(p.first + p_.first, p.second + p_.second);
+	  if (p.first + p.second + p_.first + p_.second <= 2*(N+C))
+	    S_(n,m) = mo_noise(p.first + p_.first, p.second + p_.second);
 	}
       }
-      //std::cout << S_ << std::endl;
-      /*
-      // copy terms from (2*i, 2*j) to (i,j)
-      NumMatrixDiagonal<data_t> S_(mo_w.size());
-      for (int n=0; n <= N+C; n++) {
-	for (int m=0; m <= n; m++) {
-	  int j = mo_noise.getIndex(m,n-m);
-	  S_(j) = 1./mo_noise(2*m,2*(n-m)); // invert diagonal terms
-	}
-      }
-      */
-      
-      S = (D*(S_.invert()*D.transpose())).invert();
-      //std::cout << S << std::endl;
+      S = (D*S_*D.transpose());
     }
   }
 

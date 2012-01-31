@@ -40,7 +40,6 @@ namespace shapelens {
     // Minimize chi^2
     // FIXME: need convergence criterium
     for (int t = 0; t < 10; t++) {
-      //std::cout << mo0 << std::endl;
       computeMomentsFromGuess();
       // compute chi^2 and best-fit moments
       data_t chi2 = 0;
