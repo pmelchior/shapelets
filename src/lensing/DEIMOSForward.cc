@@ -4,15 +4,8 @@
 
 namespace shapelens {
 
-  inline data_t sign(data_t x) {
-    if (x < 0)
-      return -1;
-    else
-      return 1;
-  }
-
   DEIMOSForward::DEIMOSForward(const MultiExposureObject& meo_, const MultiExposureMoments& mepsf_, int N, int C, data_t flux, data_t width_) :
-    meo(meo_), mepsf(mepsf_), width(width_) {
+    meo(meo_), mepsf(mepsf_), width(width_), K(meo_.size()) {
     DEIMOS::N = N;
     DEIMOS::C = C;
     DEIMOS::D = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2);
@@ -22,7 +15,7 @@ namespace shapelens {
     {
       Moments tmp(N);
       NumMatrix<data_t> P(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
-      for (int i = 0; i < meo.size(); i++) {
+      for (int k = 0; k < K; k++) {
 	mem.push_back(tmp);
 	mem_.push_back(tmp);
 	meP.push_back(P);
@@ -46,7 +39,8 @@ namespace shapelens {
       NumVector<data_t> diff(mo.size());
       mo0.clear();
       DEIMOS::S.clear();
-      for (int k = 0; k < meo.size(); k++) {
+      std::cout << mo << std::endl;
+      for (int k = 0; k < K; k++) {
 	diff = mem[k];
 	diff -= mem_[k];
 	NumMatrix<data_t> S_1 = meS[k].invert();
@@ -55,7 +49,7 @@ namespace shapelens {
 	NumMatrix<data_t> C = (X*meP[k]).invert();
 	DEIMOS::S += C;
 	mo0 += C * X * (NumVector<data_t>) mem_[k];
-	//std::cout << k << "\t" << diff << "\t" << chi2 << std::endl;
+	std::cout << " " << k << "\t" << diff << "\t" << chi2 << std::endl;
       }
       //std::cout << std::endl;
       mo0 /= meo.size();
@@ -99,9 +93,9 @@ namespace shapelens {
     // 4) compute the contribution to chi^2
     DEIMOS::scale_factor = 1; // FIXME: WCS info needed here
     DEIMOS::mo.setOrder(DEIMOS::N);
-    for (int i = 0; i < meo.size(); i++) {
-      convolveExposure(i);
-      Moments& mo0c = mem[i];
+    for (int k = 0; k < K; k++) {
+      convolveExposure(k);
+      Moments& mo0c = mem[k];
          
       // set ellipticities and sizes for weight functions in each exposure
       // FIXME: how to set the width (think varying PSF FWHM in exposures) 
@@ -110,16 +104,16 @@ namespace shapelens {
       data_t abs_eps = abs(DEIMOS::eps);
       DEIMOS::scale *= DEIMOS::scale_factor/sqrt(1 + abs_eps*abs_eps - 2*abs_eps);
       //std::cout << scale << "\t" << meo[i].centroid << "\t" <<  eps << "\t" << shapelens::epsilon(mo0) << std::endl;
-      DEIMOS::DEIMOSWeightFunction w(scale, meo[i].centroid, eps);
-      Moments mo_w(meo[i], w, N+C);
+      DEIMOS::DEIMOSWeightFunction w(scale, meo[k].centroid, eps);
+      Moments mo_w(meo[k], w, N+C);
       DEIMOS::deweight(mo_w);
-      mem_[i] = DEIMOS::mo;
+      mem_[k] = DEIMOS::mo;
       // std::cout << "# " << mo << std::endl;
 
       // compute moment errors
-      DEIMOS::setNoiseImage(meo[i]); // FIXME: large overhead
+      DEIMOS::setNoiseImage(meo[k]); // FIXME: large overhead
       DEIMOS::computeCovariances(mo_w);
-      meS[i] = DEIMOS::S;
+      meS[k] = DEIMOS::S;
     }
   }
 

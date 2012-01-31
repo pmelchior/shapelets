@@ -11,8 +11,8 @@ namespace shapelens {
     DEIMOSForward(const MultiExposureObject& meo, const MultiExposureMoments& mepsf, int N, int C, data_t flux, data_t width);
     data_t operator()(const NumVector<data_t>& p);
   protected:
-    //Moments convolve(const Moments& mo, const Moments& p);
     void convolveExposure(unsigned int k);
+    int K;
   private:
     void computeMomentsFromGuess();
     const MultiExposureObject& meo;

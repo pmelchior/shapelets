@@ -19,8 +19,6 @@ int main(int argc, char *argv[]) {
   Image<data_t> im_input(input.getValue()), im_kernel(kernel.getValue());
   // Save the output to the FITS file given by user
   fitsfile* fptr = IO::createFITSFile(output.getValue());
-  IO::writeFITSImage(fptr, im_input);
-  IO::writeFITSImage(fptr, im_kernel);
 
   // convolve input with kernel
   FFT::convolve(im_input,im_kernel);
