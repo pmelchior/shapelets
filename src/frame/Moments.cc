@@ -250,9 +250,8 @@ namespace shapelens {
     NumVector<data_t>(pyramid_num(N_+1)),
     N(N_) { }
 
-  Moments& Moments::operator=(const Moments& m) {
-    setOrder(m.N);
-    NumVector<data_t>::operator=(m);
+  Moments& Moments::operator=(const NumVector<data_t>& v) {
+    NumVector<data_t>::operator=(v);
     return *this;
   }
 
@@ -326,7 +325,8 @@ namespace shapelens {
       n--;
     }
     int py = i - n;
-    return std::pair<int, int> ((-py - 1 + int(t))/2, py);
+    int px = (-2*py - 1 + int(t))/2;
+    return std::pair<int, int> (px, py);
   }
   unsigned int Moments::pyramid_num(int n) const {
     return (n*(n+1))/2;

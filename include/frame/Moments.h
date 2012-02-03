@@ -144,7 +144,7 @@ public:
   /// Constructor for moments up to order \p N.
   Moments(int N);
   /// Copy operator.
-  Moments& operator=(const Moments& m);
+  Moments& operator=(const NumVector<data_t>& m);
   /// Constructor for moments up to order \p N.
   /// The moments are populated from \p obj.
   Moments(const Object& obj, const WeightFunction& w, int N);
