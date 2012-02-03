@@ -10,6 +10,7 @@ namespace shapelens {
   public:
     DEIMOSForward(const MultiExposureObject& meo, const MultiExposureMoments& mepsf, int N, int C, data_t flux, data_t width);
     data_t operator()(const NumVector<data_t>& p);
+    std::vector<DEIMOS> meD;
   protected:
     void convolveExposure(unsigned int k);
     int K;
@@ -17,10 +18,10 @@ namespace shapelens {
     void computeMomentsFromGuess();
     const MultiExposureObject& meo;
     const MultiExposureMoments& mepsf;
-    MultiExposureMoments mem_, mem;
+    MultiExposureMoments mem;
     Moments mo0;
     data_t width;
-    std::vector<NumMatrix<data_t> > meP, meS;
+    std::vector<NumMatrix<data_t> > meP;
   };
 } // end namespace
 #endif

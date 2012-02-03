@@ -10,61 +10,63 @@ namespace shapelens {
     DEIMOS::C = C;
     DEIMOS::D = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2);
     DEIMOS::S = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
-    
+    DEIMOS::mo.setOrder(DEIMOS::N);
+
     // set up containers
     {
       Moments tmp(N);
       NumMatrix<data_t> P(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
       for (int k = 0; k < K; k++) {
 	mem.push_back(tmp);
-	mem_.push_back(tmp);
 	meP.push_back(P);
-	meS.push_back(P);
+	meD.push_back(*this);
       }
     }
+    
+    // set noise image from each exposure
+    for (int k = 0; k < K; k++)
+      meD[k].setNoiseImage(meo[k]);
 
     // initialize 0th and 2nd moments 
     // with circular Gaussian with given flux & scale
-    mo0 = Moments(N);
-    mo0(0,0) = flux;
+    mo(0,0) = flux;
     // s = sqrt(trQ/F) = sqrt(2*Q_ii/F)
-    mo0(0,2) = mo0(2,0) = width*width*mo0(0,0)/2;
+    mo(0,2) = mo(2,0) = width*width*mo(0,0)/2;
 
     // Minimize chi^2
     // FIXME: need convergence criterium
     for (int t = 0; t < 10; t++) {
+      //std::cout << mo << std::endl;
       computeMomentsFromGuess();
+
       // compute chi^2 and best-fit moments
       data_t chi2 = 0;
       NumVector<data_t> diff(mo.size());
-      mo0.clear();
-      DEIMOS::S.clear();
-      std::cout << mo << std::endl;
+      mo.clear();
+      S.clear();
       for (int k = 0; k < K; k++) {
+	DEIMOS& d = meD[k];
 	diff = mem[k];
-	diff -= mem_[k];
-	NumMatrix<data_t> S_1 = meS[k].invert();
+	diff -= d.mo;
+	
+	NumMatrix<data_t> S_1 = d.S.invert();
 	chi2 += diff * (S_1 * (NumVector<data_t>) diff);
 	NumMatrix<data_t> X = meP[k].transpose() * S_1;
-	NumMatrix<data_t> C = (X*meP[k]).invert();
-	DEIMOS::S += C;
-	mo0 += C * X * (NumVector<data_t>) mem_[k];
-	std::cout << " " << k << "\t" << diff << "\t" << chi2 << std::endl;
+	mo += X * (NumVector<data_t>) d.mo;
+	S += X*meP[k];
       }
-      //std::cout << std::endl;
-      mo0 /= meo.size();
-      DEIMOS::S /= meo.size()*meo.size();
-      //std::cout << DEIMOS::S << std::endl;
+      S = S.invert();
+      mo = S * (NumVector<data_t>)mo;
      
       // non-sensical ellipticity check
       data_t tiny = 1e-4;
-      mo0(0,0) = std::max(tiny, mo0(0,0));
-      mo0(0,2) = std::max(tiny*flux, mo0(0,2));
-      mo0(2,0) = std::max(tiny*flux, mo0(2,0));
-      if (mo0(1,1) > 0)
-	mo0(1,1) = std::min(mo0(1,1), sqrt(mo0(0,2)*mo0(2,0)));
+      mo(0,0) = std::max(tiny, mo(0,0));
+      mo(0,2) = std::max(tiny*flux, mo(0,2));
+      mo(2,0) = std::max(tiny*flux, mo(2,0));
+      if (mo(1,1) > 0)
+	mo(1,1) = std::min(mo(1,1), sqrt(mo(0,2)*mo(2,0)));
       else
-	mo0(1,1) = std::max(mo0(1,1), -sqrt(mo0(0,2)*mo0(2,0)));
+	mo(1,1) = std::max(mo(1,1), -sqrt(mo(0,2)*mo(2,0)));
 
       // FIXME: should we update the centroid?
       // globally or individually?
@@ -81,8 +83,6 @@ namespace shapelens {
     }
     // set DEIMOS parameters to best fit
     // FIXME: what to do with SN, scale, centroid etc.
-    mo = mo0;
-
   }
 
   void DEIMOSForward::computeMomentsFromGuess() {
@@ -91,29 +91,21 @@ namespace shapelens {
     //    with weight function shape based on guess of convolved moments
     // 3) get the convolved moment errors
     // 4) compute the contribution to chi^2
-    DEIMOS::scale_factor = 1; // FIXME: WCS info needed here
-    DEIMOS::mo.setOrder(DEIMOS::N);
     for (int k = 0; k < K; k++) {
       convolveExposure(k);
-      Moments& mo0c = mem[k];
-         
+      Moments& mo_c = mem[k];
+      DEIMOS& d = meD[k];
       // set ellipticities and sizes for weight functions in each exposure
       // FIXME: how to set the width (think varying PSF FWHM in exposures) 
-      DEIMOS::scale = width;//sqrt((mo0c(0,2) + mo0c(2,0))/mo0c(0,0));
-      DEIMOS::eps = shapelens::epsilon(mo0c);
-      data_t abs_eps = abs(DEIMOS::eps);
-      DEIMOS::scale *= DEIMOS::scale_factor/sqrt(1 + abs_eps*abs_eps - 2*abs_eps);
-      //std::cout << scale << "\t" << meo[i].centroid << "\t" <<  eps << "\t" << shapelens::epsilon(mo0) << std::endl;
-      DEIMOS::DEIMOSWeightFunction w(scale, meo[k].centroid, eps);
+      d.scale = width;//sqrt((mo0c(0,2) + mo0c(2,0))/mo0c(0,0));
+      d.eps = shapelens::epsilon(mo_c);
+      data_t abs_eps = abs(d.eps);
+      // FIXME: need individual WCS scale_factors here!
+      d.scale *= d.scale_factor/sqrt(1 + abs_eps*abs_eps - 2*abs_eps);
+      DEIMOS::DEIMOSWeightFunction w(d.scale, meo[k].centroid, d.eps);
       Moments mo_w(meo[k], w, N+C);
-      DEIMOS::deweight(mo_w);
-      mem_[k] = DEIMOS::mo;
-      // std::cout << "# " << mo << std::endl;
-
-      // compute moment errors
-      DEIMOS::setNoiseImage(meo[k]); // FIXME: large overhead
-      DEIMOS::computeCovariances(mo_w);
-      meS[k] = DEIMOS::S;
+      d.deweight(mo_w);
+      d.computeCovariances(mo_w);
     }
   }
 
@@ -125,16 +117,16 @@ namespace shapelens {
     for (int n = 0; n <= mo.getOrder(); n++) {
       for (int i = 0; i <= n; i++) {
 	int  j = n-i;
-	int n = mo0.getIndex(i,j);  // convolved moment index
+	int n = mo.getIndex(i,j);  // convolved moment index
 	for (int k = 0; k <= i; k++) {
 	  for (int l = 0; l <= j; l++) {
-	    int m = mo0.getIndex(k,l); // unconvolved moment index
+	    int m = mo.getIndex(k,l); // unconvolved moment index
 	    P(n,m) = binomial(i,k) * binomial(j,l) * p(i-k,j-l);
 	  }
 	}
       }
     }
-    P.gemv(mo0, mem[k]);
+    P.gemv(mo, mem[k]);
   }
 
 }

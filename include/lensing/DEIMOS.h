@@ -131,7 +131,7 @@ namespace shapelens {
     std::bitset<4> flags;
 
     static bool FIX_CENTROID, FIX_ELLIPTICITY;
-    friend class DEIMOSList;
+    friend class DEIMOSForward;
   protected:
     void match(Object& obj, Moments& mo_w);
     void deweight(const Moments& mo_w);
@@ -146,6 +146,7 @@ namespace shapelens {
     Object noise;
   };
 
+  /*
   /// Class for collections of DEIMOS instances.
   class DEIMOSList : public std::vector<boost::shared_ptr<DEIMOS> > {
   public:
@@ -158,6 +159,7 @@ namespace shapelens {
     void save(SQLiteDB& sql, std::string table) const;
 #endif
   };
+  */
 
 } // end namespace
 #endif

@@ -58,7 +58,7 @@ namespace shapelens {
     return iter->first;
   }
 
-  DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), R2(0), flexed(false) {}
+  DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), R2(0), flexed(false), scale_factor(1) {}
 
   DEIMOS::DEIMOS (const Object& obj_, int N_, int C_, data_t matching_scale_, bool flexed_) :
     id(obj_.id), matching_scale(matching_scale_), eps(0,0), N(N_), C(C_), R2(0), flexed(flexed_),
@@ -589,6 +589,7 @@ namespace shapelens {
       DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
       Moments mo_noise(noise, w2, 2*(N+C));
       NumMatrix<data_t> S_(mo_w.size(), mo_w.size());
+      data_t det = 1;
       for (int n = 0; n < mo_w.size(); n++) {
 	std::pair<int, int> p = mo_w.getPowers(n);
 	for (int m = 0; m < mo_w.size(); m++) {
@@ -596,6 +597,7 @@ namespace shapelens {
 	  if (p.first + p.second + p_.first + p_.second <= 2*(N+C))
 	    S_(n,m) = mo_noise(p.first + p_.first, p.second + p_.second);
 	}
+	det *= S_(n,n);
       }
       S = (D*S_*D.transpose());
     }
@@ -694,7 +696,7 @@ namespace shapelens {
       return complex<data_t>(0,0);
   }
 
-  
+  /*  
   // #### DEIMOSList ####
   DEIMOSList::DEIMOSList() : std::vector<boost::shared_ptr<DEIMOS> >() {}
 
@@ -741,5 +743,5 @@ namespace shapelens {
     sql.checkRC(sqlite3_finalize(stmt));
   }
 #endif  
-
+  */
 } // end namespace
