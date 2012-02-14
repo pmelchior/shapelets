@@ -22,23 +22,26 @@ namespace shapelens {
     {
       Moments tmp(N);
       NumMatrix<data_t> P(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
+      DEIMOS::PSFMultiScale psfs;
       for (int k = 0; k < K; k++) {
 	mem.push_back(tmp);
 	meP.push_back(P);
 	meD.push_back(*this);
-	mePSFScale.push_back(width);
+	// set noise image from each exposure
+	meD[k].setNoiseImage(meo[k]);
+
+	// create initial PSFMultiScale with given width
+	DEIMOS psf(mepsf[k], N, C, width);
+	psfs[width] = psf.mo;
+	mePSFMultiScale.push_back(psfs);
       }
     }
     
-    // set noise image from each exposure
-    for (int k = 0; k < K; k++)
-      meD[k].setNoiseImage(meo[k]);
-
     // Minimize chi^2
     data_t last_chi2 = 0; 
     int t = 1;
-    while (true) {
-      std::cout << t << "\t" << mo << std::endl;
+    while (t < 10) {
+      history << t << "\t" << mo << std::endl;
       computeMomentsFromGuess();
 
       // compute chi^2 and best-fit moments
@@ -58,18 +61,19 @@ namespace shapelens {
 	//mo += X * (NumVector<data_t>) d.mo;
 	NumVector<data_t> mo_k = X * (NumVector<data_t>) d.mo;
 	mo += mo_k;
+	NumMatrix<data_t> S_k = X*meP[k];
 	S += X*meP[k];
-	std::cout << t << "." << k << "\t" << (X*meP[k]).invert()*mo_k << "\t" << chi2_k << std::endl;
+	history << t << "." << k << "\t" << (X*meP[k]).invert()*mo_k << "\t" << chi2_k << "\t" << mo_k(0)/sqrt(S_k(0,0)) << std::endl;
       }
       S = S.invert();
       mo = S * (NumVector<data_t>)mo;
-      std::cout << "->\t" << mo << "\t" << chi2 << std::endl;
+      history << "->\t" << mo << "\t" << shapelens::epsilon(mo) << "\t" << chi2 << "\t" << mo(0,0)/sqrt(S(0,0)/K) << std::endl;
      
       // non-sensical ellipticity check
-      data_t tiny = 1e-4;
+      data_t tiny = 1e-4*flux;
       mo(0,0) = std::max(tiny, mo(0,0));
-      mo(0,2) = std::max(tiny*flux, mo(0,2));
-      mo(2,0) = std::max(tiny*flux, mo(2,0));
+      mo(0,2) = std::max(tiny, mo(0,2));
+      mo(2,0) = std::max(tiny, mo(2,0));
       if (mo(1,1) > 0)
 	mo(1,1) = std::min(mo(1,1), sqrt(mo(0,2)*mo(2,0)));
       else
@@ -127,8 +131,18 @@ namespace shapelens {
 
   void DEIMOSForward::convolveExposure(unsigned int k) {
     DEIMOS& d = meD[k];
+
+    PSFMultiScale& psfs = mePSFMultiScale[k];
+    // always pick the largest scale
+    // FIXME: what if too big is not optimal because of scatter?
+    // currently there is no way back
+    PSFMultiScale::reverse_iterator psfiter = psfs.rbegin();
+    const Moments& p = psfiter->second;
+
+    /*
     DEIMOS psf(mepsf[k], N, C, mePSFScale[k]);
     const Moments& p = psf.mo;
+    */
     NumMatrix<data_t>& P = meP[k];
 
     // matrix representation of convolution eq. 9
@@ -146,10 +160,13 @@ namespace shapelens {
     }
     P.gemv(mo, mem[k]);
     // don't undercut the minimum PSF scale
-    d.matching_scale = std::max(mePSFScale[k], getWeightFunctionScale(mem[k]));
+    d.matching_scale = std::max(getWeightFunctionScale(mem[k]), psfiter->first); //mePSFScale[k]);
     // but if galaxy is bigger: recompute the PSF moments
-    if (d.matching_scale > 1.1 * mePSFScale[k]) {
-      mePSFScale[k] = d.matching_scale;
+    if (d.matching_scale > 1.1 * psfiter->first) { //mePSFScale[k]) {
+      //mePSFScale[k] = d.matching_scale;
+      DEIMOS psf(mepsf[k], N, C, d.matching_scale);
+      psfs.insert(d.matching_scale, psf.mo);
+
       convolveExposure(k);
     }
   }

@@ -53,8 +53,20 @@ namespace shapelens {
   }
   
   data_t DEIMOS::PSFMultiScale::getMaximumScale() const {
-    std::map<data_t, Moments>::const_iterator iter = std::map<data_t, Moments>::end();
-    iter--;
+    return std::map<data_t, Moments>::rbegin()->first;
+  }
+
+  data_t DEIMOS::PSFMultiScale::getScaleClosestTo(data_t scale) const {
+    std::map<data_t, Moments>::const_iterator iter = std::map<data_t, Moments>::lower_bound(scale);
+    // iter points to element >= scale;
+    data_t diff = (iter->first)-scale;
+    // check whethere there is a smaller scale
+    if (iter != std::map<data_t, Moments>::begin()) {
+      iter--;
+      data_t diff_small = scale - (iter->first);
+      if (diff < diff_small)
+	iter++;
+    }
     return iter->first;
   }
 

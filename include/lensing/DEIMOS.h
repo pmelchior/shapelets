@@ -58,6 +58,8 @@ namespace shapelens {
       data_t getMinimumScale() const;
       /// Get maximum scale available.
       data_t getMaximumScale() const;
+      /// Get available scale closest to \p scale.
+      data_t getScaleClosestTo(data_t scale) const;
     };
 
     /// Default constructor.

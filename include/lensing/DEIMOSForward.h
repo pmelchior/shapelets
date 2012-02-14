@@ -19,7 +19,7 @@ namespace shapelens {
     MultiExposureMoments mem;
     Moments mo0;
     std::vector<NumMatrix<data_t> > meP;
-    std::vector<data_t> mePSFScale;
+    std::vector<DEIMOS::PSFMultiScale> mePSFMultiScale;
   protected:
     void convolveExposure(unsigned int k);
     int K;
