@@ -8,20 +8,21 @@ namespace shapelens {
   typedef std::vector<Moments> MultiExposureMoments;
   class DEIMOSForward : public DEIMOS {
   public:
-    DEIMOSForward(const MultiExposureObject& meo, const MultiExposureMoments& mepsf, int N, int C, data_t flux, data_t width);
+    DEIMOSForward(const MultiExposureObject& meo, const MultiExposureObject& mepsf, int N, int C, data_t flux, data_t width);
     data_t operator()(const NumVector<data_t>& p);
     std::vector<DEIMOS> meD;
+  private:
+    void computeMomentsFromGuess();
+    data_t getWeightFunctionScale(const Moments& m) const;
+    const MultiExposureObject& meo;
+    const MultiExposureObject& mepsf;
+    MultiExposureMoments mem;
+    Moments mo0;
+    std::vector<NumMatrix<data_t> > meP;
+    std::vector<data_t> mePSFScale;
   protected:
     void convolveExposure(unsigned int k);
     int K;
-  private:
-    void computeMomentsFromGuess();
-    const MultiExposureObject& meo;
-    const MultiExposureMoments& mepsf;
-    MultiExposureMoments mem;
-    Moments mo0;
-    data_t width;
-    std::vector<NumMatrix<data_t> > meP;
   };
 } // end namespace
 #endif

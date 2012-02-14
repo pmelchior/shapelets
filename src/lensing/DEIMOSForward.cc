@@ -4,13 +4,19 @@
 
 namespace shapelens {
 
-  DEIMOSForward::DEIMOSForward(const MultiExposureObject& meo_, const MultiExposureMoments& mepsf_, int N, int C, data_t flux, data_t width_) :
-    meo(meo_), mepsf(mepsf_), width(width_), K(meo_.size()) {
+  DEIMOSForward::DEIMOSForward(const MultiExposureObject& meo_, const MultiExposureObject& mepsf_, int N, int C, data_t flux, data_t width) :
+    meo(meo_), mepsf(mepsf_), K(meo_.size()) {
     DEIMOS::N = N;
     DEIMOS::C = C;
     DEIMOS::D = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2);
     DEIMOS::S = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
     DEIMOS::mo.setOrder(DEIMOS::N);
+
+    // initialize 0th and 2nd moments 
+    // with circular Gaussian with given flux & scale
+    mo(0,0) = flux;
+    // s = sqrt(trQ/F) = sqrt(2*Q_ii/F)
+    mo(0,2) = mo(2,0) = 0;//width*width*mo(0,0)/2;
 
     // set up containers
     {
@@ -20,6 +26,7 @@ namespace shapelens {
 	mem.push_back(tmp);
 	meP.push_back(P);
 	meD.push_back(*this);
+	mePSFScale.push_back(width);
       }
     }
     
@@ -27,16 +34,11 @@ namespace shapelens {
     for (int k = 0; k < K; k++)
       meD[k].setNoiseImage(meo[k]);
 
-    // initialize 0th and 2nd moments 
-    // with circular Gaussian with given flux & scale
-    mo(0,0) = flux;
-    // s = sqrt(trQ/F) = sqrt(2*Q_ii/F)
-    mo(0,2) = mo(2,0) = width*width*mo(0,0)/2;
-
     // Minimize chi^2
-    // FIXME: need convergence criterium
-    for (int t = 0; t < 10; t++) {
-      //std::cout << mo << std::endl;
+    data_t last_chi2 = 0; 
+    int t = 1;
+    while (true) {
+      std::cout << t << "\t" << mo << std::endl;
       computeMomentsFromGuess();
 
       // compute chi^2 and best-fit moments
@@ -50,13 +52,18 @@ namespace shapelens {
 	diff -= d.mo;
 	
 	NumMatrix<data_t> S_1 = d.S.invert();
-	chi2 += diff * (S_1 * (NumVector<data_t>) diff);
+	data_t chi2_k = diff * (S_1 * (NumVector<data_t>) diff);
+	chi2 += chi2_k;
 	NumMatrix<data_t> X = meP[k].transpose() * S_1;
-	mo += X * (NumVector<data_t>) d.mo;
+	//mo += X * (NumVector<data_t>) d.mo;
+	NumVector<data_t> mo_k = X * (NumVector<data_t>) d.mo;
+	mo += mo_k;
 	S += X*meP[k];
+	std::cout << t << "." << k << "\t" << (X*meP[k]).invert()*mo_k << "\t" << chi2_k << std::endl;
       }
       S = S.invert();
       mo = S * (NumVector<data_t>)mo;
+      std::cout << "->\t" << mo << "\t" << chi2 << std::endl;
      
       // non-sensical ellipticity check
       data_t tiny = 1e-4;
@@ -80,8 +87,15 @@ namespace shapelens {
 // 	obj.centroid(1) += diff(0,1)/mem[i](0,0);
 //       }
 
+      // convergence: chi^2 does not change by more than relative 1e-4
+      // note: chi^2 might increase slightly before convergence
+      // so go for asbolute value of change
+      if (last_chi2 > 0 && fabs(last_chi2 - chi2) < 1e-4*chi2)
+	break;
+      last_chi2 = chi2;
+      t++;
     }
-    // set DEIMOS parameters to best fit
+
     // FIXME: what to do with SN, scale, centroid etc.
   }
 
@@ -97,11 +111,13 @@ namespace shapelens {
       DEIMOS& d = meD[k];
       // set ellipticities and sizes for weight functions in each exposure
       // FIXME: how to set the width (think varying PSF FWHM in exposures) 
-      d.scale = width;//sqrt((mo0c(0,2) + mo0c(2,0))/mo0c(0,0));
+      //d.matching_scale = sqrt((mo_c(0,2) + mo_c(2,0))/mo_c(0,0));//width;
       d.eps = shapelens::epsilon(mo_c);
       data_t abs_eps = abs(d.eps);
       // FIXME: need individual WCS scale_factors here!
-      d.scale *= d.scale_factor/sqrt(1 + abs_eps*abs_eps - 2*abs_eps);
+      // i.e. d.scale_factor needs to be set from outside
+      d.scale = d.getEpsScale();
+      //std::cout << "\t" << k << "\t" << mo_c << "\t" << d.matching_scale << "\t" << d.eps << std::endl;
       DEIMOS::DEIMOSWeightFunction w(d.scale, meo[k].centroid, d.eps);
       Moments mo_w(meo[k], w, N+C);
       d.deweight(mo_w);
@@ -110,7 +126,9 @@ namespace shapelens {
   }
 
   void DEIMOSForward::convolveExposure(unsigned int k) {
-    const Moments& p = mepsf[k];
+    DEIMOS& d = meD[k];
+    DEIMOS psf(mepsf[k], N, C, mePSFScale[k]);
+    const Moments& p = psf.mo;
     NumMatrix<data_t>& P = meP[k];
 
     // matrix representation of convolution eq. 9
@@ -127,6 +145,18 @@ namespace shapelens {
       }
     }
     P.gemv(mo, mem[k]);
+    // don't undercut the minimum PSF scale
+    d.matching_scale = std::max(mePSFScale[k], getWeightFunctionScale(mem[k]));
+    // but if galaxy is bigger: recompute the PSF moments
+    if (d.matching_scale > 1.1 * mePSFScale[k]) {
+      mePSFScale[k] = d.matching_scale;
+      convolveExposure(k);
+    }
+  }
+  
+  // return width of Gaussian with the moments of m
+  data_t DEIMOSForward::getWeightFunctionScale(const Moments& m) const {
+    return sqrt((m(0,2) + m(2,0))/m(0,0));
   }
 
 }
