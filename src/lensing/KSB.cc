@@ -22,8 +22,9 @@ namespace shapelens {
     else
       return M0(j,k);
   }
-
-
+  
+  KSB::KSB() {}
+  
   KSB::KSB(const Object& obj, data_t scale) {
     GaussianWeightFunction w(scale,obj.centroid);
 
@@ -563,22 +564,48 @@ namespace shapelens {
   }
 
 
-//   data_t devChi(const KSB& ksb, const KSB& star, complex<data_t>& gamma) {
-//     complex<data_t> chi_sh = __chi_sh_nl(ksb,gamma);
-//     complex<data_t> chi_sm = __chi_sm(ksb,star);
-//     complex<data_t> chi_g = __chi_g(ksb,star,gamma);
-//     return abs(ksb.chi - (chi_sh + chi_sm - chi_g));
-//   }
-//     complex<data_t> gamma;
-//     for (data_t g1 = -1; g1 <= 1; g1+=0.005) {
-//       real(gamma) = g1;
-//       for (data_t g2 = -1; g2 <= 1; g2+=0.005) {
-// 	imag(gamma) = g2;
-// 	if (g2 >= -sqrt(1-g1*g1) && g2 <= sqrt(1-g1*g1))
-// 	  std::cout << g1 << "\t" << g2 << "\t" << devChi(*this,psf,gamma) << std::endl;
-// 	else
-// 	  std::cout << g1 << "\t" << g2 << "\t" << 0 << std::endl;
-//       }
-//     }
+  //// ** Iterative KSB to find improved centroid and S/N ** ////
+
+  KSBIterative::KSBIterative(const Object& obj_, const std::set<data_t>& scales) :
+    centroid(obj_.centroid), scale(*scales.begin()) {
+    
+    Object& obj = const_cast<Object&>(obj_);
+    // save old centroid to recover the "const" Object
+    Point<data_t> old_centroid = obj.centroid;
+
+    std::set<data_t>::const_iterator iter = scales.begin();
+    data_t current_scale = *iter;
+    findCentroid(obj, current_scale);
+    KSB::operator=(KSB(obj, current_scale)); // copies KSB part of KSBiterative
+    iter++;
+    for (iter; iter != scales.end(); iter++) {
+      current_scale = *iter;
+      findCentroid(obj, current_scale);
+      KSB ksb(obj, current_scale);
+      if (ksb.SN > this->SN) {
+	KSB::operator=(ksb);
+	scale = current_scale;
+	centroid = obj.centroid;
+      }
+    }
+    // recover old centroid
+    obj.centroid = old_centroid;
+  }
+
+  void KSBIterative::findCentroid(Object& obj, data_t scale_) const {
+    GaussianWeightFunction w(scale_, obj.centroid);
+    data_t delta = 1;
+    do {
+      Moment0 F(obj,w);
+      Moment1 D(obj,w);
+      Point<data_t> shift(D(0)/F(0), D(1)/F(0));
+      delta = sqrt(shift(0)*shift(0) + shift(1)*shift(1));
+      obj.centroid += shift;
+      w.setCentroid(obj.centroid);
+    } while (delta > 1e-2);
+  }
+
+
+
 
 } // end namespace
