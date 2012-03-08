@@ -60,14 +60,19 @@ namespace shapelens {
     std::map<data_t, Moments>::const_iterator iter = std::map<data_t, Moments>::lower_bound(scale);
     // iter points to element >= scale;
     data_t diff = (iter->first)-scale;
-    // check whethere there is a smaller scale
-    if (iter != std::map<data_t, Moments>::begin()) {
-      iter--;
-      data_t diff_small = scale - (iter->first);
-      if (diff < diff_small)
-	iter++;
+    if (diff < 0) { // bigger than largest element
+      return std::map<data_t, Moments>::rbegin()->first;
     }
-    return iter->first;
+    else {
+      // check whethere there is a smaller scale
+      if (iter != std::map<data_t, Moments>::begin()) {
+	iter--;
+	data_t diff_small = scale - (iter->first);
+	if (diff < diff_small)
+	  iter++;
+      }
+      return iter->first;
+    }
   }
 
   DEIMOS::DEIMOS() : id(0), scale(0), eps(0,0), G(0,0), N(0),  C(0), R2(0), flexed(false), scale_factor(1) {}

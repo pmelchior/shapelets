@@ -11,6 +11,7 @@ namespace shapelens {
     DEIMOS::D = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2);
     DEIMOS::S = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
     DEIMOS::mo.setOrder(DEIMOS::N);
+    DEIMOS::matching_scale = width;
 
     // initialize 0th and 2nd moments 
     // with circular Gaussian with given flux & scale
@@ -63,11 +64,12 @@ namespace shapelens {
 	mo += mo_k;
 	NumMatrix<data_t> S_k = X*meP[k];
 	S += X*meP[k];
-	history << t << "." << k << "\t" << (X*meP[k]).invert()*mo_k << "\t" << chi2_k << "\t" << mo_k(0)/sqrt(S_k(0,0)) << std::endl;
+	//history << t << "." << k << "\t" << (X*meP[k]).invert()*mo_k << "\t" << chi2_k << "\t" << mo_k(0)/sqrt(S_k(0,0)) << std::endl;
       }
       S = S.invert();
       mo = S * (NumVector<data_t>)mo;
-      history << "->\t" << mo << "\t" << shapelens::epsilon(mo) << "\t" << chi2 << "\t" << mo(0,0)/sqrt(S(0,0)/K) << std::endl;
+      SN[width] = mo(0,0)/sqrt(S(0,0)/K);
+      history << "->\t" << mo << "\t" << shapelens::epsilon(mo) << "\t" << chi2 << "\t" << SN[width] << std::endl;
      
       // non-sensical ellipticity check
       data_t tiny = 1e-4*flux;
@@ -114,14 +116,12 @@ namespace shapelens {
       Moments& mo_c = mem[k];
       DEIMOS& d = meD[k];
       // set ellipticities and sizes for weight functions in each exposure
-      // FIXME: how to set the width (think varying PSF FWHM in exposures) 
-      //d.matching_scale = sqrt((mo_c(0,2) + mo_c(2,0))/mo_c(0,0));//width;
-      d.eps = shapelens::epsilon(mo_c);
-      data_t abs_eps = abs(d.eps);
       // FIXME: need individual WCS scale_factors here!
       // i.e. d.scale_factor needs to be set from outside
+      d.eps = shapelens::epsilon(mo_c);
+      d.matching_scale = getWeightFunctionScale(k);
       d.scale = d.getEpsScale();
-      //std::cout << "\t" << k << "\t" << mo_c << "\t" << d.matching_scale << "\t" << d.eps << std::endl;
+      history << "\t" << k << "\t" << mo_c << "\t" << d.matching_scale << "\t" << d.eps << std::endl;
       DEIMOS::DEIMOSWeightFunction w(d.scale, meo[k].centroid, d.eps);
       Moments mo_w(meo[k], w, N+C);
       d.deweight(mo_w);
@@ -131,21 +131,20 @@ namespace shapelens {
 
   void DEIMOSForward::convolveExposure(unsigned int k) {
     DEIMOS& d = meD[k];
-
     PSFMultiScale& psfs = mePSFMultiScale[k];
-    // always pick the largest scale
-    // FIXME: what if too big is not optimal because of scatter?
-    // currently there is no way back
-    PSFMultiScale::reverse_iterator psfiter = psfs.rbegin();
-    const Moments& p = psfiter->second;
 
-    /*
-    DEIMOS psf(mepsf[k], N, C, mePSFScale[k]);
-    const Moments& p = psf.mo;
-    */
+    // pick closest PSF scale to d.matching_scale;
+    data_t scale = psfs.getScaleClosestTo(d.matching_scale);
+    // if this if too different, create a new PSF moment measurement
+    if (fabs(scale-d.matching_scale) > 0.05*d.matching_scale) {
+      scale = d.matching_scale;
+      DEIMOS psf(mepsf[k], N, C, scale);
+      psfs.insert(scale, psf.mo);
+    }
+    Moments& p = psfs[scale];
+
+    // create matrix representation of convolution eq. 9
     NumMatrix<data_t>& P = meP[k];
-
-    // matrix representation of convolution eq. 9
     for (int n = 0; n <= mo.getOrder(); n++) {
       for (int i = 0; i <= n; i++) {
 	int  j = n-i;
@@ -158,22 +157,36 @@ namespace shapelens {
 	}
       }
     }
+    // convolve moments
     P.gemv(mo, mem[k]);
-    // don't undercut the minimum PSF scale
-    d.matching_scale = std::max(getWeightFunctionScale(mem[k]), psfiter->first); //mePSFScale[k]);
-    // but if galaxy is bigger: recompute the PSF moments
-    if (d.matching_scale > 1.1 * psfiter->first) { //mePSFScale[k]) {
-      //mePSFScale[k] = d.matching_scale;
-      DEIMOS psf(mepsf[k], N, C, d.matching_scale);
-      psfs.insert(d.matching_scale, psf.mo);
-
-      convolveExposure(k);
-    }
   }
   
-  // return width of Gaussian with the moments of m
-  data_t DEIMOSForward::getWeightFunctionScale(const Moments& m) const {
-    return sqrt((m(0,2) + m(2,0))/m(0,0));
-  }
+  
+  data_t DEIMOSForward::getWeightFunctionScale(unsigned int k) const {
+    // simply use sqrt(trQ/F) as size: equivalen width of Gaussian 
+    const NumMatrix<data_t>& P = meP[k];
+    const Moments& m = mem[k];
+    data_t s = sqrt((m(0,2) + m(2,0))/m(0,0));
+    // get the same for the current PSF moments
+    const PSFMultiScale& psfs = mePSFMultiScale[k];
+    // use the largest, most reliable PSF moments
+    // FIXME: with noise in the PSF images, the larges may not be the best!
+    const Moments& p = psfs.rbegin()->second;
+    data_t s_psf = sqrt((p(0,2) + p(2,0))/p(0,0));
 
+    // Noise correction, expect noise variance to be set
+    if (S(0,0) > 0) {
+      NumMatrix<data_t> S_c = P*S*P.transpose();
+      // error on sqrt(trQ), ignoring flux uncertainty
+      data_t sigma_2 = 0;
+      unsigned int i = m.getIndex(2,0);
+      sigma_2 += S_c(i,i);
+      i = m.getIndex(0,2);
+      sigma_2 += S_c(i,i);
+      data_t d_s = 0.822179*sqrt(sigma_2/m(0,0));
+      std::complex<data_t> eps = shapelens::epsilon(m);
+      s -= d_s;
+    }
+    return std::max(s, s_psf); // don't undercut PSF equivalent width
+  }
 }

@@ -13,7 +13,7 @@ namespace shapelens {
     std::vector<DEIMOS> meD;
   private:
     void computeMomentsFromGuess();
-    data_t getWeightFunctionScale(const Moments& m) const;
+    data_t getWeightFunctionScale(unsigned int k) const;//const Moments& m) const;
     const MultiExposureObject& meo;
     const MultiExposureObject& mepsf;
     MultiExposureMoments mem;
