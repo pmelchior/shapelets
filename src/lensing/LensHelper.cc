@@ -27,18 +27,26 @@ namespace shapelens {
 
   std::complex<data_t> epsilon(const Moments& mo) {
     if (mo.getOrder() >= 2) {
-      std::complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
-      e/= (std::complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(std::complex<data_t>(mo(0,2)*mo(2,0) - mo(1,1)*mo(1,1))));
-      return e;
+      if (mo(2,0) == 0. && mo(1,1) == 0. && mo(0,2) == 0.)
+	return std::complex<data_t>(0,0);
+      else {
+	std::complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
+	e/= (std::complex<data_t>(mo(2,0) + mo(0,2)) + 2.*sqrt(std::complex<data_t>(mo(0,2)*mo(2,0) - mo(1,1)*mo(1,1))));
+	return e;
+      }
     } else
       return std::complex<data_t>(0,0);
   }
 
   std::complex<data_t> chi(const Moments& mo) {
     if (mo.getOrder() >= 2) {
-      std::complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
-      e/= mo(2,0) + mo(0,2);
-      return e;
+      if (mo(2,0) == 0. && mo(1,1) == 0. && mo(0,2) == 0.)
+	return std::complex<data_t>(0,0);
+      else {
+	std::complex<data_t> e(mo(2,0) - mo(0,2),2*mo(1,1));
+	e/= mo(2,0) + mo(0,2);
+	return e;
+      }
     } else
       return std::complex<data_t>(0,0);
   }

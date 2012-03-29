@@ -135,6 +135,7 @@ namespace shapelens {
     static bool FIX_CENTROID, FIX_ELLIPTICITY;
     friend class DEIMOSForward;
   protected:
+    void setScaleFactor(const Object& obj);
     void match(Object& obj, Moments& mo_w);
     void deweight(const Moments& mo_w);
     void setNoiseImage(const Object& obj);

@@ -85,15 +85,7 @@ namespace shapelens {
     // dirty little trick to update obj.centroid for moment measurement
     Object& obj = const_cast<Object&>(obj_);
     Point<data_t> old_centroid = obj.centroid; // save for later
-
-    // compute scale in WCS units:
-    // average scale within objects bounding box
-    scale_factor = 1;
-    if (ShapeLensConfig::USE_WCS) {
-      scale_factor = obj.grid.getSupport().getArea();
-      scale_factor /= obj.grid.getBoundingBox().getArea();
-      scale_factor = sqrt(scale_factor);
-    }
+    setScaleFactor(obj);
 
     // measure moments within optimized weighting function
     mo.setOrder(N);
@@ -116,15 +108,7 @@ namespace shapelens {
     // dirty little trick to update obj.centroid for moment measurement
     Object& obj = const_cast<Object&>(obj_);
     Point<data_t> old_centroid = obj.centroid; // save for later
-
-    // compute scale in WCS units:
-    // average scale within objects bounding box
-    scale_factor = 1;
-    if (ShapeLensConfig::USE_WCS) {
-      scale_factor = obj.grid.getSupport().getArea();
-      scale_factor /= obj.grid.getBoundingBox().getArea();
-      scale_factor = sqrt(scale_factor);
-    }
+    setScaleFactor(obj);
 
     // measure moments within optimized weighting function
     mo.setOrder(N);
@@ -276,6 +260,17 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"FLAGS",flags.to_ulong(),"matching and deconvolution flags");
     IO::writeFITSImage(fptr,S,"VARIANCE");
     IO::closeFITSFile(fptr);
+  }
+
+  // compute scale in WCS units:
+  // average scale within objects bounding box
+  void DEIMOS::setScaleFactor(const Object& obj) {
+    scale_factor = 1;
+    if (ShapeLensConfig::USE_WCS) {
+      scale_factor = obj.grid.getSupport().getArea();
+      scale_factor /= obj.grid.getBoundingBox().getArea();
+      scale_factor = sqrt(scale_factor);
+    }
   }
 
   data_t DEIMOS::getEpsScale() const {
@@ -573,7 +568,8 @@ namespace shapelens {
 	  noise(i) = obj.noise_rms*obj.noise_rms;
       else
 	for (unsigned int i=0; i < noise.size(); i++)
-	  noise(i) = 1./obj.weight(i);
+	  if (obj.weight(i) != 0)
+	    noise(i) = 1./obj.weight(i);
     }
   }
 
