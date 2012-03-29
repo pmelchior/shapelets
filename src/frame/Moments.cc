@@ -271,9 +271,9 @@ namespace shapelens {
       if (obj.weight.size() != 0) {
 	w_ *= obj.weight(i);
       }
-      for (int i=0; i <= N; i++) {
-	pow_x(i) = pow_int(diff_x,i);
-	pow_y(i) = pow_int(diff_y,i);
+      for (int j=0; j <= N; j++) {
+	pow_x(j) = pow_int(diff_x,j);
+	pow_y(j) = pow_int(diff_y,j);
       }
       for(int n=0; n <= N; n++)
 	for(int m=0; m <= n; m++) {
