@@ -165,6 +165,8 @@ public:
   int getIndex(unsigned int px, unsigned int py) const;
   /// Get moment powers from the vector index \p i.
   std::pair<int, int> getPowers(int i) const;
+  /// Sum of weights.
+  data_t sum_masked, sum_masked_2;
  private:
   unsigned int pyramid_num(int n) const;
   int N;

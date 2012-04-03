@@ -251,13 +251,14 @@ namespace shapelens {
     N(N_) { }
 
   Moments& Moments::operator=(const NumVector<data_t>& v) {
+    // FIXME: set N!
     NumVector<data_t>::operator=(v);
     return *this;
   }
 
   Moments::Moments(const Object& obj, const WeightFunction& w, int N_) :
     NumVector<data_t>(pyramid_num(N_+1)),
-    N(N_) {
+    N(N_), sum_masked(0), sum_masked_2(0) {
     data_t w_, diff_x, diff_y, val;
     Point<data_t> centroid_wcs = obj.centroid;
     obj.grid.getWCS().transform(centroid_wcs); // use wcs for centroid
@@ -268,9 +269,15 @@ namespace shapelens {
       w_ = w(obj.grid(i));
       diff_x = obj.grid(i,0) - centroid_wcs(0);
       diff_y = obj.grid(i,1) - centroid_wcs(1);
-      if (obj.weight.size() != 0) {
-	w_ *= obj.weight(i);
+
+      if (obj.segmentation.size() != 0) {
+	if (obj.segmentation(i) != 0 && obj.segmentation(i) != obj.id) {
+	  sum_masked += w_;
+	  sum_masked_2 += w_*w_;
+	  w_ = 0;
+	}
       }
+
       for (int j=0; j <= N; j++) {
 	pow_x(j) = pow_int(diff_x,j);
 	pow_y(j) = pow_int(diff_y,j);
@@ -313,7 +320,7 @@ namespace shapelens {
 
   std::pair<int, int> Moments::getPowers(int i) const {
     // turns out that inverting getIndex() boils down to finding
-    // the largest number 0 <= n <= i, for which t = sqrt(8*n + 1) is an integer.
+    // the largest number 0 <= n <= i, for which t = sqrt(8*n + 1) is an integer
     // then, py = i - n and px = (-py -1 + t)/2
     // btw, n = pyramid_num(px + py)
     int n = i;
