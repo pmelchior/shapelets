@@ -149,7 +149,7 @@ class Frame : public Image<data_t> {
   data_t getThreshold(unsigned long pixel, data_t factor);
   void linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& max_threshold, unsigned long startpixel);
   data_t getTotalFlux(const std::set<unsigned long>& pixels);
-  SegmentationMap segMap;
+  SegmentationMap segmentation;
   History& history;
   std::map< unsigned long, std::set<unsigned long> > objectsPixels;
   bool subtractedBG, estimatedBG;

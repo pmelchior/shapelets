@@ -135,10 +135,10 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       O.weight.grid.setWCS(grid.getWCS());
     }
     if (fptr_s != NULL) {
-      O.segMap.resize((xmax-xmin)*(ymax-ymin));
-      O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+      O.segmentation.resize((xmax-xmin)*(ymax-ymin));
+      O.segmentation.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
       if (ShapeLensConfig::USE_WCS)
-      O.segMap.grid.setWCS(grid.getWCS());
+      O.segmentation.grid.setWCS(grid.getWCS());
     }
 
     // copy pixel data
@@ -150,7 +150,7 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     if (fptr_w != NULL) 
       fits_read_subset(fptr_w, IO::getFITSDataType(data_t(0)), firstpix, lastpix, inc, &nullval, O.weight.c_array(), &anynull, &status);
     if (fptr_s != NULL) 
-      fits_read_subset(fptr_s, IO::getFITSDataType(long(0)), firstpix, lastpix, inc, &nullval, O.segMap.c_array(), &anynull, &status);
+      fits_read_subset(fptr_s, IO::getFITSDataType(long(0)), firstpix, lastpix, inc, &nullval, O.segmentation.c_array(), &anynull, &status);
 
     // check image pixels: replace pixels outside the original frame
     // or those belonging to another object by background noise
@@ -167,12 +167,12 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 
 	// check segmap
 	if (fptr_s != NULL) {
-	  if ((O.segMap(i) > 0 && O.segMap(i) != catiter->first) || (O.segMap(i) < 0 && ShapeLensConfig::FILTER_SPURIOUS))
+	  if ((O.segmentation(i) > 0 && O.segmentation(i) != catiter->first) || (O.segmentation(i) < 0 && ShapeLensConfig::FILTER_SPURIOUS))
 	    fill = true;
 	  // this objects has to yet been found to be nearby
-	  if (std::find(nearby_objects.begin(),nearby_objects.end(),O.segMap(i)) == nearby_objects.end()) {
-	    O.history << "# Object " << O.segMap(i) << " nearby, but not overlapping." << std::endl;
-	    nearby_objects.push_back(O.segMap(i));
+	  if (std::find(nearby_objects.begin(),nearby_objects.end(),O.segmentation(i)) == nearby_objects.end()) {
+	    O.history << "# Object " << O.segmentation(i) << " nearby, but not overlapping." << std::endl;
+	    nearby_objects.push_back(O.segmentation(i));
 	  }
 	}
 

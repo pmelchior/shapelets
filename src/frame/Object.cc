@@ -4,23 +4,26 @@
 
 using namespace shapelens;
 
-Object::Object() : Image<data_t>(), segMap() {
+Object::Object() : Image<data_t>(), segmentation() {
   id = 0;
   flags = 0;
   centroid(0) = centroid(1) = 0;
+  noise_mean = noise_rms = 0;
 }
 
-Object::Object (const Image<data_t>& base) : Image<data_t>(base), segMap()  {
+Object::Object (const Image<data_t>& base) : Image<data_t>(base), segmentation()  {
   id = 0;
   flags = 0;
   centroid(0) = centroid(1) = 0;
+  noise_mean = noise_rms = 0;
 }
 
-void Object::operator=(const Image<data_t>& base) {
+Object* Object::operator=(const Image<data_t>& base) {
   Image<data_t>::operator=(base);
+  return this;
 }
 
-Object::Object(std::string objfile) : Image<data_t>(), segMap() {
+Object::Object(std::string objfile) : Image<data_t>(), segmentation() {
   int status, nkeys, keypos, hdutype;
   char card[FLEN_CARD];
   char comment[FLEN_CARD];
@@ -60,7 +63,7 @@ Object::Object(std::string objfile) : Image<data_t>(), segMap() {
   history << ", segmentation map";
   // move to 1st extHDU for the segmentation map
   fits_movabs_hdu(fptr, 2, &hdutype, &status);
-  IO::readFITSImage(fptr, segMap);
+  IO::readFITSImage(fptr, segmentation);
 
   // check if there is 2nd extHDU: the weight map or correlation
   if (!fits_movabs_hdu(fptr, 3, &hdutype, &status)) {
@@ -103,10 +106,10 @@ void Object::save(std::string filename) {
   IO::updateFITSKeyword(outfptr,"FLAG",flags.to_ulong(),"extraction flags");
   IO::appendFITSHistory(outfptr,Image<data_t>::history.str());
 
-  // save segMap
-  if (segMap.size() != 0) {
-    IO::writeFITSImage(outfptr,segMap,"SEGMAP");
-    IO::appendFITSHistory(outfptr,segMap.history.str());
+  // save segmentation
+  if (segmentation.size() != 0) {
+    IO::writeFITSImage(outfptr,segmentation,"SEGMAP");
+    IO::appendFITSHistory(outfptr,segmentation.history.str());
   }
 
   //if weight map provided, save it too
@@ -151,8 +154,8 @@ void Object::computeCentroid() {
 }
 
 void Object::computeCorrelationFunction(data_t threshold) {
-  if (segMap.size()) // if a segMap is provided, mask object pixels
-    xi = CorrelationFunction(*this,segMap,threshold);
+  if (segmentation.size()) // if a segmentation is provided, mask object pixels
+    xi = CorrelationFunction(*this,segmentation,threshold);
   else
     xi = CorrelationFunction(*this,threshold);
 }

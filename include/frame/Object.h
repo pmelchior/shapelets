@@ -38,7 +38,7 @@ class Object : public Image<data_t> {
   /// Copy operator from base class.
   /// It copies only the Image part, but does not replace any other
   /// data members of Object.
-  void operator=(const Image<data_t>& base);
+  Object* operator=(const Image<data_t>& base);
   /// Save the object information in a Fits file.
   /// Data and SegmentationMap will go to pHDU and 1st extHDU, respectively. 
   /// All other information goes to the pHDU header.
@@ -76,7 +76,7 @@ class Object : public Image<data_t> {
   /// The noise RMS \f$\sigma_n\f$.
   data_t noise_rms;
   /// The segmentation map.
-  SegmentationMap segMap;
+  SegmentationMap segmentation;
   /// The correlation function.
   CorrelationFunction xi;
   /// The Fourier transform of the pixel data.

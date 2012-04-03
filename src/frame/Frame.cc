@@ -16,30 +16,30 @@ using namespace std;
 typedef unsigned int uint;
 typedef unsigned long ulong;
 
-Frame::Frame() : Image<data_t>(), segMap(), weight(), history(segMap.history) {
+Frame::Frame() : Image<data_t>(), segmentation(), weight(), history(segmentation.history) {
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
   catalog.clear();
 }
 
 Frame::Frame(string filename) : 
-Image<data_t>(filename), segMap(), weight(), history(segMap.history) {
+Image<data_t>(filename), segmentation(), weight(), history(segmentation.history) {
   history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl;
-  segMap.resize(Frame::getSize(0)*Frame::getSize(1));
-  segMap.clear();
-  segMap.grid = Frame::grid;
+  segmentation.resize(Frame::getSize(0)*Frame::getSize(1));
+  segmentation.clear();
+  segmentation.grid = Frame::grid;
   subtractedBG = estimatedBG = 0;
   noise_rms = noise_mean = 0;
   catalog.clear();
 }
 
 Frame::Frame(string datafile, string weightfile) : 
-Image<data_t>(datafile), weight(weightfile), segMap(), history(segMap.history) {
+Image<data_t>(datafile), weight(weightfile), segmentation(), history(segmentation.history) {
   history << "# Reading data from " << datafile << " and weights from " << weightfile << endl;
   history << "# Image properties: size = "<< Frame::getSize(0) << "/" << Frame::getSize(1) << endl; 
-  segMap.resize(Frame::getSize(0)*Frame::getSize(1));
-  segMap.clear();
-  segMap.grid = Frame::grid;
+  segmentation.resize(Frame::getSize(0)*Frame::getSize(1));
+  segmentation.clear();
+  segmentation.grid = Frame::grid;
   if (weight.size() != (*this).size()) {
     history << "Frame: weight map has different layout than data!" << endl;
     cerr << "Frame: weight map has different layout than data!" << endl;
@@ -113,15 +113,15 @@ void Frame::findObjects() {
   if (getNumberOfObjects() > 0) {
     objectsPixels.clear();
     catalog.clear();
-    segMap.clear();
+    segmentation.clear();
   }  
 
   // if segmap is not initialized (default constructor):
   // allocate the required space
-  if (segMap.size() == 0) {
-    segMap.resize(Frame::getSize(0)*Frame::getSize(1));
-    segMap.clear();
-    segMap.grid = Frame::grid;
+  if (segmentation.size() == 0) {
+    segmentation.resize(Frame::getSize(0)*Frame::getSize(1));
+    segmentation.clear();
+    segmentation.grid = Frame::grid;
   }
 
   // set up pixellist and objectsPixels
@@ -137,13 +137,13 @@ void Frame::findObjects() {
   uint blending = 0;
   for (int i =0; i < npixels; i++) {
     highThreshold = getThreshold(i,ShapeLensConfig::DETECT_THRESHOLD);
-    if (data(i) > highThreshold && segMap(i) == 0) {
+    if (data(i) > highThreshold && segmentation(i) == 0) {
       counter++;
       linkPixels(pixelset,max, max_threshold, i);
       if (pixelset.size() >= ShapeLensConfig::MIN_PIXELS) {
 	history << "# Object " << counter << " detected with " << pixelset.size() << " significant pixels at (" << i%(Frame::getSize(0)) << "/" << i/(Frame::getSize(0)) << ")"  << std::endl;
 	for(iter = pixelset.begin(); iter != pixelset.end(); iter++ )
-	  segMap(*iter) = counter;
+	  segmentation(*iter) = counter;
 	objectsPixels[counter]= pixelset;
 	catalog[counter] = co;
 	catalog[counter].FLAGS = 2*blending;
@@ -151,7 +151,7 @@ void Frame::findObjects() {
       else {
 	counter--;
 	for(iter = pixelset.begin(); iter != pixelset.end(); iter++ )
-	  segMap(*iter) = -1;
+	  segmentation(*iter) = -1;
       }
     }
   }
@@ -184,11 +184,11 @@ void Frame::linkPixels(std::set<unsigned long>& pixelset, data_t& max, data_t& m
       if (neighbor != -1) {
 	data_t threshold_neighbor = getThreshold(neighbor, ShapeLensConfig::MIN_THRESHOLD);
 	if (data(neighbor) > threshold_neighbor) {
-	  // if (segMap(neighbor == 0) {
+	  // if (segmentation(neighbor == 0) {
 	  if (pixelset.find(neighbor) == pixelset.end()) {
 	    pixellist.push_back(neighbor);
 	    pixelset.insert(neighbor);
-	    //segMap(neighbor) = tag;
+	    //segmentation(neighbor) = tag;
 	    if (data(neighbor) > max)
 	      max = data(neighbor);
 	    if (threshold_neighbor > max_threshold)
@@ -275,11 +275,11 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     // Grid will be changed but not shifted (all pixels stay at their position)
     O.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
     O.grid.setWCS(Image<data_t>::grid.getWCS());
-    O.segMap.history.setSilent();
-    O.segMap.history = history;
-    O.segMap.history.unsetSilent();
-    O.segMap.resize((xmax-xmin)*(ymax-ymin));
-    O.segMap.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
+    O.segmentation.history.setSilent();
+    O.segmentation.history = history;
+    O.segmentation.history.unsetSilent();
+    O.segmentation.resize((xmax-xmin)*(ymax-ymin));
+    O.segmentation.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
     if (weight.size()!=0) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
       O.weight.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
@@ -294,13 +294,13 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       // if pixel is out of image region, fill noise
       if (j == -1) {
 	O(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
-	O.segMap(i) = 0;
+	O.segmentation(i) = 0;
 	if (weight.size()!=0) 
 	  O.weight(i) = 1./gsl_pow_2(noise_rms);
       } 
       else {
 	// filter other objects in the frame
-	if ((segMap(j) > 0 && segMap(j) != catiter->first) || (segMap(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
+	if ((segmentation(j) > 0 && segmentation(j) != catiter->first) || (segmentation(j) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
 	  // if we have a weight map 
 	  if (weight.size()!=0)
 	    O(i) = noise_mean + gsl_ran_gaussian (r, sqrt(1./weight(j)));
@@ -308,16 +308,16 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 	    O(i) = noise_mean + gsl_ran_gaussian (r, noise_rms);
 	  flags[0] = 1;
 	  // this objects has to yet been found to be nearby
-	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segMap(j)) == nearby_objects.end()) {
-	    O.history << "# Object " << segMap(j) << " nearby, but not overlapping." << std::endl;
-	    nearby_objects.push_back(segMap(j));
+	  if (std::find(nearby_objects.begin(),nearby_objects.end(),segmentation(j)) == nearby_objects.end()) {
+	    O.history << "# Object " << segmentation(j) << " nearby, but not overlapping." << std::endl;
+	    nearby_objects.push_back(segmentation(j));
 	  }
 	} 
 	// copy all other pixels into objdata
 	else {
 	  O(i) = data(j);
 	}
-	O.segMap(i) = segMap(j);
+	O.segmentation(i) = segmentation(j);
 	if (weight.size()!=0) 
 	  O.weight(i) = weight(j);
       }
@@ -348,7 +348,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
     O.history << "# Extracting Object 0 (whole Fits image)." << endl;
     O = *this;
     O.grid = Frame::grid;
-    O.segMap = segMap;
+    O.segmentation = segmentation;
     if (weight.size()!=0)
       O.weight = weight;
     O.computeCentroid();
@@ -364,7 +364,7 @@ void Frame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 }
 
 const SegmentationMap& Frame::getSegmentationMap() {
-  return segMap;
+  return segmentation;
 }
 
 // now extend to region around the object by
@@ -417,9 +417,9 @@ const Catalog& Frame::getCatalog() {
 }
 
 CorrelationFunction Frame::computeCorrelationFunction(data_t threshold) {
-// findObject() has been called -> segMap is meaningfull
+// findObject() has been called -> segmentation is meaningfull
   if(getNumberOfObjects())   
-    return CorrelationFunction(*this,segMap,threshold);
+    return CorrelationFunction(*this,segmentation,threshold);
   else
     return CorrelationFunction(*this,threshold);
 }
