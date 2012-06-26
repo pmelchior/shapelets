@@ -559,17 +559,15 @@ namespace shapelens {
 
   void DEIMOS::setNoiseImage(const Object& obj) {
     // only do something if noise properties are set
-    if (obj.noise_rms > 0 || obj.weight.size() > 0) {
+    if (obj.noise_rms > 0) {
       noise.resize(obj.size());
       noise.grid = obj.grid;
       noise.centroid = obj.centroid;
-      if (obj.weight.size() == 0)
-	for (unsigned int i=0; i < noise.size(); i++)
-	  noise(i) = obj.noise_rms*obj.noise_rms;
-      else
-	for (unsigned int i=0; i < noise.size(); i++)
-	  if (obj.weight(i) != 0)
-	    noise(i) = 1./obj.weight(i);
+      noise.noise_rms = obj.noise_rms;
+      for (unsigned int i=0; i < noise.size(); i++)
+	noise(i) = obj.noise_rms*obj.noise_rms;
+      if (obj.segmentation.size() == obj.size())
+	noise.segmentation = obj.segmentation;
     }
   }
 
@@ -578,15 +576,15 @@ namespace shapelens {
     data_t SN_ = 1;
     // only do it if we have a noise image
     if (noise.size() > 0) {
+      Moments mo_w2;
       if (flexed) {
 	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps, G);
-	Moments mo_w2(noise, w2, 0);
-	SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
+	mo_w2 = Moments(noise, w2, 0);
       } else {
 	DEIMOSWeightFunction w2(scale/M_SQRT2, centroid, eps);
-	Moments mo_w2(noise, w2, 0);
-	SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
-      }
+	mo_w2 = Moments(noise, w2, 0);
+      }	
+      SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
     }
     return SN_;
   }
@@ -709,52 +707,4 @@ namespace shapelens {
       return complex<data_t>(0,0);
   }
 
-  /*  
-  // #### DEIMOSList ####
-  DEIMOSList::DEIMOSList() : std::vector<boost::shared_ptr<DEIMOS> >() {}
-
-#ifdef HAS_SQLiteDB
-  DEIMOSList::DEIMOSList(SQLiteDB& sql, std::string table, std::string where) :
-    std::vector<boost::shared_ptr<DEIMOS> > () {
-    
-  }
-  void DEIMOSList::save(SQLiteDB& sql, std::string table) const {
-    // drop table: faster than deleting its entries
-    std::string query = "DROP TABLE IF EXISTS " + table + ";";
-    sql.query(query);
-
-    // create it
-    query = "CREATE TABLE " + table + "(";
-    query += "`id` int NOT NULL PRIMARY KEY,";
-    query += "`width` float NOT NULL,";
-    query += "`eps1` float NOT NULL,";
-    query += "`eps2` float NOT NULL,";
-    query += "`G1` float NOT NULL,";
-    query += "`G2` float NOT NULL,";
-    query += "`c` int NOT NULL,";
-    query += "`mo` blob NOT NULL);";
-    sql.query(query); 
-    
-    // create prepared statement
-    sqlite3_stmt *stmt;
-    query = "INSERT INTO `" + table + "` VALUES (?,?,?,?,?,?,?,?);";
-    sql.checkRC(sqlite3_prepare_v2(sql.db, query.c_str(), query.size(), &stmt, NULL));
-    for(DEIMOSList::const_iterator iter = DEIMOSList::begin(); iter != DEIMOSList::end(); iter++) {
-      const DEIMOS& d = *(*iter);
-      sql.checkRC(sqlite3_bind_int(stmt,1,d.id));
-      sql.checkRC(sqlite3_bind_double(stmt,2,d.scale));
-      sql.checkRC(sqlite3_bind_double(stmt,3,real(d.eps)));
-      sql.checkRC(sqlite3_bind_double(stmt,4,imag(d.eps)));
-      sql.checkRC(sqlite3_bind_double(stmt,5,real(d.G)));
-      sql.checkRC(sqlite3_bind_double(stmt,6,imag(d.G)));
-      sql.checkRC(sqlite3_bind_int(stmt,7,d.C));
-      sql.checkRC(sqlite3_bind_blob(stmt,8,d.mo.c_array(),d.mo.size()*sizeof(data_t),SQLITE_STATIC));
-      if(sqlite3_step(stmt)!=SQLITE_DONE)
-	throw std::runtime_error("DEIMOSList::save() insertion failed: " + std::string(sqlite3_errmsg(sql.db)));
-      sql.checkRC(sqlite3_reset(stmt));
-    }
-    sql.checkRC(sqlite3_finalize(stmt));
-  }
-#endif  
-  */
 } // end namespace

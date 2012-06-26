@@ -20,12 +20,13 @@ namespace shapelens {
     Moments mo0;
     std::vector<NumMatrix<data_t> > meP;
     std::vector<DEIMOS::PSFMultiScale> mePSFMultiScale;
+    data_t fiducial_width;
+    std::vector<data_t> meSaveScale, meTroubleScale;
   protected:
     void initialize();
     void minimize();
     void convolveExposure(unsigned int k);
     int K;
-    data_t fiducial_width;
   };
 } // end namespace
 #endif

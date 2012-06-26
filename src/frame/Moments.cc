@@ -257,8 +257,7 @@ namespace shapelens {
   }
 
   Moments::Moments(const Object& obj, const WeightFunction& w, int N_) :
-    NumVector<data_t>(pyramid_num(N_+1)),
-    N(N_), sum_masked(0), sum_masked_2(0) {
+    NumVector<data_t>(pyramid_num(N_+1)), N(N_) {
     data_t w_, diff_x, diff_y, val;
     Point<data_t> centroid_wcs = obj.centroid;
     obj.grid.getWCS().transform(centroid_wcs); // use wcs for centroid
@@ -270,22 +269,20 @@ namespace shapelens {
       diff_x = obj.grid(i,0) - centroid_wcs(0);
       diff_y = obj.grid(i,1) - centroid_wcs(1);
 
-      if (obj.segmentation.size() != 0) {
-	if (obj.segmentation(i) != 0 && obj.segmentation(i) != obj.id) {
-	  sum_masked += w_;
-	  sum_masked_2 += w_*w_;
-	  w_ = 0;
-	}
-      }
-
       for (int j=0; j <= N; j++) {
 	pow_x(j) = pow_int(diff_x,j);
 	pow_y(j) = pow_int(diff_y,j);
       }
-      for(int n=0; n <= N; n++)
-	for(int m=0; m <= n; m++) {
-	  operator()(m,n-m) += pow_x(m) * pow_y(n-m) * val * w_;
+
+      // mask bad pixels
+      if (obj.segmentation.size() > 0) {
+	if (obj.segmentation(i) != 0 && obj.segmentation(i) != obj.id)
+	  w_ = 0;
       }
+
+      for(int n=0; n <= N; n++)
+	for(int m=0; m <= n; m++)
+	  operator()(m,n-m) += pow_x(m) * pow_y(n-m) * val * w_;
     }
   }
 

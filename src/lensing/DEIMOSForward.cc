@@ -56,6 +56,9 @@ namespace shapelens {
 	psfs[fiducial_width] = psf.mo;
 	mePSFMultiScale.push_back(psfs);
       }
+
+      meSaveScale.push_back(0);
+      meTroubleScale.push_back(1e100);
     }
   }
   
@@ -63,7 +66,8 @@ namespace shapelens {
     // Minimize chi^2
     data_t last_chi2 = 0; 
     int t = 1;
-    while (t < 10) {
+    Moments mo_save = mo;
+    while (true) {
       history << t << "\t" << mo << std::endl;
       computeMomentsFromGuess();
 
@@ -88,10 +92,13 @@ namespace shapelens {
 	NumVector<data_t> mo_k = X * (NumVector<data_t>) d.mo;
 	mo += mo_k;
 	NumMatrix<data_t> S_k = X*meP[k];
-	S += X*meP[k];
-	history << t << "." << k << "\t" << d.mo << "\t" <<  shapelens::epsilon(d.mo) << chi2_k/(n_pix_k - mo.size()) << "\t" << mo_k(0)/sqrt(S_k(0,0)) << std::endl;
-	d.mo = (X*meP[k]).invert()*mo_k;
-	history << "\t" << d.mo << "\t" << shapelens::epsilon(d.mo) << std::endl;
+	//S += X*meP[k];
+	S += S_k;
+	//history << t << "." << k << "\t" << d.mo << "\t" <<  shapelens::epsilon(d.mo) << chi2_k/(n_pix_k - mo.size()) << "\t" << mo_k(0)/sqrt(S_k(0,0))  << std::endl;
+	//d.mo = S_k.invert()*mo_k;
+	//history << "\t" << d.mo << "\t" << shapelens::epsilon(d.mo) << std::endl;
+	// set non-sensical moments flag
+	//d.flags[1] = d.flagMoments(d.mo);
       }
       S = S.invert();
       mo = S * (NumVector<data_t>)mo;
@@ -110,26 +117,29 @@ namespace shapelens {
 // 	obj.centroid(1) += diff(0,1)/mem[i](0,0);
 //       }
 
+      // non-sensical ellipticity check
+      flags[1] = flagMoments(mo);
+      flags[0] = flags[0] | flags[1]; // keep track of difficulties
+      if (flags[1] == 0) {
+	mo_save = mo;
+	for (int k = 0; k < K; k++)
+	  meSaveScale[k] = std::max(meD[k].matching_scale, meSaveScale[k]);
+      }
+      else {
+	mo = mo_save;
+	for (int k = 0; k < K; k++)
+	  meTroubleScale[k] = meD[k].matching_scale;
+      }
+
       // convergence: chi^2 does not change by more than relative 1e-4
       // note: chi^2 might increase slightly before convergence
       // so go for asbolute value of change
-      if (last_chi2 > 0 && fabs(last_chi2 - chi2) < 1e-4*chi2) {
+      t++;
+      if (t==10 || (last_chi2 > 0 && fabs(last_chi2 - chi2) < 1e-4*chi2)) {
 	last_chi2 = chi2;
 	break;
       }
       last_chi2 = chi2;
-      t++;
-
-      // non-sensical ellipticity check
-      data_t tiny = 1e-10;
-      mo(0,0) = std::max(tiny, mo(0,0));
-      mo(0,2) = std::max(tiny, mo(0,2));
-      mo(2,0) = std::max(tiny, mo(2,0));
-      if (mo(1,1) > 0)
-	mo(1,1) = std::min(mo(1,1), sqrt(mo(0,2)*mo(2,0)));
-      else
-	mo(1,1) = std::max(mo(1,1), -sqrt(mo(0,2)*mo(2,0)));
-
     }
   }
 
@@ -197,21 +207,17 @@ namespace shapelens {
     P.gemv(mo, mem[k]);
   }
   
-  
   data_t DEIMOSForward::getWeightFunctionScale(unsigned int k) const {
+    const DEIMOS::PSFMultiScale& psfs = mePSFMultiScale[k];
+    const DEIMOS& d = meD[k];
     // simply use sqrt(trQ/F) as size: equivalent width of Gaussian 
-    const NumMatrix<data_t>& P = meP[k];
     const Moments& m = mem[k];
     data_t s = sqrt((m(0,2) + m(2,0))/m(0,0));
-    // get the same for the current PSF moments
-    const PSFMultiScale& psfs = mePSFMultiScale[k];
-    // use the largest, most reliable PSF moments
-    // CAUTION: with noise in the PSF images, the largest may not be the best!
-    const Moments& p = psfs.rbegin()->second;
-    data_t s_psf = sqrt((p(0,2) + p(2,0))/p(0,0));
 
+    /*
     // Noise correction, expect noise variance to be set
     if (S(0,0) > 0) {
+      const NumMatrix<data_t>& P = meP[k];
       NumMatrix<data_t> S_c = P*S*P.transpose();
       // error on sqrt(trQ), ignoring flux uncertainty
       data_t sigma_2 = 0;
@@ -223,14 +229,27 @@ namespace shapelens {
       std::complex<data_t> eps = shapelens::epsilon(m);
       s -= d_s;
     }
-    s = std::max(s, s_psf);  // don't undercut PSF equivalent width
+    */
+
     if (ShapeLensConfig::USE_WCS)
-      s /= meD[k].scale_factor; // correct for WCS rescaling 
+      s /= d.scale_factor; // correct for WCS rescaling 
 
     // if we have the PSF image, we can use any scale
-    if (mepsf.size() == K)
-      return s;
-    else // if not we have to use the ones given to us
-      return psfs.getScaleClosestTo(s);
+    if (mepsf.size() == K) {
+      if (s >= meTroubleScale[k])
+	s = (meSaveScale[k] + meTroubleScale[k])/2;
+    }
+    else { // if not we have to use the ones given to us
+      s = psfs.getScaleClosestTo(s);
+      if (s >= meTroubleScale[k]) {
+	DEIMOS::PSFMultiScale::const_iterator iter = psfs.find(meTroubleScale[k]);
+	s = iter->first;
+	if (iter != psfs.begin()) {
+	  iter--;
+	  s = iter->first;
+	}
+      }
+    }
+    return s;
   }
 }
