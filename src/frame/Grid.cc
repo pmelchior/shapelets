@@ -60,6 +60,15 @@ namespace shapelens {
       return nt; // return valid WCS in all circumstances
   }
 
+  data_t Grid::getScaleFactor() const {
+    if (ct.use_count() != 0) {
+      data_t scale_factor = getSupport().getArea();
+      scale_factor /= getBoundingBox().getArea();
+      return sqrt(scale_factor);
+    } else
+      return 1;
+  }
+
   Polygon<data_t> Grid::getSupport() const {
     Rectangle<int> bb = getBoundingBox();
     std::list<Point<data_t> > pl;

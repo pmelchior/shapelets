@@ -39,6 +39,9 @@ class Grid {
   void resetWCS();
   /// Get WCS transformation.
   const CoordinateTransformation& getWCS() const;
+  /// Get effective pixel scale in WCS units.
+  /// This is averaged over the entire footprint of the Grid.
+  data_t getScaleFactor() const;
   /// Return starting position in given direction.
   int getStartPosition(bool direction) const;
   /// Return stopping position in given direction.
