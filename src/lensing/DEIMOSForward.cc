@@ -5,25 +5,18 @@
 namespace shapelens {
   
   DEIMOSForward::DEIMOSForward(const MultiExposureObject& meo_, const MultiExposureObject& mepsf_, int N, int C, data_t width) :
+    DEIMOSElliptical(N,C),
     meo(meo_), mepsf(mepsf_), K(meo_.size()), fiducial_width(width) {
-    DEIMOS::N = N;
-    DEIMOS::C = C;
-    DEIMOS::D = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2);
-    DEIMOS::S = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
-    DEIMOS::mo.setOrder(N);
-    DEIMOS::matching_scale = fiducial_width;
+    DEIMOSElliptical::matching_scale = fiducial_width;
     initialize();
     minimize();
   }
 
   DEIMOSForward::DEIMOSForward(const MultiExposureObject& meo_, const std::vector<DEIMOS::PSFMultiScale>& mePSFMultiScale_, int N, int C, data_t width) :
-    meo(meo_), mepsf(MultiExposureObject()), mePSFMultiScale(mePSFMultiScale_), K(meo_.size()), fiducial_width(width) {
-    DEIMOS::N = N;
-    DEIMOS::C = C;
-    DEIMOS::D = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+C+1)*(N+C+2))/2);
-    DEIMOS::S = NumMatrix<data_t>(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
-    DEIMOS::mo.setOrder(N);
-    DEIMOS::matching_scale = fiducial_width;
+    DEIMOSElliptical(N,C),
+    meo(meo_), mepsf(MultiExposureObject()), mePSFMultiScale(mePSFMultiScale_),
+    K(meo_.size()), fiducial_width(width) {
+    DEIMOSElliptical::matching_scale = fiducial_width;
     initialize();
     minimize();
   }
@@ -36,8 +29,9 @@ namespace shapelens {
     mo(0,2) = mo(2,0) = 0;
 
     Moments tmp(N);
-    NumMatrix<data_t> P(((N+1)*(N+2))/2, ((N+1)*(N+2))/2);
+    NumMatrix<data_t> P(mo.size(), mo.size());
     DEIMOS::PSFMultiScale psfs;
+    centroid(0) = centroid(1) = 0;
     for (int k = 0; k < K; k++) {
       mem.push_back(tmp);
       meP.push_back(P);
@@ -45,17 +39,18 @@ namespace shapelens {
       // set noise image from each exposure
       meD[k].setNoiseImage(meo[k]);
       // set scale factors for WCS exposures
-      meD[k].setScaleFactor(meo[k]);
+      meD[k].scale_factor = meo[k].grid.getScaleFactor();
       meD[k].centroid = meo[k].centroid;
       if (ShapeLensConfig::USE_WCS)
 	meo[k].grid.getWCS().transform(meD[k].centroid);
-
+      centroid += meD[k].centroid;
       if (mepsf.size() == K) { // only do this with PSF images
 	// create initial PSFMultiScale with given width
-	DEIMOS psf(mepsf[k], N, C, fiducial_width);
+	DEIMOSElliptical psf(mepsf[k], N, C, fiducial_width);
 	psfs[fiducial_width] = psf.mo;
 	mePSFMultiScale.push_back(psfs);
       }
+      centroid /= K;
 
       meSaveScale.push_back(0);
       meTroubleScale.push_back(1e100);
@@ -78,7 +73,7 @@ namespace shapelens {
       mo.clear();
       S.clear();
       for (int k = 0; k < K; k++) {
-	DEIMOS& d = meD[k];
+	DEIMOSElliptical& d = meD[k];
 	diff = mem[k];
 	diff -= d.mo;
 	
@@ -88,34 +83,26 @@ namespace shapelens {
 	unsigned long n_pix_k = meo[k].size();
 	n_pix += n_pix_k;
 	NumMatrix<data_t> X = meP[k].transpose() * S_1;
-	//mo += X * (NumVector<data_t>) d.mo;
 	NumVector<data_t> mo_k = X * (NumVector<data_t>) d.mo;
 	mo += mo_k;
 	NumMatrix<data_t> S_k = X*meP[k];
-	//S += X*meP[k];
 	S += S_k;
-	//history << t << "." << k << "\t" << d.mo << "\t" <<  shapelens::epsilon(d.mo) << chi2_k/(n_pix_k - mo.size()) << "\t" << mo_k(0)/sqrt(S_k(0,0))  << std::endl;
-	//d.mo = S_k.invert()*mo_k;
-	//history << "\t" << d.mo << "\t" << shapelens::epsilon(d.mo) << std::endl;
-	// set non-sensical moments flag
-	//d.flags[1] = d.flagMoments(d.mo);
       }
       S = S.invert();
       mo = S * (NumVector<data_t>)mo;
       SN[fiducial_width] = mo(0,0)/sqrt(S(0,0)/K);
       history << "->\t" << mo << "\t" << shapelens::epsilon(mo) << "\t" << chi2/(n_pix - mo.size()) << "\t" << SN[fiducial_width] << std::endl;
   
-      // FIXME: should we update the centroid?
-      // globally or individually?
-      // pre-convolved or convolved?
-      // Should be tied in the size determination of the weight function?
-
-//       // update centroid
-//       for (int i = 0; i < meo.size(); i++) {
-// 	Object& obj = const_cast<Object&>(meo[i]);
-// 	obj.centroid(0) += mo0(1,0)/mem[i](0,0);
-// 	obj.centroid(1) += diff(0,1)/mem[i](0,0);
-//       }
+      // update centroid
+      if (FIX_CENTROID == false) {
+	Point<data_t> centroid_shift;
+	centroid_shift(0) = mo(1,0)/mo(0,0);
+	centroid_shift(1) = mo(0,1)/mo(0,0);
+	// shift centroids
+	centroid += centroid_shift;
+	for (int k = 0; k < K; k++)
+	  meD[k].centroid = centroid; // always shift centroid together
+      }
 
       // non-sensical ellipticity check
       flags[1] = flagMoments(mo);
@@ -152,21 +139,15 @@ namespace shapelens {
     for (int k = 0; k < K; k++) {
       convolveExposure(k);
       Moments& mo_c = mem[k];
-      DEIMOS& d = meD[k];
+      DEIMOSElliptical& d = meD[k];
       // set ellipticities and sizes for weight functions in each exposure
       d.eps = shapelens::epsilon(mo_c);
       d.matching_scale = getWeightFunctionScale(k);
       d.scale = d.getEpsScale();
       history << "\t" << k << "\t" << mo_c << "\t" << d.matching_scale << "\t" << d.eps << std::endl;
-      // d.centroid is in pixel coordinates by convention
-      // while shape measurement (including scale, centroid, ellipticity)
-      // needs to be done in WCS coordinates.
-      d.centroid = meo[k].centroid;
-      if (ShapeLensConfig::USE_WCS)
-	meo[k].grid.getWCS().transform(d.centroid);
 
-      DEIMOS::DEIMOSWeightFunction w(d.scale, d.centroid, d.eps);
-      Moments mo_w(meo[k], w, N+C);
+      DEIMOSElliptical::WeightFunction w(d.scale, d.centroid, d.eps);
+      Moments mo_w(meo[k], w, N+C, &d.centroid);
       d.deweight(mo_w);
       d.computeCovariances(mo_w);
     }
@@ -174,7 +155,7 @@ namespace shapelens {
 
 
   void DEIMOSForward::convolveExposure(unsigned int k) {
-    DEIMOS& d = meD[k];
+    DEIMOSElliptical& d = meD[k];
     DEIMOS::PSFMultiScale& psfs = mePSFMultiScale[k];
     data_t scale = psfs.getScaleClosestTo(d.matching_scale);
 
@@ -183,24 +164,26 @@ namespace shapelens {
     if (mepsf.size() == K) {
       if (fabs(scale-d.matching_scale) > 0.05*d.matching_scale) {
 	scale = d.matching_scale;
-	DEIMOS psf(mepsf[k], N, C, scale);
+	DEIMOSElliptical psf(mepsf[k], N, C, scale);
 	psfs.insert(scale, psf.mo);
       }
     }
-    Moments& p = psfs[scale];
 
     // create matrix representation of convolution eq. 9
+    // a copy from DEIMOS.cc, but this one saves matrix P
+    // and applies to convolved moments mem[k]
+    Moments& p = psfs[scale];
     NumMatrix<data_t>& P = meP[k];
     for (int n = 0; n <= mo.getOrder(); n++) {
       for (int i = 0; i <= n; i++) {
-	int  j = n-i;
+        int  j = n-i;
 	int n = mo.getIndex(i,j);  // convolved moment index
-	for (int k = 0; k <= i; k++) {
-	  for (int l = 0; l <= j; l++) {
-	    int m = mo.getIndex(k,l); // unconvolved moment index
-	    P(n,m) = binomial(i,k) * binomial(j,l) * p(i-k,j-l);
-	  }
-	}
+        for (int k = 0; k <= i; k++) {
+          for (int l = 0; l <= j; l++) {
+            int m = mo.getIndex(k,l); // unconvolved moment index
+            P(n,m) = binomial(i,k) * binomial(j,l) * p(i-k,j-l);
+          }
+        }
       }
     }
     // convolve moments
@@ -209,7 +192,7 @@ namespace shapelens {
   
   data_t DEIMOSForward::getWeightFunctionScale(unsigned int k) const {
     const DEIMOS::PSFMultiScale& psfs = mePSFMultiScale[k];
-    const DEIMOS& d = meD[k];
+    const DEIMOSElliptical& d = meD[k];
     // simply use sqrt(trQ/F) as size: equivalent width of Gaussian 
     const Moments& m = mem[k];
     data_t s = sqrt((m(0,2) + m(2,0))/m(0,0));

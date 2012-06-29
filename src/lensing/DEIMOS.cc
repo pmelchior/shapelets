@@ -64,8 +64,8 @@ namespace shapelens {
 
   void DEIMOS::convolve(const Moments& p) {
     // create matrix representation of convolution eq. 9
-    NumMatrix<data_t> P(N+1, N+1);
-    for (int n = 0; n <= mo.getOrder(); n++) {
+    NumMatrix<data_t> P (mo.size(), mo.size());
+    for (int n = 0; n <= N; n++) {
       for (int i = 0; i <= n; i++) {
 	int  j = n-i;
 	int n = mo.getIndex(i,j);  // convolved moment index

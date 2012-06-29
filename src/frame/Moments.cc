@@ -256,18 +256,21 @@ namespace shapelens {
     return *this;
   }
 
-  Moments::Moments(const Object& obj, const WeightFunction& w, int N_) :
+  Moments::Moments(const Object& obj, const WeightFunction& w, int N_, const Point<data_t>* centroid) :
     NumVector<data_t>(pyramid_num(N_+1)), N(N_) {
     data_t w_, diff_x, diff_y, val;
-    Point<data_t> centroid_wcs = obj.centroid;
-    obj.grid.getWCS().transform(centroid_wcs); // use wcs for centroid
+    //Point<data_t> centroid_wcs = obj.centroid;
+    //obj.grid.getWCS().transform(centroid_wcs); // use wcs for centroid
+    if (centroid == NULL)
+      centroid = &obj.centroid;
+
     NumVector<data_t> pow_x(N+1), pow_y(N+1);
 
     for (long i=0; i< obj.grid.size(); i++) {
       val = obj(i);
       w_ = w(obj.grid(i));
-      diff_x = obj.grid(i,0) - centroid_wcs(0);
-      diff_y = obj.grid(i,1) - centroid_wcs(1);
+      diff_x = obj.grid(i,0) - (*centroid)(0);
+      diff_y = obj.grid(i,1) - (*centroid)(1);
 
       for (int j=0; j <= N; j++) {
 	pow_x(j) = pow_int(diff_x,j);

@@ -62,7 +62,7 @@ namespace shapelens {
     static bool FIX_CENTROID;
     friend class DEIMOSForward;
   protected:
-    void match(Object& obj, Moments& mo_w);
+    void match(const Object& obj, Moments& mo_w);
     void deweight(const Moments& mo_w);
     void computeDeweightingMatrix(const Moments& mo_w);
     void computeCovariances(const Moments& mo_w);

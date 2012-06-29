@@ -9,39 +9,28 @@ namespace shapelens {
 
   DEIMOSCircular::DEIMOSCircular() : DEIMOS(), scale(0), R2(0), scale_factor(1) {}
 
-  DEIMOSCircular::DEIMOSCircular(const Object& obj_, int N_, int C_, data_t matching_scale_) : 
+  DEIMOSCircular::DEIMOSCircular(const Object& obj, int N_, int C_, data_t matching_scale_) : 
     DEIMOS(N_), C(C_), R2(0), matching_scale(matching_scale_),
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2) {
      
-    // dirty little trick to update obj.centroid for moment measurement
-    Object& obj = const_cast<Object&>(obj_);
-    Point<data_t> old_centroid = obj.centroid; // save for later
-    scale_factor = obj.grid.getScaleFactor();
-
     // measure moments within optimized weighting function
     Moments mo_w(N+C);
+    scale_factor = obj.grid.getScaleFactor();
     match(obj, mo_w);
 
     // compute noise statistics
     setNoiseImage(obj);
     computeCovariances(mo_w);
     SN[matching_scale] = computeSN(mo_w);
-
-    // restore obj's original centroid
-    obj.centroid = old_centroid;
  }
 
-  DEIMOSCircular::DEIMOSCircular (const Object& obj_, const DEIMOSCircular::PSFMultiScale& psf, int N_, int C_, data_t matching_scale_) :
+  DEIMOSCircular::DEIMOSCircular (const Object& obj, const DEIMOSCircular::PSFMultiScale& psf, int N_, int C_, data_t matching_scale_) :
     DEIMOS(N_), C(C_), matching_scale(matching_scale_),
     D(((N_+1)*(N_+2))/2, ((N_+C_+1)*(N_+C_+2))/2) {
     
-    // dirty little trick to update obj.centroid for moment measurement
-    Object& obj = const_cast<Object&>(obj_);
-    Point<data_t> old_centroid = obj.centroid; // save for later
-    scale_factor = obj.grid.getScaleFactor();
-
     // measure moments within optimized weighting function
     Moments mo_w(N+C);
+    scale_factor = obj.grid.getScaleFactor();
     setNoiseImage(obj);
     match(obj, mo_w);
 
@@ -100,9 +89,6 @@ namespace shapelens {
     else
       history << "# Deweighting failed (" << flags << "), minimum PSF scale reached. GAME OVER." << std::endl;
     
-    // restore obj's original centroid
-    obj.centroid = old_centroid;
-
   }
 
   DEIMOSCircular::DEIMOSCircular(std::string filename) {
@@ -163,6 +149,7 @@ namespace shapelens {
     IO::updateFITSKeyword(fptr,"SCALE_M",matching_scale,"matching_scale [pixel]");
     IO::updateFITSKeyword(fptr,"SCALE",scale,"actual weighting function width");
     IO::updateFITSKeyword(fptr,"SCALEFAC",scale_factor,"avg. WCS units/pixel");
+    IO::updateFITSKeyword(fptr,"CENTROID",std::complex<data_t>(centroid(0), centroid(1)),"weight funciton centroid");
     std::map<data_t, data_t>::const_iterator iter = SN.find(matching_scale);
     if (iter != SN.end())
       IO::updateFITSKeyword(fptr,"SN",iter->second,"S/N");
@@ -173,7 +160,7 @@ namespace shapelens {
   }
 
   // determine optimal weighting parameters, centroid and size
-  void DEIMOSCircular::match(Object& obj, Moments& mo_w) {
+  void DEIMOSCircular::match(const Object& obj, Moments& mo_w) {
     // obj.centroid is in pixel coordinates by convention
     // while shape measurement (including scale, centroid, ellipticity)
     // needs to be done in WCS coordinates.
@@ -193,7 +180,7 @@ namespace shapelens {
     while (iter < maxiter) {
       // measure moments under weight function
       GaussianWeightFunction w(scale, centroid);
-      mo_w = Moments (obj, w, N + C);
+      mo_w = Moments (obj, w, N + C, &centroid);
       
       deweight(mo_w);
       flags[1] = flagMoments(mo);
@@ -220,10 +207,6 @@ namespace shapelens {
 
       // shift centroid
       centroid += centroid_shift;
-      obj.centroid = centroid;
-      // obj.centroid is in pixel units (by convention)
-      if (ShapeLensConfig::USE_WCS)
-	obj.grid.getWCS().inverse_transform(obj.centroid); 
 
       // centroiding has converged: stop it
       if (shift < 1e-2*scale_factor)
@@ -313,7 +296,7 @@ namespace shapelens {
     if (noise.size() > 0) {
       Moments mo_w2;
       GaussianWeightFunction w2(scale/M_SQRT2, centroid);
-      mo_w2 = Moments(noise, w2, 0);
+      mo_w2 = Moments(noise, w2, 0, &centroid);
       SN_ = mo_w(0,0) / sqrt(mo_w2(0,0));
     }
     return SN_;
@@ -327,7 +310,7 @@ namespace shapelens {
       // i.e. moments up to (i*2,j*2) measured with square of weighting function
       // (square of Gaussian: sigma -> sigma/sqrt(2));
       GaussianWeightFunction w2(scale/M_SQRT2, centroid);
-      Moments mo_noise(noise, w2, 2*(N+C));
+      Moments mo_noise(noise, w2, 2*(N+C), &centroid);
       NumMatrix<data_t> S_(mo_w.size(), mo_w.size());
       data_t det = 1;
       for (int n = 0; n < mo_w.size(); n++) {

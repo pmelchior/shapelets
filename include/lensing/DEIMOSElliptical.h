@@ -33,7 +33,7 @@ namespace shapelens {
     };
 
     /// Default constructor.
-    DEIMOSElliptical();
+    DEIMOSElliptical(int N=0, int C=0);
     /// Constructor from filename.
     DEIMOSElliptical(std::string filename);
     /// Constructor for computing moments up to order \p N from \p obj.
@@ -80,7 +80,7 @@ namespace shapelens {
     static bool FIX_CENTROID, FIX_ELLIPTICITY;
     friend class DEIMOSForward;
   protected:
-    void match(Object& obj, Moments& mo_w);
+    void match(const Object& obj, Moments& mo_w);
     void deweight(const Moments& mo_w);
     void computeCovariances(const Moments& mo_w);
     data_t computeSN(const Moments& mo_w);

@@ -146,8 +146,9 @@ public:
   /// Copy operator.
   Moments& operator=(const NumVector<data_t>& m);
   /// Constructor for moments up to order \p N.
-  /// The moments are populated from \p obj.
-  Moments(const Object& obj, const WeightFunction& w, int N);
+  /// The moments are populated from \p obj. If \p centroid is set, it will
+  /// be used to center the moments, otherwise obj.centroid is used.
+  Moments(const Object& obj, const WeightFunction& w, int N, const Point<data_t>* centroid = NULL);
   /// Access operator for vector index.
   data_t& operator()(unsigned int i);
   /// Access operator for vector index.
