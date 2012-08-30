@@ -23,9 +23,7 @@ namespace shapelens {
   /// - <tt>NUMBER,</tt>
   /// - <tt>XMIN_IMAGE, XMAX_IMAGE, YMIN_IMAGE, YMAX_IMAGE,</tt>
   /// - <tt>XWIN_IMAGE,YWIN_IMAGE,</tt>
-  /// - <tt>FLUX_AUTO,</tt>
-  /// - <tt>FLAGS</tt> and
-  /// - <tt>CLASS_STAR</tt>;
+  /// - <tt>FLAGS</tt>
   ///
   /// the ordering is not important.\n
   /// The segmentation map is expected to have <tt>TINT</tt> FITS datatype (which is not provided by
@@ -46,10 +44,6 @@ namespace shapelens {
   /// subtracted from the pixel data.
   /// - If a weight map is not given, <tt>noiseModel="GAUSSIAN"</tt>, otherwise 
   ///   <tt>noisemodel="WEIGHT"</tt>
-  /// - \p detectionFlag and \p StarGalaxyProbability of Object are filled with SExtractor's
-  /// \p FLAGS and \p CLASS_STAR, respectively.
-  /// - \p BlendingProbability \f$b\f$ is set to 1 if SExtractor's flag contains 2,
-  /// otherwise it is set to 0.
   ///
   /// Example:
   /// \code
@@ -68,7 +62,7 @@ namespace shapelens {
   ///\endcode
   ///
   ///
-  /// This Fits file can be produced by SExtractor by setting 
+  /// This FITS file can be produced by SExtractor by setting 
   /// <tt>CHECKIMAGE_TYPE  SEGMENTATION</tt>\n
   /// The noise statistics are read from the header keywords <tt>NOISE_MEAN</tt>
   /// and <tt>NOISE_RMS</tt> in either the data file or the segmentation file.
@@ -83,7 +77,7 @@ namespace shapelens {
     /// \p catfile is the name of the SExtractor catalog file.
     /// \p weightfile and \p segmapfile can be empty string <tt>""</tt> then
     /// they will be ignored.
-    SExFrame(std::string datafile, std::string catfile,  std::string segmapfile = "", std::string weightfile = "");
+    SExFrame(std::string datafile, std::string catfile, std::string segmapfile = "", std::string weightfile = "");
     /// Destructor.
     ~SExFrame();
     /// Return noise mean \f$\mu_n\f$.
@@ -108,17 +102,18 @@ namespace shapelens {
     /// Return number of objects found by SExtractor.
     /// If it returns 0, the catalog file is either empty or its format is wrongly specified.
     unsigned long getNumberOfObjects();
-    /// Return Catalog read by readCatalog().
-    const Catalog& getCatalog();
     /// Grid.
     Grid grid;
+    /// The object catalog.
+    Catalog catalog;
+    // Legacy function...
+    const Catalog& getCatalog();
 
   private:
     fitsfile *fptr, *fptr_w, *fptr_s;
     History history;
     std::string basefilename;
     void addFrameBorder(data_t factor, int& xmin, int& xmax, int& ymin, int& ymax);
-    Catalog catalog;
     bool subtractBG;
     data_t bg_mean, bg_rms;
     long axsize0, axsize1;

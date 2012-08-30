@@ -5,9 +5,8 @@
 #include <vector>
 #include <bitset>
 
-using namespace shapelens;
 using namespace std;
-
+using namespace shapelens;
 typedef unsigned int uint;
 
 SExFrame::SExFrame (std::string datafile, std::string catfile, std::string segmapfile, std::string weightfile) : 
@@ -132,13 +131,13 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
       O.weight.resize((xmax-xmin)*(ymax-ymin));
       O.weight.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
       if (ShapeLensConfig::USE_WCS)
-      O.weight.grid.setWCS(grid.getWCS());
+	O.weight.grid.setWCS(grid.getWCS());
     }
     if (fptr_s != NULL) {
       O.segmentation.resize((xmax-xmin)*(ymax-ymin));
       O.segmentation.grid.setSize(xmin,ymin,xmax-xmin,ymax-ymin);
       if (ShapeLensConfig::USE_WCS)
-      O.segmentation.grid.setWCS(grid.getWCS());
+	O.segmentation.grid.setWCS(grid.getWCS());
     }
 
     // copy pixel data
