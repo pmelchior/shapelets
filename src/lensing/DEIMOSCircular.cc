@@ -189,7 +189,7 @@ namespace shapelens {
 	break;
 
       SN[matching_scale] = computeSN(mo_w);
-      history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << obj.centroid;
+      history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << centroid;
       if (noise.size() > 0) { // only then SN_ is meaningful
 	history << "\t";
 	history << SN[matching_scale];
@@ -209,7 +209,7 @@ namespace shapelens {
       centroid += centroid_shift;
 
       // centroiding has converged: stop it
-      if (shift < 1e-2*scale_factor)
+      if (shift < 1e-2)
 	break;
       iter++;
     }

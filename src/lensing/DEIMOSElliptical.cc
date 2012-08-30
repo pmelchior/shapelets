@@ -59,7 +59,7 @@ namespace shapelens {
 
     // matching successfull, try with lower scale and see whether S/N improves
     if (flags.none()) {
-      while (matching_scale > psf.getMinimumScale()) {
+      while (matching_scale > psf.getMinimumScale() && SN[matching_scale] < 80) {
 	data_t SN_current = SN[matching_scale];
 	data_t matching_scale_current = matching_scale;
 	complex<data_t> eps_current = eps;
@@ -223,7 +223,7 @@ namespace shapelens {
       mo_w = Moments (obj, w, N + C, &centroid);
       data_t SN_ = computeSN(mo_w);
 
-      history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << obj.centroid << "\t" << eps;
+      history << "# " << iter+1 << "\t" << scale/scale_factor << "\t" << centroid << "\t" << eps;
       if (noise.size() > 0) { // only then SN_ is meaningful
 	history << "\t";
 	if (centroiding)
@@ -262,7 +262,7 @@ namespace shapelens {
 	centroid += centroid_shift;
 
 	// centroiding has converged: stop it
-	if (shift < 1e-2*scale_factor)
+	if (shift < 1e-2)
 	  centroiding = false;
       }
 
@@ -287,12 +287,6 @@ namespace shapelens {
 	if (iter == iter_initial + 1)
 	  SN_initial = SN_;
 	if (iter > iter_initial + 1) {
-	  // strong non-convergence: don't cut too hard here, it saves time but objects
-	  // with large apparent ellipticity see an decrease in S/N during matching
-	  if (SN_ < (0.5*SN_initial)) { 
-	    flags[2] = 1;
-	    break;
-	  }
 	  if (fabs(SN_/SN[matching_scale] - 1) < 1e-5 && 
 	      abs(eps - eps_) < 1e-3) {
 	    SN[matching_scale] = SN_;
