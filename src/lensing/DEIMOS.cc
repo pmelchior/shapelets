@@ -49,6 +49,7 @@ namespace shapelens {
 	noise(i) = obj.noise_rms*obj.noise_rms;
       if (obj.segmentation.size() == obj.size())
 	noise.segmentation = obj.segmentation;
+      noise.id = obj.id;
     }
   }
 

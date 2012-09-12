@@ -166,12 +166,13 @@ void SExFrame::fillObject(Object& O, Catalog::const_iterator& catiter) {
 
 	// check segmap
 	if (fptr_s != NULL) {
-	  if ((O.segmentation(i) > 0 && O.segmentation(i) != catiter->first) || (O.segmentation(i) < 0 && ShapeLensConfig::FILTER_SPURIOUS))
+	  if ((O.segmentation(i) > 0 && O.segmentation(i) != catiter->first) || (O.segmentation(i) < 0 && ShapeLensConfig::FILTER_SPURIOUS)) {
 	    fill = true;
-	  // this objects has to yet been found to be nearby
-	  if (std::find(nearby_objects.begin(),nearby_objects.end(),O.segmentation(i)) == nearby_objects.end()) {
-	    O.history << "# Object " << O.segmentation(i) << " nearby, but not overlapping." << std::endl;
-	    nearby_objects.push_back(O.segmentation(i));
+	    // this objects has to yet been found to be nearby
+	    if (std::find(nearby_objects.begin(),nearby_objects.end(),O.segmentation(i)) == nearby_objects.end()) {
+	      O.history << "# Object " << O.segmentation(i) << " nearby, but not overlapping." << std::endl;
+	      nearby_objects.push_back(O.segmentation(i));
+	    }
 	  }
 	}
 

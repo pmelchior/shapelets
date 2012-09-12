@@ -91,6 +91,16 @@ namespace shapelens {
       S = S.invert();
       mo = S * (NumVector<data_t>)mo;
       SN[fiducial_width] = mo(0,0)/sqrt(S(0,0)/K);
+      int i = mo.getIndex(2,0);
+      /*
+	data_t eta = sqrt(S(i,i)) / abs(mo(i));
+      i = mo.getIndex(1,1);
+      eta += sqrt(S(i,i)) / abs(mo(i));
+      i = mo.getIndex(0,2);
+      eta += sqrt(S(i,i)) / abs(mo(i));
+      eta /= 3;
+      */
+
       history << "->\t" << mo << "\t" << shapelens::epsilon(mo) << "\t" << chi2/(n_pix - mo.size()) << "\t" << SN[fiducial_width] << std::endl;
   
       // update centroid
@@ -120,7 +130,7 @@ namespace shapelens {
 
       // convergence: chi^2 does not change by more than relative 1e-4
       // note: chi^2 might increase slightly before convergence
-      // so go for asbolute value of change
+      // so go for absolute value of change
       t++;
       if (t==10 || (last_chi2 > 0 && fabs(last_chi2 - chi2) < 1e-4*chi2)) {
 	last_chi2 = chi2;
@@ -196,8 +206,8 @@ namespace shapelens {
     // simply use sqrt(trQ/F) as size: equivalent width of Gaussian 
     const Moments& m = mem[k];
     data_t s = sqrt((m(0,2) + m(2,0))/m(0,0));
-
-    /*
+    //std::cout << "SCALE = " << s << "\t";
+    
     // Noise correction, expect noise variance to be set
     if (S(0,0) > 0) {
       const NumMatrix<data_t>& P = meP[k];
@@ -208,11 +218,12 @@ namespace shapelens {
       sigma_2 += S_c(i,i);
       i = m.getIndex(0,2);
       sigma_2 += S_c(i,i);
-      data_t d_s = 0.822179*sqrt(sigma_2/m(0,0));
+      data_t d_s = 0.822179*sqrt(sigma_2)/m(0,0);
       std::complex<data_t> eps = shapelens::epsilon(m);
-      s -= d_s;
+      //std::cout << d_s << "\t";
+      s -= d_s/2; // FIXME: why is this factor 2 required???
     }
-    */
+    //std::cout << s << "\t";
 
     if (ShapeLensConfig::USE_WCS)
       s /= d.scale_factor; // correct for WCS rescaling 
@@ -233,6 +244,7 @@ namespace shapelens {
 	}
       }
     }
+    //std::cout << s << std::endl;
     return s;
   }
 }

@@ -278,10 +278,9 @@ namespace shapelens {
       }
 
       // mask bad pixels
-      if (obj.segmentation.size() > 0) {
+      if (obj.segmentation.size() > 0)
 	if (obj.segmentation(i) != 0 && obj.segmentation(i) != obj.id)
 	  w_ = 0;
-      }
 
       for(int n=0; n <= N; n++)
 	for(int m=0; m <= n; m++)

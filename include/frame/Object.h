@@ -35,10 +35,6 @@ class Object : public Image<data_t> {
   Object (std::string fitsfile);
   /// Copy constructor from base class.
   Object (const Image<data_t>& base);
-  /// Copy operator from base class.
-  /// It copies only the Image part, but does not replace any other
-  /// data members of Object.
-  Object* operator=(const Image<data_t>& base);
   /// Save the object information in a Fits file.
   /// Data and SegmentationMap will go to pHDU and 1st extHDU, respectively. 
   /// All other information goes to the pHDU header.

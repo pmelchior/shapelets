@@ -18,11 +18,6 @@ Object::Object (const Image<data_t>& base) : Image<data_t>(base), segmentation()
   noise_mean = noise_rms = 0;
 }
 
-Object* Object::operator=(const Image<data_t>& base) {
-  Image<data_t>::operator=(base);
-  return this;
-}
-
 Object::Object(std::string objfile) : Image<data_t>(), segmentation() {
   int status, nkeys, keypos, hdutype;
   char card[FLEN_CARD];
