@@ -3,7 +3,8 @@ SRCPATH = src
 LIBPATH = lib
 DOCPATH = doc
 PROGSRCPATH = progs
-LIBNAME = shapelens
+PROGPATH = bin
+LIBNAME = shapelensITA
 
 LENSINGSRCPATH = $(SRCPATH)/lensing
 LENSINGINCLPATH = $(INCLPATH)/lensing
@@ -28,8 +29,6 @@ SHAPELETSINCLPATH = $(INCLPATH)/shapelets
 SHAPELETSSRC = $(wildcard $(SHAPELETSSRCPATH)/*.cc)
 SHAPELETSOBJECTS = $(SHAPELETSSRC:$(SHAPELETSSRCPATH)/%.cc=$(LIBPATH)/%.o)
 
-DEVELLIBPATH = $(ITALIBSPATH)/lib
-PROGPATH = $(ITALIBSPATH)/bin
 PROGS = $(wildcard $(PROGSRCPATH)/*.cc)
 PROGSOBJECTS = $(PROGS:$(PROGSRCPATH)/%.cc=$(PROGPATH)/%)
 
@@ -37,6 +36,10 @@ HEADERS = $(wildcard $(INCLPATH)/*.h) $(wildcard $(SHAPELETSINCLPATH)/*.h) $(wil
 
 # which OS
 UNAME := $(shell uname)
+
+ifndef PREFIX
+	PREFIX = /usr
+endif
 
 CC = g++
 #compilation flags
@@ -119,14 +122,18 @@ library: $(LIBPATH)/lib$(LIBNAME).a
 shared: $(LIBPATH)/lib$(LIBNAME).$(LIBEXT)
 
 install: library shared
-	mkdir -p $(ITALIBSLIBPATH)
-	cp $(LIBPATH)/lib$(LIBNAME).a $(ITALIBSLIBPATH)
-	cp $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $(ITALIBSLIBPATH)
-	mkdir  -p $(DEVELLIBPATH)/include/$(LIBNAME)
-	cd $(INCLPATH) && find . -type f -name '*.h' -exec  cp --parents {} $(DEVELLIBPATH)/include/$(LIBNAME)/ \; && cd ../
-	mkdir -p $(PROGPATH)
+	mkdir -p $(PREFIX)/lib
+	cp $(LIBPATH)/lib$(LIBNAME).a $(PREFIX)/lib/
+	cp $(LIBPATH)/lib$(LIBNAME).$(LIBEXT) $(PREFIX)/lib/
+	mkdir  -p $(PREFIX)/include/$(LIBNAME)
+	cd $(INCLPATH) && find . -type f -name '*.h' -exec  cp --parents {} $(PREFIX)/include/$(LIBNAME)/ \; && cd ../
 
 progs: $(PROGSOBJECTS)
+
+installprogs: progs
+	mkdir -p $(PREFIX)/bin
+	cp $(PROGSOBJECTS) $(PREFIX)/bin/
+
 
 docs: $(HEADERS)
 	doxygen Doxyfile
@@ -168,4 +175,4 @@ $(LIBPATH)/%.o: $(SHAPELETSSRCPATH)/%.cc
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(PROGPATH)/%: $(PROGSRCPATH)/%.cc
-	$(CC) $(CFLAGS) $(CFLAG_LIBS) $< -o $@ -l$(LIBNAME) $(LIBS)
+	$(CC) $(CFLAGS) $(CFLAG_LIBS) -I$(INCLPATH) -L$(LIBPATH) $< -o $@ -l$(LIBNAME) $(LIBS)

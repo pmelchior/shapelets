@@ -1,5 +1,5 @@
 #include <shapelens/ShapeLens.h>
-#include <shapelens/lensing/DEIMOS.h>
+#include <shapelens/lensing/DEIMOSElliptical.h>
 #include <shapelens/lensing/LensHelper.h>
 #include <tclap/CmdLine.h>
 #include <iostream>
@@ -76,7 +76,7 @@ std::map<Point<int>, DEIMOS::PSFMultiScale> getPSFMultiScaleMap(const std::strin
     // measure PSF moments at all scales
     for (std::set<data_t>::const_iterator iter = scales.begin(); iter != scales.end(); iter++) {
       ShapeLensConfig::USE_WCS = true;
-      DEIMOS psf(star, N, C, *iter);
+      DEIMOSElliptical psf(star, N, C, *iter);
       ShapeLensConfig::USE_WCS = false;
       data_t flux = psf.mo(0,0);
       psf.mo /= flux; // flux normalization
@@ -239,10 +239,10 @@ int main(int argc, char* argv[]) {
       P(1) = std::min(B-1, int(floor(obj.centroid(1)))/D);
       // measure deconvolved moments
       ShapeLensConfig::USE_WCS = true;
-      DEIMOS::FIX_CENTROID = true;
-      DEIMOS d(obj, psfmap[P], N, C, psfmap[P].getMaximumScale());
+      DEIMOSElliptical::FIX_CENTROID = true;
+      DEIMOSElliptical d(obj, psfmap[P], N, C, psfmap[P].getMaximumScale());
       ShapeLensConfig::USE_WCS = false;
-      DEIMOS::FIX_CENTROID = false;
+      DEIMOSElliptical::FIX_CENTROID = false;
       std::cout << obj.id << "\t" << obj.centroid(0) << "\t" << obj.centroid(1) << "\t" << d.mo << "\t";
       std::cout << real(d.epsilon()) << "\t" << imag(d.epsilon());
       std::cout << "\t" << d.scale << "\t" << d.matching_scale << "\t" << d.SN[d.matching_scale] << "\t" << d.flags.to_string() << std::endl;

@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
     psf.grid.setWCS(s);
 
     for (std::set<data_t>::iterator iter = scales.begin(); iter != scales.end(); iter++) {
-      DEIMOS d(psf, N, C, (*iter)*S_star);
+      DEIMOSElliptical d(psf, N, C, (*iter)*S_star);
       data_t flux = d.mo(0,0);
       d.mo /= flux;
       std::complex<data_t> eps = shapelens::epsilon(d.mo);
